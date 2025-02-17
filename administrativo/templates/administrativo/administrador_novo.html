@@ -1,0 +1,179 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+        <title>Novo Administrador</title>
+
+        <link href="{% static 'administrativo/css/bootstrap.min.css' %}" rel="stylesheet">
+        <link href="{% static 'administrativo/font-awesome/css/font-awesome.css' %}" rel="stylesheet">
+
+        <!-- Toastr style -->
+        <link href="{% static 'administrativo/css/plugins/toastr/toastr.min.css' %}" rel="stylesheet">
+
+        <link href="{% static 'administrativo/css/animate.css' %}" rel="stylesheet">
+        <link href="{% static 'administrativo/css/style.css' %}" rel="stylesheet">  
+        
+        <!-- Custom -->      
+        <link href="{% static 'administrativo/css/custom.css' %}" rel="stylesheet">
+
+        <!-- Favicon -->
+        <link rel="icon" href="img/futmundi.ico" type="image/png">
+    </head>
+    <body>
+        <div id="wrapper">
+            <nav class="navbar-default navbar-static-side">
+                <div class="sidebar-collapse">
+                    <ul class="nav metismenu" id="side-menu">
+                        <li class="nav-header">
+                            <div class="dropdown profile-element">
+                                <a href="{% url "administrativo:usuarios" %}">
+                                    <img src="{% static 'administrativo/img/logo.svg' %}" alt="Futmundi logo">
+                                </a>
+                            </div>
+                            <div class="logo-element">
+                                <a href="{% url "administrativo:usuarios" %}">
+                                    <img src="{% static 'administrativo/img/logosm.svg' %}" alt="Futmundi logo">
+                                </a>                            
+                            </div>
+                        </li>
+                        <li class="active">
+                            <a href="{% url "administrativo:usuarios" %}"><i class="fa fa-user"></i> <span class="nav-label">Usuários</span></a>
+                        </li>
+                        <li>
+                            <a href="#"><i class="fa fa-trophy"></i> <span class="nav-label">Campeonatos</span><span class="fa arrow"></span></a>
+                            <ul class="nav nav-second-level collapse">
+                                <li><a href="{% url "administrativo:ambitos" %}">Âmbitos</a></li>
+                                <li><a href="{% url "administrativo:campeonatos" %}">Campeonatos</a></li>
+                                <li><a href="{% url "administrativo:templates" %}">Templates</a></li>
+                                <li><a href="{% url "administrativo:times" %}">Times</a></li>
+                            </ul>
+                        </li>
+                        <li>
+                            <a href="#"><i class="fa fa-shopping-cart"></i> <span class="nav-label">Pacotes</span><span class="fa arrow"></span></a>
+                            <ul class="nav nav-second-level collapse">
+                                <li><a href="{% url "administrativo:futcoins" %}">Futcoins</a></li>
+                                <li><a href="{% url "administrativo:planos" %}">Planos</a></li>
+                            </ul>
+                        </li>
+                        <li>
+                            <a href="#"><i class="fa fa-diamond"></i> <span class="nav-label">Futligas</span><span class="fa arrow"></span></a>
+                            <ul class="nav nav-second-level collapse">
+                                <li><a href="{% url "administrativo:futligas_classicas" %}">Clássicas</a></li>
+                                <li><a href="{% url "administrativo:futligas_jogadores" %}">Jogadores</a></li>
+                            </ul>
+                        </li>
+                        <li>
+                            <a href="#"><i class="fa fa-globe"></i> <span class="nav-label">Locais</span><span class="fa arrow"></span></a>
+                            <ul class="nav nav-second-level collapse">
+                                <li><a href="{% url "administrativo:continentes" %}">Continentes</a></li>
+                                <li><a href="{% url "administrativo:paises" %}">Países</a></li>
+                                <li><a href="{% url "administrativo:estados" %}">Estados</a></li>
+                            </ul>
+                        </li>
+                        <li>
+                            <a href="#"><i class="fa fa-gear"></i> <span class="nav-label">Configurações</span><span class="fa arrow"></span></a>
+                            <ul class="nav nav-second-level collapse">
+                                <li><a href="{% url "administrativo:parametros" %}">Parâmetros</a></li>
+                                <li><a href="{% url "administrativo:termo" %}">Termo</a></li>
+                                <li><a href="{% url "administrativo:notificacoes" %}">Notificações</a></li>
+                            </ul>
+                        </li>
+                        <li>
+                            <a href="{% url "administrativo:relatorios" %}"><i class="fa fa-pie-chart"></i> <span class="nav-label">Relatórios</span></a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+            <div id="page-wrapper" class="gray-bg">
+                <div class="row border-bottom">
+                    <nav class="navbar navbar-static-top" style="margin-bottom: 0">
+                        <div class="navbar-header">
+                            <a class="navbar-minimalize minimalize-styl-2 btn btn-success " href="#"><i class="fa fa-bars"></i> </a>
+                        </div>
+                        <ul class="nav navbar-top-links navbar-right">
+                            <li>
+                                <span class="m-r-sm text-muted welcome-message">Andrews Cristhian</span>
+                            </li>
+                            <li class="dropdown">
+                                <a class="dropdown-toggle count-info" data-toggle="dropdown" href="#">
+                                    <i class="fa fa-gear"></i>
+                                </a>
+                                <ul class="dropdown-menu dropdown-alerts">
+                                    <li>
+                                        <a href="{% url "administrativo:administradores" %}" class="dropdown-item">
+                                            <div>
+                                                <i class="fa fa-users"></i> Administradores
+                                            </div>
+                                        </a>
+                                    </li>
+                                    <li class="dropdown-divider"></li>
+                                    <li>
+                                        <a href="{% url "administrativo:login" %}" class="dropdown-item">
+                                            <div>
+                                                <i class="fa fa-sign-out"></i> Sair
+                                            </div>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+                <div class="row wrapper border-bottom white-bg page-heading">
+                    <div class="col-lg-10">
+                        <h2>Novo Administrador</h2>
+                    </div>
+                </div>
+                <div class="wrapper wrapper-content">
+                    <div class="row">
+                        <div class="col-lg-12">
+                            <div class="ibox-content">
+                                {% if messages %}
+                                    {% for message in messages %}
+                                        <div class="alert alert-{{ message.tags }}">
+                                            {{ message }}
+                                        </div>
+                                    {% endfor %}
+                                {% endif %}
+                                <form method="post" action="{% url 'administrativo:administrador_novo' %}" class="mt10">
+                                    {% csrf_token %}
+                                    <div class="form-group col-lg-3">
+                                        <label for="name">Nome</label>
+                                        <input type="text" id="name" name="name" class="form-control" required>
+                                    </div>
+                                    <div class="form-group col-lg-3">
+                                        <label for="email">Email</label>
+                                        <input type="email" id="email" name="email" class="form-control" required>
+                                    </div>
+                                    <div class="form-group col-lg-3">
+                                        <label for="password">Senha</label>
+                                        <input type="password" id="password" name="password" class="form-control" required>
+                                    </div>
+                                    <div class="form-group col-lg-12">
+                                        <button type="submit" class="btn btn-success"><i class="fa fa-save mr5"></i> Salvar</button>  
+                                        <a href="{% url 'administrativo:administradores' %}" class="btn btn-danger ml15"><i class="fa fa-times mr5"></i> Cancelar</a>  
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Mainly scripts -->
+        <script src="{% static 'administrativo/js/jquery-3.4.1.min.js' %}"></script>
+        <script src="{% static 'administrativo/js/popper.min.js' %}"></script>
+        <script src="{% static 'administrativo/js/bootstrap.js' %}"></script>
+        <script src="{% static 'administrativo/js/plugins/metisMenu/jquery.metisMenu.js' %}"></script>
+        <script src="{% static 'administrativo/js/plugins/slimscroll/jquery.slimscroll.min.js' %}"></script>
+        <!-- Custom and plugin javascript -->
+        <script src="{% static 'administrativo/js/inspinia.js' %}"></script>
+        <script src="{% static 'administrativo/js/plugins/pace/pace.min.js' %}"></script>
+        <!-- Toastr script -->
+        <script src="{% static 'administrativo/js/plugins/toastr/toastr.min.js' %}"></script>
+        <script src="{% static 'administrativo/js/settings.js' %}"></script>
+    </body>
+</html>

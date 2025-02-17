@@ -1,0 +1,47 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+        <title>Login</title>
+
+        <link href="{% static 'administrativo/css/bootstrap.min.css' %}" rel="stylesheet">
+        <link href="{% static 'administrativo/font-awesome/css/font-awesome.css' %}" rel="stylesheet">
+        <link href="{% static 'administrativo/css/animate.css' %}" rel="stylesheet">
+        <link href="{% static 'administrativo/css/style.css' %}" rel="stylesheet">
+        <!-- Favicon -->
+        <link rel="icon" href="{% static 'administrativo/img/futmundi.ico' %}" type="image/png">
+    </head>
+    <body class="gray-bg">
+        <div class="middle-box text-center loginscreen animated bounceIn">
+            <div class="ibox-content">
+                <div>
+                    <img id="logo" src="{% static 'administrativo/img/logo-verde.svg' %}" alt="Futmundi logo"> 
+                </div>           
+                <form class="mt15" action="{% url 'administrativo:login' %}" method="post">
+                    {% csrf_token %}
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }}">
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                    <div class="form-group">
+                        <input type="email" name="email" class="form-control" placeholder="Email" required="">
+                    </div>
+                    <div class="form-group">
+                        <input type="password" name="password" class="form-control" placeholder="Senha" required="">
+                    </div>
+                    <button type="submit" class="btn btn-success block full-width m-b">Login</button>
+                </form>
+            </div>
+        </div>
+        <!-- Mainly scripts -->
+        <script src="{% static 'administrativo/js/jquery-3.4.1.min.js' %}"></script>
+        <script src="{% static 'administrativo/js/popper.min.js' %}"></script>
+        <script src="{% static 'administrativo/js/bootstrap.js' %}"></script>
+    </body>
+</html>
