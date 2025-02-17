@@ -92,7 +92,7 @@
                         </div>
                         <ul class="nav navbar-top-links navbar-right">
                             <li>
-                                <span class="m-r-sm text-muted welcome-message">Andrews Cristhian</span>
+                                <span class="m-r-sm text-muted welcome-message">{{ request.session.admin_name }}</span>
                             </li>
                             <li class="dropdown">
                                 <a class="dropdown-toggle count-info" data-toggle="dropdown" href="#">
@@ -244,5 +244,21 @@
         <script src="{% static 'administrativo/js/plugins/jasny/jasny-bootstrap.min.js' %}"></script>
         <script src="{% static 'administrativo/js/plugins/checkAll/checkAll.js' %}"></script>
         <script src="{% static 'administrativo/js/page-level.js' %}"></script>
+        <script>
+            $(document).ready(function() {
+                var table = $('.dataTables-paises');
+                if (!$.fn.DataTable.isDataTable(table)) {
+                    table.DataTable({
+                        pageLength: 10,
+                        responsive: true,
+                        dom: '<"html5buttons"B>lTfgitp',
+                        buttons: [],
+                        language: {
+                            url: "//cdn.datatables.net/plug-ins/1.10.19/i18n/Portuguese-Brasil.json"
+                        }
+                    });
+                }
+            });
+        </script>
     </body>
 </html>

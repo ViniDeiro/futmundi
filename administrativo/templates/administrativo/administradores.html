@@ -171,7 +171,7 @@
                                                     <td>{{ admin.created_at|date:"d/m/Y H:i:s" }}</td>
                                                     <td>
                                                         <a href="{% url 'administrativo:administrador_editar' admin.id %}" class="btn btn-info btn-xs" title="Editar"><i class="glyphicon glyphicon-pencil"></i></a>
-                                                        <button type="button" class="btn btn-danger btn-xs btn-excluir" title="Excluir" data-id="{{ admin.id }}"><i class="glyphicon glyphicon-trash"></i></button>
+                                                        <button type="button" class="btn btn-danger btn-xs" title="Excluir" data-toggle="modal" data-target="#modalAlert2" data-id="{{ admin.id }}"><i class="glyphicon glyphicon-trash"></i></button>
                                                     </td>
                                                 </tr>
                                                 {% endfor %}
@@ -203,6 +203,24 @@
                 </div>
             </div>
         </div>
+        <!-- Modal de exclusão individual -->
+        <div class="modal inmodal" id="modalAlert2" tabindex="-1" role="dialog" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-sm">
+                <div class="modal-content animated fadeIn">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                        <h4 class="modal-title">Tem certeza?</h4>
+                    </div>
+                    <div class="modal-body">
+                        <p>Tem certeza que deseja excluir este administrador?</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
+                        <button type="button" class="btn btn-danger" onclick="excluirAdmin()">Deletar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
         <!-- Mainly scripts -->
         <script src="{% static 'administrativo/js/jquery-3.4.1.min.js' %}"></script>
         <script src="{% static 'administrativo/js/popper.min.js' %}"></script>
@@ -217,7 +235,21 @@
         <script src="{% static 'administrativo/js/plugins/checkAll/checkAll.js' %}"></script>
         <script src="{% static 'administrativo/js/page-level.js' %}"></script>
         <script>
-            // Função global para excluir em massa
+            // Função para exclusão individual
+            var adminIdToDelete;
+
+            $('#modalAlert2').on('show.bs.modal', function (event) {
+                var button = $(event.relatedTarget);
+                adminIdToDelete = button.data('id');
+            });
+
+            function excluirAdmin() {
+                if (adminIdToDelete) {
+                    window.location.href = "{% url 'administrativo:administrador_excluir' 0 %}".replace('0', adminIdToDelete);
+                }
+            }
+
+            // Nova função simplificada de exclusão em massa
             function excluirMassa() {
                 var ids = [];
                 $('input[name="administradores[]"]:checked').each(function() {
@@ -237,22 +269,13 @@
                         'csrfmiddlewaretoken': '{{ csrf_token }}'
                     },
                     success: function(response) {
-                        if (response.status === 'success') {
-                            window.location.reload();
-                        }
+                        window.location.reload();
+                    },
+                    error: function() {
+                        alert('Erro ao excluir administradores');
                     }
                 });
             }
-
-            $(document).ready(function() {
-                // Botão de excluir individual
-                $('.btn-excluir').click(function() {
-                    var id = $(this).data('id');
-                    if (confirm('Tem certeza que deseja excluir este administrador?')) {
-                        window.location.href = "{% url 'administrativo:administrador_excluir' 0 %}".replace('0', id);
-                    }
-                });
-            });
         </script>
     </body>
 </html>

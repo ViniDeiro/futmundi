@@ -30,9 +30,9 @@ def login(request):
                 messages.success(request, 'Login realizado com sucesso!')
                 return redirect('administrativo:usuarios')
             else:
-                messages.error(request, 'Senha incorreta')
+                messages.error(request, 'Email ou senha incorretos')
         except Administrator.DoesNotExist:
-            messages.error(request, 'Email não encontrado')
+            messages.error(request, 'Email ou senha incorretos')
         
     return render(request, 'administrativo/login.html')
 
