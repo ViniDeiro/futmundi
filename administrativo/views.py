@@ -30,8 +30,12 @@ def login(request):
             messages.error(request, 'Email ou senha inválidos')
             return render(request, 'administrativo/login.html')
             
-        request.session['administrator_id'] = administrator.id
-        return redirect('administrativo:administradores')
+        # Salva os dados do admin na sessão com os nomes corretos das variáveis
+        request.session['admin_id'] = administrator.id
+        request.session['admin_name'] = administrator.name
+        request.session['is_root'] = administrator.is_root
+        
+        return redirect('administrativo:usuarios')
         
     return render(request, 'administrativo/login.html')
 
