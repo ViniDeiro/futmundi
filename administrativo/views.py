@@ -12,27 +12,26 @@ from .models import (
 )
 
 def login(request):
-    # Se já estiver logado, redireciona para a página inicial
-    if request.session.get('admin_id'):
-        return redirect('administrativo:usuarios')
-        
+    # Limpa as mensagens antigas
+    storage = messages.get_messages(request)
+    storage.used = True
+    
     if request.method == 'POST':
         email = request.POST.get('email')
         password = request.POST.get('password')
         
-        try:
-            admin = Administrator.objects.get(email=email)
-            if check_password(password, admin.password):
-                # Salva os dados do admin na sessão
-                request.session['admin_id'] = admin.id
-                request.session['admin_name'] = admin.name
-                request.session['is_root'] = admin.is_root
-                messages.success(request, 'Login realizado com sucesso!')
-                return redirect('administrativo:usuarios')
-            else:
-                messages.error(request, 'Email ou senha incorretos')
-        except Administrator.DoesNotExist:
-            messages.error(request, 'Email ou senha incorretos')
+        if not all([email, password]):
+            messages.error(request, 'Todos os campos são obrigatórios')
+            return render(request, 'administrativo/login.html')
+            
+        administrator = Administrator.objects.filter(email=email).first()
+        
+        if not administrator or not check_password(password, administrator.password):
+            messages.error(request, 'Email ou senha inválidos')
+            return render(request, 'administrativo/login.html')
+            
+        request.session['administrator_id'] = administrator.id
+        return redirect('administrativo:administradores')
         
     return render(request, 'administrativo/login.html')
 
@@ -126,6 +125,10 @@ def administradores(request):
     return render(request, 'administrativo/administradores.html', {'admins': admins})
 
 def administrador_novo(request):
+    # Limpa as mensagens antigas
+    storage = messages.get_messages(request)
+    storage.used = True
+    
     if request.method == 'POST':
         name = request.POST.get('name')
         email = request.POST.get('email')
@@ -207,5 +210,4 @@ def administradores_excluir_massa(request):
 def logout(request):
     # Limpa a sessão
     request.session.flush()
-    messages.success(request, 'Logout realizado com sucesso!')
     return redirect('administrativo:login') 
