@@ -126,7 +126,8 @@
                     <div class="row">
                         <div class="col-lg-12">
                             <div class="ibox-content">
-                                <form class="mt10">
+                                <form class="mt10" method="POST" action="{% url 'administrativo:ambito_editar' scope.id %}">
+                                    {% csrf_token %}
                                     <div class="row col-lg-12">                                
                                         <div class="col-lg-3">
                                             <h4>Alavancagem</h4>
@@ -135,35 +136,35 @@
                                                     <tr id="header-alav">
                                                         <th class="text-center">Nível</th>
                                                         <th class="text-center">Ponto</th>
-                                                        <th class="text-center">Preço</th>
+                                                        <th class="text-center">Futcoins</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody class="center-middle">
                                                     <tr>
                                                         <td>1</td>
                                                         <td>
-                                                            <input type="number" class="form-control input-sm" style="width: 75px;">
+                                                            <input type="number" class="form-control input-sm" style="width: 75px;" name="leverage_points_1" value="{{ levels.leverage_1.points }}">
                                                         </td>
                                                         <td>
-                                                            <input type="number" class="form-control input-sm" style="width: 75px;">
+                                                            <input type="number" class="form-control input-sm" style="width: 75px;" name="leverage_futcoins_1" value="{{ levels.leverage_1.futcoins }}">
                                                         </td>
                                                     </tr>
                                                     <tr>
                                                         <td>2</td>
                                                         <td>
-                                                            <input type="number" class="form-control input-sm" style="width: 75px;">
+                                                            <input type="number" class="form-control input-sm" style="width: 75px;" name="leverage_points_2" value="{{ levels.leverage_2.points }}">
                                                         </td>
                                                         <td>
-                                                            <input type="number" class="form-control input-sm" style="width: 75px;">
+                                                            <input type="number" class="form-control input-sm" style="width: 75px;" name="leverage_futcoins_2" value="{{ levels.leverage_2.futcoins }}">
                                                         </td>
                                                     </tr>
                                                     <tr>
                                                         <td>3</td>
                                                         <td>
-                                                            <input type="number" class="form-control input-sm" style="width: 75px;">
+                                                            <input type="number" class="form-control input-sm" style="width: 75px;" name="leverage_points_3" value="{{ levels.leverage_3.points }}">
                                                         </td>
                                                         <td>
-                                                            <input type="number" class="form-control input-sm" style="width: 75px;">
+                                                            <input type="number" class="form-control input-sm" style="width: 75px;" name="leverage_futcoins_3" value="{{ levels.leverage_3.futcoins }}">
                                                         </td>
                                                     </tr>
                                                 </tbody >
@@ -176,35 +177,35 @@
                                                     <tr id="header-seg">
                                                         <th class="text-center">Nível</th>
                                                         <th class="text-center">Ponto</th>
-                                                        <th class="text-center">Preço</th>
+                                                        <th class="text-center">Futcoins</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody class="center-middle">
                                                     <tr>
                                                         <td>1</td>
                                                         <td>
-                                                            <input type="number" class="form-control input-sm" style="width: 75px;">
+                                                            <input type="number" class="form-control input-sm" style="width: 75px;" name="insurance_points_1" value="{{ levels.insurance_1.points }}">
                                                         </td>
                                                         <td>
-                                                            <input type="number" class="form-control input-sm" style="width: 75px;">
+                                                            <input type="number" class="form-control input-sm" style="width: 75px;" name="insurance_futcoins_1" value="{{ levels.insurance_1.futcoins }}">
                                                         </td>
                                                     </tr>
                                                     <tr>
                                                         <td>2</td>
                                                         <td>
-                                                            <input type="number" class="form-control input-sm" style="width: 75px;">
+                                                            <input type="number" class="form-control input-sm" style="width: 75px;" name="insurance_points_2" value="{{ levels.insurance_2.points }}">
                                                         </td>
                                                         <td>
-                                                            <input type="number" class="form-control input-sm" style="width: 75px;">
+                                                            <input type="number" class="form-control input-sm" style="width: 75px;" name="insurance_futcoins_2" value="{{ levels.insurance_2.futcoins }}">
                                                         </td>
                                                     </tr>
                                                     <tr>
                                                         <td>3</td>
                                                         <td>
-                                                            <input type="number" class="form-control input-sm" style="width: 75px;">
+                                                            <input type="number" class="form-control input-sm" style="width: 75px;" name="insurance_points_3" value="{{ levels.insurance_3.points }}">
                                                         </td>
                                                         <td>
-                                                            <input type="number" class="form-control input-sm" style="width: 75px;">
+                                                            <input type="number" class="form-control input-sm" style="width: 75px;" name="insurance_futcoins_3" value="{{ levels.insurance_3.futcoins }}">
                                                         </td>
                                                     </tr>
                                                 </tbody>
@@ -212,8 +213,8 @@
                                         </div>
                                     </div>
                                     <div>
-                                        <button type="button" class="btn btn-success ml15" id="successToast"><i class="glyphicon glyphicon-save mr5"></i> Salvar</button> 
-                                        <button type="button" class="btn btn-danger ml15"><i class="fa fa-ban mr5"></i> Cancelar</button>  
+                                        <button type="submit" class="btn btn-success ml15" id="successToast"><i class="glyphicon glyphicon-save mr5"></i> Salvar</button> 
+                                        <a href="{% url 'administrativo:ambitos' %}" class="btn btn-danger ml15"><i class="fa fa-ban mr5"></i> Cancelar</a>  
                                     </div>
                                 </form>
                             </div>

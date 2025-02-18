@@ -2,8 +2,9 @@
 
 
 //Toastr
-$("#successToast").click(function(event) {
-  toastr.success("Salvo com sucesso.", "Pronto!!!");
+$("#successToast").closest("form").on("submit", function(event) {
+  // Não previne o envio do formulário
+  toastr.success("Salvando...", "Aguarde");
   toastr.options = {
     closeButton: true,
     debug: false,

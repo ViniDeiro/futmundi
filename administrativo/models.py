@@ -41,13 +41,104 @@ class User(models.Model):
         return self.name
 
 # Campeonatos
-class Scope(models.Model):
-    name = models.CharField(max_length=255)
-    description = models.TextField(blank=True)
+class ScopeLevel(models.Model):
+    """
+    Entity that represents a level configuration for leverage or insurance in a scope.
+    
+    Properties:
+    - scope: Reference to the parent Scope
+    - type: Type of level (leverage or insurance)
+    - level: Level number (1, 2 or 3)
+    - points: Points awarded at this level
+    - futcoins: Price in Futcoins for this level
+    - is_active: Whether this level is active
+    - created_at: Creation timestamp
+    - updated_at: Last update timestamp
+    """
+    
+    LEVEL_TYPES = [
+        ('leverage', 'Alavancagem'),
+        ('insurance', 'Seguro'),
+    ]
+    
+    scope = models.ForeignKey('Scope', on_delete=models.CASCADE, related_name='levels')
+    type = models.CharField(max_length=20, choices=LEVEL_TYPES)
+    level = models.IntegerField()  # 1, 2 ou 3
+    points = models.IntegerField(default=0)
+    futcoins = models.IntegerField(default=0)  # Preço em Futcoins
     is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'scope_levels'
+        verbose_name = 'Nível de Âmbito'
+        verbose_name_plural = 'Níveis de Âmbito'
+        unique_together = ['scope', 'type', 'level']  # Garante que não haja duplicidade
+
+    def __str__(self):
+        return f"{self.get_type_display()} Nível {self.level} - {self.scope.name}"
+
+    def save(self, *args, **kwargs):
+        # Garante que valores não sejam negativos
+        self.points = max(0, self.points)
+        self.futcoins = max(0, self.futcoins)
+        super().save(*args, **kwargs)
+
+class Scope(models.Model):
+    """
+    Entity that represents a competition scope in the system.
+    
+    Properties:
+    - name: Scope name
+    - type: Scope type (state, national, continental, worldwide)
+    - boost: Boost points for this scope
+    - futcoins: Base price in Futcoins
+    - is_active: Whether this scope is active
+    - is_default: Whether this is a default scope that cannot be deleted
+    - created_at: Creation timestamp
+    - updated_at: Last update timestamp
+    
+    Default Scopes:
+    - State: Basic regional scope
+    - National: Country-wide scope
+    - Continental: Continent-wide scope
+    - Worldwide: Global scope
+    
+    Each scope has:
+    - 3 leverage levels with specific points and prices
+    - 3 insurance levels with specific points and prices
+    """
+    
+    SCOPE_TYPES = [
+        ('estadual', 'Estadual'),
+        ('nacional', 'Nacional'),
+        ('continental', 'Continental'),
+        ('mundial', 'Mundial'),
+    ]
+    
+    name = models.CharField(max_length=255)
+    type = models.CharField(max_length=20, choices=SCOPE_TYPES, default='estadual')
+    boost = models.IntegerField(default=0)
+    futcoins = models.IntegerField(default=0)  # Preço base em Futcoins
+    is_active = models.BooleanField(default=True)
+    is_default = models.BooleanField(default=False)
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         db_table = 'scopes'
+        verbose_name = 'Âmbito'
+        verbose_name_plural = 'Âmbitos'
+
+    def __str__(self):
+        return self.name
+
+    def save(self, *args, **kwargs):
+        # Garante que valores não sejam negativos
+        self.boost = max(0, self.boost)
+        self.futcoins = max(0, self.futcoins)
+        super().save(*args, **kwargs)
 
 class Championship(models.Model):
     name = models.CharField(max_length=255)

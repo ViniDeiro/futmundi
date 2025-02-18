@@ -8,7 +8,7 @@ from .models import (
     User, Scope, Championship, Template, Team,
     FutcoinPackage, Plan, ClassicLeague, Player,
     Continent, Country, State, Parameter, Term, 
-    Notification, Administrator
+    Notification, Administrator, ScopeLevel
 )
 
 def login(request):
@@ -46,10 +46,123 @@ def usuario_editar(request):
     return render(request, 'administrativo/usuario-editar.html')
 
 def ambitos(request):
-    return render(request, 'administrativo/ambitos.html')
+    """
+    Lista os âmbitos disponíveis.
+    """
+    # Garante que os âmbitos padrão existam
+    create_default_scopes()
+    
+    # Obtém todos os âmbitos ordenados por tipo
+    scopes = Scope.objects.all().order_by('type')
+    
+    return render(request, 'administrativo/ambitos.html', {
+        'scopes': scopes
+    })
 
-def ambito_editar(request):
-    return render(request, 'administrativo/ambito-editar.html')
+def ambito_editar(request, id=None):
+    """
+    Edita um âmbito existente.
+    """
+    scope = get_object_or_404(Scope, id=id)
+    
+    # Carrega os níveis de alavancagem e seguro
+    levels = {}
+    for level in scope.levels.all():
+        levels[f'{level.type}_{level.level}'] = level
+    
+    if request.method == 'POST':
+        # Atualiza os dados do âmbito
+        scope.boost = max(0, int(request.POST.get('boost', 0)))
+        scope.futcoins = max(0, int(request.POST.get('futcoins', 0)))
+        scope.save()
+        
+        # Atualiza os níveis de alavancagem
+        for level in range(1, 4):
+            leverage = levels[f'leverage_{level}']
+            leverage.points = max(0, int(request.POST.get(f'leverage_points_{level}', 0)))
+            leverage.futcoins = max(0, int(request.POST.get(f'leverage_futcoins_{level}', 0)))
+            leverage.save()
+        
+        # Atualiza os níveis de seguro
+        for level in range(1, 4):
+            insurance = levels[f'insurance_{level}']
+            insurance.points = max(0, int(request.POST.get(f'insurance_points_{level}', 0)))
+            insurance.futcoins = max(0, int(request.POST.get(f'insurance_futcoins_{level}', 0)))
+            insurance.save()
+        
+        messages.success(request, 'Âmbito atualizado com sucesso!')
+        return redirect('administrativo:ambitos')
+    
+    # Obtém os tipos de âmbito para o select
+    scope_types = Scope.SCOPE_TYPES
+    
+    return render(request, 'administrativo/ambito-editar.html', {
+        'scope': scope,
+        'scope_types': scope_types,
+        'levels': levels
+    })
+
+def create_default_scopes():
+    """
+    Cria os 4 âmbitos padrão se eles não existirem.
+    """
+    default_scopes = [
+        {
+            'name': 'Estadual',
+            'type': 'estadual',
+            'boost': 100,
+            'futcoins': 1000,
+            'is_default': True
+        },
+        {
+            'name': 'Nacional',
+            'type': 'nacional',
+            'boost': 200,
+            'futcoins': 2000,
+            'is_default': True
+        },
+        {
+            'name': 'Continental',
+            'type': 'continental',
+            'boost': 300,
+            'futcoins': 3000,
+            'is_default': True
+        },
+        {
+            'name': 'Mundial',
+            'type': 'mundial',
+            'boost': 400,
+            'futcoins': 4000,
+            'is_default': True
+        }
+    ]
+    
+    for scope_data in default_scopes:
+        scope, created = Scope.objects.get_or_create(
+            type=scope_data['type'],
+            defaults=scope_data
+        )
+        
+        if created:
+            # Cria níveis de alavancagem
+            for level in range(1, 4):
+                ScopeLevel.objects.create(
+                    scope=scope,
+                    type='leverage',
+                    level=level,
+                    points=level * 100,
+                    futcoins=level * 1000
+                )
+            
+            # Cria níveis de seguro
+            for level in range(1, 4):
+                ScopeLevel.objects.create(
+                    scope=scope,
+                    type='insurance',
+                    level=level,
+                    points=level * 50,
+                    futcoins=level * 500
+                )
 
 def campeonatos(request):
     return render(request, 'administrativo/campeonatos.html')

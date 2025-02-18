@@ -10,7 +10,7 @@ urlpatterns = [
     
     # Campeonatos
     path('ambitos/', views.ambitos, name='ambitos'),
-    path('ambito-editar/', views.ambito_editar, name='ambito_editar'),
+    path('ambito/editar/<int:id>/', views.ambito_editar, name='ambito_editar'),
     path('campeonatos/', views.campeonatos, name='campeonatos'),
     path('campeonato-novo/', views.campeonato_novo, name='campeonato_novo'),
     path('templates/', views.templates, name='templates'),
