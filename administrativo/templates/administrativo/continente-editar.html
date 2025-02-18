@@ -5,50 +5,36 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-        <title>Novo Continente</title>
+        <title>Editar Continente</title>
 
         <link href="{% static 'administrativo/css/bootstrap.min.css' %}" rel="stylesheet">
         <link href="{% static 'administrativo/font-awesome/css/font-awesome.css' %}" rel="stylesheet">
-        
         <link href="{% static 'administrativo/css/plugins/toastr/toastr.min.css' %}" rel="stylesheet">
-
         <link href="{% static 'administrativo/css/animate.css' %}" rel="stylesheet">
         <link href="{% static 'administrativo/css/style.css' %}" rel="stylesheet">  
-        
         <!-- Custom -->      
         <link href="{% static 'administrativo/css/custom.css' %}" rel="stylesheet">
-
         <!-- Favicon -->
         <link rel="icon" href="img/futmundi.ico" type="image/png">
     </head>
     <body>
         <div id="wrapper">
-            <nav class="navbar-default navbar-static-side">
+            <nav class="navbar-default navbar-static-side" role="navigation">
                 <div class="sidebar-collapse">
                     <ul class="nav metismenu" id="side-menu">
                         <li class="nav-header">
                             <div class="dropdown profile-element">
-                                <a href="{% url "administrativo:usuarios" %}">
-                                    <img src="{% static 'administrativo/img/logo.svg' %}" alt="Futmundi logo">
+                                <img alt="image" class="rounded-circle" src="{% static 'administrativo/img/profile_small.jpg' %}"/>
+                                <a data-toggle="dropdown" class="dropdown-toggle" href="#">
+                                    <span class="block m-t-xs font-bold">Andrews Cristhian</span>
                                 </a>
                             </div>
                             <div class="logo-element">
-                                <a href="{% url "administrativo:usuarios" %}">
-                                    <img src="{% static 'administrativo/img/logosm.svg' %}" alt="Futmundi logo">
-                                </a>                            
+                                IN+
                             </div>
                         </li>
-                        <li class="active">
-                            <a href="{% url "administrativo:usuarios" %}"><i class="fa fa-user"></i> <span class="nav-label">Usuários</span></a>
-                        </li>
                         <li>
-                            <a href="#"><i class="fa fa-trophy"></i> <span class="nav-label">Campeonatos</span><span class="fa arrow"></span></a>
-                            <ul class="nav nav-second-level collapse">
-                                <li><a href="{% url "administrativo:ambitos" %}">Âmbitos</a></li>
-                                <li><a href="{% url "administrativo:campeonatos" %}">Campeonatos</a></li>
-                                <li><a href="{% url "administrativo:templates" %}">Templates</a></li>
-                                <li><a href="{% url "administrativo:times" %}">Times</a></li>
-                            </ul>
+                            <a href="{% url "administrativo:home" %}"><i class="fa fa-home"></i> <span class="nav-label">Home</span></a>
                         </li>
                         <li>
                             <a href="#"><i class="fa fa-shopping-cart"></i> <span class="nav-label">Pacotes</span><span class="fa arrow"></span></a>
@@ -71,17 +57,6 @@
                                 <li><a href="{% url "administrativo:paises" %}">Países</a></li>
                                 <li><a href="{% url "administrativo:estados" %}">Estados</a></li>
                             </ul>
-                        </li>
-                        <li>
-                            <a href="#"><i class="fa fa-gear"></i> <span class="nav-label">Configurações</span><span class="fa arrow"></span></a>
-                            <ul class="nav nav-second-level collapse">
-                                <li><a href="{% url "administrativo:parametros" %}">Parâmetros</a></li>
-                                <li><a href="{% url "administrativo:termo" %}">Termo</a></li>
-                                <li><a href="{% url "administrativo:notificacoes" %}">Notificações</a></li>
-                            </ul>
-                        </li>
-                        <li>
-                            <a href="{% url "administrativo:relatorios" %}"><i class="fa fa-pie-chart"></i> <span class="nav-label">Relatórios</span></a>
                         </li>
                     </ul>
                 </div>
@@ -123,7 +98,7 @@
                 </div>
                 <div class="row wrapper border-bottom white-bg page-heading">
                     <div class="col-lg-10">
-                        <h2>Novo Continente</h2>
+                        <h2>Editar Continente</h2>
                     </div>
                 </div>
                 <div class="wrapper wrapper-content">
@@ -132,10 +107,10 @@
                             <div class="ibox-content">
                                 <div class="row mt10">
                                     <div class="col-lg-4">
-                                        <form class="mt10" method="post" action="{% url 'administrativo:continente_novo' %}">
+                                        <form class="mt10" method="post" action="{% url 'administrativo:continente_editar' continent.id %}">
                                             {% csrf_token %}
                                             <div class="form-group col-lg-8">
-                                                <input type="text" id="name" name="name" class="form-control" required>
+                                                <input type="text" id="name" name="name" class="form-control" value="{{ continent.name }}" required>
                                                 <label class="form-control-placeholder" for="name">Nome</label>
                                             </div>
                                             <div>
@@ -152,15 +127,15 @@
                                                 </tr>
                                             </thead>
                                             <tbody>
+                                                {% for country in countries %}
                                                 <tr>
-                                                    <td>País 1</td>
+                                                    <td>{{ country.name }}</td>
                                                 </tr>
+                                                {% empty %}
                                                 <tr>
-                                                    <td>País 2</td>
+                                                    <td>Nenhum país vinculado</td>
                                                 </tr>
-                                                <tr>
-                                                    <td>País 3</td>
-                                                </tr>
+                                                {% endfor %}
                                             </tbody>
                                         </table>
                                     </div>
@@ -172,15 +147,15 @@
                                                 </tr>
                                             </thead>
                                             <tbody>
+                                                {% for championship in championships %}
                                                 <tr>
-                                                    <td>Campeonato 1</td>
+                                                    <td>{{ championship.name }}</td>
                                                 </tr>
+                                                {% empty %}
                                                 <tr>
-                                                    <td>Campeonato 2</td>
+                                                    <td>Nenhum campeonato vinculado</td>
                                                 </tr>
-                                                <tr>
-                                                    <td>Campeonato 3</td>
-                                                </tr>
+                                                {% endfor %}
                                             </tbody>
                                         </table>
                                     </div>
@@ -191,6 +166,7 @@
                 </div>
             </div>
         </div>
+
         <!-- Mainly scripts -->
         <script src="{% static 'administrativo/js/jquery-3.4.1.min.js' %}"></script>
         <script src="{% static 'administrativo/js/popper.min.js' %}"></script>
@@ -202,7 +178,7 @@
         <script src="{% static 'administrativo/js/plugins/pace/pace.min.js' %}"></script>
         <!-- Toastr script -->
         <script src="{% static 'administrativo/js/plugins/toastr/toastr.min.js' %}"></script>
-        <script src="{% static 'administrativo/js/settings.js' %}"></script>
+
         <script>
             $(document).ready(function() {
                 {% if messages %}
@@ -213,4 +189,4 @@
             });
         </script>
     </body>
-</html>
+</html> 

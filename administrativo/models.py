@@ -116,6 +116,13 @@ class Scope(models.Model):
         ('continental', 'Continental'),
         ('mundial', 'Mundial'),
     ]
+
+    SCOPE_TYPE_ORDER = {
+        'estadual': 1,
+        'nacional': 2,
+        'continental': 3,
+        'mundial': 4
+    }
     
     name = models.CharField(max_length=255)
     type = models.CharField(max_length=20, choices=SCOPE_TYPES, default='estadual')
@@ -130,6 +137,7 @@ class Scope(models.Model):
         db_table = 'scopes'
         verbose_name = 'Âmbito'
         verbose_name_plural = 'Âmbitos'
+        ordering = ['type']  # Ordenação padrão por tipo
 
     def __str__(self):
         return self.name
@@ -205,33 +213,72 @@ class Player(models.Model):
 
 # Locais
 class Continent(models.Model):
-    nome = models.CharField(max_length=100, null=True, blank=True)
-    data_criacao = models.DateTimeField(default=timezone.now)
+    name = models.CharField(max_length=100, unique=True)
+    created_at = models.DateTimeField(default=timezone.now)
 
     class Meta:
         verbose_name = 'Continente'
         verbose_name_plural = 'Continentes'
+        ordering = ['name']  # Ordenação padrão por nome
 
     def __str__(self):
-        return self.nome or ''
+        return self.name
+
+    def can_delete(self):
+        """
+        Verifica se o continente pode ser excluído checando suas vinculações
+        """
+        return not (self.country_set.exists() or self.championship_set.exists())
+
+    def get_related_data(self):
+        """
+        Retorna dados relacionados ao continente
+        """
+        return {
+            'countries': self.country_set.order_by('name').all(),
+            'championships': self.championship_set.order_by('name').all()
+        }
 
 class Country(models.Model):
-    name = models.CharField(max_length=255)
-    code = models.CharField(max_length=2)
-    continent = models.ForeignKey(Continent, on_delete=models.CASCADE)
-    is_active = models.BooleanField(default=True)
+    name = models.CharField(max_length=100, unique=True)
+    continent = models.ForeignKey(Continent, on_delete=models.PROTECT)
+    created_at = models.DateTimeField(default=timezone.now)
 
     class Meta:
-        db_table = 'countries'
+        verbose_name = 'País'
+        verbose_name_plural = 'Países'
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+
+    def can_delete(self):
+        """
+        Verifica se o país pode ser excluído checando suas vinculações
+        """
+        return not self.state_set.exists()
+
+    def get_related_data(self):
+        """
+        Retorna dados relacionados ao país
+        """
+        return {
+            'states': self.state_set.order_by('name').all()
+        }
 
 class State(models.Model):
-    name = models.CharField(max_length=255)
-    code = models.CharField(max_length=2)
-    country = models.ForeignKey(Country, on_delete=models.CASCADE)
-    is_active = models.BooleanField(default=True)
+    name = models.CharField(max_length=100)
+    country = models.ForeignKey(Country, on_delete=models.PROTECT)
+    created_at = models.DateTimeField(default=timezone.now)
 
     class Meta:
-        db_table = 'states'
+        verbose_name = 'Estado'
+        verbose_name_plural = 'Estados'
+        ordering = ['name']
+        unique_together = ['name', 'country']  # Nome único por país
+
+    def __str__(self):
+        return f"{self.name} - {self.country.name}"
 
 # Configurações
 class Parameter(models.Model):

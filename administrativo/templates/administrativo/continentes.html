@@ -17,6 +17,7 @@
           
         <link href="{% static 'administrativo/css/plugins/awesome-bootstrap-checkbox/awesome-bootstrap-checkbox.css' %}" rel="stylesheet">        
         <link href="{% static 'administrativo/css/plugins/jasny/jasny-bootstrap.min.css' %}" rel="stylesheet">
+        <link href="{% static 'administrativo/css/plugins/toastr/toastr.min.css' %}" rel="stylesheet">
         <!-- Custom -->      
         <link href="{% static 'administrativo/css/custom.css' %}" rel="stylesheet">
         <!-- Favicon -->
@@ -134,14 +135,18 @@
                                 <div class="ibox-content">
                                     <div class="group-options-left ml5">
                                         <a href="{% url "administrativo:continente_novo" %}" class="btn btn-success btn-sm" title="Novo"><i class="fa fa-plus"></i></a>
-                                        <a href="#" class="btn btn-primary btn-sm" title="Importar"><i class="fa fa-upload"></i></a>  
+                                        <form id="importForm" action="{% url 'administrativo:continente_importar' %}" method="post" enctype="multipart/form-data" style="display: inline;">
+                                            {% csrf_token %}
+                                            <input type="file" name="file" id="importFile" style="display: none;" accept=".xlsx">
+                                            <button type="button" class="btn btn-primary btn-sm" title="Importar" onclick="document.getElementById('importFile').click();"><i class="fa fa-upload"></i></button>
+                                        </form>
                                     </div>
                                     <div class="group-options-right mr10">
-                                        <a class="btn btn-default btn-sm" title="Exportar"><i class="glyphicon glyphicon-download-alt"></i></a>
-                                        <a class="btn btn-default btn-sm" title="Excluir"><i class="glyphicon glyphicon-trash" data-toggle="modal" data-target="#modalAlert"></i></a>
+                                        <a href="{% url 'administrativo:continente_exportar' %}" class="btn btn-default btn-sm" title="Exportar"><i class="glyphicon glyphicon-download-alt"></i></a>
+                                        <button class="btn btn-default btn-sm" title="Excluir" onclick="deleteSelected()"><i class="glyphicon glyphicon-trash"></i></button>
                                     </div>
                                     <div class="table-responsive">
-                                        <table class="table table-striped table-bordered table-hover dataTables-continentes" >
+                                        <table class="table table-striped table-bordered table-hover dataTables-continentes">
                                             <thead>
                                                 <tr>
                                                     <th class="per10 center-middle">
@@ -156,34 +161,22 @@
                                                 </tr>
                                             </thead>
                                             <tbody>
+                                                {% for continent in continents %}
                                                 <tr>
                                                     <td class="center-middle">
                                                         <div class="checkbox checkbox-success">
-                                                            <input id="checkbox2" type="checkbox">
-                                                            <label for="checkbox2"></label>
+                                                            <input id="checkbox{{ continent.id }}" type="checkbox" name="selected_items" value="{{ continent.id }}">
+                                                            <label for="checkbox{{ continent.id }}"></label>
                                                         </div>
                                                     </td>
-                                                    <td>América</td>
-                                                    <td>01/02/2020</td>
+                                                    <td>{{ continent.name }}</td>
+                                                    <td>{{ continent.created_at|date:"d/m/Y" }}</td>
                                                     <td>
-                                                        <button type="button" class="btn btn-info btn-xs" title="Editar"><i class="glyphicon glyphicon-pencil"></i></button>
-                                                        <button type="button" class="btn btn-danger btn-xs" title="Excluir"><i class="glyphicon glyphicon-trash" data-toggle="modal" data-target="#modalAlert2"></i></button>
+                                                        <a href="{% url 'administrativo:continente_editar' continent.id %}" class="btn btn-info btn-xs" title="Editar"><i class="glyphicon glyphicon-pencil"></i></a>
+                                                        <button type="button" class="btn btn-danger btn-xs" title="Excluir" onclick="confirmDelete({{ continent.id }})"><i class="glyphicon glyphicon-trash"></i></button>
                                                     </td>
                                                 </tr>
-                                                <tr>
-                                                    <td class="center-middle">
-                                                        <div class="checkbox checkbox-success">
-                                                            <input id="checkbox3" type="checkbox">
-                                                            <label for="checkbox3"></label>
-                                                        </div>
-                                                    </td>
-                                                    <td>Europa</td>
-                                                    <td>28/03/2020</td>
-                                                    <td>
-                                                        <button type="button" class="btn btn-info btn-xs" title="Editar"><i class="glyphicon glyphicon-pencil"></i></button>
-                                                        <button type="button" class="btn btn-danger btn-xs" title="Excluir"><i class="glyphicon glyphicon-trash" data-toggle="modal" data-target="#modalAlert2"></i></button>
-                                                    </td>
-                                                </tr>
+                                                {% endfor %}
                                             </tbody>
                                         </table>
                                     </div>
@@ -195,36 +188,36 @@
             </div>
         </div>
         <!-- Modals -->
-        <div class="modal inmodal" id="modalAlert" tabindex="-1" role="dialog"  aria-hidden="true">
+        <div class="modal inmodal" id="modalDelete" tabindex="-1" role="dialog" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered modal-sm">
                 <div class="modal-content animated fadeIn">
                     <div class="modal-header">
-                        <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
-                        <h4 class="modal-title">Tem certeza?</h4>
+                        <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Fechar</span></button>
+                        <h4 class="modal-title">Confirmar Exclusão</h4>
                     </div>
                     <div class="modal-body">
-                        <p>Tem certeza que deseja excluir os registros selecionados?</p>
+                        <p>Tem certeza que deseja excluir este continente?</p>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
-                        <button type="button" class="btn btn-danger">Deletar</button>
+                        <a href="#" id="deleteButton" class="btn btn-danger">Excluir</a>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="modal inmodal" id="modalAlert2" tabindex="-1" role="dialog"  aria-hidden="true">
+        <div class="modal inmodal" id="modalDeleteSelected" tabindex="-1" role="dialog" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered modal-sm">
                 <div class="modal-content animated fadeIn">
                     <div class="modal-header">
-                        <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
-                        <h4 class="modal-title">Tem certeza?</h4>
+                        <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Fechar</span></button>
+                        <h4 class="modal-title">Confirmar Exclusão</h4>
                     </div>
                     <div class="modal-body">
-                        <p>Tem certeza que deseja excluir o registro selecionado?</p>
+                        <p>Tem certeza que deseja excluir os continentes selecionados?</p>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
-                        <button type="button" class="btn btn-danger">Deletar</button>
+                        <button type="button" class="btn btn-danger" onclick="executeDeleteSelected()">Excluir</button>
                     </div>
                 </div>
             </div>
@@ -243,7 +236,82 @@
         <script src="{% static 'administrativo/js/plugins/pace/pace.min.js' %}"></script>
         <!-- Jasny -->
         <script src="{% static 'administrativo/js/plugins/jasny/jasny-bootstrap.min.js' %}"></script>
+        <script src="{% static 'administrativo/js/plugins/toastr/toastr.min.js' %}"></script>
         <script src="{% static 'administrativo/js/plugins/checkAll/checkAll.js' %}"></script>
-        <script src="{% static 'administrativo/js/page-level.js' %}"></script>
+        <script>
+            $(document).ready(function() {
+                // Inicializa o DataTable
+                $(".dataTables-continentes").DataTable({
+                    pageLength: 10,
+                    responsive: true,
+                    dom: '<"html5buttons"B>lTfgitp',
+                    buttons: [],
+                    columnDefs: [{ orderable: false, targets: [0, 3] }],
+                    order: [[1, 'asc']]  // Ordena por nome
+                });
+
+                // Configura o upload automático ao selecionar arquivo
+                $("#importFile").change(function() {
+                    if (this.files.length > 0) {
+                        $("#importForm").submit();
+                    }
+                });
+
+                // Configura mensagens do toastr
+                {% if messages %}
+                    {% for message in messages %}
+                        toastr.{{ message.tags }}('{{ message }}');
+                    {% endfor %}
+                {% endif %}
+            });
+
+            // Função para confirmar exclusão individual
+            function confirmDelete(id) {
+                $("#deleteButton").attr("href", "{% url 'administrativo:continente_excluir' 0 %}".replace('0', id));
+                $("#modalDelete").modal('show');
+            }
+
+            // Função para mostrar modal de confirmação de exclusão em massa
+            function deleteSelected() {
+                var selected = $("input[name='selected_items']:checked");
+                if (selected.length > 0) {
+                    $("#modalDeleteSelected").modal('show');
+                } else {
+                    toastr.warning('Selecione pelo menos um continente para excluir.');
+                }
+            }
+
+            // Função para executar a exclusão em massa
+            function executeDeleteSelected() {
+                var ids = [];
+                $("input[name='selected_items']:checked").each(function() {
+                    ids.push($(this).val());
+                });
+
+                $.ajax({
+                    url: "{% url 'administrativo:continente_excluir_em_massa' %}",
+                    type: "POST",
+                    data: {
+                        ids: ids,
+                        csrfmiddlewaretoken: "{{ csrf_token }}"
+                    },
+                    success: function(response) {
+                        $("#modalDeleteSelected").modal('hide');
+                        if (response.success) {
+                            toastr.success(response.message);
+                            setTimeout(function() {
+                                window.location.reload();
+                            }, 1000);
+                        } else {
+                            toastr.error(response.message);
+                        }
+                    },
+                    error: function() {
+                        $("#modalDeleteSelected").modal('hide');
+                        toastr.error('Erro ao excluir continentes.');
+                    }
+                });
+            }
+        </script>
     </body>
 </html>

@@ -3,24 +3,26 @@
 
 //Toastr
 $("#successToast").closest("form").on("submit", function(event) {
-  // Não previne o envio do formulário
-  toastr.success("Salvando...", "Aguarde");
-  toastr.options = {
-    closeButton: true,
-    debug: false,
-    progressBar: false,
-    preventDuplicates: false,
-    positionClass: "toast-top-right",
-    onclick: null,
-    showDuration: "400",
-    hideDuration: "1000",
-    timeOut: "1000",
-    extendedTimeOut: "400",
-    showEasing: "swing",
-    hideEasing: "linear",
-    showMethod: "fadeIn",
-    hideMethod: "fadeOut"
-  };
+  // Verifica se o formulário é válido antes de mostrar a mensagem
+  if (this.checkValidity()) {
+    toastr.success("Salvando...", "Aguarde");
+    toastr.options = {
+      closeButton: true,
+      debug: false,
+      progressBar: false,
+      preventDuplicates: false,
+      positionClass: "toast-top-right",
+      onclick: null,
+      showDuration: "400",
+      hideDuration: "1000",
+      timeOut: "1000",
+      extendedTimeOut: "400",
+      showEasing: "swing",
+      hideEasing: "linear",
+      showMethod: "fadeIn",
+      hideMethod: "fadeOut"
+    };
+  }
 });
 
 //TableDND

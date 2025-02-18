@@ -31,7 +31,12 @@ urlpatterns = [
     
     # Locais
     path('continentes/', views.continentes, name='continentes'),
-    path('continente-novo/', views.continente_novo, name='continente_novo'),
+    path('continente/novo/', views.continente_novo, name='continente_novo'),
+    path('continente/editar/<int:id>/', views.continente_editar, name='continente_editar'),
+    path('continente/excluir/<int:id>/', views.continente_excluir, name='continente_excluir'),
+    path('continente/excluir-em-massa/', views.continente_excluir_em_massa, name='continente_excluir_em_massa'),
+    path('continente/exportar/', views.continente_exportar, name='continente_exportar'),
+    path('continente/importar/', views.continente_importar, name='continente_importar'),
     path('paises/', views.paises, name='paises'),
     path('pais-novo/', views.pais_novo, name='pais_novo'),
     path('estados/', views.estados, name='estados'),

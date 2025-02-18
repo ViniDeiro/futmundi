@@ -1,15 +1,18 @@
 from django.shortcuts import render, get_object_or_404, redirect
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.contrib import messages
 from django.utils import timezone
 from django.contrib.auth.hashers import make_password, check_password
 from django.urls import reverse
+from django.db import transaction
+from django.core.exceptions import ValidationError
 from .models import (
     User, Scope, Championship, Template, Team,
     FutcoinPackage, Plan, ClassicLeague, Player,
     Continent, Country, State, Parameter, Term, 
     Notification, Administrator, ScopeLevel
 )
+from .utils import export_to_excel, import_from_excel
 
 def login(request):
     # Limpa as mensagens antigas
@@ -53,7 +56,18 @@ def ambitos(request):
     create_default_scopes()
     
     # Obtém todos os âmbitos ordenados por tipo
-    scopes = Scope.objects.all().order_by('type')
+    scopes = Scope.objects.all().order_by(
+        'type'
+    ).extra(
+        select={'type_order': """CASE 
+            WHEN type = 'estadual' THEN 1
+            WHEN type = 'nacional' THEN 2
+            WHEN type = 'continental' THEN 3
+            WHEN type = 'mundial' THEN 4
+            ELSE 5
+        END"""},
+        order_by=['type_order']
+    )
     
     return render(request, 'administrativo/ambitos.html', {
         'scopes': scopes
@@ -204,10 +218,163 @@ def futligas_jogadores(request):
     return render(request, 'administrativo/futligas-jogadores.html')
 
 def continentes(request):
-    return render(request, 'administrativo/continentes.html')
+    """
+    Lista todos os continentes ordenados por nome
+    """
+    continents = Continent.objects.all().order_by('name')
+    return render(request, 'administrativo/continentes.html', {'continents': continents})
 
 def continente_novo(request):
+    """
+    Cria um novo continente
+    """
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        
+        if not name:
+            messages.error(request, 'O nome é obrigatório.')
+            return redirect('administrativo:continente_novo')
+        
+        try:
+            with transaction.atomic():
+                Continent.objects.create(name=name)
+                messages.success(request, 'Continente criado com sucesso!')
+                return redirect('administrativo:continentes')
+        except ValidationError as e:
+            messages.error(request, str(e))
+        except Exception as e:
+            messages.error(request, 'Erro ao criar continente.')
+        
+        return redirect('administrativo:continente_novo')
+    
     return render(request, 'administrativo/continente-novo.html')
+
+def continente_editar(request, id):
+    """
+    Edita um continente existente
+    """
+    continent = get_object_or_404(Continent, id=id)
+    
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        
+        if not name:
+            messages.error(request, 'O nome é obrigatório.')
+            return redirect('administrativo:continente_editar', id=id)
+        
+        try:
+            with transaction.atomic():
+                continent.name = name
+                continent.full_clean()
+                continent.save()
+                messages.success(request, 'Continente atualizado com sucesso!')
+                return redirect('administrativo:continentes')
+        except ValidationError as e:
+            messages.error(request, str(e))
+        except Exception as e:
+            messages.error(request, 'Erro ao atualizar continente.')
+        
+        return redirect('administrativo:continente_editar', id=id)
+    
+    related_data = continent.get_related_data()
+    return render(request, 'administrativo/continente-editar.html', {
+        'continent': continent,
+        'countries': related_data['countries'],
+        'championships': related_data['championships']
+    })
+
+def continente_excluir(request, id):
+    """
+    Exclui um continente
+    """
+    continent = get_object_or_404(Continent, id=id)
+    
+    if not continent.can_delete():
+        messages.error(request, 'Não é possível excluir o continente pois existem registros vinculados.')
+        return redirect('administrativo:continentes')
+    
+    try:
+        continent.delete()
+        messages.success(request, 'Continente excluído com sucesso!')
+    except Exception as e:
+        messages.error(request, 'Erro ao excluir continente.')
+    
+    return redirect('administrativo:continentes')
+
+def continente_excluir_em_massa(request):
+    """
+    Exclui múltiplos continentes
+    """
+    if request.method == 'POST':
+        ids = request.POST.getlist('ids[]')
+        
+        if not ids:
+            return JsonResponse({'success': False, 'message': 'Nenhum continente selecionado.'})
+        
+        try:
+            with transaction.atomic():
+                continents = Continent.objects.filter(id__in=ids)
+                # Filtra apenas os que podem ser excluídos
+                deletable = [c for c in continents if c.can_delete()]
+                
+                if not deletable:
+                    return JsonResponse({
+                        'success': False,
+                        'message': 'Nenhum dos continentes selecionados pode ser excluído pois possuem registros vinculados.'
+                    })
+                
+                # Exclui os continentes que podem ser excluídos
+                for continent in deletable:
+                    continent.delete()
+                
+                return JsonResponse({
+                    'success': True,
+                    'message': f'{len(deletable)} continente(s) excluído(s) com sucesso!'
+                })
+                
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': 'Erro ao excluir continentes.'
+            })
+    
+    return JsonResponse({'success': False, 'message': 'Método não permitido.'})
+
+def continente_exportar(request):
+    """
+    Exporta os continentes para Excel
+    """
+    continents = Continent.objects.all().order_by('name')
+    fields = [
+        ('name', 'Nome'),
+        ('created_at', 'Data Criação')
+    ]
+    return export_to_excel(continents, fields, 'continentes.xlsx')
+
+def continente_importar(request):
+    """
+    Importa continentes de um arquivo Excel
+    """
+    if request.method == 'POST' and request.FILES.get('file'):
+        fields = [('name', 'Nome')]
+        unique_fields = ['name']
+        
+        success, message = import_from_excel(
+            request.FILES['file'],
+            Continent,
+            fields,
+            unique_fields
+        )
+        
+        if success:
+            messages.success(request, message)
+        else:
+            messages.error(request, message)
+        
+        return redirect('administrativo:continentes')
+    
+    messages.error(request, 'Nenhum arquivo enviado.')
+    return redirect('administrativo:continentes')
 
 def paises(request):
     return render(request, 'administrativo/paises.html')

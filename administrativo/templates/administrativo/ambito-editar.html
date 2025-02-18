@@ -143,10 +143,26 @@
                                                     <tr>
                                                         <td>1</td>
                                                         <td>
-                                                            <input type="number" class="form-control input-sm" style="width: 75px;" name="leverage_points_1" value="{{ levels.leverage_1.points }}">
+                                                            <input type="number" 
+                                                                   class="form-control input-sm" 
+                                                                   style="width: 75px;" 
+                                                                   name="leverage_points_1" 
+                                                                   value="{{ levels.leverage_1.points }}"
+                                                                   required
+                                                                   min="0"
+                                                                   oninvalid="this.setCustomValidity('Por favor, preencha este campo')"
+                                                                   oninput="this.setCustomValidity('')">
                                                         </td>
                                                         <td>
-                                                            <input type="number" class="form-control input-sm" style="width: 75px;" name="leverage_futcoins_1" value="{{ levels.leverage_1.futcoins }}">
+                                                            <input type="number" 
+                                                                   class="form-control input-sm" 
+                                                                   style="width: 75px;" 
+                                                                   name="leverage_futcoins_1" 
+                                                                   value="{{ levels.leverage_1.futcoins }}"
+                                                                   required
+                                                                   min="0"
+                                                                   oninvalid="this.setCustomValidity('Por favor, preencha este campo')"
+                                                                   oninput="this.setCustomValidity('')">
                                                         </td>
                                                     </tr>
                                                     <tr>

@@ -159,6 +159,10 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 10
 }
 
+# Session settings
+SESSION_COOKIE_AGE = 60 * 60 * 24 * 30  # 30 dias em segundos
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False  # Não expira ao fechar o navegador
+
 # CORS settings
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",  # React frontend
