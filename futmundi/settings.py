@@ -162,6 +162,10 @@ REST_FRAMEWORK = {
 # Session settings
 SESSION_COOKIE_AGE = 60 * 60 * 24 * 30  # 30 dias em segundos
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False  # Não expira ao fechar o navegador
+SESSION_SAVE_EVERY_REQUEST = True  # Atualiza o cookie a cada requisição
+SESSION_COOKIE_SECURE = False  # Permite cookies em conexões não-HTTPS em desenvolvimento
+SESSION_COOKIE_HTTPONLY = True  # Previne acesso via JavaScript por segurança
+SESSION_COOKIE_SAMESITE = 'Lax'  # Configuração de segurança para cookies
 
 # CORS settings
 CORS_ALLOWED_ORIGINS = [
