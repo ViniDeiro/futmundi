@@ -1,5 +1,5 @@
-{% load static %}
 <!DOCTYPE html>
+{% load static %}
 <html lang="en">
     <head>
         <meta charset="utf-8">
@@ -23,7 +23,7 @@
         <link href="{% static 'administrativo/css/custom.css' %}" rel="stylesheet">
 
         <!-- Favicon -->
-        <link rel="icon" href="img/futmundi.ico" type="image/png">
+        <link rel="icon" href="{% static 'administrativo/img/futmundi.ico' %}" type="image/png">
     </head>
     <body>
         <div id="wrapper">
@@ -32,60 +32,60 @@
                     <ul class="nav metismenu" id="side-menu">
                         <li class="nav-header">
                             <div class="dropdown profile-element">
-                                <a href="{% url "administrativo:usuarios" %}">
+                                <a href="{% url 'administrativo:usuarios' %}">
                                     <img src="{% static 'administrativo/img/logo.svg' %}" alt="Futmundi logo">
                                 </a>
                             </div>
                             <div class="logo-element">
-                                <a href="{% url "administrativo:usuarios" %}">
+                                <a href="{% url 'administrativo:usuarios' %}">
                                     <img src="{% static 'administrativo/img/logosm.svg' %}" alt="Futmundi logo">
                                 </a>                            
                             </div>
                         </li>
                         <li class="active">
-                            <a href="{% url "administrativo:usuarios" %}"><i class="fa fa-user"></i> <span class="nav-label">Usuários</span></a>
+                            <a href="{% url 'administrativo:usuarios' %}"><i class="fa fa-user"></i> <span class="nav-label">Usuários</span></a>
                         </li>
                         <li>
                             <a href="#"><i class="fa fa-trophy"></i> <span class="nav-label">Campeonatos</span><span class="fa arrow"></span></a>
                             <ul class="nav nav-second-level collapse">
-                                <li><a href="{% url "administrativo:ambitos" %}">Âmbitos</a></li>
-                                <li><a href="{% url "administrativo:campeonatos" %}">Campeonatos</a></li>
-                                <li><a href="{% url "administrativo:templates" %}">Templates</a></li>
-                                <li><a href="{% url "administrativo:times" %}">Times</a></li>
+                                <li><a href="{% url 'administrativo:ambitos' %}">Âmbitos</a></li>
+                                <li><a href="{% url 'administrativo:campeonatos' %}">Campeonatos</a></li>
+                                <li><a href="{% url 'administrativo:templates' %}">Templates</a></li>
+                                <li><a href="{% url 'administrativo:times' %}">Times</a></li>
                             </ul>
                         </li>
                         <li>
                             <a href="#"><i class="fa fa-shopping-cart"></i> <span class="nav-label">Pacotes</span><span class="fa arrow"></span></a>
                             <ul class="nav nav-second-level collapse">
-                                <li><a href="{% url "administrativo:futcoins" %}">Futcoins</a></li>
-                                <li><a href="{% url "administrativo:planos" %}">Planos</a></li>
+                                <li><a href="{% url 'administrativo:futcoins' %}">Futcoins</a></li>
+                                <li><a href="{% url 'administrativo:planos' %}">Planos</a></li>
                             </ul>
                         </li>
                         <li>
                             <a href="#"><i class="fa fa-diamond"></i> <span class="nav-label">Futligas</span><span class="fa arrow"></span></a>
                             <ul class="nav nav-second-level collapse">
-                                <li><a href="{% url "administrativo:futligas_classicas" %}">Clássicas</a></li>
-                                <li><a href="{% url "administrativo:futligas_jogadores" %}">Jogadores</a></li>
+                                <li><a href="{% url 'administrativo:futligas_classicas' %}">Clássicas</a></li>
+                                <li><a href="{% url 'administrativo:futligas_jogadores' %}">Jogadores</a></li>
                             </ul>
                         </li>
                         <li>
                             <a href="#"><i class="fa fa-globe"></i> <span class="nav-label">Locais</span><span class="fa arrow"></span></a>
                             <ul class="nav nav-second-level collapse">
-                                <li><a href="{% url "administrativo:continentes" %}">Continentes</a></li>
-                                <li><a href="{% url "administrativo:paises" %}">Países</a></li>
-                                <li><a href="{% url "administrativo:estados" %}">Estados</a></li>
+                                <li><a href="{% url 'administrativo:continentes' %}">Continentes</a></li>
+                                <li><a href="{% url 'administrativo:paises' %}">Países</a></li>
+                                <li><a href="{% url 'administrativo:estados' %}">Estados</a></li>
                             </ul>
                         </li>
                         <li>
                             <a href="#"><i class="fa fa-gear"></i> <span class="nav-label">Configurações</span><span class="fa arrow"></span></a>
                             <ul class="nav nav-second-level collapse">
-                                <li><a href="{% url "administrativo:parametros" %}">Parâmetros</a></li>
-                                <li><a href="{% url "administrativo:termo" %}">Termo</a></li>
-                                <li><a href="{% url "administrativo:notificacoes" %}">Notificações</a></li>
+                                <li><a href="{% url 'administrativo:parametros' %}">Parâmetros</a></li>
+                                <li><a href="{% url 'administrativo:termo' %}">Termo</a></li>
+                                <li><a href="{% url 'administrativo:notificacoes' %}">Notificações</a></li>
                             </ul>
                         </li>
                         <li>
-                            <a href="{% url "administrativo:relatorios" %}"><i class="fa fa-pie-chart"></i> <span class="nav-label">Relatórios</span></a>
+                            <a href="{% url 'administrativo:relatorios' %}"><i class="fa fa-pie-chart"></i> <span class="nav-label">Relatórios</span></a>
                         </li>
                     </ul>
                 </div>
@@ -106,7 +106,7 @@
                                 </a>
                                 <ul class="dropdown-menu dropdown-alerts">
                                     <li>
-                                        <a href="{% url "administrativo:administradores" %}" class="dropdown-item">
+                                        <a href="{% url 'administrativo:administradores' %}" class="dropdown-item">
                                             <div>
                                                 <i class="fa fa-users"></i> Administradores
                                             </div>
@@ -114,7 +114,7 @@
                                     </li>
                                     <li class="dropdown-divider"></li>
                                     <li>
-                                        <a href="{% url "administrativo:login" %}" class="dropdown-item">
+                                        <a href="{% url 'administrativo:logout' %}" class="dropdown-item">
                                             <div>
                                                 <i class="fa fa-sign-out"></i> Sair
                                             </div>
@@ -143,18 +143,24 @@
                                         <div class="panel-body">
                                             <div class="row">
                                                 <div class="col-lg-6">
-                                                    <form class="mt10">
+                                                    <form id="form-template" method="post" action="{% url 'administrativo:template_novo' %}">
+                                                        {% csrf_token %}
                                                         <div class="form-group col-lg-12">
                                                             <div class="row">
                                                                 <div class="col-lg-5">
-                                                                    <input type="text" id="nome" class="form-control" required>
-                                                                    <label class="form-control-placeholder" for="nome">Nome</label>
+                                                                    <input type="text" id="name" name="name" class="form-control" required>
+                                                                    <label class="form-control-placeholder" for="name">Nome</label>
                                                                 </div>
                                                             </div>
                                                             <div class="col-lg-3 mt25 mlm15">
-                                                                <div class="i-checks"><label> <input type="checkbox"> Ativo</label></div>
+                                                                <div class="i-checks">
+                                                                    <label>
+                                                                        <input type="checkbox" name="enabled" checked> Ativo
+                                                                    </label>
+                                                                </div>
                                                             </div>
                                                         </div>                                   
+                                                        <input type="hidden" id="number_of_stages" name="number_of_stages" value="0">
                                                     </form>
                                                 </div>
                                                 <div class="col-lg-3">
@@ -184,33 +190,33 @@
                                         <div class="panel-body">
                                             <div class="row">
                                                 <div class="col-lg-4">
-                                                    <form class="mt10">
                                                         <div class="form-group col-lg-6">
-                                                            <input type="text" id="fase" class="form-control" required>
-                                                            <label class="form-control-placeholder" for="fase">Fase</label>
+                                                        <input type="text" id="stage_name" class="form-control" required>
+                                                        <label class="form-control-placeholder" for="stage_name">Fase</label>
                                                         </div>  
                                                         <div class="form-group col-lg-6">
-                                                            <input type="number" id="rodadas" class="form-control" required>
-                                                            <label class="form-control-placeholder" for="rodadas">Rodadas</label>
+                                                        <input type="number" id="stage_rounds" class="form-control" min="1" required>
+                                                        <label class="form-control-placeholder" for="stage_rounds">Rodadas</label>
                                                         </div>  
                                                         <div class="form-group mt10">
                                                             <div class="col-lg-12">
                                                                 <div class="row">
                                                                     <div class="col-lg-6">
-                                                                        <input type="number" min="0" id="jogos" class="form-control" required>
-                                                                        <label class="form-control-placeholder" for="jogos">Jogos/Rodada</label>
+                                                                    <input type="number" min="1" id="stage_matches" class="form-control" required>
+                                                                    <label class="form-control-placeholder" for="stage_matches">Jogos/Rodada</label>
                                                                     </div>
                                                                     <div class="col-lg-6">
-                                                                        <button type="button" class="btn btn-primary"><i class="fa fa-plus mr5"></i> Adicionar</button> 
-                                                                    </div>
+                                                                    <button type="button" id="btn-add-stage" class="btn btn-primary">
+                                                                        <i class="fa fa-plus mr5"></i> Adicionar
+                                                                    </button> 
                                                                 </div>
                                                             </div>
                                                         </div>                                    
-                                                    </form>
+                                                    </div>
                                                 </div>
                                                 <div class="col-lg-8">
                                                     <div class="table-responsive">
-                                                        <table id="table" class="table table-bordered table-hover">
+                                                        <table id="stages-table" class="table table-bordered table-hover">
                                                             <thead>
                                                                 <tr>                                                    
                                                                     <th class="per20">Fase</th>
@@ -220,39 +226,6 @@
                                                                 </tr>
                                                             </thead>
                                                             <tbody>
-                                                                <tr>                                                    
-                                                                    <td>Primeira Fase</td>
-                                                                    <td>2</td>
-                                                                    <td>50</td>
-                                                                    <td>
-                                                                        <div>
-                                                                            <button type="button" class="btn btn-info btn-xs mr5" title="Editar"><i class="glyphicon glyphicon-pencil"></i></button>
-                                                                            <button type="button" class="btn btn-danger btn-xs mr5" title="Excluir"><i class="glyphicon glyphicon-trash"></i></button>
-                                                                        </div>
-                                                                    </td> 
-                                                                </tr>
-                                                                <tr>                                                    
-                                                                    <td>Segunda Fase</td>
-                                                                    <td>2</td>
-                                                                    <td>50</td>
-                                                                    <td>
-                                                                        <div>
-                                                                            <button type="button" class="btn btn-info btn-xs mr5" title="Editar"><i class="glyphicon glyphicon-pencil"></i></button>
-                                                                            <button type="button" class="btn btn-danger btn-xs mr5" title="Excluir"><i class="glyphicon glyphicon-trash"></i></button>
-                                                                        </div>
-                                                                    </td> 
-                                                                </tr>
-                                                                <tr>                                                    
-                                                                    <td>Oitavas de Final</td>
-                                                                    <td>2</td>
-                                                                    <td>50</td>
-                                                                    <td>
-                                                                        <div>
-                                                                            <button type="button" class="btn btn-info btn-xs mr5" title="Editar"><i class="glyphicon glyphicon-pencil"></i></button>
-                                                                            <button type="button" class="btn btn-danger btn-xs mr5" title="Excluir"><i class="glyphicon glyphicon-trash"></i></button>
-                                                                        </div>
-                                                                    </td> 
-                                                                </tr>
                                                             </tbody>
                                                         </table>
                                                     </div>
@@ -263,8 +236,12 @@
                                 </div>
                             </div>
                             <div class="panel panel-default col-lg-12 mtm25 p15">
-                                <button type="button" class="btn btn-success ml20" id="successToast"><i class="glyphicon glyphicon-save mr5"></i> Salvar</button>
-                                <button type="button" class="btn btn-danger ml15"><i class="fa fa-ban mr5"></i> Cancelar</button>  
+                                <button type="button" class="btn btn-success ml20" id="btn-save">
+                                    <i class="fa fa-save mr5"></i> Salvar
+                                </button>
+                                <a href="{% url 'administrativo:templates' %}" class="btn btn-danger ml15">
+                                    <i class="fa fa-times mr5"></i> Cancelar
+                                </a>
                             </div>
                         </div>
                     </div>
@@ -287,5 +264,142 @@
         <script src="{% static 'administrativo/js/plugins/moment/moment.js' %}"></script>
         <script src="{% static 'administrativo/js/plugins/tempusdominus/tempusdominus-bootstrap-4.min.js' %}"></script>
         <script src="{% static 'administrativo/js/settings.js' %}"></script>
+        <script>
+            $(document).ready(function() {
+                var stages = [];
+                
+                // Inicializa o iCheck
+                $('.i-checks').iCheck({
+                    checkboxClass: 'icheckbox_square-green',
+                    radioClass: 'iradio_square-green'
+                });
+                
+                // Adiciona uma fase
+                $('#btn-add-stage').click(function() {
+                    var stageName = $('#stage_name').val();
+                    var stageRounds = $('#stage_rounds').val();
+                    var stageMatches = $('#stage_matches').val();
+                    
+                    if (!stageName || !stageRounds || !stageMatches) {
+                        toastr.error('Preencha todos os campos da fase');
+                        return;
+                    }
+                    
+                    if (stageRounds < 1 || stageMatches < 1) {
+                        toastr.error('Rodadas e jogos por rodada devem ser maiores que zero');
+                        return;
+                    }
+                    
+                    var stageIndex = stages.length;
+                    stages.push({
+                        name: stageName,
+                        rounds: stageRounds,
+                        matches: stageMatches
+                    });
+                    
+                    // Adiciona a linha na tabela
+                    var row = $('<tr>');
+                    row.append($('<td>').text(stageName));
+                    row.append($('<td>').text(stageRounds));
+                    row.append($('<td>').text(stageMatches));
+                    
+                    var actions = $('<td>');
+                    var editBtn = $('<button type="button" class="btn btn-info btn-xs mr5" title="Editar">')
+                        .append('<i class="fa fa-pencil"></i>')
+                        .data('index', stageIndex);
+                    var deleteBtn = $('<button type="button" class="btn btn-danger btn-xs mr5" title="Excluir">')
+                        .append('<i class="fa fa-trash"></i>')
+                        .data('index', stageIndex);
+                        
+                    actions.append(editBtn).append(deleteBtn);
+                    row.append(actions);
+                    
+                    $('#stages-table tbody').append(row);
+                    
+                    // Limpa os campos
+                    $('#stage_name').val('');
+                    $('#stage_rounds').val('');
+                    $('#stage_matches').val('');
+                    
+                    // Atualiza o contador de fases
+                    $('#number_of_stages').val(stages.length);
+                    
+                    // Adiciona campos hidden ao formulário
+                    $('#form-template').append(
+                        $('<input>').attr({
+                            type: 'hidden',
+                            name: 'stage_name_' + stageIndex,
+                            value: stageName
+                        })
+                    ).append(
+                        $('<input>').attr({
+                            type: 'hidden',
+                            name: 'stage_rounds_' + stageIndex,
+                            value: stageRounds
+                        })
+                    ).append(
+                        $('<input>').attr({
+                            type: 'hidden',
+                            name: 'stage_matches_per_round_' + stageIndex,
+                            value: stageMatches
+                        })
+                    );
+                });
+                
+                // Editar fase
+                $(document).on('click', '.btn-info', function() {
+                    var index = $(this).data('index');
+                    var stage = stages[index];
+                    
+                    $('#stage_name').val(stage.name);
+                    $('#stage_rounds').val(stage.rounds);
+                    $('#stage_matches').val(stage.matches);
+                    
+                    // Remove a fase atual
+                    stages.splice(index, 1);
+                    $(this).closest('tr').remove();
+                    
+                    // Atualiza o contador de fases
+                    $('#number_of_stages').val(stages.length);
+                    
+                    // Remove os campos hidden
+                    $('input[name="stage_name_' + index + '"]').remove();
+                    $('input[name="stage_rounds_' + index + '"]').remove();
+                    $('input[name="stage_matches_per_round_' + index + '"]').remove();
+                });
+                
+                // Excluir fase
+                $(document).on('click', '.btn-danger', function() {
+                    var index = $(this).data('index');
+                    
+                    // Remove a fase
+                    stages.splice(index, 1);
+                    $(this).closest('tr').remove();
+                    
+                    // Atualiza o contador de fases
+                    $('#number_of_stages').val(stages.length);
+                    
+                    // Remove os campos hidden
+                    $('input[name="stage_name_' + index + '"]').remove();
+                    $('input[name="stage_rounds_' + index + '"]').remove();
+                    $('input[name="stage_matches_per_round_' + index + '"]').remove();
+                });
+                
+                // Salvar template
+                $('#btn-save').click(function() {
+                    if (!$('#name').val()) {
+                        toastr.error('Preencha o nome do template');
+                        return;
+                    }
+                    
+                    if (stages.length === 0) {
+                        toastr.error('Adicione pelo menos uma fase');
+                        return;
+                    }
+                    
+                    $('#form-template').submit();
+                });
+            });
+        </script>
     </body>
 </html>

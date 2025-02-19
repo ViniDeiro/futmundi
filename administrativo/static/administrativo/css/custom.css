@@ -36,8 +36,8 @@ table.table tbody tr.selected {
 
 /*Centralizar horizontal/vertical*/
 .center-middle {
-  text-align: center; /* center horizontally */
-  vertical-align: middle; /* center vertically */
+  text-align: center !important;
+  vertical-align: middle !important;
 }
 
 /*Alinhar elemento horizontalmente ao centro*/
@@ -376,4 +376,42 @@ input::-webkit-inner-spin-button {
 #header-seg th {
   background-color: #f5c6cb;
   color: #333;
+}
+
+/* Classes de largura percentual */
+.per5 { width: 5% !important; }
+.per10 { width: 10% !important; }
+.per15 { width: 15% !important; }
+.per20 { width: 20% !important; }
+
+/* Estilo para tabelas */
+.table-responsive {
+    overflow-x: auto;
+}
+
+.table thead th {
+    vertical-align: middle;
+    background-color: #f5f5f6;
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+/* Estilo para botões de ação */
+.btn-group-xs > .btn, .btn-xs {
+    padding: .25rem .4rem;
+    font-size: .875rem;
+    line-height: .5;
+    border-radius: .2rem;
+}
+
+/* Checkbox personalizado */
+.checkbox-success input[type="checkbox"]:checked + label::before {
+    background-color: #1ab394;
+    border-color: #1ab394;
+}
+
+.checkbox-success input[type="checkbox"]:checked + label::after {
+    color: #fff;
 }

@@ -4,7 +4,7 @@ from . import views
 app_name = 'administrativo'
 
 urlpatterns = [
-    path('', views.usuarios, name='usuarios'),
+    path('', views.usuarios, name='index'),
     path('usuarios/', views.usuarios, name='usuarios'),
     path('usuario-editar/', views.usuario_editar, name='usuario_editar'),
     
@@ -12,11 +12,31 @@ urlpatterns = [
     path('ambitos/', views.ambitos, name='ambitos'),
     path('ambito/editar/<int:id>/', views.ambito_editar, name='ambito_editar'),
     path('campeonatos/', views.campeonatos, name='campeonatos'),
-    path('campeonato-novo/', views.campeonato_novo, name='campeonato_novo'),
+    path('campeonato/novo/', views.campeonato_novo, name='campeonato_novo'),
+    path('campeonato/editar/<int:id>/', views.campeonato_editar, name='campeonato_editar'),
+    path('campeonato/excluir/<int:id>/', views.campeonato_excluir, name='campeonato_excluir'),
+    path('campeonato/excluir-em-massa/', views.campeonato_excluir_em_massa, name='campeonato_excluir_em_massa'),
+    path('campeonato/resultados/<int:id>/', views.campeonato_resultados, name='campeonato_resultados'),
+    path('campeonato/toggle-status/', views.campeonato_toggle_status, name='campeonato_toggle_status'),
     path('templates/', views.templates, name='templates'),
-    path('template-novo/', views.template_novo, name='template_novo'),
+    path('template/novo/', views.template_novo, name='template_novo'),
+    path('template/editar/<int:id>/', views.template_editar, name='template_editar'),
+    path('template/excluir/<int:id>/', views.template_excluir, name='template_excluir'),
+    path('template/excluir-em-massa/', views.template_excluir_em_massa, name='template_excluir_em_massa'),
+    path('template/duplicar/<int:id>/', views.template_duplicar, name='template_duplicar'),
+    path('template/importar/', views.template_importar, name='template_importar'),
+    path('template/exportar/', views.template_exportar, name='template_exportar'),
+    path('template/toggle-status/', views.template_toggle_status, name='template_toggle_status'),
     path('times/', views.times, name='times'),
-    path('time-novo/', views.time_novo, name='time_novo'),
+    path('time/novo/', views.time_novo, name='time_novo'),
+    path('time/editar/<int:id>/', views.time_editar, name='time_editar'),
+    path('time/excluir/<int:id>/', views.time_excluir, name='time_excluir'),
+    path('time/excluir-em-massa/', views.time_excluir_em_massa, name='time_excluir_em_massa'),
+    path('time/importar/', views.time_importar, name='time_importar'),
+    path('time/exportar/', views.time_exportar, name='time_exportar'),
+    path('time/importar-imagens/', views.time_importar_imagens, name='time_importar_imagens'),
+    path('time/get-states-by-country/', views.get_states_by_country, name='get_states_by_country'),
+    path('time/por-tipo/', views.times_por_tipo, name='times_por_tipo'),
     
     # Pacotes
     path('futcoins/', views.futcoins, name='futcoins'),

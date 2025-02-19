@@ -1,5 +1,5 @@
-{% load static %}
 <!DOCTYPE html>
+{% load static %}
 <html lang="en">
     <head>
         <meta charset="utf-8">
@@ -24,7 +24,7 @@
         <link href="{% static 'administrativo/css/custom.css' %}" rel="stylesheet">
 
         <!-- Favicon -->
-        <link rel="icon" href="img/futmundi.ico" type="image/png">
+        <link rel="icon" href="{% static 'administrativo/img/futmundi.ico' %}" type="image/png">
     </head>
     <body>
         <div id="wrapper">
@@ -33,60 +33,60 @@
                     <ul class="nav metismenu" id="side-menu">
                         <li class="nav-header">
                             <div class="dropdown profile-element">
-                                <a href="{% url "administrativo:usuarios" %}">
+                                <a href="{% url 'administrativo:usuarios' %}">
                                     <img src="{% static 'administrativo/img/logo.svg' %}" alt="Futmundi logo">
                                 </a>
                             </div>
                             <div class="logo-element">
-                                <a href="{% url "administrativo:usuarios" %}">
+                                <a href="{% url 'administrativo:usuarios' %}">
                                     <img src="{% static 'administrativo/img/logosm.svg' %}" alt="Futmundi logo">
                                 </a>                            
                             </div>
                         </li>
                         <li class="active">
-                            <a href="{% url "administrativo:usuarios" %}"><i class="fa fa-user"></i> <span class="nav-label">Usuários</span></a>
+                            <a href="{% url 'administrativo:usuarios' %}"><i class="fa fa-user"></i> <span class="nav-label">Usuários</span></a>
                         </li>
                         <li>
                             <a href="#"><i class="fa fa-trophy"></i> <span class="nav-label">Campeonatos</span><span class="fa arrow"></span></a>
                             <ul class="nav nav-second-level collapse">
-                                <li><a href="{% url "administrativo:ambitos" %}">Âmbitos</a></li>
-                                <li><a href="{% url "administrativo:campeonatos" %}">Campeonatos</a></li>
-                                <li><a href="{% url "administrativo:templates" %}">Templates</a></li>
-                                <li><a href="{% url "administrativo:times" %}">Times</a></li>
+                                <li><a href="{% url 'administrativo:ambitos' %}">Âmbitos</a></li>
+                                <li><a href="{% url 'administrativo:campeonatos' %}">Campeonatos</a></li>
+                                <li><a href="{% url 'administrativo:templates' %}">Templates</a></li>
+                                <li><a href="{% url 'administrativo:times' %}">Times</a></li>
                             </ul>
                         </li>
                         <li>
                             <a href="#"><i class="fa fa-shopping-cart"></i> <span class="nav-label">Pacotes</span><span class="fa arrow"></span></a>
                             <ul class="nav nav-second-level collapse">
-                                <li><a href="{% url "administrativo:futcoins" %}">Futcoins</a></li>
-                                <li><a href="{% url "administrativo:planos" %}">Planos</a></li>
+                                <li><a href="{% url 'administrativo:futcoins' %}">Futcoins</a></li>
+                                <li><a href="{% url 'administrativo:planos' %}">Planos</a></li>
                             </ul>
                         </li>
                         <li>
                             <a href="#"><i class="fa fa-diamond"></i> <span class="nav-label">Futligas</span><span class="fa arrow"></span></a>
                             <ul class="nav nav-second-level collapse">
-                                <li><a href="{% url "administrativo:futligas_classicas" %}">Clássicas</a></li>
-                                <li><a href="{% url "administrativo:futligas_jogadores" %}">Jogadores</a></li>
+                                <li><a href="{% url 'administrativo:futligas_classicas' %}">Clássicas</a></li>
+                                <li><a href="{% url 'administrativo:futligas_jogadores' %}">Jogadores</a></li>
                             </ul>
                         </li>
                         <li>
                             <a href="#"><i class="fa fa-globe"></i> <span class="nav-label">Locais</span><span class="fa arrow"></span></a>
                             <ul class="nav nav-second-level collapse">
-                                <li><a href="{% url "administrativo:continentes" %}">Continentes</a></li>
-                                <li><a href="{% url "administrativo:paises" %}">Países</a></li>
-                                <li><a href="{% url "administrativo:estados" %}">Estados</a></li>
+                                <li><a href="{% url 'administrativo:continentes' %}">Continentes</a></li>
+                                <li><a href="{% url 'administrativo:paises' %}">Países</a></li>
+                                <li><a href="{% url 'administrativo:estados' %}">Estados</a></li>
                             </ul>
                         </li>
                         <li>
                             <a href="#"><i class="fa fa-gear"></i> <span class="nav-label">Configurações</span><span class="fa arrow"></span></a>
                             <ul class="nav nav-second-level collapse">
-                                <li><a href="{% url "administrativo:parametros" %}">Parâmetros</a></li>
-                                <li><a href="{% url "administrativo:termo" %}">Termo</a></li>
-                                <li><a href="{% url "administrativo:notificacoes" %}">Notificações</a></li>
+                                <li><a href="{% url 'administrativo:parametros' %}">Parâmetros</a></li>
+                                <li><a href="{% url 'administrativo:termo' %}">Termo</a></li>
+                                <li><a href="{% url 'administrativo:notificacoes' %}">Notificações</a></li>
                             </ul>
                         </li>
                         <li>
-                            <a href="{% url "administrativo:relatorios" %}"><i class="fa fa-pie-chart"></i> <span class="nav-label">Relatórios</span></a>
+                            <a href="{% url 'administrativo:relatorios' %}"><i class="fa fa-pie-chart"></i> <span class="nav-label">Relatórios</span></a>
                         </li>
                     </ul>
                 </div>
@@ -107,7 +107,7 @@
                                 </a>
                                 <ul class="dropdown-menu dropdown-alerts">
                                     <li>
-                                        <a href="{% url "administrativo:administradores" %}" class="dropdown-item">
+                                        <a href="{% url 'administrativo:administradores' %}" class="dropdown-item">
                                             <div>
                                                 <i class="fa fa-users"></i> Administradores
                                             </div>
@@ -115,7 +115,7 @@
                                     </li>
                                     <li class="dropdown-divider"></li>
                                     <li>
-                                        <a href="{% url "administrativo:login" %}" class="dropdown-item">
+                                        <a href="{% url 'administrativo:logout' %}" class="dropdown-item">
                                             <div>
                                                 <i class="fa fa-sign-out"></i> Sair
                                             </div>
@@ -134,173 +134,170 @@
                 <div class="wrapper wrapper-content">
                     <div class="row">
                         <div class="col-lg-12">
-                            <div class="tabs-container">
-                                <ul class="nav nav-tabs" role="tablist">
-                                    <li><a class="nav-link active" data-toggle="tab" href="#geral">Geral</a></li>
-                                    <li><a class="nav-link" data-toggle="tab" href="#times">Times</a></li>
-                                    <li><a class="nav-link" data-toggle="tab" href="#rodadas">Rodadas</a></li>
-                                </ul>
-                                <div class="tab-content">
-                                    <div id="geral" class="tab-pane active">
-                                        <div class="panel-body">
-                                            <div class="row">
-                                                <div class="row col-lg-6 mt10">
-                                                    <div class="col-lg-6">
-                                                        <div class="col-lg-12">
-                                                            <input type="text" id="nome" class="form-control" required>
-                                                            <label class="form-control-placeholder" for="nome">Nome</label>
-                                                        </div> 
-                                                        <div class="col-lg-12 mt11">
-                                                            <label class="control-label">Template</label>
-                                                            <select class="form-control js-basic-single" id="campeonato">
-                                                                <option value="Brasileiro">Brasileiro</option>
-                                                                <option value="Inglês">Inglês</option>
-                                                            </select> 
-                                                        </div>
-                                                        <div class="col-lg-12 mt15">
-                                                            <div class="i-checks"><label><input type="checkbox"> Ativo</label></div>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-lg-6">
+                            <form id="form-campeonato" method="post" action="{% url 'administrativo:campeonato_novo' %}">
+                                {% csrf_token %}
+                                <div class="tabs-container">
+                                    <ul class="nav nav-tabs" role="tablist">
+                                        <li><a class="nav-link active" data-toggle="tab" href="#geral">Geral</a></li>
+                                        <li><a class="nav-link" data-toggle="tab" href="#times">Times</a></li>
+                                        <li><a class="nav-link" data-toggle="tab" href="#rodadas">Rodadas</a></li>
+                                    </ul>
+                                    <div class="tab-content">
+                                        <div id="geral" class="tab-pane active">
+                                            <div class="panel-body">
+                                                <div class="row">
+                                                    <div class="row col-lg-6 mt10">
                                                         <div class="col-lg-6">
-                                                            <input type="number" min="0" id="temporada" class="form-control" required>
-                                                            <label class="form-control-placeholder" for="temporada">Temporada</label>
-                                                        </div> 
-                                                        <div class="col-lg-6 mt30">
-                                                            <input type="number" min="0" id="pontuacao" class="form-control" required>
-                                                            <label class="form-control-placeholder" for="pontuacao">Pontuação</label> 
+                                                            <div class="col-lg-12">
+                                                                <input type="text" id="nome" name="name" class="form-control" required>
+                                                                <label class="form-control-placeholder" for="nome">Nome</label>
+                                                            </div> 
+                                                            <div class="col-lg-12 mt11">
+                                                                <label class="control-label">Template</label>
+                                                                <select class="form-control js-basic-single" id="template" name="template" required>
+                                                                    {% for template in templates %}
+                                                                    <option value="{{ template.id }}">{{ template.name }}</option>
+                                                                    {% endfor %}
+                                                                </select> 
+                                                            </div>
+                                                            <div class="col-lg-12 mt15">
+                                                                <div class="i-checks"><label><input type="checkbox" name="enabled" checked> Ativo</label></div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-lg-6">
+                                                            <div class="col-lg-6">
+                                                                <input type="number" min="0" id="temporada" name="season" class="form-control" required>
+                                                                <label class="form-control-placeholder" for="temporada">Temporada</label>
+                                                            </div> 
+                                                            <div class="col-lg-6 mt30">
+                                                                <input type="number" min="0" id="pontuacao" name="points" class="form-control" required>
+                                                                <label class="form-control-placeholder" for="pontuacao">Pontuação</label> 
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                </div>
-                                                <div class="col-lg-6 mtm20">
-                                                    <div class="row mt11">
-                                                        <div class="col-lg-4">
-                                                            <label class="control-label" for="ambito">Âmbito</label>
-                                                            <select class="form-control" id="ambito">
-                                                                <option value="Estadual">Estadual</option>
-                                                                <option value="Nacional">Nacional</option>
-                                                                <option value="Continental">Continental</option>
-                                                                <option value="Mundial">Mundial</option>
-                                                            </select> 
-                                                        </div>                                                       
-                                                    </div>
-                                                    <div class="row mt11">
-                                                        <div class="col-lg-4">
-                                                            <label class="control-label" for="continente">Continente</label>
-                                                            <select class="form-control js-basic-single" id="continente">
-                                                                <option value="Estadual">Ásia</option>
-                                                                <option value="Nacional">América</option>
-                                                            </select>
-                                                        </div>  
-                                                        <div class="col-lg-4">
-                                                            <label class="control-label" for="pais">País</label>
-                                                            <select class="form-control js-basic-single" id="pais">
-                                                                <option value="Estadual">Brasil</option>
-                                                                <option value="Nacional">Inglaterra</option>
-                                                                <option value="Continental">Portugal</option>
-                                                            </select>  
+                                                    <div class="col-lg-6 mtm20">
+                                                        <div class="row mt11">
+                                                            <div class="col-lg-4">
+                                                                <label class="control-label" for="ambito">Âmbito</label>
+                                                                <select class="form-control" id="ambito" name="scope" required>
+                                                                    {% for scope in scopes %}
+                                                                    <option value="{{ scope.id }}">{{ scope.name }}</option>
+                                                                    {% endfor %}
+                                                                </select> 
+                                                            </div>                                                       
                                                         </div>
-                                                        <div class="col-lg-4">
-                                                            <label class="control-label" for="estado">Estado</label>
-                                                            <select class="form-control js-basic-single" id="estado">
-                                                                <option value="Estadual">Acre</option>
-                                                                <option value="Nacional">Bahia</option>
-                                                            </select>  
-                                                        </div>                                            
+                                                        <div class="row mt11">
+                                                            <div class="col-lg-4">
+                                                                <label class="control-label" for="continente">Continente</label>
+                                                                <select class="form-control js-basic-single" id="continente" name="continent">
+                                                                    {% for continent in continents %}
+                                                                    <option value="{{ continent.id }}">{{ continent.name }}</option>
+                                                                    {% endfor %}
+                                                                </select>
+                                                            </div>  
+                                                            <div class="col-lg-4">
+                                                                <label class="control-label" for="pais">País</label>
+                                                                <select class="form-control js-basic-single" id="pais" name="country">
+                                                                    {% for country in countries %}
+                                                                    <option value="{{ country.id }}">{{ country.name }}</option>
+                                                                    {% endfor %}
+                                                                </select>  
+                                                            </div>
+                                                            <div class="col-lg-4">
+                                                                <label class="control-label" for="estado">Estado</label>
+                                                                <select class="form-control js-basic-single" id="estado" name="state">
+                                                                    {% for state in states %}
+                                                                    <option value="{{ state.id }}">{{ state.name }}</option>
+                                                                    {% endfor %}
+                                                                </select>  
+                                                            </div>                                            
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
-                                    <div id="times" class="tab-pane">
-                                        <div class="panel-body">
-                                            <div class="col-lg-2">
-                                                <label class="control-label" for="filtrar-por">Filtrar por</label>
-                                                <select class="form-control" id="filtrar-por">
-                                                    <option value="Todos">Todos</option>
-                                                    <option value="Times">Times</option>
-                                                    <option value="Seleções">Seleções</option>
-                                                </select>   
-                                            </div> 
-                                            <div class="col-lg-12 mt20">
-                                                <form action="#" class="wizard-big">
-                                                    <select class="form-control dual_select" multiple>
-                                                        <option value="United States">United States</option>
-                                                        <option value="United Kingdom">United Kingdom</option>
-                                                        <option value="Australia">Australia</option>
-                                                        <option selected value="Austria">Austria</option>
-                                                        <option selected value="Bahamas">Bahamas</option>
-                                                        <option value="Barbados">Barbados</option>
-                                                        <option value="Belgium">Belgium</option>
-                                                        <option value="Bermuda">Bermuda</option>
-                                                        <option value="Brazil">Brazil</option>
-                                                        <option value="Bulgaria">Bulgaria</option>
-                                                        <option value="Cameroon">Cameroon</option>
-                                                        <option value="Canada">Canada</option>
+                                        <div id="times" class="tab-pane">
+                                            <div class="panel-body">
+                                                <div class="col-lg-2">
+                                                    <label class="control-label" for="filtrar-por">Filtrar por</label>
+                                                    <select class="form-control" id="filtrar-por">
+                                                        <option value="all">Todos</option>
+                                                        <option value="teams">Times</option>
+                                                        <option value="selections">Seleções</option>
+                                                    </select>   
+                                                </div> 
+                                                <div class="col-lg-12 mt20">
+                                                    <select class="form-control dual_select" name="teams" multiple>
+                                                        {% for team in teams %}
+                                                        <option value="{{ team.id }}">{{ team.name }}</option>
+                                                        {% endfor %}
                                                     </select>
-                                                </form>
-                                            </div>                                            
-                                        </div>
-                                    </div>
-                                    <div id="rodadas" class="tab-pane">
-                                        <div class="panel-body">
-                                            <div class="row col-lg-12">
-                                                <div class="col-lg-2">
-                                                    <label class="control-label" for="fase">Fase</label>
-                                                    <select class="form-control js-basic-single" id="fase">
-                                                        <option value="Brasileiro">Fase de Grupos</option>
-                                                        <option value="Ingles">Oitavas de Final</option>
-                                                    </select> 
-                                                </div>
-                                                <div class="col-lg-2">
-                                                    <label class="control-label" for="rodada">Rodada</label>
-                                                    <select class="form-control js-basic-single" id="rodada" style="width: 60%">
-                                                        <option value="1">1</option>
-                                                        <option value="2">2</option>
-                                                    </select> 
-                                                </div>
-                                                <div class="col-lg-4 mb10">   
-                                                <button type="button" class="btn btn-primary ml20" data-toggle="modal" data-target="#modalImportXLS"><i class="fa fa-upload mr5"></i> Importar</button>      
-                                                </div>
+                                                </div>                                            
                                             </div>
-                                            <div class="row col-lg-12 mt10">
-                                                <div class="col-lg-2">
-                                                    <select class="form-control js-templating" style="width: 100%">
-                                                        <option value="audax">Audax</option>
-                                                        <option value="bragantino">Bragantino</option>
-                                                        <option value="corinthians">Corinthians</option>
-                                                        <option value="guarani">Guarani</option>
-                                                        <option value="ituano">Ituano</option>
-                                                    </select>
+                                        </div>
+                                        <div id="rodadas" class="tab-pane">
+                                            <div class="panel-body">
+                                                <div class="row col-lg-12">
+                                                    <div class="col-lg-2">
+                                                        <label class="control-label" for="fase">Fase</label>
+                                                        <select class="form-control js-basic-single" id="fase">
+                                                            <option value="Brasileiro">Fase de Grupos</option>
+                                                            <option value="Ingles">Oitavas de Final</option>
+                                                        </select> 
+                                                    </div>
+                                                    <div class="col-lg-2">
+                                                        <label class="control-label" for="rodada">Rodada</label>
+                                                        <select class="form-control js-basic-single" id="rodada" style="width: 60%">
+                                                            <option value="1">1</option>
+                                                            <option value="2">2</option>
+                                                        </select> 
+                                                    </div>
+                                                    <div class="col-lg-4 mb10">   
+                                                    <button type="button" class="btn btn-primary ml20" data-toggle="modal" data-target="#modalImportXLS"><i class="fa fa-upload mr5"></i> Importar</button>      
+                                                    </div>
                                                 </div>
-                                                <div class="col-lg-1 ml35 mrm15">
-                                                <input type="number" min="0" class="form-control placar">
-                                                </div>
-                                                <div class="col-lg-1 mlm30 mrm15">
-                                                <input type="number" min="0" class="form-control placar">
-                                                </div>
-                                                <div class="col-lg-2 mlm30 mr25">
-                                                    <select class="form-control js-templating" style="width: 100%">
-                                                        <option value="audax">Audax</option>
-                                                        <option value="bragantino">Bragantino</option>
-                                                        <option value="corinthians">Corinthians</option>
-                                                        <option value="guarani">Guarani</option>
-                                                        <option value="ituano">Ituano</option>
-                                                    </select>
-                                                </div>
-                                                <div class="col-lg-3 ml10">
-                                                    <input type="text" class="form-control datetimepicker-input" style="width: 50%" id="datetimepicker" data-toggle="datetimepicker" data-target="#datetimepicker"/>
+                                                <div class="row col-lg-12 mt10">
+                                                    <div class="col-lg-2">
+                                                        <select class="form-control js-templating" style="width: 100%">
+                                                            <option value="audax">Audax</option>
+                                                            <option value="bragantino">Bragantino</option>
+                                                            <option value="corinthians">Corinthians</option>
+                                                            <option value="guarani">Guarani</option>
+                                                            <option value="ituano">Ituano</option>
+                                                        </select>
+                                                    </div>
+                                                    <div class="col-lg-1 ml35 mrm15">
+                                                    <input type="number" min="0" class="form-control placar">
+                                                    </div>
+                                                    <div class="col-lg-1 mlm30 mrm15">
+                                                    <input type="number" min="0" class="form-control placar">
+                                                    </div>
+                                                    <div class="col-lg-2 mlm30 mr25">
+                                                        <select class="form-control js-templating" style="width: 100%">
+                                                            <option value="audax">Audax</option>
+                                                            <option value="bragantino">Bragantino</option>
+                                                            <option value="corinthians">Corinthians</option>
+                                                            <option value="guarani">Guarani</option>
+                                                            <option value="ituano">Ituano</option>
+                                                        </select>
+                                                    </div>
+                                                    <div class="col-lg-3 ml10">
+                                                        <input type="text" class="form-control datetimepicker-input" style="width: 50%" id="datetimepicker" data-toggle="datetimepicker" data-target="#datetimepicker"/>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                            <div class="panel panel-default col-lg-12 p15">
-                                <button type="button" class="btn btn-success ml20" id="successToast"><i class="glyphicon glyphicon-save mr5"></i> Salvar</button>
-                                <button type="button" class="btn btn-primary ml20" id="successToast"><i class="glyphicon glyphicon-ok mr5"></i> Aplicar</button>
-                                <button type="button" class="btn btn-danger ml15"><i class="fa fa-ban mr5"></i> Cancelar</button>
-                            </div>
+                                <div class="panel panel-default col-lg-12 p15">
+                                    <button type="submit" class="btn btn-success ml20">
+                                        <i class="fa fa-save mr5"></i> Salvar
+                                    </button>
+                                    <a href="{% url 'administrativo:campeonatos' %}" class="btn btn-danger ml15">
+                                        <i class="fa fa-times mr5"></i> Cancelar
+                                    </a>
+                                </div>
+                            </form>
                         </div>
                     </div>
                 </div>
@@ -385,5 +382,145 @@
         <script src="{% static 'administrativo/js/plugins/moment/moment.js' %}"></script>
         <script src="{% static 'administrativo/js/plugins/tempusdominus/tempusdominus-bootstrap-4.min.js' %}"></script>
         <script src="{% static 'administrativo/js/settings.js' %}"></script>
+        <script>
+            $(document).ready(function() {
+                // Inicializa o Select2 para os selects
+                $('.js-basic-single').select2();
+
+                // Inicializa o iCheck para checkboxes
+                $('.i-checks').iCheck({
+                    checkboxClass: 'icheckbox_square-green',
+                    radioClass: 'iradio_square-green'
+                });
+
+                // Inicializa o Dual Listbox para seleção de times
+                $('.dual_select').bootstrapDualListbox({
+                    selectorMinimalHeight: 160,
+                    filterTextClear: 'mostrar todos',
+                    filterPlaceHolder: 'Filtrar',
+                    moveSelectedLabel: 'Mover selecionados',
+                    moveAllLabel: 'Mover todos',
+                    removeSelectedLabel: 'Remover selecionados',
+                    removeAllLabel: 'Remover todos',
+                    infoText: 'Mostrando {0}',
+                    infoTextFiltered: '<span class="label label-warning">Filtrado</span> {0} de {1}',
+                    infoTextEmpty: 'Lista vazia'
+                });
+
+                // Gerencia a dependência entre âmbito e locais
+                $('#ambito').on('change', function() {
+                    var scope = $(this).val();
+                    
+                    // Habilita/desabilita os campos baseado no âmbito selecionado
+                    if (scope === 'mundial') {
+                        $('#continente, #pais, #estado').prop('disabled', true);
+                    } else if (scope === 'continental') {
+                        $('#continente').prop('disabled', false);
+                        $('#pais, #estado').prop('disabled', true);
+                    } else if (scope === 'nacional') {
+                        $('#continente, #pais').prop('disabled', false);
+                        $('#estado').prop('disabled', true);
+                    } else { // estadual
+                        $('#continente, #pais, #estado').prop('disabled', false);
+                    }
+                });
+
+                // Atualiza times baseado no filtro
+                $('#filtrar-por').on('change', function() {
+                    var filter = $(this).val();
+                    $.ajax({
+                        url: "{% url 'administrativo:times_por_tipo' %}",
+                        data: { 
+                            type: filter,
+                            csrfmiddlewaretoken: '{{ csrf_token }}'
+                        },
+                        type: 'POST',
+                        success: function(response) {
+                            if (response.success) {
+                                var dualListbox = $('.dual_select');
+                                dualListbox.empty();
+                                
+                                response.teams.forEach(function(team) {
+                                    dualListbox.append($('<option>', {
+                                        value: team.id,
+                                        text: team.name
+                                    }));
+                                });
+                                
+                                dualListbox.bootstrapDualListbox('refresh');
+                            } else {
+                                toastr.error(response.message || 'Erro ao carregar times');
+                            }
+                        },
+                        error: function(xhr) {
+                            toastr.error(xhr.responseJSON?.message || 'Erro ao carregar times');
+                        }
+                    });
+                });
+
+                // Gerencia o envio do formulário em etapas
+                $('#form-campeonato').on('submit', function(e) {
+                    e.preventDefault();
+                    
+                    var activeTab = $('.nav-tabs .active').attr('href');
+                    var formData = new FormData(this);
+                    
+                    // Adiciona o passo atual
+                    if (activeTab === '#geral') {
+                        formData.append('step', '1');
+                    } else if (activeTab === '#times') {
+                        formData.append('step', '2');
+                    } else if (activeTab === '#rodadas') {
+                        formData.append('step', '3');
+                    }
+                    
+                    $.ajax({
+                        url: $(this).attr('action'),
+                        type: 'POST',
+                        data: formData,
+                        processData: false,
+                        contentType: false,
+                        success: function(response) {
+                            if (response.success) {
+                                if (response.next_step) {
+                                    // Avança para a próxima aba
+                                    $('.nav-tabs .active').parent().next('li').find('a').tab('show');
+                                } else {
+                                    toastr.success('Campeonato criado com sucesso!');
+                                    window.location.href = "{% url 'administrativo:campeonatos' %}";
+                                }
+                            } else {
+                                toastr.error(response.message || 'Erro ao processar formulário');
+                            }
+                        },
+                        error: function(xhr) {
+                            toastr.error(xhr.responseJSON?.message || 'Erro ao processar formulário');
+                        }
+                    });
+                });
+
+                // Gerencia a navegação entre abas
+                $('.nav-tabs a').on('show.bs.tab', function(e) {
+                    var targetTab = $(e.target).attr('href');
+                    
+                    // Verifica se pode avançar
+                    if (targetTab === '#times') {
+                        // Valida campos da aba geral
+                        if (!$('#nome').val() || !$('#temporada').val() || !$('#template').val() || !$('#ambito').val()) {
+                            e.preventDefault();
+                            toastr.error('Preencha todos os campos obrigatórios da aba Geral');
+                            return false;
+                        }
+                    } else if (targetTab === '#rodadas') {
+                        // Valida se há times selecionados
+                        if ($('.dual_select').val() === null || $('.dual_select').val().length === 0) {
+                            e.preventDefault();
+                            toastr.error('Selecione pelo menos um time');
+                            return false;
+                        }
+                    }
+                });
+            });
+        </script>
     </body>
 </html>

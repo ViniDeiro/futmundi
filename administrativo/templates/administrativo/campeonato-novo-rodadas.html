@@ -1,0 +1,290 @@
+{% extends 'administrativo/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'administrativo/plugins/toastr/toastr.min.css' %}">
+<link rel="stylesheet" href="{% static 'administrativo/plugins/select2/css/select2.min.css' %}">
+<link rel="stylesheet" href="{% static 'administrativo/plugins/select2-bootstrap4-theme/select2-bootstrap4.min.css' %}">
+<link rel="stylesheet" href="{% static 'administrativo/plugins/tempusdominus-bootstrap-4/css/tempusdominus-bootstrap-4.min.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+    <section class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1>Novo Campeonato</h1>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="{% url 'administrativo:index' %}">Home</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'administrativo:campeonatos' %}">Campeonatos</a></li>
+                        <li class="breadcrumb-item active">Novo Campeonato</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="content">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Etapa 3 - Configuração de Rodadas</h3>
+                            <div class="card-tools">
+                                <button type="button" class="btn btn-tool" data-toggle="modal" data-target="#modal-import">
+                                    <i class="fas fa-upload"></i> Importar
+                                </button>
+                            </div>
+                        </div>
+                        <form action="{% url 'administrativo:campeonato_novo' %}" method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="step" value="3">
+                            <input type="hidden" name="championship_id" value="{{ championship.id }}">
+                            
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="stage">Fase</label>
+                                            <select class="form-control select2" id="stage" name="stage">
+                                                {% for stage in stages %}
+                                                <option value="{{ stage.id }}">{{ stage.name }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="round">Rodada</label>
+                                            <select class="form-control select2" id="round" name="round">
+                                                {% for round in rounds %}
+                                                <option value="{{ round.id }}">{{ round.name }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="matches-container">
+                                    {% for match in matches %}
+                                    <div class="row match-row mb-3">
+                                        <div class="col-md-4">
+                                            <select class="form-control select2 team-home" name="matches[{{ forloop.counter0 }}][team_home]">
+                                                <option value="">Selecione o time mandante</option>
+                                                {% for team in teams %}
+                                                <option value="{{ team.id }}">{{ team.name }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <input type="number" class="form-control" name="matches[{{ forloop.counter0 }}][score_home]" min="0" placeholder="Placar">
+                                        </div>
+                                        <div class="col-md-2">
+                                            <input type="number" class="form-control" name="matches[{{ forloop.counter0 }}][score_away]" min="0" placeholder="Placar">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <select class="form-control select2 team-away" name="matches[{{ forloop.counter0 }}][team_away]">
+                                                <option value="">Selecione o time visitante</option>
+                                                {% for team in teams %}
+                                                <option value="{{ team.id }}">{{ team.name }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4 mt-2">
+                                            <div class="input-group date" id="match_date_{{ forloop.counter0 }}" data-target-input="nearest">
+                                                <input type="text" class="form-control datetimepicker-input" 
+                                                       data-target="#match_date_{{ forloop.counter0 }}"
+                                                       name="matches[{{ forloop.counter0 }}][match_date]"
+                                                       placeholder="Data e Hora"/>
+                                                <div class="input-group-append" data-target="#match_date_{{ forloop.counter0 }}" data-toggle="datetimepicker">
+                                                    <div class="input-group-text"><i class="fa fa-calendar"></i></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                
+                                <button type="button" class="btn btn-info mt-3" id="add-match">
+                                    <i class="fas fa-plus"></i> Adicionar Jogo
+                                </button>
+                            </div>
+                            
+                            <div class="card-footer">
+                                <button type="submit" class="btn btn-success">Finalizar</button>
+                                <a href="{% url 'administrativo:campeonatos' %}" class="btn btn-default">Cancelar</a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+<!-- Modal Importar -->
+<div class="modal fade" id="modal-import">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Importar Jogos</h4>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="import-form" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <label for="import-file">Arquivo Excel</label>
+                        <div class="input-group">
+                            <div class="custom-file">
+                                <input type="file" class="custom-file-input" id="import-file" accept=".xlsx,.xls">
+                                <label class="custom-file-label" for="import-file">Escolher arquivo</label>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+                <div class="alert alert-info">
+                    <h5><i class="icon fas fa-info"></i> Formato do arquivo</h5>
+                    <p>O arquivo deve conter as seguintes colunas:</p>
+                    <ul>
+                        <li>Fase</li>
+                        <li>Rodada</li>
+                        <li>Time Mandante</li>
+                        <li>Placar Mandante</li>
+                        <li>Placar Visitante</li>
+                        <li>Time Visitante</li>
+                        <li>Data</li>
+                        <li>Hora</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-footer justify-content-between">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Fechar</button>
+                <button type="button" class="btn btn-primary" id="btn-import">Importar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'administrativo/plugins/toastr/toastr.min.js' %}"></script>
+<script src="{% static 'administrativo/plugins/select2/js/select2.full.min.js' %}"></script>
+<script src="{% static 'administrativo/plugins/moment/moment.min.js' %}"></script>
+<script src="{% static 'administrativo/plugins/tempusdominus-bootstrap-4/js/tempusdominus-bootstrap-4.min.js' %}"></script>
+<script src="{% static 'administrativo/plugins/bs-custom-file-input/bs-custom-file-input.min.js' %}"></script>
+
+<script>
+$(function () {
+    // Inicializa plugins
+    $('.select2').select2({
+        theme: 'bootstrap4'
+    });
+    
+    bsCustomFileInput.init();
+    
+    // Configura datepicker
+    $('.date').datetimepicker({
+        format: 'DD/MM/YYYY HH:mm',
+        icons: {
+            time: 'far fa-clock'
+        }
+    });
+    
+    // Adiciona novo jogo
+    $('#add-match').click(function() {
+        var matchCount = $('.match-row').length;
+        var template = `
+            <div class="row match-row mb-3">
+                <div class="col-md-4">
+                    <select class="form-control select2 team-home" name="matches[${matchCount}][team_home]">
+                        <option value="">Selecione o time mandante</option>
+                        {% for team in teams %}
+                        <option value="{{ team.id }}">{{ team.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <input type="number" class="form-control" name="matches[${matchCount}][score_home]" min="0" placeholder="Placar">
+                </div>
+                <div class="col-md-2">
+                    <input type="number" class="form-control" name="matches[${matchCount}][score_away]" min="0" placeholder="Placar">
+                </div>
+                <div class="col-md-4">
+                    <select class="form-control select2 team-away" name="matches[${matchCount}][team_away]">
+                        <option value="">Selecione o time visitante</option>
+                        {% for team in teams %}
+                        <option value="{{ team.id }}">{{ team.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4 mt-2">
+                    <div class="input-group date" id="match_date_${matchCount}" data-target-input="nearest">
+                        <input type="text" class="form-control datetimepicker-input" 
+                               data-target="#match_date_${matchCount}"
+                               name="matches[${matchCount}][match_date]"
+                               placeholder="Data e Hora"/>
+                        <div class="input-group-append" data-target="#match_date_${matchCount}" data-toggle="datetimepicker">
+                            <div class="input-group-text"><i class="fa fa-calendar"></i></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        $('.matches-container').append(template);
+        
+        // Reinicializa plugins para os novos elementos
+        $('.select2').select2({
+            theme: 'bootstrap4'
+        });
+        
+        $(`#match_date_${matchCount}`).datetimepicker({
+            format: 'DD/MM/YYYY HH:mm',
+            icons: {
+                time: 'far fa-clock'
+            }
+        });
+    });
+    
+    // Importação de jogos
+    $('#btn-import').click(function() {
+        var formData = new FormData();
+        formData.append('file', $('#import-file')[0].files[0]);
+        formData.append('championship_id', $('input[name="championship_id"]').val());
+        
+        $.ajax({
+            url: '{% url "administrativo:campeonato_importar_jogos" %}',
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(response) {
+                if (response.status === 'success') {
+                    toastr.success('Jogos importados com sucesso!');
+                    $('#modal-import').modal('hide');
+                    location.reload();
+                } else {
+                    toastr.error(response.message);
+                }
+            },
+            error: function() {
+                toastr.error('Erro ao importar jogos. Tente novamente.');
+            }
+        });
+    });
+
+    // Exibe mensagens do Django
+    {% if messages %}
+        {% for message in messages %}
+            toastr.{{ message.tags }}('{{ message }}');
+        {% endfor %}
+    {% endif %}
+});
+</script>
+{% endblock %} 

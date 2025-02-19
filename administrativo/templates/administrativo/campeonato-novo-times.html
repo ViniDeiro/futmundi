@@ -1,0 +1,139 @@
+{% extends 'administrativo/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'administrativo/plugins/toastr/toastr.min.css' %}">
+<link rel="stylesheet" href="{% static 'administrativo/plugins/select2/css/select2.min.css' %}">
+<link rel="stylesheet" href="{% static 'administrativo/plugins/select2-bootstrap4-theme/select2-bootstrap4.min.css' %}">
+<link rel="stylesheet" href="{% static 'administrativo/plugins/duallistbox/bootstrap-duallistbox.min.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+    <section class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1>Novo Campeonato</h1>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="{% url 'administrativo:index' %}">Home</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'administrativo:campeonatos' %}">Campeonatos</a></li>
+                        <li class="breadcrumb-item active">Novo Campeonato</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="content">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Etapa 2 - Seleção de Times</h3>
+                        </div>
+                        <form action="{% url 'administrativo:campeonato_novo' %}" method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="step" value="2">
+                            <input type="hidden" name="championship_id" value="{{ championship.id }}">
+                            
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <div class="form-group">
+                                            <label>Filtrar por</label>
+                                            <select class="form-control select2" id="filter_type" style="width: 200px;">
+                                                <option value="all">Todos</option>
+                                                <option value="team">Times</option>
+                                                <option value="selection">Seleções</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="row mt-4">
+                                    <div class="col-md-12">
+                                        <select class="duallistbox" multiple="multiple" name="teams[]">
+                                            {% for team in teams %}
+                                            <option value="{{ team.id }}" data-type="{{ team.is_selection|yesno:'selection,team' }}">
+                                                {{ team.name }}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="card-footer">
+                                <button type="submit" class="btn btn-primary">Próximo</button>
+                                <a href="{% url 'administrativo:campeonatos' %}" class="btn btn-default">Cancelar</a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'administrativo/plugins/toastr/toastr.min.js' %}"></script>
+<script src="{% static 'administrativo/plugins/select2/js/select2.full.min.js' %}"></script>
+<script src="{% static 'administrativo/plugins/duallistbox/jquery.bootstrap-duallistbox.min.js' %}"></script>
+
+<script>
+$(function () {
+    // Inicializa o Select2
+    $('.select2').select2({
+        theme: 'bootstrap4'
+    });
+
+    // Inicializa o Bootstrap Duallistbox
+    var dualListbox = $('.duallistbox').bootstrapDualListbox({
+        nonSelectedListLabel: 'Times Disponíveis',
+        selectedListLabel: 'Times Selecionados',
+        preserveSelectionOnMove: 'moved',
+        moveOnSelect: false,
+        infoText: 'Mostrando {0}',
+        infoTextEmpty: 'Lista vazia',
+        filterPlaceHolder: 'Filtrar',
+        filterTextClear: 'Mostrar todos',
+        moveSelectedLabel: 'Mover selecionados',
+        moveAllLabel: 'Mover todos',
+        removeSelectedLabel: 'Remover selecionados',
+        removeAllLabel: 'Remover todos'
+    });
+
+    // Filtra times por tipo
+    $('#filter_type').change(function() {
+        var filterType = $(this).val();
+        var $options = $('.duallistbox option');
+        
+        if (filterType === 'all') {
+            $options.show();
+        } else {
+            $options.each(function() {
+                if ($(this).data('type') === filterType) {
+                    $(this).show();
+                } else {
+                    $(this).hide();
+                }
+            });
+        }
+        
+        dualListbox.bootstrapDualListbox('refresh');
+    });
+
+    // Exibe mensagens do Django
+    {% if messages %}
+        {% for message in messages %}
+            toastr.{{ message.tags }}('{{ message }}');
+        {% endfor %}
+    {% endif %}
+});
+</script>
+{% endblock %} 

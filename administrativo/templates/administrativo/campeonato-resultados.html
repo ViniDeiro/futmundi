@@ -1,0 +1,114 @@
+{% extends 'administrativo/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'administrativo/plugins/toastr/toastr.min.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+    <section class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1>{{ championship.name }} - {{ championship.season }}</h1>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="{% url 'administrativo:index' %}">Home</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'administrativo:campeonatos' %}">Campeonatos</a></li>
+                        <li class="breadcrumb-item active">Resultados</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="content">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Resultados</h3>
+                        </div>
+                        <div class="card-body">
+                            {% for round_data in rounds %}
+                            <div class="card">
+                                <div class="card-header">
+                                    <h4 class="card-title">
+                                        {{ round_data.stage.name }} - Rodada {{ round_data.round.number }}
+                                        {% if round_data.round.is_current %}
+                                        <span class="badge badge-primary">Atual</span>
+                                        {% endif %}
+                                    </h4>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered table-striped">
+                                            <thead>
+                                                <tr>
+                                                    <th>Data</th>
+                                                    <th>Mandante</th>
+                                                    <th>Placar</th>
+                                                    <th>Visitante</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for match in round_data.matches %}
+                                                <tr>
+                                                    <td>{{ match.match_date|date:"d/m/Y H:i" }}</td>
+                                                    <td>
+                                                        {% if match.home_team.image %}
+                                                        <img src="{{ match.home_team.image.url }}" alt="{{ match.home_team.name }}" class="img-fluid" style="max-height: 30px;">
+                                                        {% endif %}
+                                                        {{ match.home_team.name }}
+                                                    </td>
+                                                    <td>
+                                                        {% if match.home_score is not None and match.away_score is not None %}
+                                                        {{ match.home_score }} x {{ match.away_score }}
+                                                        {% else %}
+                                                        - x -
+                                                        {% endif %}
+                                                    </td>
+                                                    <td>
+                                                        {{ match.away_team.name }}
+                                                        {% if match.away_team.image %}
+                                                        <img src="{{ match.away_team.image.url }}" alt="{{ match.away_team.name }}" class="img-fluid" style="max-height: 30px;">
+                                                        {% endif %}
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                            {% empty %}
+                            <div class="alert alert-info">
+                                Nenhuma rodada cadastrada para este campeonato.
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'administrativo/plugins/toastr/toastr.min.js' %}"></script>
+
+<script>
+$(function () {
+    // Exibe mensagens do Django
+    {% if messages %}
+        {% for message in messages %}
+            toastr.{{ message.tags }}('{{ message }}');
+        {% endfor %}
+    {% endif %}
+});
+</script>
+{% endblock %} 

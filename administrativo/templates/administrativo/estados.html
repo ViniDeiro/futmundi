@@ -259,6 +259,7 @@
         <script src="{% static 'administrativo/js/page-level.js' %}"></script>
         <script>
             $(document).ready(function() {
+                // Inicializa DataTables
                 var table = $('.dataTables-estados');
                 if (!$.fn.DataTable.isDataTable(table)) {
                     table.DataTable({
@@ -272,14 +273,6 @@
                     });
                 }
 
-                // Configuração do botão de exclusão individual
-                $('.delete-btn').click(function() {
-                    var stateId = $(this).data('id');
-                    var form = $('#modalDelete').find('form');
-                    form.attr('action', '/estado/excluir/' + stateId + '/');
-                    $('#modalDelete').modal('show');
-                });
-
                 // Função para excluir múltiplos registros
                 window.excluirSelecionados = function() {
                     var selectedIds = [];
@@ -288,13 +281,41 @@
                     });
 
                     if (selectedIds.length === 0) {
-                        alert('Selecione pelo menos um estado para excluir');
+                        toastr.error('Selecione pelo menos um estado para excluir');
                         return;
                     }
 
-                    $('#deleteIds').val(selectedIds.join(','));
                     $('#modalAlert').modal('show');
+                    $('#modalAlert .btn-danger').off('click').on('click', function() {
+                        $.ajax({
+                            url: "{% url 'administrativo:estado_excluir_em_massa' %}",
+                            type: 'POST',
+                            data: {
+                                'ids[]': selectedIds,
+                                'csrfmiddlewaretoken': '{{ csrf_token }}'
+                            },
+                            success: function(response) {
+                                $('#modalAlert').modal('hide');
+                                if (response.message) {
+                                    toastr.success(response.message);
+                                    window.location.reload();
+                                }
+                            },
+                            error: function(xhr) {
+                                $('#modalAlert').modal('hide');
+                                toastr.error(xhr.responseJSON?.error || 'Erro ao excluir estados');
+                            }
+                        });
+                    });
                 };
+
+                // Configuração do botão de exclusão individual
+                $('.delete-btn').click(function() {
+                    var stateId = $(this).data('id');
+                    var form = $('#modalDelete').find('form');
+                    form.attr('action', "{% url 'administrativo:estado_excluir' 0 %}".replace('0', stateId));
+                    $('#modalDelete').modal('show');
+                });
             });
         </script>
     </body>

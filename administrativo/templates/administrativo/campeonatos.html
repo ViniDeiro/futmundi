@@ -9,17 +9,15 @@
 
         <link href="{% static 'administrativo/css/bootstrap.min.css' %}" rel="stylesheet">
         <link href="{% static 'administrativo/font-awesome/css/font-awesome.css' %}" rel="stylesheet">
-
         <link href="{% static 'administrativo/css/plugins/dataTables/datatables.min.css' %}" rel="stylesheet">
-
+        <link href="{% static 'administrativo/css/plugins/toastr/toastr.min.css' %}" rel="stylesheet">
         <link href="{% static 'administrativo/css/animate.css' %}" rel="stylesheet">
         <link href="{% static 'administrativo/css/style.css' %}" rel="stylesheet">
-          
         <link href="{% static 'administrativo/css/plugins/awesome-bootstrap-checkbox/awesome-bootstrap-checkbox.css' %}" rel="stylesheet">
         <!-- Custom -->      
         <link href="{% static 'administrativo/css/custom.css' %}" rel="stylesheet">
         <!-- Favicon -->
-        <link rel="icon" href="img/futmundi.ico" type="image/png">
+        <link rel="icon" href="{% static 'administrativo/img/futmundi.ico' %}" type="image/png">
     </head>
     <body>
         <div id="wrapper">
@@ -28,60 +26,60 @@
                     <ul class="nav metismenu" id="side-menu">
                         <li class="nav-header">
                             <div class="dropdown profile-element">
-                                <a href="{% url "administrativo:usuarios" %}">
+                                <a href="{% url 'administrativo:usuarios' %}">
                                     <img src="{% static 'administrativo/img/logo.svg' %}" alt="Futmundi logo">
                                 </a>
                             </div>
                             <div class="logo-element">
-                                <a href="{% url "administrativo:usuarios" %}">
+                                <a href="{% url 'administrativo:usuarios' %}">
                                     <img src="{% static 'administrativo/img/logosm.svg' %}" alt="Futmundi logo">
                                 </a>                            
                             </div>
                         </li>
-                        <li class="active">
-                            <a href="{% url "administrativo:usuarios" %}"><i class="fa fa-user"></i> <span class="nav-label">Usuários</span></a>
-                        </li>
                         <li>
+                            <a href="{% url 'administrativo:usuarios' %}"><i class="fa fa-user"></i> <span class="nav-label">Usuários</span></a>
+                        </li>
+                        <li class="active">
                             <a href="#"><i class="fa fa-trophy"></i> <span class="nav-label">Campeonatos</span><span class="fa arrow"></span></a>
                             <ul class="nav nav-second-level collapse">
-                                <li><a href="{% url "administrativo:ambitos" %}">Âmbitos</a></li>
-                                <li><a href="{% url "administrativo:campeonatos" %}">Campeonatos</a></li>
-                                <li><a href="{% url "administrativo:templates" %}">Templates</a></li>
-                                <li><a href="{% url "administrativo:times" %}">Times</a></li>
+                                <li><a href="{% url 'administrativo:ambitos' %}">Âmbitos</a></li>
+                                <li class="active"><a href="{% url 'administrativo:campeonatos' %}">Campeonatos</a></li>
+                                <li><a href="{% url 'administrativo:templates' %}">Templates</a></li>
+                                <li><a href="{% url 'administrativo:times' %}">Times</a></li>
                             </ul>
                         </li>
                         <li>
                             <a href="#"><i class="fa fa-shopping-cart"></i> <span class="nav-label">Pacotes</span><span class="fa arrow"></span></a>
                             <ul class="nav nav-second-level collapse">
-                                <li><a href="{% url "administrativo:futcoins" %}">Futcoins</a></li>
-                                <li><a href="{% url "administrativo:planos" %}">Planos</a></li>
+                                <li><a href="{% url 'administrativo:futcoins' %}">Futcoins</a></li>
+                                <li><a href="{% url 'administrativo:planos' %}">Planos</a></li>
                             </ul>
                         </li>
                         <li>
                             <a href="#"><i class="fa fa-diamond"></i> <span class="nav-label">Futligas</span><span class="fa arrow"></span></a>
                             <ul class="nav nav-second-level collapse">
-                                <li><a href="{% url "administrativo:futligas_classicas" %}">Clássicas</a></li>
-                                <li><a href="{% url "administrativo:futligas_jogadores" %}">Jogadores</a></li>
+                                <li><a href="{% url 'administrativo:futligas_classicas' %}">Clássicas</a></li>
+                                <li><a href="{% url 'administrativo:futligas_jogadores' %}">Jogadores</a></li>
                             </ul>
                         </li>
                         <li>
                             <a href="#"><i class="fa fa-globe"></i> <span class="nav-label">Locais</span><span class="fa arrow"></span></a>
                             <ul class="nav nav-second-level collapse">
-                                <li><a href="{% url "administrativo:continentes" %}">Continentes</a></li>
-                                <li><a href="{% url "administrativo:paises" %}">Países</a></li>
-                                <li><a href="{% url "administrativo:estados" %}">Estados</a></li>
+                                <li><a href="{% url 'administrativo:continentes' %}">Continentes</a></li>
+                                <li><a href="{% url 'administrativo:paises' %}">Países</a></li>
+                                <li><a href="{% url 'administrativo:estados' %}">Estados</a></li>
                             </ul>
                         </li>
                         <li>
                             <a href="#"><i class="fa fa-gear"></i> <span class="nav-label">Configurações</span><span class="fa arrow"></span></a>
                             <ul class="nav nav-second-level collapse">
-                                <li><a href="{% url "administrativo:parametros" %}">Parâmetros</a></li>
-                                <li><a href="{% url "administrativo:termo" %}">Termo</a></li>
-                                <li><a href="{% url "administrativo:notificacoes" %}">Notificações</a></li>
+                                <li><a href="{% url 'administrativo:parametros' %}">Parâmetros</a></li>
+                                <li><a href="{% url 'administrativo:termo' %}">Termo</a></li>
+                                <li><a href="{% url 'administrativo:notificacoes' %}">Notificações</a></li>
                             </ul>
                         </li>
                         <li>
-                            <a href="{% url "administrativo:relatorios" %}"><i class="fa fa-pie-chart"></i> <span class="nav-label">Relatórios</span></a>
+                            <a href="{% url 'administrativo:relatorios' %}"><i class="fa fa-pie-chart"></i> <span class="nav-label">Relatórios</span></a>
                         </li>
                     </ul>
                 </div>
@@ -94,7 +92,7 @@
                         </div>
                         <ul class="nav navbar-top-links navbar-right">
                             <li>
-                                <span class="m-r-sm text-muted welcome-message">Andrews Cristhian</span>
+                                <span class="m-r-sm text-muted welcome-message">{{ request.session.admin_name }}</span>
                             </li>
                             <li class="dropdown">
                                 <a class="dropdown-toggle count-info" data-toggle="dropdown" href="#">
@@ -102,7 +100,7 @@
                                 </a>
                                 <ul class="dropdown-menu dropdown-alerts">
                                     <li>
-                                        <a href="{% url "administrativo:administradores" %}" class="dropdown-item">
+                                        <a href="{% url 'administrativo:administradores' %}" class="dropdown-item">
                                             <div>
                                                 <i class="fa fa-users"></i> Administradores
                                             </div>
@@ -110,7 +108,7 @@
                                     </li>
                                     <li class="dropdown-divider"></li>
                                     <li>
-                                        <a href="{% url "administrativo:login" %}" class="dropdown-item">
+                                        <a href="{% url 'administrativo:logout' %}" class="dropdown-item">
                                             <div>
                                                 <i class="fa fa-sign-out"></i> Sair
                                             </div>
@@ -131,14 +129,25 @@
                         <div class="col-lg-12">
                             <div class="ibox">
                                 <div class="ibox-content">
+                                    {% csrf_token %}
+                                    {% if messages %}
+                                        <div id="django-messages" data-messages="[
+                                            {% for message in messages %}
+                                                {
+                                                    "tag": "{{ message.tags }}",
+                                                    "text": "{{ message }}"
+                                                }{% if not forloop.last %},{% endif %}
+                                            {% endfor %}
+                                        ]"></div>
+                                    {% endif %}
                                     <div class="group-options-left ml5">
-                                        <a href="{% url "administrativo:campeonato_novo" %}" class="btn btn-success btn-sm" title="Novo"><i class="fa fa-plus"></i></a>
+                                        <a href="{% url 'administrativo:campeonato_novo' %}" class="btn btn-success btn-sm" title="Novo"><i class="glyphicon glyphicon-plus"></i></a>
                                     </div>
                                     <div class="group-options-right mr10">
-                                        <a class="btn btn-default btn-sm" title="Excluir"><i class="glyphicon glyphicon-trash" data-toggle="modal" data-target="#modalAlert"></i></a>
+                                        <button type="button" class="btn btn-default btn-sm" title="Excluir" onclick="excluirSelecionados()"><i class="glyphicon glyphicon-trash"></i></button>
                                     </div>
                                     <div class="table-responsive">
-                                        <table class="table table-striped table-bordered table-hover dataTables-campeonatos" >
+                                        <table class="table table-striped table-bordered table-hover dataTables-campeonatos">
                                             <thead>
                                                 <tr>
                                                     <th class="per10 center-middle">
@@ -157,46 +166,38 @@
                                                 </tr>
                                             </thead>
                                             <tbody>
+                                                {% for championship in championships %}
                                                 <tr>
                                                     <td class="center-middle">
                                                         <div class="checkbox checkbox-success">
-                                                            <input id="checkbox2" type="checkbox">
-                                                            <label for="checkbox2"></label>
+                                                            <input id="checkbox{{ championship.id }}" type="checkbox" name="ids[]" value="{{ championship.id }}" {% if championship.is_active or championship.predictions.exists %}disabled{% endif %}>
+                                                            <label for="checkbox{{ championship.id }}"></label>
                                                         </div>
                                                     </td>
-                                                    <td>Campeonato Paulista</td>
-                                                    <td>Campeonato Paulista</td>
-                                                    <td>Continental</td>
-                                                    <td>2020</td>
-                                                    <td>Ativo</td>
-                                                    <td>01/01/2000</td>
+                                                    <td>{{ championship.name }}</td>
+                                                    <td>{{ championship.template.name }}</td>
+                                                    <td>{{ championship.scope.name }}</td>
+                                                    <td>{{ championship.season }}</td>
                                                     <td>
-                                                        <button type="button" class="btn btn-info btn-xs" title="Editar"><i class="glyphicon glyphicon-pencil"></i></button>
-                                                        <button type="button" class="btn btn-success btn-xs" title="Ativar/Desavivar"><i class="glyphicon glyphicon-ok"></i></button>
-                                                        <button type="button" class="btn btn-warning btn-xs" title="Resultados"><i class="glyphicon glyphicon-th"></i></button>
-                                                        <button type="button" class="btn btn-danger btn-xs" title="Excluir"><i class="glyphicon glyphicon-trash" data-toggle="modal" data-target="#modalAlert2"></i></button>
+                                                        {% if championship.is_active %}
+                                                        <span class="label label-primary">Ativo</span>
+                                                        {% else %}
+                                                        <span class="label label-default">Inativo</span>
+                                                        {% endif %}
+                                                    </td>
+                                                    <td>{{ championship.created_at|date:"d/m/Y" }}</td>
+                                                    <td>
+                                                        <a href="{% url 'administrativo:campeonato_editar' championship.id %}" class="btn btn-info btn-xs" title="Editar"><i class="glyphicon glyphicon-pencil"></i></a>
+                                                        <button type="button" class="btn btn-success btn-xs btn-toggle" title="Ativar/Desativar" data-id="{{ championship.id }}">
+                                                            <i class="glyphicon glyphicon-{% if championship.is_active %}ok{% else %}remove{% endif %}"></i>
+                                                        </button>
+                                                        <a href="{% url 'administrativo:campeonato_resultados' championship.id %}" class="btn btn-warning btn-xs" title="Ver Resultados"><i class="glyphicon glyphicon-th"></i></a>
+                                                        {% if not championship.is_active and not championship.predictions.exists %}
+                                                        <button type="button" class="btn btn-danger btn-xs btn-excluir" data-id="{{ championship.id }}" data-name="{{ championship.name }}" title="Excluir"><i class="glyphicon glyphicon-trash"></i></button>
+                                                        {% endif %}
                                                     </td>
                                                 </tr>
-                                                <tr>
-                                                    <td class="center-middle">
-                                                        <div class="checkbox checkbox-success">
-                                                            <input id="checkbox3" type="checkbox">
-                                                            <label for="checkbox3"></label>
-                                                        </div>
-                                                    </td>
-                                                    <td>Campeonato Brasileiro</td>
-                                                    <td>Campeonato Brasileiro</td>
-                                                    <td>Nacional</td>
-                                                    <td>2019</td>
-                                                    <td>Inativo</td>
-                                                    <td>30/03/2010</td>
-                                                    <td>
-                                                        <button type="button" class="btn btn-info btn-xs" title="Editar"><i class="glyphicon glyphicon-pencil"></i></button>
-                                                         <button type="button" class="btn btn-success btn-xs" title="Ativar/Desavivar"><i class="glyphicon glyphicon-ok"></i></button>
-                                                        <button type="button" class="btn btn-warning btn-xs" title="Resultados"><i class="glyphicon glyphicon-th"></i></button>
-                                                        <button type="button" class="btn btn-danger btn-xs" title="Excluir"><i class="glyphicon glyphicon-trash" data-toggle="modal" data-target="#modalAlert2"></i></button>
-                                                    </td>
-                                                </tr>
+                                                {% endfor %}
                                             </tbody>
                                         </table>
                                     </div>
@@ -207,25 +208,9 @@
                 </div>
             </div>
         </div>
-        <!-- Modals -->
-        <div class="modal inmodal" id="modalAlert" tabindex="-1" role="dialog"  aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered modal-sm">
-                <div class="modal-content animated fadeIn">
-                    <div class="modal-header">
-                        <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
-                        <h4 class="modal-title">Tem certeza?</h4>
-                    </div>
-                    <div class="modal-body">
-                        <p>Tem certeza que deseja excluir os registros selecionados?</p>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
-                        <button type="button" class="btn btn-danger">Deletar</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="modal inmodal" id="modalAlert2" tabindex="-1" role="dialog"  aria-hidden="true">
+
+        <!-- Modal Excluir Individual -->
+        <div class="modal inmodal" id="modalExcluirIndividual" tabindex="-1" role="dialog" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered modal-sm">
                 <div class="modal-content animated fadeIn">
                     <div class="modal-header">
@@ -236,12 +221,38 @@
                         <p>Tem certeza que deseja excluir o registro selecionado?</p>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
-                        <button type="button" class="btn btn-danger">Deletar</button>
+                        <form id="formExcluirIndividual" method="POST">
+                            {% csrf_token %}
+                            <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn btn-danger">Deletar</button>
+                        </form>
                     </div>
                 </div>
             </div>
         </div>
+
+        <!-- Modal Excluir em Massa -->
+        <div class="modal inmodal" id="modalExcluirMassa" tabindex="-1" role="dialog" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-sm">
+                <div class="modal-content animated fadeIn">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                        <h4 class="modal-title">Tem certeza?</h4>
+                    </div>
+                    <div class="modal-body">
+                        <p>Tem certeza que deseja excluir os registros selecionados?</p>
+                    </div>
+                    <div class="modal-footer">
+                        <form id="formExcluirMassa" method="POST">
+                            {% csrf_token %}
+                            <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn btn-danger">Deletar</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Mainly scripts -->
         <script src="{% static 'administrativo/js/jquery-3.4.1.min.js' %}"></script>
         <script src="{% static 'administrativo/js/popper.min.js' %}"></script>
@@ -253,8 +264,123 @@
         <!-- Custom and plugin javascript -->
         <script src="{% static 'administrativo/js/inspinia.js' %}"></script>
         <script src="{% static 'administrativo/js/plugins/pace/pace.min.js' %}"></script>
-        <script src="{% static 'administrativo/js/plugins/checkAll/checkAll.js' %}"></script>
+        <script src="{% static 'administrativo/js/plugins/toastr/toastr.min.js' %}"></script>
         <script src="{% static 'administrativo/js/settings.js' %}"></script>
-        <script src="{% static 'administrativo/js/page-level.js' %}"></script>
+        <script>
+            $(document).ready(function() {
+                // Exibe mensagens do Django usando toastr
+                var messagesElement = document.getElementById('django-messages');
+                if (messagesElement) {
+                    var messages = JSON.parse(messagesElement.getAttribute('data-messages'));
+                    messages.forEach(function(message) {
+                        toastr[message.tag](message.text);
+                    });
+                }
+
+                // Configuração do CSRF token para todas as requisições AJAX
+                function getCookie(name) {
+                    let cookieValue = null;
+                    if (document.cookie && document.cookie !== '') {
+                        const cookies = document.cookie.split(';');
+                        for (let i = 0; i < cookies.length; i++) {
+                            const cookie = cookies[i].trim();
+                            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                                break;
+                            }
+                        }
+                    }
+                    return cookieValue;
+                }
+                const csrftoken = getCookie('csrftoken');
+                
+                $.ajaxSetup({
+                    beforeSend: function(xhr, settings) {
+                        if (!this.crossDomain) {
+                            xhr.setRequestHeader("X-CSRFToken", csrftoken);
+                        }
+                    }
+                });
+
+                // Inicializa o DataTable
+                $('.dataTables-campeonatos').DataTable({
+                    pageLength: 25,
+                    responsive: true,
+                    dom: '<"html5buttons"B>lTfgitp',
+                    buttons: [],
+                    language: {
+                        url: "//cdn.datatables.net/plug-ins/1.10.19/i18n/Portuguese-Brasil.json"
+                    }
+                });
+
+                // Função para excluir múltiplos registros
+                window.excluirSelecionados = function() {
+                    var selectedIds = [];
+                    $('input[name="ids[]"]:checked').each(function() {
+                        selectedIds.push($(this).val());
+                    });
+
+                    if (selectedIds.length === 0) {
+                        toastr.error('Selecione pelo menos um registro para excluir');
+                        return;
+                    }
+
+                    $('#modalExcluirMassa').modal('show');
+                };
+
+                // Configuração do botão de exclusão individual
+                $('.btn-excluir').click(function() {
+                    var stateId = $(this).data('id');
+                    var form = $('#formExcluirIndividual');
+                    form.attr('action', "{% url 'administrativo:campeonato_excluir' 0 %}".replace('0', stateId));
+                    $('#modalExcluirIndividual').modal('show');
+                });
+
+                // Checkbox "Selecionar todos"
+                $('.checkAll').on('change', function() {
+                    $('input[name="ids[]"]:not(:disabled)').prop('checked', $(this).prop('checked'));
+                });
+
+                // Atualiza o estado do "Selecionar todos" quando os checkboxes individuais são alterados
+                $(document).on('change', 'input[name="ids[]"]', function() {
+                    var totalCheckboxes = $('input[name="ids[]"]:not(:disabled)').length;
+                    var checkedCheckboxes = $('input[name="ids[]"]:checked').length;
+                    $('.checkAll').prop('checked', totalCheckboxes === checkedCheckboxes && totalCheckboxes > 0);
+                });
+
+                // Ativar/Desativar campeonato
+                $('.btn-toggle').on('click', function() {
+                    var btn = $(this);
+                    var championshipId = btn.data('id');
+                    
+                    $.ajax({
+                        url: "{% url 'administrativo:campeonato_toggle_status' %}",
+                        type: 'POST',
+                        data: {
+                            template_id: championshipId,
+                            csrfmiddlewaretoken: '{{ csrf_token }}'
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                var icon = btn.find('i');
+                                if (response.enabled) {
+                                    icon.removeClass('fa-times').addClass('fa-check');
+                                    btn.attr('title', 'Desativar');
+                                } else {
+                                    icon.removeClass('fa-check').addClass('fa-times');
+                                    btn.attr('title', 'Ativar');
+                                }
+                                toastr.success(response.message);
+                            } else {
+                                toastr.error(response.message);
+                            }
+                        },
+                        error: function() {
+                            toastr.error('Erro ao alterar o status do campeonato.');
+                        }
+                    });
+                });
+            });
+        </script>
     </body>
 </html>

@@ -1,0 +1,264 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+        <title>Editar Template</title>
+
+        <link href="{% static 'administrativo/css/bootstrap.min.css' %}" rel="stylesheet">
+        <link href="{% static 'administrativo/font-awesome/css/font-awesome.css' %}" rel="stylesheet">
+        <link href="{% static 'administrativo/css/plugins/toastr/toastr.min.css' %}" rel="stylesheet">
+        <link href="{% static 'administrativo/css/animate.css' %}" rel="stylesheet">
+        <link href="{% static 'administrativo/css/style.css' %}" rel="stylesheet">
+        <!-- Custom -->      
+        <link href="{% static 'administrativo/css/custom.css' %}" rel="stylesheet">
+        <!-- Favicon -->
+        <link rel="icon" href="{% static 'administrativo/img/futmundi.ico' %}" type="image/png">
+    </head>
+    <body>
+        <div id="wrapper">
+            <nav class="navbar-default navbar-static-side">
+                <div class="sidebar-collapse">
+                    <ul class="nav metismenu" id="side-menu">
+                        <li class="nav-header">
+                            <div class="dropdown profile-element">
+                                <a href="{% url "administrativo:usuarios" %}">
+                                    <img src="{% static 'administrativo/img/logo.svg' %}" alt="Futmundi logo">
+                                </a>
+                            </div>
+                            <div class="logo-element">
+                                <a href="{% url "administrativo:usuarios" %}">
+                                    <img src="{% static 'administrativo/img/logosm.svg' %}" alt="Futmundi logo">
+                                </a>                            
+                            </div>
+                        </li>
+                        <li>
+                            <a href="{% url "administrativo:usuarios" %}"><i class="fa fa-user"></i> <span class="nav-label">Usuários</span></a>
+                        </li>
+                        <li class="active">
+                            <a href="#"><i class="fa fa-trophy"></i> <span class="nav-label">Campeonatos</span><span class="fa arrow"></span></a>
+                            <ul class="nav nav-second-level collapse">
+                                <li><a href="{% url "administrativo:ambitos" %}">Âmbitos</a></li>
+                                <li><a href="{% url "administrativo:campeonatos" %}">Campeonatos</a></li>
+                                <li class="active"><a href="{% url "administrativo:templates" %}">Templates</a></li>
+                                <li><a href="{% url "administrativo:times" %}">Times</a></li>
+                            </ul>
+                        </li>
+                        <li>
+                            <a href="#"><i class="fa fa-shopping-cart"></i> <span class="nav-label">Pacotes</span><span class="fa arrow"></span></a>
+                            <ul class="nav nav-second-level collapse">
+                                <li><a href="{% url "administrativo:futcoins" %}">Futcoins</a></li>
+                                <li><a href="{% url "administrativo:planos" %}">Planos</a></li>
+                            </ul>
+                        </li>
+                        <li>
+                            <a href="#"><i class="fa fa-diamond"></i> <span class="nav-label">Futligas</span><span class="fa arrow"></span></a>
+                            <ul class="nav nav-second-level collapse">
+                                <li><a href="{% url "administrativo:futligas_classicas" %}">Clássicas</a></li>
+                                <li><a href="{% url "administrativo:futligas_jogadores" %}">Jogadores</a></li>
+                            </ul>
+                        </li>
+                        <li>
+                            <a href="#"><i class="fa fa-globe"></i> <span class="nav-label">Locais</span><span class="fa arrow"></span></a>
+                            <ul class="nav nav-second-level collapse">
+                                <li><a href="{% url "administrativo:continentes" %}">Continentes</a></li>
+                                <li><a href="{% url "administrativo:paises" %}">Países</a></li>
+                                <li><a href="{% url "administrativo:estados" %}">Estados</a></li>
+                            </ul>
+                        </li>
+                        <li>
+                            <a href="#"><i class="fa fa-gear"></i> <span class="nav-label">Configurações</span><span class="fa arrow"></span></a>
+                            <ul class="nav nav-second-level collapse">
+                                <li><a href="{% url "administrativo:parametros" %}">Parâmetros</a></li>
+                                <li><a href="{% url "administrativo:termo" %}">Termo</a></li>
+                                <li><a href="{% url "administrativo:notificacoes" %}">Notificações</a></li>
+                            </ul>
+                        </li>
+                        <li>
+                            <a href="{% url "administrativo:relatorios" %}"><i class="fa fa-pie-chart"></i> <span class="nav-label">Relatórios</span></a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+            <div id="page-wrapper" class="gray-bg">
+                <div class="row border-bottom">
+                    <nav class="navbar navbar-static-top" style="margin-bottom: 0">
+                        <div class="navbar-header">
+                            <a class="navbar-minimalize minimalize-styl-2 btn btn-success " href="#"><i class="fa fa-bars"></i> </a>
+                        </div>
+                        <ul class="nav navbar-top-links navbar-right">
+                            <li>
+                                <span class="m-r-sm text-muted welcome-message">{{ request.session.admin_name }}</span>
+                            </li>
+                            <li class="dropdown">
+                                <a class="dropdown-toggle count-info" data-toggle="dropdown" href="#">
+                                    <i class="fa fa-gear"></i>
+                                </a>
+                                <ul class="dropdown-menu dropdown-alerts">
+                                    <li>
+                                        <a href="{% url "administrativo:administradores" %}" class="dropdown-item">
+                                            <div>
+                                                <i class="fa fa-users"></i> Administradores
+                                            </div>
+                                        </a>
+                                    </li>
+                                    <li class="dropdown-divider"></li>
+                                    <li>
+                                        <a href="{% url 'administrativo:logout' %}" class="dropdown-item">
+                                            <div>
+                                                <i class="fa fa-sign-out"></i> Sair
+                                            </div>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+                <div class="row wrapper border-bottom white-bg page-heading">
+                    <div class="col-lg-10">
+                        <h2>Editar Template</h2>
+                    </div>
+                </div>
+                <div class="wrapper wrapper-content">
+                    <div class="row">
+                        <div class="col-lg-12">
+                            <div class="ibox">
+                                <div class="ibox-content">
+                                    {% if messages %}
+                                        {% for message in messages %}
+                                            <div class="alert alert-{{ message.tags }}">
+                                                {{ message }}
+                                            </div>
+                                        {% endfor %}
+                                    {% endif %}
+                                    <form method="post" action="{% url 'administrativo:template_editar' template.id %}">
+                                        {% csrf_token %}
+                                        <div class="row">
+                                            <div class="col-lg-8">
+                                                <div class="form-group">
+                                                    <label for="name">Nome</label>
+                                                    <input type="text" class="form-control" id="name" name="name" value="{{ template.name }}" required>
+                                                </div>
+                                                <div class="form-group">
+                                                    <div class="checkbox">
+                                                        <label>
+                                                            <input type="checkbox" name="enabled" {% if template.enabled %}checked{% endif %}> Ativo
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label for="number_of_stages">Quantidade de Fases</label>
+                                                    <input type="number" class="form-control" id="number_of_stages" name="number_of_stages" min="1" value="{{ stages|length }}" required>
+                                                </div>
+                                                <div id="stages-container">
+                                                    {% for stage in stages %}
+                                                    <div class="stage-form" data-index="{{ forloop.counter0 }}">
+                                                        <h4>Fase {{ forloop.counter }}</h4>
+                                                        <div class="form-group">
+                                                            <label>Nome da Fase</label>
+                                                            <input type="text" class="form-control" name="stage_name_{{ forloop.counter0 }}" value="{{ stage.name }}" required>
+                                                        </div>
+                                                        <div class="form-group">
+                                                            <label>Rodadas</label>
+                                                            <input type="number" class="form-control" name="stage_rounds_{{ forloop.counter0 }}" value="{{ stage.rounds }}" min="1" required>
+                                                        </div>
+                                                        <div class="form-group">
+                                                            <label>Jogos por Rodada</label>
+                                                            <input type="number" class="form-control" name="stage_matches_per_round_{{ forloop.counter0 }}" value="{{ stage.matches_per_round }}" min="1" required>
+                                                        </div>
+                                                    </div>
+                                                    {% endfor %}
+                                                </div>
+                                                <div class="form-group">
+                                                    <button type="submit" class="btn btn-success"><i class="fa fa-save"></i> Salvar</button>
+                                                    <a href="{% url 'administrativo:templates' %}" class="btn btn-danger"><i class="fa fa-times"></i> Cancelar</a>
+                                                </div>
+                                            </div>
+                                            <div class="col-lg-4">
+                                                <div class="ibox">
+                                                    <div class="ibox-title">
+                                                        <h5>Campeonatos Vinculados</h5>
+                                                    </div>
+                                                    <div class="ibox-content">
+                                                        <div class="table-responsive">
+                                                            <table class="table table-striped">
+                                                                <tbody>
+                                                                    {% for championship in template.championships.all %}
+                                                                    <tr>
+                                                                        <td>{{ championship.name }}</td>
+                                                                    </tr>
+                                                                    {% empty %}
+                                                                    <tr>
+                                                                        <td>Nenhum campeonato vinculado</td>
+                                                                    </tr>
+                                                                    {% endfor %}
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mainly scripts -->
+        <script src="{% static 'administrativo/js/jquery-3.4.1.min.js' %}"></script>
+        <script src="{% static 'administrativo/js/popper.min.js' %}"></script>
+        <script src="{% static 'administrativo/js/bootstrap.js' %}"></script>
+        <script src="{% static 'administrativo/js/plugins/metisMenu/jquery.metisMenu.js' %}"></script>
+        <script src="{% static 'administrativo/js/plugins/slimscroll/jquery.slimscroll.min.js' %}"></script>
+        <!-- Custom and plugin javascript -->
+        <script src="{% static 'administrativo/js/inspinia.js' %}"></script>
+        <script src="{% static 'administrativo/js/plugins/pace/pace.min.js' %}"></script>
+        <!-- Toastr script -->
+        <script src="{% static 'administrativo/js/plugins/toastr/toastr.min.js' %}"></script>
+        <script src="{% static 'administrativo/js/settings.js' %}"></script>
+
+        <script>
+            $(document).ready(function() {
+                // Atualiza o número de fases quando o usuário alterar o valor
+                $('#number_of_stages').change(function() {
+                    var numStages = parseInt($(this).val());
+                    var currentStages = $('.stage-form').length;
+                    
+                    if (numStages > currentStages) {
+                        // Adiciona novas fases
+                        for (var i = currentStages; i < numStages; i++) {
+                            var stageHtml = `
+                                <div class="stage-form" data-index="${i}">
+                                    <h4>Fase ${i + 1}</h4>
+                                    <div class="form-group">
+                                        <label>Nome da Fase</label>
+                                        <input type="text" class="form-control" name="stage_name_${i}" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Rodadas</label>
+                                        <input type="number" class="form-control" name="stage_rounds_${i}" min="1" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Jogos por Rodada</label>
+                                        <input type="number" class="form-control" name="stage_matches_per_round_${i}" min="1" required>
+                                    </div>
+                                </div>
+                            `;
+                            $('#stages-container').append(stageHtml);
+                        }
+                    } else {
+                        // Remove fases excedentes
+                        $('.stage-form').slice(numStages).remove();
+                    }
+                });
+            });
+        </script>
+    </body>
+</html> 
