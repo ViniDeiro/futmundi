@@ -1,0 +1,35 @@
+{% load static %}
+<div class="row border-bottom">
+    <nav class="navbar navbar-static-top" style="margin-bottom: 0">
+        <div class="navbar-header">
+            <a class="navbar-minimalize minimalize-styl-2 btn btn-success " href="#"><i class="fa fa-bars"></i> </a>
+        </div>
+        <ul class="nav navbar-top-links navbar-right">
+            <li>
+                <span class="m-r-sm text-muted welcome-message">{{ request.session.admin_name }}</span>
+            </li>
+            <li class="dropdown">
+                <a class="dropdown-toggle count-info" data-toggle="dropdown" href="#">
+                    <i class="fa fa-gear"></i>
+                </a>
+                <ul class="dropdown-menu dropdown-alerts">
+                    <li>
+                        <a href="{% url "administrativo:administradores" %}" class="dropdown-item">
+                            <div>
+                                <i class="fa fa-users"></i> Administradores
+                            </div>
+                        </a>
+                    </li>
+                    <li class="dropdown-divider"></li>
+                    <li>
+                        <a href="{% url 'administrativo:logout' %}" class="dropdown-item">
+                            <div>
+                                <i class="fa fa-sign-out"></i> Sair
+                            </div>
+                        </a>
+                    </li>
+                </ul>
+            </li>
+        </ul>
+    </nav>
+</div> 

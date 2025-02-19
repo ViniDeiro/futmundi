@@ -132,63 +132,33 @@
                             <div class="ibox-content">
                                 <div class="row mt10">
                                     <div class="col-lg-4">
-                                        <form class="mt10">
+                                        <form class="mt10" method="post" action="{% url 'administrativo:estado_novo' %}">
+                                            {% csrf_token %}
+                                            {% if messages %}
+                                                {% for message in messages %}
+                                                    <div class="alert alert-{{ message.tags }}">
+                                                        {{ message }}
+                                                    </div>
+                                                {% endfor %}
+                                            {% endif %}
                                             <div class="form-group col-lg-6">
-                                                <input type="text" id="nome" class="form-control" required>
-                                                <label class="form-control-placeholder" for="nome">Nome</label>
+                                                <input type="text" id="name" name="name" class="form-control" required>
+                                                <label class="form-control-placeholder" for="name">Nome</label>
                                             </div>
                                             <div class="form-group col-lg-6 mtm10">
-                                                <label class="control-label" for="pais">País</label>
-                                                <select class="form-control js-basic-single" id="pais">
-                                                    <option value="Brasil">Brasil</option>
-                                                    <option value="Inglaterra">Inglaterra</option>
+                                                <label class="control-label" for="country">País</label>
+                                                <select class="form-control js-basic-single" id="country" name="country" required>
+                                                    <option value="">Selecione um país</option>
+                                                    {% for country in countries %}
+                                                        <option value="{{ country.id }}">{{ country.name }}</option>
+                                                    {% endfor %}
                                                 </select>
                                             </div>
                                             <div>
-                                                <button type="button" class="btn btn-success ml15" id="successToast"><i class="glyphicon glyphicon-save mr5"></i> Salvar</button>
-                                                <button type="button" class="btn btn-danger ml15"><i class="fa fa-ban mr5"></i> Cancelar</button>
+                                                <button type="submit" class="btn btn-success ml15"><i class="glyphicon glyphicon-save mr5"></i> Salvar</button>
+                                                <a href="{% url 'administrativo:estados' %}" class="btn btn-danger ml15"><i class="fa fa-ban mr5"></i> Cancelar</a>
                                             </div>
                                         </form>
-                                    </div>                                    
-                                    <div class="col-lg-2 ml30 mt10">
-                                        <table class="table table-bordered table-striped">
-                                            <thead>
-                                                <tr>
-                                                    <th class="per100">Times Vinculados</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr>
-                                                    <td>Time 1</td>
-                                                </tr>
-                                                <tr>
-                                                    <td>Time 2</td>
-                                                </tr>
-                                                <tr>
-                                                    <td>Time 3</td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                    <div class="col-lg-2 ml30 mt10">
-                                        <table class="table table-bordered table-striped">
-                                            <thead>
-                                                <tr>
-                                                    <th class="per100">Campeonatos Vinculados</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr>
-                                                    <td>Campeonato 1</td>
-                                                </tr>
-                                                <tr>
-                                                    <td>Campeonato 2</td>
-                                                </tr>
-                                                <tr>
-                                                    <td>Campeonato 3</td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
                                     </div>
                                 </div>
                             </div>

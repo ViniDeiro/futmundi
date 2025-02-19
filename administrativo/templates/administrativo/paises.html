@@ -130,12 +130,18 @@
                             <div class="ibox">
                                 <div class="ibox-content">
                                     <div class="group-options-left ml5">
-                                        <a href="{% url "administrativo:pais_novo" %}" class="btn btn-success btn-sm" title="Novo"><i class="fa fa-plus"></i></a>
-                                        <a href="#" class="btn btn-primary btn-sm" title="Importar"><i class="fa fa-upload"></i></a>  
+                                        <a href="{% url 'administrativo:pais_novo' %}" class="btn btn-success btn-sm" title="Novo"><i class="fa fa-plus"></i></a>
+                                        <form action="{% url 'administrativo:pais_importar' %}" method="post" enctype="multipart/form-data" style="display: inline;">
+                                            {% csrf_token %}
+                                            <span class="btn btn-primary btn-sm btn-file" title="Importar">
+                                                <i class="fa fa-upload"></i>
+                                                <input type="file" name="file" onchange="this.form.submit()">
+                                            </span>
+                                        </form>
                                     </div>
                                     <div class="group-options-right mr10">
-                                        <a class="btn btn-default btn-sm" title="Exportar"><i class="glyphicon glyphicon-download-alt"></i></a>
-                                        <a class="btn btn-default btn-sm" title="Excluir"><i class="glyphicon glyphicon-trash" data-toggle="modal" data-target="#modalAlert"></i></a>
+                                        <a href="{% url 'administrativo:pais_exportar' %}" class="btn btn-default btn-sm" title="Exportar"><i class="glyphicon glyphicon-download-alt"></i></a>
+                                        <button type="button" class="btn btn-default btn-sm" title="Excluir" onclick="excluirSelecionados()"><i class="glyphicon glyphicon-trash"></i></button>
                                     </div>
                                     <div class="table-responsive">
                                         <table class="table table-striped table-bordered table-hover dataTables-paises" >
@@ -154,36 +160,23 @@
                                                 </tr>
                                             </thead>
                                             <tbody>
+                                                {% for country in countries %}
                                                 <tr>
                                                     <td class="center-middle">
                                                         <div class="checkbox checkbox-success">
-                                                            <input id="checkbox2" type="checkbox">
-                                                            <label for="checkbox2"></label>
+                                                            <input id="checkbox{{ country.id }}" type="checkbox" class="check-item" value="{{ country.id }}">
+                                                            <label for="checkbox{{ country.id }}"></label>
                                                         </div>
                                                     </td>
-                                                    <td>Brasil</td>
-                                                    <td>América do Sul</td>
-                                                    <td>01/01/2000</td>
+                                                    <td>{{ country.name }}</td>
+                                                    <td>{{ country.continent.name }}</td>
+                                                    <td>{{ country.created_at|date:"d/m/Y" }}</td>
                                                     <td>
-                                                        <button type="button" class="btn btn-info btn-xs" title="Editar"><i class="glyphicon glyphicon-pencil"></i></button>
-                                                        <button type="button" class="btn btn-danger btn-xs" title="Excluir"><i class="glyphicon glyphicon-trash" data-toggle="modal" data-target="#modalAlert2"></i></button>
+                                                        <a href="{% url 'administrativo:pais_editar' country.id %}" class="btn btn-info btn-xs" title="Editar"><i class="glyphicon glyphicon-pencil"></i></a>
+                                                        <button type="button" class="btn btn-danger btn-xs delete-btn" title="Excluir" data-id="{{ country.id }}"><i class="glyphicon glyphicon-trash"></i></button>
                                                     </td>
                                                 </tr>
-                                                <tr>
-                                                    <td class="center-middle">
-                                                        <div class="checkbox checkbox-success">
-                                                            <input id="checkbox3" type="checkbox">
-                                                            <label for="checkbox3"></label>
-                                                        </div>
-                                                    </td>
-                                                    <td>Alemanha</td>
-                                                    <td>Europa</td>
-                                                    <td>28/03/2020</td>
-                                                    <td>
-                                                        <button type="button" class="btn btn-info btn-xs" title="Editar"><i class="glyphicon glyphicon-pencil"></i></button>
-                                                        <button type="button" class="btn btn-danger btn-xs" title="Excluir"><i class="glyphicon glyphicon-trash" data-toggle="modal" data-target="#modalAlert2"></i></button>
-                                                    </td>
-                                                </tr>
+                                                {% endfor %}
                                             </tbody>
                                         </table>
                                     </div>
@@ -258,6 +251,54 @@
                         }
                     });
                 }
+
+                // Handler para excluir país
+                $('.delete-btn').on('click', function() {
+                    var countryId = $(this).data('id');
+                    excluirPais(countryId);
+                });
+            });
+
+            function excluirPais(id) {
+                $('#modalAlert2').modal('show');
+                $('#modalAlert2 .btn-danger').off('click').on('click', function() {
+                    window.location.href = "{% url 'administrativo:pais_excluir' 0 %}".replace('0', id);
+                });
+            }
+
+            function excluirSelecionados() {
+                const ids = [];
+                $('.check-item:checked').each(function() {
+                    ids.push($(this).val());
+                });
+
+                if (ids.length === 0) {
+                    alert('Selecione pelo menos um país para excluir');
+                    return;
+                }
+
+                $('#modalAlert').modal('show');
+                $('#modalAlert .btn-danger').off('click').on('click', function() {
+                    $.ajax({
+                        url: "{% url 'administrativo:pais_excluir_em_massa' %}",
+                        type: 'POST',
+                        data: {
+                            'ids[]': ids,
+                            'csrfmiddlewaretoken': '{{ csrf_token }}'
+                        },
+                        success: function(response) {
+                            window.location.reload();
+                        },
+                        error: function(xhr) {
+                            alert(xhr.responseJSON?.error || 'Erro ao excluir países');
+                        }
+                    });
+                });
+            }
+
+            // Checkbox "Selecionar todos"
+            $('.checkAll').on('change', function() {
+                $('.check-item').prop('checked', $(this).prop('checked'));
             });
         </script>
     </body>

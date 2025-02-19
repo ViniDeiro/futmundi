@@ -5,21 +5,17 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-        <title>Novo Continente</title>
+        <title>Editar País</title>
 
         <link href="{% static 'administrativo/css/bootstrap.min.css' %}" rel="stylesheet">
         <link href="{% static 'administrativo/font-awesome/css/font-awesome.css' %}" rel="stylesheet">
-        
         <link href="{% static 'administrativo/css/plugins/toastr/toastr.min.css' %}" rel="stylesheet">
-
         <link href="{% static 'administrativo/css/animate.css' %}" rel="stylesheet">
         <link href="{% static 'administrativo/css/style.css' %}" rel="stylesheet">  
-        
         <!-- Custom -->      
         <link href="{% static 'administrativo/css/custom.css' %}" rel="stylesheet">
-
         <!-- Favicon -->
-        <link rel="icon" href="img/futmundi.ico" type="image/png">
+        <link rel="icon" href="{% static 'administrativo/img/futmundi.ico' %}" type="image/png">
     </head>
     <body>
         <div id="wrapper">
@@ -38,7 +34,7 @@
                                 </a>                            
                             </div>
                         </li>
-                        <li class="active">
+                        <li>
                             <a href="{% url "administrativo:usuarios" %}"><i class="fa fa-user"></i> <span class="nav-label">Usuários</span></a>
                         </li>
                         <li>
@@ -67,8 +63,8 @@
                         <li class="active">
                             <a href="#"><i class="fa fa-globe"></i> <span class="nav-label">Locais</span><span class="fa arrow"></span></a>
                             <ul class="nav nav-second-level collapse">
-                                <li class="active"><a href="{% url "administrativo:continentes" %}">Continentes</a></li>
-                                <li><a href="{% url "administrativo:paises" %}">Países</a></li>
+                                <li><a href="{% url "administrativo:continentes" %}">Continentes</a></li>
+                                <li class="active"><a href="{% url "administrativo:paises" %}">Países</a></li>
                                 <li><a href="{% url "administrativo:estados" %}">Estados</a></li>
                             </ul>
                         </li>
@@ -94,7 +90,7 @@
                         </div>
                         <ul class="nav navbar-top-links navbar-right">
                             <li>
-                                <span class="m-r-sm text-muted welcome-message">Andrews Cristhian</span>
+                                <span class="m-r-sm text-muted welcome-message">{{ request.session.admin_name }}</span>
                             </li>
                             <li class="dropdown">
                                 <a class="dropdown-toggle count-info" data-toggle="dropdown" href="#">
@@ -110,7 +106,7 @@
                                     </li>
                                     <li class="dropdown-divider"></li>
                                     <li>
-                                        <a href="{% url "administrativo:login" %}" class="dropdown-item">
+                                        <a href="{% url 'administrativo:logout' %}" class="dropdown-item">
                                             <div>
                                                 <i class="fa fa-sign-out"></i> Sair
                                             </div>
@@ -123,30 +119,58 @@
                 </div>
                 <div class="row wrapper border-bottom white-bg page-heading">
                     <div class="col-lg-10">
-                        <h2>Novo Continente</h2>
+                        <h2>Editar País</h2>
                     </div>
                 </div>
                 <div class="wrapper wrapper-content">
                     <div class="row">
                         <div class="col-lg-12">
                             <div class="ibox-content">
+                                {% if messages %}
+                                    {% for message in messages %}
+                                        <div class="alert alert-{{ message.tags }}">
+                                            {{ message }}
+                                        </div>
+                                    {% endfor %}
+                                {% endif %}
                                 <div class="row mt10">
                                     <div class="col-lg-4">
-                                        <form class="mt10" method="post" action="{% url 'administrativo:continente_novo' %}">
+                                        <form method="post" action="{% url 'administrativo:pais_editar' country.id %}" class="mt10">
                                             {% csrf_token %}
                                             <div class="form-group col-lg-8">
+                                                <label for="name">Nome</label>
                                                 <input type="text" 
                                                        id="name" 
                                                        name="name" 
                                                        class="form-control" 
+                                                       value="{{ country.name }}"
                                                        required
                                                        oninvalid="this.setCustomValidity('Por favor, preencha este campo')"
                                                        oninput="this.setCustomValidity('')">
-                                                <label class="form-control-placeholder" for="name">Nome</label>
                                             </div>
-                                            <div>
-                                                <button type="submit" class="btn btn-success ml15"><i class="glyphicon glyphicon-save mr5"></i> Salvar</button>
-                                                <a href="{% url 'administrativo:continentes' %}" class="btn btn-danger ml15"><i class="fa fa-ban mr5"></i> Cancelar</a>
+                                            <div class="form-group col-lg-8">
+                                                <label for="continent">Continente</label>
+                                                <select id="continent" 
+                                                        name="continent" 
+                                                        class="form-control" 
+                                                        required
+                                                        {% if championships %}disabled{% endif %}
+                                                        oninvalid="this.setCustomValidity('Por favor, selecione um continente')"
+                                                        oninput="this.setCustomValidity('')">
+                                                    <option value="">Selecione...</option>
+                                                    {% for continent in continents %}
+                                                        <option value="{{ continent.id }}" {% if continent.id == country.continent.id %}selected{% endif %}>
+                                                            {{ continent.name }}
+                                                        </option>
+                                                    {% endfor %}
+                                                </select>
+                                                {% if championships %}
+                                                    <small class="text-muted">O continente não pode ser alterado pois existem campeonatos vinculados</small>
+                                                {% endif %}
+                                            </div>
+                                            <div class="form-group col-lg-12">
+                                                <button type="submit" class="btn btn-success" id="successToast"><i class="fa fa-save mr5"></i> Salvar</button>
+                                                <a href="{% url 'administrativo:paises' %}" class="btn btn-danger ml15"><i class="fa fa-times mr5"></i> Cancelar</a>
                                             </div>
                                         </form>
                                     </div>
@@ -154,19 +178,39 @@
                                         <table class="table table-bordered table-striped">
                                             <thead>
                                                 <tr>
-                                                    <th class="per100">Países Vinculados</th>
+                                                    <th class="per100">Estados Vinculados</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
+                                                {% for state in states %}
+                                                    <tr>
+                                                        <td>{{ state.name }}</td>
+                                                    </tr>
+                                                {% empty %}
+                                                    <tr>
+                                                        <td>Nenhum estado vinculado</td>
+                                                    </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div class="col-lg-2 ml30 mt10">
+                                        <table class="table table-bordered table-striped">
+                                            <thead>
                                                 <tr>
-                                                    <td>País 1</td>
+                                                    <th class="per100">Times Vinculados</th>
                                                 </tr>
-                                                <tr>
-                                                    <td>País 2</td>
-                                                </tr>
-                                                <tr>
-                                                    <td>País 3</td>
-                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for team in teams %}
+                                                    <tr>
+                                                        <td>{{ team.name }}</td>
+                                                    </tr>
+                                                {% empty %}
+                                                    <tr>
+                                                        <td>Nenhum time vinculado</td>
+                                                    </tr>
+                                                {% endfor %}
                                             </tbody>
                                         </table>
                                     </div>
@@ -178,15 +222,15 @@
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                <tr>
-                                                    <td>Campeonato 1</td>
-                                                </tr>
-                                                <tr>
-                                                    <td>Campeonato 2</td>
-                                                </tr>
-                                                <tr>
-                                                    <td>Campeonato 3</td>
-                                                </tr>
+                                                {% for championship in championships %}
+                                                    <tr>
+                                                        <td>{{ championship.name }}</td>
+                                                    </tr>
+                                                {% empty %}
+                                                    <tr>
+                                                        <td>Nenhum campeonato vinculado</td>
+                                                    </tr>
+                                                {% endfor %}
                                             </tbody>
                                         </table>
                                     </div>
@@ -197,6 +241,7 @@
                 </div>
             </div>
         </div>
+
         <!-- Mainly scripts -->
         <script src="{% static 'administrativo/js/jquery-3.4.1.min.js' %}"></script>
         <script src="{% static 'administrativo/js/popper.min.js' %}"></script>
@@ -209,14 +254,5 @@
         <!-- Toastr script -->
         <script src="{% static 'administrativo/js/plugins/toastr/toastr.min.js' %}"></script>
         <script src="{% static 'administrativo/js/settings.js' %}"></script>
-        <script>
-            $(document).ready(function() {
-                {% if messages %}
-                    {% for message in messages %}
-                        toastr.{{ message.tags }}('{{ message }}');
-                    {% endfor %}
-                {% endif %}
-            });
-        </script>
     </body>
-</html>
+</html> 

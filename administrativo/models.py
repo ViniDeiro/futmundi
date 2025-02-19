@@ -151,12 +151,17 @@ class Scope(models.Model):
 class Championship(models.Model):
     name = models.CharField(max_length=255)
     scope = models.ForeignKey(Scope, on_delete=models.CASCADE)
+    country = models.ForeignKey('Country', on_delete=models.PROTECT, related_name='championships')
     start_date = models.DateTimeField()
     end_date = models.DateTimeField()
     is_active = models.BooleanField(default=True)
 
     class Meta:
         db_table = 'championships'
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
 
 class Template(models.Model):
     name = models.CharField(max_length=255)
@@ -225,19 +230,15 @@ class Continent(models.Model):
         return self.name
 
     def can_delete(self):
-        """
-        Verifica se o continente pode ser excluído checando suas vinculações
-        """
-        return not (self.country_set.exists() or self.championship_set.exists())
+        # Verifica apenas se existem países relacionados
+        return not self.country_set.exists()
 
     def get_related_data(self):
-        """
-        Retorna dados relacionados ao continente
-        """
-        return {
-            'countries': self.country_set.order_by('name').all(),
-            'championships': self.championship_set.order_by('name').all()
-        }
+        related_data = []
+        countries = self.country_set.all()
+        if countries:
+            related_data.append(f'Países: {", ".join([country.name for country in countries])}')
+        return related_data
 
 class Country(models.Model):
     name = models.CharField(max_length=100, unique=True)

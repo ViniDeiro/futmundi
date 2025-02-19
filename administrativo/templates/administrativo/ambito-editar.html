@@ -168,19 +168,19 @@
                                                     <tr>
                                                         <td>2</td>
                                                         <td>
-                                                            <input type="number" class="form-control input-sm" style="width: 75px;" name="leverage_points_2" value="{{ levels.leverage_2.points }}">
+                                                            <input type="number" class="form-control input-sm" style="width: 75px;" name="leverage_points_2" value="{{ levels.leverage_2.points }}" required min="0" oninvalid="this.setCustomValidity('Por favor, preencha este campo')" oninput="this.setCustomValidity('')">
                                                         </td>
                                                         <td>
-                                                            <input type="number" class="form-control input-sm" style="width: 75px;" name="leverage_futcoins_2" value="{{ levels.leverage_2.futcoins }}">
+                                                            <input type="number" class="form-control input-sm" style="width: 75px;" name="leverage_futcoins_2" value="{{ levels.leverage_2.futcoins }}" required min="0" oninvalid="this.setCustomValidity('Por favor, preencha este campo')" oninput="this.setCustomValidity('')">
                                                         </td>
                                                     </tr>
                                                     <tr>
                                                         <td>3</td>
                                                         <td>
-                                                            <input type="number" class="form-control input-sm" style="width: 75px;" name="leverage_points_3" value="{{ levels.leverage_3.points }}">
+                                                            <input type="number" class="form-control input-sm" style="width: 75px;" name="leverage_points_3" value="{{ levels.leverage_3.points }}" required min="0" oninvalid="this.setCustomValidity('Por favor, preencha este campo')" oninput="this.setCustomValidity('')">
                                                         </td>
                                                         <td>
-                                                            <input type="number" class="form-control input-sm" style="width: 75px;" name="leverage_futcoins_3" value="{{ levels.leverage_3.futcoins }}">
+                                                            <input type="number" class="form-control input-sm" style="width: 75px;" name="leverage_futcoins_3" value="{{ levels.leverage_3.futcoins }}" required min="0" oninvalid="this.setCustomValidity('Por favor, preencha este campo')" oninput="this.setCustomValidity('')">
                                                         </td>
                                                     </tr>
                                                 </tbody >
@@ -200,28 +200,44 @@
                                                     <tr>
                                                         <td>1</td>
                                                         <td>
-                                                            <input type="number" class="form-control input-sm" style="width: 75px;" name="insurance_points_1" value="{{ levels.insurance_1.points }}">
+                                                            <input type="number" 
+                                                                   class="form-control input-sm" 
+                                                                   style="width: 75px;" 
+                                                                   name="insurance_points_1" 
+                                                                   value="{{ levels.insurance_1.points }}"
+                                                                   required
+                                                                   min="0"
+                                                                   oninvalid="this.setCustomValidity('Por favor, preencha este campo')"
+                                                                   oninput="this.setCustomValidity('')">
                                                         </td>
                                                         <td>
-                                                            <input type="number" class="form-control input-sm" style="width: 75px;" name="insurance_futcoins_1" value="{{ levels.insurance_1.futcoins }}">
+                                                            <input type="number" 
+                                                                   class="form-control input-sm" 
+                                                                   style="width: 75px;" 
+                                                                   name="insurance_futcoins_1" 
+                                                                   value="{{ levels.insurance_1.futcoins }}"
+                                                                   required
+                                                                   min="0"
+                                                                   oninvalid="this.setCustomValidity('Por favor, preencha este campo')"
+                                                                   oninput="this.setCustomValidity('')">
                                                         </td>
                                                     </tr>
                                                     <tr>
                                                         <td>2</td>
                                                         <td>
-                                                            <input type="number" class="form-control input-sm" style="width: 75px;" name="insurance_points_2" value="{{ levels.insurance_2.points }}">
+                                                            <input type="number" class="form-control input-sm" style="width: 75px;" name="insurance_points_2" value="{{ levels.insurance_2.points }}" required min="0" oninvalid="this.setCustomValidity('Por favor, preencha este campo')" oninput="this.setCustomValidity('')">
                                                         </td>
                                                         <td>
-                                                            <input type="number" class="form-control input-sm" style="width: 75px;" name="insurance_futcoins_2" value="{{ levels.insurance_2.futcoins }}">
+                                                            <input type="number" class="form-control input-sm" style="width: 75px;" name="insurance_futcoins_2" value="{{ levels.insurance_2.futcoins }}" required min="0" oninvalid="this.setCustomValidity('Por favor, preencha este campo')" oninput="this.setCustomValidity('')">
                                                         </td>
                                                     </tr>
                                                     <tr>
                                                         <td>3</td>
                                                         <td>
-                                                            <input type="number" class="form-control input-sm" style="width: 75px;" name="insurance_points_3" value="{{ levels.insurance_3.points }}">
+                                                            <input type="number" class="form-control input-sm" style="width: 75px;" name="insurance_points_3" value="{{ levels.insurance_3.points }}" required min="0" oninvalid="this.setCustomValidity('Por favor, preencha este campo')" oninput="this.setCustomValidity('')">
                                                         </td>
                                                         <td>
-                                                            <input type="number" class="form-control input-sm" style="width: 75px;" name="insurance_futcoins_3" value="{{ levels.insurance_3.futcoins }}">
+                                                            <input type="number" class="form-control input-sm" style="width: 75px;" name="insurance_futcoins_3" value="{{ levels.insurance_3.futcoins }}" required min="0" oninvalid="this.setCustomValidity('Por favor, preencha este campo')" oninput="this.setCustomValidity('')">
                                                         </td>
                                                     </tr>
                                                 </tbody>

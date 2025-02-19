@@ -1,28 +1,62 @@
 // Arquivo usado para colocar todos os scripts personalizados
 
+// Configurações do toastr
+toastr.options = {
+    closeButton: true,
+    debug: false,
+    progressBar: true,
+    preventDuplicates: true,
+    positionClass: "toast-top-right",
+    onclick: null,
+    showDuration: "400",
+    hideDuration: "1000",
+    timeOut: 1000,
+    extendedTimeOut: "1000",
+    showEasing: "swing",
+    hideEasing: "linear",
+    showMethod: 'slideDown'
+};
 
-//Toastr
+// Limpa todas as mensagens antigas ao carregar a página
+$(document).ready(function() {
+    // Remove imediatamente qualquer alerta existente
+    $('.alert').remove();
+    
+    // Limpa o container do toastr
+    toastr.clear();
+});
+
+//Toastr para formulários
 $("#successToast").closest("form").on("submit", function(event) {
-  // Verifica se o formulário é válido antes de mostrar a mensagem
   if (this.checkValidity()) {
-    toastr.success("Salvando...", "Aguarde");
-    toastr.options = {
-      closeButton: true,
-      debug: false,
-      progressBar: false,
-      preventDuplicates: false,
-      positionClass: "toast-top-right",
-      onclick: null,
-      showDuration: "400",
-      hideDuration: "1000",
-      timeOut: "1000",
-      extendedTimeOut: "400",
-      showEasing: "swing",
-      hideEasing: "linear",
-      showMethod: "fadeIn",
-      hideMethod: "fadeOut"
-    };
+    event.preventDefault();
+    toastr.success("Salvo com sucesso!");
+    setTimeout(() => {
+      event.target.submit();
+    }, 1000);
   }
+});
+
+// Converter alertas do Bootstrap para toastr e limpar as mensagens
+$(document).ready(function() {
+    $('.alert').each(function() {
+        var message = $(this).text().trim();
+        var type = $(this).hasClass('alert-success') ? 'success' : 
+                   $(this).hasClass('alert-info') ? 'info' :
+                   $(this).hasClass('alert-warning') ? 'warning' : 'error';
+        
+        if (message) {
+            toastr[type](message);
+        }
+        
+        // Remove o alerta original
+        $(this).remove();
+    });
+    
+    // Limpa as mensagens do Django após exibi-las
+    setTimeout(() => {
+        $('.alert').remove();
+    }, 1000);
 });
 
 //TableDND

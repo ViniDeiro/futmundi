@@ -1,0 +1,64 @@
+{% load static %}
+<nav class="navbar-default navbar-static-side">
+    <div class="sidebar-collapse">
+        <ul class="nav metismenu" id="side-menu">
+            <li class="nav-header">
+                <div class="dropdown profile-element">
+                    <a href="{% url "administrativo:usuarios" %}">
+                        <img src="{% static 'administrativo/img/logo.svg' %}" alt="Futmundi logo">
+                    </a>
+                </div>
+                <div class="logo-element">
+                    <a href="{% url "administrativo:usuarios" %}">
+                        <img src="{% static 'administrativo/img/logosm.svg' %}" alt="Futmundi logo">
+                    </a>                            
+                </div>
+            </li>
+            <li>
+                <a href="{% url "administrativo:usuarios" %}"><i class="fa fa-user"></i> <span class="nav-label">Usuários</span></a>
+            </li>
+            <li>
+                <a href="#"><i class="fa fa-trophy"></i> <span class="nav-label">Campeonatos</span><span class="fa arrow"></span></a>
+                <ul class="nav nav-second-level collapse">
+                    <li><a href="{% url "administrativo:ambitos" %}">Âmbitos</a></li>
+                    <li><a href="{% url "administrativo:campeonatos" %}">Campeonatos</a></li>
+                    <li><a href="{% url "administrativo:templates" %}">Templates</a></li>
+                    <li><a href="{% url "administrativo:times" %}">Times</a></li>
+                </ul>
+            </li>
+            <li>
+                <a href="#"><i class="fa fa-shopping-cart"></i> <span class="nav-label">Pacotes</span><span class="fa arrow"></span></a>
+                <ul class="nav nav-second-level collapse">
+                    <li><a href="{% url "administrativo:futcoins" %}">Futcoins</a></li>
+                    <li><a href="{% url "administrativo:planos" %}">Planos</a></li>
+                </ul>
+            </li>
+            <li>
+                <a href="#"><i class="fa fa-diamond"></i> <span class="nav-label">Futligas</span><span class="fa arrow"></span></a>
+                <ul class="nav nav-second-level collapse">
+                    <li><a href="{% url "administrativo:futligas_classicas" %}">Clássicas</a></li>
+                    <li><a href="{% url "administrativo:futligas_jogadores" %}">Jogadores</a></li>
+                </ul>
+            </li>
+            <li>
+                <a href="#"><i class="fa fa-globe"></i> <span class="nav-label">Locais</span><span class="fa arrow"></span></a>
+                <ul class="nav nav-second-level collapse">
+                    <li><a href="{% url "administrativo:continentes" %}">Continentes</a></li>
+                    <li><a href="{% url "administrativo:paises" %}">Países</a></li>
+                    <li><a href="{% url "administrativo:estados" %}">Estados</a></li>
+                </ul>
+            </li>
+            <li>
+                <a href="#"><i class="fa fa-gear"></i> <span class="nav-label">Configurações</span><span class="fa arrow"></span></a>
+                <ul class="nav nav-second-level collapse">
+                    <li><a href="{% url "administrativo:parametros" %}">Parâmetros</a></li>
+                    <li><a href="{% url "administrativo:termo" %}">Termo</a></li>
+                    <li><a href="{% url "administrativo:notificacoes" %}">Notificações</a></li>
+                </ul>
+            </li>
+            <li>
+                <a href="{% url "administrativo:relatorios" %}"><i class="fa fa-pie-chart"></i> <span class="nav-label">Relatórios</span></a>
+            </li>
+        </ul>
+    </div>
+</nav> 

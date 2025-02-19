@@ -39,8 +39,18 @@ urlpatterns = [
     path('continente/importar/', views.continente_importar, name='continente_importar'),
     path('paises/', views.paises, name='paises'),
     path('pais-novo/', views.pais_novo, name='pais_novo'),
+    path('pais/editar/<int:id>/', views.pais_editar, name='pais_editar'),
+    path('pais/excluir/<int:id>/', views.pais_excluir, name='pais_excluir'),
+    path('pais/excluir-em-massa/', views.pais_excluir_em_massa, name='pais_excluir_em_massa'),
+    path('pais/exportar/', views.pais_exportar, name='pais_exportar'),
+    path('pais/importar/', views.pais_importar, name='pais_importar'),
     path('estados/', views.estados, name='estados'),
     path('estado-novo/', views.estado_novo, name='estado_novo'),
+    path('estado/editar/<int:id>/', views.estado_editar, name='estado_editar'),
+    path('estado/excluir/<int:id>/', views.estado_excluir, name='estado_excluir'),
+    path('estado/excluir-em-massa/', views.estado_excluir_em_massa, name='estado_excluir_em_massa'),
+    path('estado/exportar/', views.estado_exportar, name='estado_exportar'),
+    path('estado/importar/', views.estado_importar, name='estado_importar'),
     
     # Configurações
     path('parametros/', views.parametros, name='parametros'),
