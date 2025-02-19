@@ -41,13 +41,9 @@
                                 <div class="ibox-content">
                                     <div class="group-options-left ml5">
                                         <a href="{% url 'administrativo:continente_novo' %}" class="btn btn-success btn-sm" title="Novo"><i class="fa fa-plus"></i></a>
-                                        <form action="{% url 'administrativo:continente_importar' %}" method="post" enctype="multipart/form-data" style="display: inline;">
-                                            {% csrf_token %}
-                                            <span class="btn btn-primary btn-sm btn-file" title="Importar">
-                                                <i class="fa fa-upload"></i>
-                                                <input type="file" name="file" onchange="this.form.submit()">
-                                            </span>
-                                        </form>
+                                        <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#modalImportar" title="Importar">
+                                            <i class="fa fa-upload"></i>
+                                        </button>
                                     </div>
                                     <div class="group-options-right mr10">
                                         <a href="{% url 'administrativo:continente_exportar' %}" class="btn btn-default btn-sm" title="Exportar"><i class="glyphicon glyphicon-download-alt"></i></a>
@@ -78,7 +74,7 @@
                                                         </div>
                                                     </td>
                                                     <td>{{ continent.name }}</td>
-                                                    <td>{{ continent.created_at|date:"d/m/Y" }}</td>
+                                                    <td>{{ continent.created_at|date:"d/m/Y H:i" }}</td>
                                                     <td>
                                                         <a href="{% url 'administrativo:continente_editar' continent.id %}" class="btn btn-info btn-xs" title="Editar"><i class="glyphicon glyphicon-pencil"></i></a>
                                                         <button type="button" class="btn btn-danger btn-xs delete-btn" title="Excluir" data-id="{{ continent.id }}"><i class="glyphicon glyphicon-trash"></i></button>
@@ -127,6 +123,50 @@
                         <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
                         <button type="button" class="btn btn-danger">Deletar</button>
                     </div>
+                </div>
+            </div>
+        </div>
+        <!-- Modal Importar -->
+        <div class="modal inmodal" id="modalImportar" tabindex="-1" role="dialog" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content animated fadeIn">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                        <h4 class="modal-title">Importar Continente</h4>
+                    </div>
+                    <form id="formImportar" method="POST" action="{% url 'administrativo:continente_importar' %}" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <div class="modal-body">
+                            <div class="alert alert-info">
+                                <h5>Instruções:</h5>
+                                <p>O arquivo Excel deve conter as seguintes colunas:</p>
+                                <ul>
+                                    <li><strong>nome</strong>: Nome do continente</li>
+                                </ul>
+                            </div>
+                            <div class="form-group">
+                                <label for="file">Selecione o arquivo</label>
+                                <div class="fileinput fileinput-new input-group" data-provides="fileinput">
+                                    <div class="form-control" data-trigger="fileinput">
+                                        <i class="fa fa-file fileinput-exists"></i>
+                                        <span class="fileinput-filename"></span>
+                                    </div>
+                                    <span class="input-group-append">
+                                        <span class="input-group-text btn btn-default btn-file">
+                                            <span class="fileinput-new">Selecionar arquivo</span>
+                                            <span class="fileinput-exists">Alterar</span>
+                                            <input type="file" name="file" accept=".xlsx,.xls" required/>
+                                        </span>
+                                        <a href="#" class="input-group-text btn btn-default fileinput-exists" data-dismiss="fileinput">Remover</a>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn btn-primary">Importar</button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>

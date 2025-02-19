@@ -180,7 +180,7 @@
                                                     </td>
                                                     <td>{{ state.name }}</td>
                                                     <td>{{ state.country.name }}</td>
-                                                    <td>{{ state.created_at|date:"d/m/Y" }}</td>
+                                                    <td>{{ state.created_at|date:"d/m/Y H:i" }}</td>
                                                     <td>
                                                         <a href="{% url 'administrativo:estado_editar' state.id %}" class="btn btn-info btn-xs" title="Editar"><i class="glyphicon glyphicon-pencil"></i></a>
                                                         <button type="button" class="btn btn-danger btn-xs delete-btn" title="Excluir" data-id="{{ state.id }}"><i class="glyphicon glyphicon-trash"></i></button>
@@ -242,7 +242,53 @@
                     </div>
                 </div>
             </div>
-        </div>       
+        </div>
+        <!-- Modal Importar -->
+        <div class="modal inmodal" id="modalImportar" tabindex="-1" role="dialog" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content animated fadeIn">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                        <h4 class="modal-title">Importar Estado</h4>
+                    </div>
+                    <form id="formImportar" method="POST" action="{% url 'administrativo:estado_importar' %}" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <div class="modal-body">
+                            <div class="alert alert-info">
+                                <h5>Instruções:</h5>
+                                <p>O arquivo Excel deve conter as seguintes colunas:</p>
+                                <ul>
+                                    <li><strong>nome</strong>: Nome do estado</li>
+                                    <li><strong>pais</strong>: Nome do país ao qual o estado pertence</li>
+                                    <li><strong>sigla</strong>: Sigla do estado (2 caracteres)</li>
+                                </ul>
+                            </div>
+                            <div class="form-group">
+                                <label for="file">Selecione o arquivo</label>
+                                <div class="fileinput fileinput-new input-group" data-provides="fileinput">
+                                    <div class="form-control" data-trigger="fileinput">
+                                        <i class="fa fa-file fileinput-exists"></i>
+                                        <span class="fileinput-filename"></span>
+                                    </div>
+                                    <span class="input-group-append">
+                                        <span class="input-group-text btn btn-default btn-file">
+                                            <span class="fileinput-new">Selecionar arquivo</span>
+                                            <span class="fileinput-exists">Alterar</span>
+                                            <input type="file" name="file" accept=".xlsx,.xls" required/>
+                                        </span>
+                                        <a href="#" class="input-group-text btn btn-default fileinput-exists" data-dismiss="fileinput">Remover</a>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn btn-primary">Importar</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
         <!-- Mainly scripts -->
         <script src="{% static 'administrativo/js/jquery-3.4.1.min.js' %}"></script>
         <script src="{% static 'administrativo/js/popper.min.js' %}"></script>

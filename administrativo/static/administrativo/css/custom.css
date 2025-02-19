@@ -27,7 +27,7 @@ table.table tbody tr.selected {
 }
 
 .modal-body {
-    padding: 10px 30px 0px 30px;
+    padding: 20px;
 }
 
 .inmodal .modal-title {
@@ -398,20 +398,74 @@ input::-webkit-inner-spin-button {
     vertical-align: middle;
 }
 
-/* Estilo para botões de ação */
-.btn-group-xs > .btn, .btn-xs {
-    padding: .25rem .4rem;
-    font-size: .875rem;
-    line-height: .5;
-    border-radius: .2rem;
+/* Estilos para o modal */
+.modal-dialog-centered {
+    display: flex;
+    align-items: center;
+    min-height: calc(100% - 1rem);
 }
 
-/* Checkbox personalizado */
-.checkbox-success input[type="checkbox"]:checked + label::before {
-    background-color: #1ab394;
-    border-color: #1ab394;
+.modal-content {
+    border-radius: 4px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
 }
 
-.checkbox-success input[type="checkbox"]:checked + label::after {
-    color: #fff;
+.modal-header {
+    background-color: #f8f9fa;
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+    border-bottom: 1px solid #eaeaea;
+    padding: 15px;
+}
+
+.modal-title {
+    color: #2f4050;
+    font-weight: 600;
+    margin: 0;
+}
+
+.modal-footer {
+    border-top: 1px solid #eaeaea;
+    padding: 15px;
+}
+
+.btn-file {
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-file input[type=file] {
+    position: absolute;
+    top: 0;
+    right: 0;
+    min-width: 100%;
+    min-height: 100%;
+    font-size: 100px;
+    text-align: right;
+    opacity: 0;
+    outline: none;
+    background: white;
+    cursor: pointer;
+    display: block;
+}
+
+.alert-info {
+    margin-top: 15px;
+    margin-bottom: 15px;
+    padding: 15px;
+    display: block !important;
+}
+
+.alert-info h5 {
+    margin-bottom: 10px;
+    font-weight: bold;
+}
+
+.alert-info ul {
+    margin-bottom: 0;
+    padding-left: 20px;
+}
+
+.alert-info li {
+    margin-bottom: 5px;
 }

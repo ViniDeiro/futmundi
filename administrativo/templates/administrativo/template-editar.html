@@ -125,85 +125,100 @@
                 <div class="wrapper wrapper-content">
                     <div class="row">
                         <div class="col-lg-12">
-                            <div class="ibox">
-                                <div class="ibox-content">
-                                    {% if messages %}
-                                        {% for message in messages %}
-                                            <div class="alert alert-{{ message.tags }}">
-                                                {{ message }}
-                                            </div>
-                                        {% endfor %}
-                                    {% endif %}
-                                    <form method="post" action="{% url 'administrativo:template_editar' template.id %}">
-                                        {% csrf_token %}
-                                        <div class="row">
-                                            <div class="col-lg-8">
-                                                <div class="form-group">
-                                                    <label for="name">Nome</label>
-                                                    <input type="text" class="form-control" id="name" name="name" value="{{ template.name }}" required>
-                                                </div>
-                                                <div class="form-group">
-                                                    <div class="checkbox">
-                                                        <label>
-                                                            <input type="checkbox" name="enabled" {% if template.enabled %}checked{% endif %}> Ativo
-                                                        </label>
-                                                    </div>
-                                                </div>
-                                                <div class="form-group">
-                                                    <label for="number_of_stages">Quantidade de Fases</label>
-                                                    <input type="number" class="form-control" id="number_of_stages" name="number_of_stages" min="1" value="{{ stages|length }}" required>
-                                                </div>
-                                                <div id="stages-container">
-                                                    {% for stage in stages %}
-                                                    <div class="stage-form" data-index="{{ forloop.counter0 }}">
-                                                        <h4>Fase {{ forloop.counter }}</h4>
+                            <div class="tabs-container">
+                                <ul class="nav nav-tabs" role="tablist">
+                                    <li><a class="nav-link active" data-toggle="tab" href="#geral">Geral</a></li>
+                                    <li><a class="nav-link" data-toggle="tab" href="#fases">Fases</a></li>
+                                </ul>
+                                <div class="tab-content">
+                                    <div id="geral" class="tab-pane active">
+                                        <div class="panel-body">
+                                            <form method="post" action="{% url 'administrativo:template_editar' template.id %}">
+                                                {% csrf_token %}
+                                                <div class="row">
+                                                    <div class="col-lg-4">
                                                         <div class="form-group">
-                                                            <label>Nome da Fase</label>
-                                                            <input type="text" class="form-control" name="stage_name_{{ forloop.counter0 }}" value="{{ stage.name }}" required>
+                                                            <label for="name">Nome</label>
+                                                            <input type="text" class="form-control" id="name" name="name" value="{{ template.name }}" required>
                                                         </div>
                                                         <div class="form-group">
-                                                            <label>Rodadas</label>
-                                                            <input type="number" class="form-control" name="stage_rounds_{{ forloop.counter0 }}" value="{{ stage.rounds }}" min="1" required>
-                                                        </div>
-                                                        <div class="form-group">
-                                                            <label>Jogos por Rodada</label>
-                                                            <input type="number" class="form-control" name="stage_matches_per_round_{{ forloop.counter0 }}" value="{{ stage.matches_per_round }}" min="1" required>
+                                                            <div class="checkbox">
+                                                                <label>
+                                                                    <input type="checkbox" name="enabled" {% if template.enabled %}checked{% endif %}> Ativo
+                                                                </label>
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                    {% endfor %}
                                                 </div>
-                                                <div class="form-group">
-                                                    <button type="submit" class="btn btn-success"><i class="fa fa-save"></i> Salvar</button>
-                                                    <a href="{% url 'administrativo:templates' %}" class="btn btn-danger"><i class="fa fa-times"></i> Cancelar</a>
-                                                </div>
-                                            </div>
-                                            <div class="col-lg-4">
-                                                <div class="ibox">
-                                                    <div class="ibox-title">
-                                                        <h5>Campeonatos Vinculados</h5>
-                                                    </div>
-                                                    <div class="ibox-content">
-                                                        <div class="table-responsive">
-                                                            <table class="table table-striped">
-                                                                <tbody>
-                                                                    {% for championship in template.championships.all %}
-                                                                    <tr>
-                                                                        <td>{{ championship.name }}</td>
-                                                                    </tr>
-                                                                    {% empty %}
-                                                                    <tr>
-                                                                        <td>Nenhum campeonato vinculado</td>
-                                                                    </tr>
-                                                                    {% endfor %}
-                                                                </tbody>
-                                                            </table>
+                                            </form>
+                                        </div>
+                                    </div>
+                                    <div id="fases" class="tab-pane">
+                                        <div class="panel-body">
+                                            <div class="row">
+                                                <div class="col-lg-12">
+                                                    <div class="form-group">
+                                                        <h4>Nova Fase</h4>
+                                                        <div class="row">
+                                                            <div class="col-lg-4">
+                                                                <div class="form-group">
+                                                                    <label for="stage-name">Nome da Fase</label>
+                                                                    <input type="text" class="form-control" id="stage-name">
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-lg-4">
+                                                                <div class="form-group">
+                                                                    <label for="stage-rounds">Rodadas</label>
+                                                                    <input type="number" class="form-control" id="stage-rounds" min="1">
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-lg-4">
+                                                                <div class="form-group">
+                                                                    <label for="stage-matches-per-round">Jogos por Rodada</label>
+                                                                    <input type="number" class="form-control" id="stage-matches-per-round" min="1">
+                                                                </div>
+                                                            </div>
                                                         </div>
+                                                        <div class="row">
+                                                            <div class="col-lg-12">
+                                                                <button type="button" id="add-stage" class="btn btn-primary"><i class="fa fa-plus"></i> Adicionar Fase</button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="table-responsive">
+                                                        <table id="stages-table" class="table table-bordered table-hover">
+                                                            <thead>
+                                                                <tr>
+                                                                    <th class="per20">Fase</th>
+                                                                    <th class="per15">Rodadas</th>
+                                                                    <th class="per10">Jogos/Rodada</th>
+                                                                    <th class="per15">Ações</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                {% for stage in template.stages.all %}
+                                                                <tr>
+                                                                    <td>{{ stage.name }}</td>
+                                                                    <td>{{ stage.rounds }}</td>
+                                                                    <td>{{ stage.matches_per_round }}</td>
+                                                                    <td>
+                                                                        <button type="button" class="btn btn-info btn-xs" title="Editar"><i class="fa fa-pencil"></i></button>
+                                                                        <button type="button" class="btn btn-danger btn-xs" title="Excluir"><i class="fa fa-trash"></i></button>
+                                                                    </td>
+                                                                </tr>
+                                                                {% endfor %}
+                                                            </tbody>
+                                                        </table>
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
-                                    </form>
+                                    </div>
                                 </div>
+                            </div>
+                            <div class="panel panel-default col-lg-12 mtm25 p15">
+                                <button type="submit" class="btn btn-success"><i class="fa fa-save"></i> Salvar</button>
+                                <a href="{% url 'administrativo:templates' %}" class="btn btn-danger"><i class="fa fa-times"></i> Cancelar</a>
                             </div>
                         </div>
                     </div>

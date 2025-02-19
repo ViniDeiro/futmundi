@@ -142,46 +142,15 @@
                                     <div id="geral" class="tab-pane active">
                                         <div class="panel-body">
                                             <div class="row">
-                                                <div class="col-lg-6">
-                                                    <form id="form-template" method="post" action="{% url 'administrativo:template_novo' %}">
+                                                <div class="col-lg-4">
+                                                    <form id="form-template" method="post">
                                                         {% csrf_token %}
-                                                        <div class="form-group col-lg-12">
-                                                            <div class="row">
-                                                                <div class="col-lg-5">
-                                                                    <input type="text" id="name" name="name" class="form-control" required>
-                                                                    <label class="form-control-placeholder" for="name">Nome</label>
-                                                                </div>
-                                                            </div>
-                                                            <div class="col-lg-3 mt25 mlm15">
-                                                                <div class="i-checks">
-                                                                    <label>
-                                                                        <input type="checkbox" name="enabled" checked> Ativo
-                                                                    </label>
-                                                                </div>
-                                                            </div>
-                                                        </div>                                   
+                                                        <div class="form-group">
+                                                            <input type="text" id="name" name="name" class="form-control" required>
+                                                            <label class="form-control-placeholder" for="name">Nome</label>
+                                                        </div>
                                                         <input type="hidden" id="number_of_stages" name="number_of_stages" value="0">
                                                     </form>
-                                                </div>
-                                                <div class="col-lg-3">
-                                                    <table class="table table-bordered table-striped">
-                                                        <thead>
-                                                            <tr>
-                                                                <th class="per100">Campeonatos Vinculados</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody>
-                                                            <tr>
-                                                                <td>Campeonato Brasileiro</td>                                         
-                                                            </tr>
-                                                            <tr>
-                                                                <td>Libertadores da América</td>                                         
-                                                            </tr>
-                                                            <tr>
-                                                                <td>Liga dos Campeões Europa</td>                                         
-                                                            </tr>
-                                                        </tbody>
-                                                    </table>
                                                 </div>
                                             </div>
                                         </div>
@@ -264,6 +233,8 @@
         <script src="{% static 'administrativo/js/plugins/moment/moment.js' %}"></script>
         <script src="{% static 'administrativo/js/plugins/tempusdominus/tempusdominus-bootstrap-4.min.js' %}"></script>
         <script src="{% static 'administrativo/js/settings.js' %}"></script>
+        <script src="{% static 'administrativo/js/plugins/checkAll/checkAll.js' %}"></script>
+        <script src="{% static 'administrativo/js/plugins/jquery-ui/jquery-ui.min.js' %}"></script>
         <script>
             $(document).ready(function() {
                 var stages = [];
@@ -287,6 +258,19 @@
                     
                     if (stageRounds < 1 || stageMatches < 1) {
                         toastr.error('Rodadas e jogos por rodada devem ser maiores que zero');
+                        return;
+                    }
+
+                    // Verifica se já existe uma fase com o mesmo nome
+                    var duplicateName = false;
+                    stages.forEach(function(stage) {
+                        if (stage.name.toLowerCase() === stageName.toLowerCase()) {
+                            duplicateName = true;
+                        }
+                    });
+
+                    if (duplicateName) {
+                        toastr.error('Já existe uma fase com este nome');
                         return;
                     }
                     
@@ -397,7 +381,38 @@
                         return;
                     }
                     
-                    $('#form-template').submit();
+                    $.ajax({
+                        url: '{% url "administrativo:template_novo" %}',
+                        type: 'POST',
+                        data: $('#form-template').serialize(),
+                        success: function(response) {
+                            if (response.success) {
+                                toastr.success(response.message);
+                                window.location.href = response.redirect;
+                            } else {
+                                toastr.error(response.message);
+                            }
+                        },
+                        error: function() {
+                            toastr.error('Erro ao salvar template');
+                        }
+                    });
+                });
+
+                // Inicializa o sortable na tabela de fases
+                $("#stages-table tbody").sortable({
+                    handle: ".fa-arrows",
+                    update: function(event, ui) {
+                        // Atualiza a ordem das fases
+                        $("#stages-table tbody tr").each(function(index) {
+                            $(this).find('input[name^="stage_order_"]').val(index);
+                        });
+                    }
+                });
+                
+                // Adiciona ícone de arraste nas linhas da tabela
+                $("#stages-table tbody tr").each(function() {
+                    $(this).prepend('<td><i class="fa fa-arrows"></i></td>');
                 });
             });
         </script>

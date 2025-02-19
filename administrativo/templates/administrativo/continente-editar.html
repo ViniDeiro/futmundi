@@ -152,46 +152,59 @@
                                             </div>
                                         </form>
                                     </div>
-                                    <div class="col-lg-2 ml30 mt10">
-                                        <table class="table table-bordered table-striped">
-                                            <thead>
-                                                <tr>
-                                                    <th class="per100">Países Vinculados</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {% for country in countries %}
-                                                <tr>
-                                                    <td>{{ country.name }}</td>
-                                                </tr>
-                                                {% empty %}
-                                                <tr>
-                                                    <td>Nenhum país vinculado</td>
-                                                </tr>
-                                                {% endfor %}
-                                            </tbody>
-                                        </table>
+                                    {% if countries or championships %}
+                                    <div class="col-lg-8">
+                                        {% if countries %}
+                                        <div class="mb20">
+                                            <h4>Países Vinculados</h4>
+                                            <div class="table-responsive">
+                                                <table class="table table-striped">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Nome</th>
+                                                            <th>Data Criação</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {% for country in countries %}
+                                                        <tr>
+                                                            <td>{{ country.name }}</td>
+                                                            <td>{{ country.created_at|date:"d/m/Y H:i" }}</td>
+                                                        </tr>
+                                                        {% endfor %}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                        
+                                        {% if championships %}
+                                        <div>
+                                            <h4>Campeonatos Vinculados</h4>
+                                            <div class="table-responsive">
+                                                <table class="table table-striped">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Nome</th>
+                                                            <th>Temporada</th>
+                                                            <th>Data Criação</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {% for championship in championships %}
+                                                        <tr>
+                                                            <td>{{ championship.name }}</td>
+                                                            <td>{{ championship.season }}</td>
+                                                            <td>{{ championship.created_at|date:"d/m/Y H:i" }}</td>
+                                                        </tr>
+                                                        {% endfor %}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                        {% endif %}
                                     </div>
-                                    <div class="col-lg-2 ml30 mt10">
-                                        <table class="table table-bordered table-striped">
-                                            <thead>
-                                                <tr>
-                                                    <th class="per100">Campeonatos Vinculados</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {% for championship in championships %}
-                                                <tr>
-                                                    <td>{{ championship.name }}</td>
-                                                </tr>
-                                                {% empty %}
-                                                <tr>
-                                                    <td>Nenhum campeonato vinculado</td>
-                                                </tr>
-                                                {% endfor %}
-                                            </tbody>
-                                        </table>
-                                    </div>
+                                    {% endif %}
                                 </div>
                             </div>
                         </div>

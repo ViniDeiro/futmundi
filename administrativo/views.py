@@ -491,7 +491,7 @@ def templates(request):
     """
     Lista todos os templates disponíveis.
     """
-    templates = Template.objects.all()
+    templates = Template.objects.all().order_by('-created_at')
     return render(request, 'administrativo/templates.html', {
         'templates': templates
     })
@@ -506,7 +506,7 @@ def template_novo(request):
                 # Cria o template
                 template = Template.objects.create(
                     name=request.POST.get('name'),
-                    enabled=True,
+                    enabled=request.POST.get('enabled', 'off') == 'on',
                     number_of_stages=int(request.POST.get('number_of_stages', 1))
                 )
                 
@@ -531,13 +531,17 @@ def template_novo(request):
                     TemplateStage(**data) for data in stages_data
                 ])
                 
-                messages.success(request, 'Template criado com sucesso!')
-                return redirect('administrativo:templates')
+                return JsonResponse({
+                    'success': True,
+                    'message': 'Template criado com sucesso!',
+                    'redirect': reverse('administrativo:templates')
+                })
                 
         except Exception as e:
-            messages.error(request, f'Erro ao criar template: {str(e)}')
-    return render(request, 'administrativo/template-novo.html')
-            
+            return JsonResponse({
+                'success': False,
+                'message': f'Erro ao criar template: {str(e)}'
+            })
     return render(request, 'administrativo/template-novo.html')
 
 def template_editar(request, id):
@@ -733,18 +737,42 @@ def template_duplicar(request, id):
     template = get_object_or_404(Template, id=id)
     
     try:
-        # Verifica se já existe um template com o nome "Cópia de {nome}"
-        new_name = f"Cópia de {template.name}"
-        if Template.objects.filter(name=new_name).exists():
-            messages.error(request, f'Já existe um template com o nome "{new_name}"')
-            return redirect('administrativo:templates')
-            
-        new_template = template.duplicate()
-        messages.success(request, 'Template duplicado com sucesso!')
-    except Exception as e:
-        messages.error(request, f'Erro ao duplicar template: {str(e)}')
+        # Gera um nome único para o template
+        base_name = template.name
+        counter = 1
+        new_name = f"Cópia de {base_name}"
         
-    return redirect('administrativo:templates')
+        while Template.objects.filter(name=new_name).exists():
+            counter += 1
+            new_name = f"Cópia {counter} de {base_name}"
+            
+        # Cria o novo template
+        new_template = Template.objects.create(
+            name=new_name,
+            enabled=template.enabled,
+            number_of_stages=template.number_of_stages
+        )
+        
+        # Copia as fases
+        for stage in template.stages.all():
+            TemplateStage.objects.create(
+                template=new_template,
+                name=stage.name,
+                rounds=stage.rounds,
+                matches_per_round=stage.matches_per_round,
+                order=stage.order
+            )
+            
+        return JsonResponse({
+            'success': True,
+            'message': 'Template duplicado com sucesso!',
+            'redirect': reverse('administrativo:templates')
+        })
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Erro ao duplicar template: {str(e)}'
+        })
 
 def template_importar(request):
     """
@@ -1209,6 +1237,11 @@ def continente_novo(request):
             return redirect('administrativo:continente_novo')
         
         try:
+            # Verifica se já existe um continente com o mesmo nome
+            if Continent.objects.filter(name=name).exists():
+                messages.error(request, 'Continente já existe')
+                return redirect('administrativo:continente_novo')
+            
             with transaction.atomic():
                 Continent.objects.create(name=name)
                 messages.success(request, 'Continente criado com sucesso!')
@@ -1268,17 +1301,35 @@ def continente_excluir(request, id):
         
     continent = get_object_or_404(Continent, id=id)
     
-    if not continent.can_delete():
-        related_data = continent.get_related_data()
-        message = f"Não é possível excluir o continente {continent.name} pois existem registros vinculados: "
-        message += ", ".join(related_data)
-        return JsonResponse({'success': False, 'message': message})
-    
     try:
+        # Verifica se pode excluir
+        if not continent.can_delete():
+            related_data = continent.get_related_data()
+            message = f"Não é possível excluir o continente {continent.name} pois existem registros vinculados: "
+            
+            if related_data['countries'].exists():
+                countries = ", ".join([c.name for c in related_data['countries']])
+                message += f"Países ({countries})"
+            
+            if related_data['championships'].exists():
+                if related_data['countries'].exists():
+                    message += " e "
+                championships = ", ".join([c.name for c in related_data['championships']])
+                message += f"Campeonatos ({championships})"
+            
+            return JsonResponse({'success': False, 'message': message})
+        
+        # Se chegou aqui, pode excluir
         continent.delete()
-        return JsonResponse({'success': True, 'message': 'Continente excluído com sucesso!'})
+        return JsonResponse({
+            'success': True,
+            'message': 'Continente excluído com sucesso!'
+        })
     except Exception as e:
-        return JsonResponse({'success': False, 'message': f'Erro ao excluir continente: {str(e)}'})
+        return JsonResponse({
+            'success': False,
+            'message': f'Erro ao excluir continente: {str(e)}'
+        })
 
 def continente_excluir_em_massa(request):
     """
@@ -1406,9 +1457,9 @@ def pais_editar(request, id):
     country = get_object_or_404(Country, id=id)
     
     # Obtém os dados relacionados
-    states = State.objects.filter(country=country).order_by('name')
-    championships = country.championships.all()  # Usa a relação reversa
-    teams = Team.objects.filter(championship__in=championships).order_by('name')
+    related_data = country.get_related_data()
+    states = related_data['states']
+    championships = related_data['championships']
     
     # Verifica se tem campeonatos vinculados
     has_championships = championships.exists()
@@ -1456,7 +1507,6 @@ def pais_editar(request, id):
         'country': country,
         'continents': continents,
         'states': states,
-        'teams': teams,
         'championships': championships,
         'has_championships': has_championships
     })

@@ -566,20 +566,26 @@ class Continent(models.Model):
     class Meta:
         verbose_name = 'Continente'
         verbose_name_plural = 'Continentes'
-        ordering = ['name']  # Ordenação padrão por nome
+        ordering = ['name']
 
     def __str__(self):
         return self.name
 
     def can_delete(self):
-        # Verifica apenas se existem países relacionados
-        return not self.country_set.exists()
+        """
+        Verifica se o continente pode ser excluído.
+        Retorna False se houver países ou campeonatos vinculados.
+        """
+        return not (self.country_set.exists() or Championship.objects.filter(continent=self).exists())
 
     def get_related_data(self):
-        related_data = []
-        countries = self.country_set.all()
-        if countries:
-            related_data.append(f'Países: {", ".join([country.name for country in countries])}')
+        """
+        Retorna dados relacionados ao continente
+        """
+        related_data = {
+            'countries': self.country_set.order_by('name').all(),
+            'championships': Championship.objects.filter(continent=self).order_by('name')
+        }
         return related_data
 
 class Country(models.Model):
@@ -599,14 +605,15 @@ class Country(models.Model):
         """
         Verifica se o país pode ser excluído checando suas vinculações
         """
-        return not self.state_set.exists()
+        return not (self.state_set.exists() or Championship.objects.filter(country=self).exists())
 
     def get_related_data(self):
         """
         Retorna dados relacionados ao país
         """
         return {
-            'states': self.state_set.order_by('name').all()
+            'states': self.state_set.order_by('name').all(),
+            'championships': Championship.objects.filter(country=self).order_by('name')
         }
 
 class State(models.Model):
