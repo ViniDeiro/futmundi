@@ -9,114 +9,27 @@
 
         <link href="{% static 'administrativo/css/bootstrap.min.css' %}" rel="stylesheet">
         <link href="{% static 'administrativo/font-awesome/css/font-awesome.css' %}" rel="stylesheet">
+
+        <!-- Toastr style -->
         <link href="{% static 'administrativo/css/plugins/toastr/toastr.min.css' %}" rel="stylesheet">
+        <link href="{% static 'administrativo/css/plugins/iCheck/custom.css' %}" rel="stylesheet">
+        <link href="{% static 'administrativo/css/plugins/jasny/jasny-bootstrap.min.css' %}" rel="stylesheet">
+        <link href="{% static 'administrativo/css/plugins/colorpicker/bootstrap-colorpicker.min.css' %}" rel="stylesheet">
+        <link href="{% static 'administrativo/css/plugins/tempusdominus/tempusdominus-bootstrap-4.min.css' %}" rel="stylesheet"> 
         <link href="{% static 'administrativo/css/animate.css' %}" rel="stylesheet">
-        <link href="{% static 'administrativo/css/style.css' %}" rel="stylesheet">
+        <link href="{% static 'administrativo/css/style.css' %}" rel="stylesheet">  
+        
         <!-- Custom -->      
         <link href="{% static 'administrativo/css/custom.css' %}" rel="stylesheet">
+
         <!-- Favicon -->
         <link rel="icon" href="{% static 'administrativo/img/futmundi.ico' %}" type="image/png">
     </head>
     <body>
         <div id="wrapper">
-            <nav class="navbar-default navbar-static-side">
-                <div class="sidebar-collapse">
-                    <ul class="nav metismenu" id="side-menu">
-                        <li class="nav-header">
-                            <div class="dropdown profile-element">
-                                <a href="{% url "administrativo:usuarios" %}">
-                                    <img src="{% static 'administrativo/img/logo.svg' %}" alt="Futmundi logo">
-                                </a>
-                            </div>
-                            <div class="logo-element">
-                                <a href="{% url "administrativo:usuarios" %}">
-                                    <img src="{% static 'administrativo/img/logosm.svg' %}" alt="Futmundi logo">
-                                </a>                            
-                            </div>
-                        </li>
-                        <li>
-                            <a href="{% url "administrativo:usuarios" %}"><i class="fa fa-user"></i> <span class="nav-label">Usuários</span></a>
-                        </li>
-                        <li class="active">
-                            <a href="#"><i class="fa fa-trophy"></i> <span class="nav-label">Campeonatos</span><span class="fa arrow"></span></a>
-                            <ul class="nav nav-second-level collapse">
-                                <li><a href="{% url "administrativo:ambitos" %}">Âmbitos</a></li>
-                                <li><a href="{% url "administrativo:campeonatos" %}">Campeonatos</a></li>
-                                <li class="active"><a href="{% url "administrativo:templates" %}">Templates</a></li>
-                                <li><a href="{% url "administrativo:times" %}">Times</a></li>
-                            </ul>
-                        </li>
-                        <li>
-                            <a href="#"><i class="fa fa-shopping-cart"></i> <span class="nav-label">Pacotes</span><span class="fa arrow"></span></a>
-                            <ul class="nav nav-second-level collapse">
-                                <li><a href="{% url "administrativo:futcoins" %}">Futcoins</a></li>
-                                <li><a href="{% url "administrativo:planos" %}">Planos</a></li>
-                            </ul>
-                        </li>
-                        <li>
-                            <a href="#"><i class="fa fa-diamond"></i> <span class="nav-label">Futligas</span><span class="fa arrow"></span></a>
-                            <ul class="nav nav-second-level collapse">
-                                <li><a href="{% url "administrativo:futligas_classicas" %}">Clássicas</a></li>
-                                <li><a href="{% url "administrativo:futligas_jogadores" %}">Jogadores</a></li>
-                            </ul>
-                        </li>
-                        <li>
-                            <a href="#"><i class="fa fa-globe"></i> <span class="nav-label">Locais</span><span class="fa arrow"></span></a>
-                            <ul class="nav nav-second-level collapse">
-                                <li><a href="{% url "administrativo:continentes" %}">Continentes</a></li>
-                                <li><a href="{% url "administrativo:paises" %}">Países</a></li>
-                                <li><a href="{% url "administrativo:estados" %}">Estados</a></li>
-                            </ul>
-                        </li>
-                        <li>
-                            <a href="#"><i class="fa fa-gear"></i> <span class="nav-label">Configurações</span><span class="fa arrow"></span></a>
-                            <ul class="nav nav-second-level collapse">
-                                <li><a href="{% url "administrativo:parametros" %}">Parâmetros</a></li>
-                                <li><a href="{% url "administrativo:termo" %}">Termo</a></li>
-                                <li><a href="{% url "administrativo:notificacoes" %}">Notificações</a></li>
-                            </ul>
-                        </li>
-                        <li>
-                            <a href="{% url "administrativo:relatorios" %}"><i class="fa fa-pie-chart"></i> <span class="nav-label">Relatórios</span></a>
-                        </li>
-                    </ul>
-                </div>
-            </nav>
+            {% include 'administrativo/menu.html' %}
             <div id="page-wrapper" class="gray-bg">
-                <div class="row border-bottom">
-                    <nav class="navbar navbar-static-top" style="margin-bottom: 0">
-                        <div class="navbar-header">
-                            <a class="navbar-minimalize minimalize-styl-2 btn btn-success " href="#"><i class="fa fa-bars"></i> </a>
-                        </div>
-                        <ul class="nav navbar-top-links navbar-right">
-                            <li>
-                                <span class="m-r-sm text-muted welcome-message">{{ request.session.admin_name }}</span>
-                            </li>
-                            <li class="dropdown">
-                                <a class="dropdown-toggle count-info" data-toggle="dropdown" href="#">
-                                    <i class="fa fa-gear"></i>
-                                </a>
-                                <ul class="dropdown-menu dropdown-alerts">
-                                    <li>
-                                        <a href="{% url "administrativo:administradores" %}" class="dropdown-item">
-                                            <div>
-                                                <i class="fa fa-users"></i> Administradores
-                                            </div>
-                                        </a>
-                                    </li>
-                                    <li class="dropdown-divider"></li>
-                                    <li>
-                                        <a href="{% url 'administrativo:logout' %}" class="dropdown-item">
-                                            <div>
-                                                <i class="fa fa-sign-out"></i> Sair
-                                            </div>
-                                        </a>
-                                    </li>
-                                </ul>
-                            </li>
-                        </ul>
-                    </nav>
-                </div>
+                {% include 'administrativo/header.html' %}
                 <div class="row wrapper border-bottom white-bg page-heading">
                     <div class="col-lg-10">
                         <h2>Editar Template</h2>
@@ -133,77 +46,79 @@
                                 <div class="tab-content">
                                     <div id="geral" class="tab-pane active">
                                         <div class="panel-body">
-                                            <form method="post" action="{% url 'administrativo:template_editar' template.id %}">
-                                                {% csrf_token %}
-                                                <div class="row">
-                                                    <div class="col-lg-4">
-                                                        <div class="form-group">
-                                                            <label for="name">Nome</label>
-                                                            <input type="text" class="form-control" id="name" name="name" value="{{ template.name }}" required>
-                                                        </div>
-                                                        <div class="form-group">
-                                                            <div class="checkbox">
-                                                                <label>
-                                                                    <input type="checkbox" name="enabled" {% if template.enabled %}checked{% endif %}> Ativo
-                                                                </label>
+                                            <div class="row">
+                                                <div class="col-lg-6">
+                                                    <form id="form-template" method="post" class="mt10">
+                                                        {% csrf_token %}
+                                                        <div class="form-group col-lg-12">
+                                                            <div class="row">
+                                                                <div class="col-lg-5">
+                                                                    <input type="text" id="name" name="name" class="form-control" value="{{ template.name }}" required>
+                                                                    <label class="form-control-placeholder" for="name">Nome</label>
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-lg-3 mt25 mlm15">
+                                                                <div class="i-checks"><label> <input type="checkbox" name="enabled" {% if template.enabled %}checked{% endif %}> Ativo</label></div>
                                                             </div>
                                                         </div>
-                                                    </div>
+                                                        <input type="hidden" id="number_of_stages" name="number_of_stages" value="{{ template.number_of_stages }}">
+                                                    </form>
                                                 </div>
-                                            </form>
+                                            </div>
                                         </div>
                                     </div>
                                     <div id="fases" class="tab-pane">
                                         <div class="panel-body">
                                             <div class="row">
-                                                <div class="col-lg-12">
-                                                    <div class="form-group">
-                                                        <h4>Nova Fase</h4>
-                                                        <div class="row">
-                                                            <div class="col-lg-4">
-                                                                <div class="form-group">
-                                                                    <label for="stage-name">Nome da Fase</label>
-                                                                    <input type="text" class="form-control" id="stage-name">
+                                                <div class="col-lg-4">
+                                                    <div class="form-group col-lg-6">
+                                                        <input type="text" id="stage_name" class="form-control" required>
+                                                        <label class="form-control-placeholder" for="stage_name">Fase</label>
+                                                    </div>  
+                                                    <div class="form-group col-lg-6">
+                                                        <input type="number" id="stage_rounds" class="form-control" min="1" required>
+                                                        <label class="form-control-placeholder" for="stage_rounds">Rodadas</label>
+                                                    </div>  
+                                                    <div class="form-group mt10">
+                                                        <div class="col-lg-12">
+                                                            <div class="row">
+                                                                <div class="col-lg-6">
+                                                                    <input type="number" min="1" id="stage_matches" class="form-control" required>
+                                                                    <label class="form-control-placeholder" for="stage_matches">Jogos/Rodada</label>
+                                                                </div>
+                                                                <div class="col-lg-6">
+                                                                    <button type="button" id="btn-add-stage" class="btn btn-primary">
+                                                                        <i class="fa fa-plus mr5"></i> Adicionar
+                                                                    </button> 
                                                                 </div>
                                                             </div>
-                                                            <div class="col-lg-4">
-                                                                <div class="form-group">
-                                                                    <label for="stage-rounds">Rodadas</label>
-                                                                    <input type="number" class="form-control" id="stage-rounds" min="1">
-                                                                </div>
-                                                            </div>
-                                                            <div class="col-lg-4">
-                                                                <div class="form-group">
-                                                                    <label for="stage-matches-per-round">Jogos por Rodada</label>
-                                                                    <input type="number" class="form-control" id="stage-matches-per-round" min="1">
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                        <div class="row">
-                                                            <div class="col-lg-12">
-                                                                <button type="button" id="add-stage" class="btn btn-primary"><i class="fa fa-plus"></i> Adicionar Fase</button>
-                                                            </div>
-                                                        </div>
+                                                        </div>                                    
                                                     </div>
+                                                </div>
+                                                <div class="col-lg-8">
                                                     <div class="table-responsive">
-                                                        <table id="stages-table" class="table table-bordered table-hover">
+                                                        <table id="phases-table" class="table table-bordered table-striped">
                                                             <thead>
                                                                 <tr>
-                                                                    <th class="per20">Fase</th>
-                                                                    <th class="per15">Rodadas</th>
-                                                                    <th class="per10">Jogos/Rodada</th>
-                                                                    <th class="per15">Ações</th>
+                                                                    <th style="width: 30px"></th>
+                                                                    <th>Fase</th>
+                                                                    <th>Rodadas</th>
+                                                                    <th>Jogos por Rodada</th>
+                                                                    <th style="width: 100px">Ações</th>
                                                                 </tr>
                                                             </thead>
                                                             <tbody>
                                                                 {% for stage in template.stages.all %}
-                                                                <tr>
+                                                                <tr data-id="{{ stage.id }}">
+                                                                    <td>
+                                                                        <span class="drag-handle">⋮</span>
+                                                                    </td>
                                                                     <td>{{ stage.name }}</td>
                                                                     <td>{{ stage.rounds }}</td>
                                                                     <td>{{ stage.matches_per_round }}</td>
                                                                     <td>
-                                                                        <button type="button" class="btn btn-info btn-xs" title="Editar"><i class="fa fa-pencil"></i></button>
-                                                                        <button type="button" class="btn btn-danger btn-xs" title="Excluir"><i class="fa fa-trash"></i></button>
+                                                                        <button type="button" class="btn btn-info btn-xs edit-stage" title="Editar" data-id="{{ stage.id }}"><i class="fa fa-pencil"></i></button>
+                                                                        <button type="button" class="btn btn-danger btn-xs delete-stage-btn" title="Excluir" data-id="{{ stage.id }}"><i class="fa fa-trash"></i></button>
                                                                     </td>
                                                                 </tr>
                                                                 {% endfor %}
@@ -217,8 +132,12 @@
                                 </div>
                             </div>
                             <div class="panel panel-default col-lg-12 mtm25 p15">
-                                <button type="submit" class="btn btn-success"><i class="fa fa-save"></i> Salvar</button>
-                                <a href="{% url 'administrativo:templates' %}" class="btn btn-danger"><i class="fa fa-times"></i> Cancelar</a>
+                                <button type="button" class="btn btn-success ml20" id="btn-save">
+                                    <i class="fa fa-save mr5"></i> Salvar
+                                </button>
+                                <a href="{% url 'administrativo:templates' %}" class="btn btn-danger ml15">
+                                    <i class="fa fa-times mr5"></i> Cancelar
+                                </a>
                             </div>
                         </div>
                     </div>
@@ -226,53 +145,266 @@
             </div>
         </div>
 
+        <!-- Modal Excluir Fase -->
+        <div class="modal inmodal" id="modalDeleteStage" tabindex="-1" role="dialog" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-sm">
+                <div class="modal-content animated fadeIn">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                        <h4 class="modal-title">Tem certeza?</h4>
+                    </div>
+                    <div class="modal-body">
+                        <p>Tem certeza que deseja excluir esta fase?</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
+                        <button type="button" class="btn btn-danger" id="confirmDeleteStage">Deletar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Adiciona o Sortable.js antes dos outros scripts -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.14.0/Sortable.min.js"></script>
+
         <!-- Mainly scripts -->
         <script src="{% static 'administrativo/js/jquery-3.4.1.min.js' %}"></script>
         <script src="{% static 'administrativo/js/popper.min.js' %}"></script>
         <script src="{% static 'administrativo/js/bootstrap.js' %}"></script>
         <script src="{% static 'administrativo/js/plugins/metisMenu/jquery.metisMenu.js' %}"></script>
         <script src="{% static 'administrativo/js/plugins/slimscroll/jquery.slimscroll.min.js' %}"></script>
+
         <!-- Custom and plugin javascript -->
         <script src="{% static 'administrativo/js/inspinia.js' %}"></script>
         <script src="{% static 'administrativo/js/plugins/pace/pace.min.js' %}"></script>
+
         <!-- Toastr script -->
-        <script src="{% static 'administrativo/js/plugins/toastr/toastr.min.js' %}"></script>
+        <script src="{% static 'administrativo/js/plugins/toastr/toastr.min.js' %}"></script>     
+        <script src="{% static 'administrativo/js/plugins/iCheck/icheck.min.js' %}"></script>
+        <script src="{% static 'administrativo/js/plugins/tablednd/jquery.tablednd.min.js' %}"></script>  
+        <script src="{% static 'administrativo/js/plugins/moment/moment.js' %}"></script>
+        <script src="{% static 'administrativo/js/plugins/tempusdominus/tempusdominus-bootstrap-4.min.js' %}"></script>
         <script src="{% static 'administrativo/js/settings.js' %}"></script>
+        <script src="{% static 'administrativo/js/plugins/checkAll/checkAll.js' %}"></script>
 
         <script>
             $(document).ready(function() {
-                // Atualiza o número de fases quando o usuário alterar o valor
-                $('#number_of_stages').change(function() {
-                    var numStages = parseInt($(this).val());
-                    var currentStages = $('.stage-form').length;
-                    
-                    if (numStages > currentStages) {
-                        // Adiciona novas fases
-                        for (var i = currentStages; i < numStages; i++) {
-                            var stageHtml = `
-                                <div class="stage-form" data-index="${i}">
-                                    <h4>Fase ${i + 1}</h4>
-                                    <div class="form-group">
-                                        <label>Nome da Fase</label>
-                                        <input type="text" class="form-control" name="stage_name_${i}" required>
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Rodadas</label>
-                                        <input type="number" class="form-control" name="stage_rounds_${i}" min="1" required>
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Jogos por Rodada</label>
-                                        <input type="number" class="form-control" name="stage_matches_per_round_${i}" min="1" required>
-                                    </div>
-                                </div>
-                            `;
-                            $('#stages-container').append(stageHtml);
-                        }
-                    } else {
-                        // Remove fases excedentes
-                        $('.stage-form').slice(numStages).remove();
+                // Configuração do toastr
+                toastr.options = {
+                    closeButton: true,
+                    progressBar: true,
+                    positionClass: "toast-top-right",
+                    preventDuplicates: true,
+                    showDuration: "300",
+                    hideDuration: "1000",
+                    timeOut: "5000",
+                    extendedTimeOut: "1000",
+                    showEasing: "swing",
+                    hideEasing: "linear",
+                    showMethod: "fadeIn",
+                    hideMethod: "fadeOut"
+                };
+
+                // Inicializa o Sortable na tabela de fases
+                var el = document.getElementById('phases-table').getElementsByTagName('tbody')[0];
+                var sortable = new Sortable(el, {
+                    handle: '.drag-handle',
+                    animation: 150,
+                    onEnd: function(evt) {
+                        var order = [];
+                        document.querySelectorAll('#phases-table tbody tr').forEach(function(row, index) {
+                            order.push({
+                                id: row.dataset.id,
+                                order: index
+                            });
+                        });
+
+                        fetch("{% url 'administrativo:template_reorder_stages' template.id %}", {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded',
+                                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                            },
+                            body: 'orders=' + JSON.stringify(order)
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                toastr.success('Ordem das fases atualizada com sucesso!');
+                            } else {
+                                toastr.error(data.message || 'Erro ao atualizar a ordem das fases');
+                            }
+                        })
+                        .catch(() => {
+                            toastr.error('Erro ao atualizar a ordem das fases');
+                        });
                     }
                 });
+
+                // Adicionar nova fase
+                $('#btn-add-stage').click(function() {
+                    var name = $('#stage_name').val();
+                    var rounds = $('#stage_rounds').val();
+                    var matches = $('#stage_matches').val();
+
+                    if (!name || !rounds || !matches) {
+                        toastr.error('Preencha todos os campos da fase');
+                        return;
+                    }
+
+                    $.ajax({
+                        url: "{% url 'administrativo:template_add_stage' template.id %}",
+                        type: 'POST',
+                        data: {
+                            name: name,
+                            rounds: rounds,
+                            matches_per_round: matches,
+                            csrfmiddlewaretoken: $('[name=csrfmiddlewaretoken]').val()
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                toastr.success(response.message);
+                                window.location.reload();
+                            } else {
+                                toastr.error(response.message);
+                            }
+                        },
+                        error: function() {
+                            toastr.error('Erro ao adicionar fase');
+                        }
+                    });
+                });
+
+                // Editar fase
+                $('.edit-stage').click(function() {
+                    var stageId = $(this).data('id');
+                    var row = $(this).closest('tr');
+                    var name = row.find('td:eq(1)').text();
+                    var rounds = row.find('td:eq(2)').text();
+                    var matches = row.find('td:eq(3)').text();
+
+                    $('#stage_name').val(name);
+                    $('#stage_rounds').val(rounds);
+                    $('#stage_matches').val(matches);
+
+                    // Muda o botão de adicionar para atualizar
+                    $('#btn-add-stage')
+                        .html('<i class="fa fa-save mr5"></i> Atualizar')
+                        .removeClass('btn-primary')
+                        .addClass('btn-success')
+                        .attr('data-stage-id', stageId)
+                        .off('click')
+                        .click(function() {
+                            updateStage(stageId);
+                        });
+                });
+
+                // Função para atualizar fase
+                function updateStage(stageId) {
+                    var name = $('#stage_name').val();
+                    var rounds = $('#stage_rounds').val();
+                    var matches = $('#stage_matches').val();
+
+                    if (!name || !rounds || !matches) {
+                        toastr.error('Preencha todos os campos da fase');
+                        return;
+                    }
+
+                    $.ajax({
+                        url: "{% url 'administrativo:template_edit_stage' template.id 0 %}".replace('0', stageId),
+                        type: 'POST',
+                        data: {
+                            name: name,
+                            rounds: rounds,
+                            matches_per_round: matches,
+                            csrfmiddlewaretoken: $('[name=csrfmiddlewaretoken]').val()
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                toastr.success(response.message);
+                                window.location.reload();
+                            } else {
+                                toastr.error(response.message);
+                            }
+                        },
+                        error: function() {
+                            toastr.error('Erro ao atualizar fase');
+                        }
+                    });
+                }
+
+                // Salvar template
+                $('#btn-save').click(function() {
+                    var name = $('#name').val();
+                    var enabled = $('#enabled').is(':checked');
+
+                    if (!name) {
+                        toastr.error('Preencha o nome do template');
+                        return;
+                    }
+
+                    var formData = new FormData();
+                    formData.append('name', name);
+                    formData.append('enabled', enabled);
+                    formData.append('csrfmiddlewaretoken', $('[name=csrfmiddlewaretoken]').val());
+
+                    $.ajax({
+                        url: "{% url 'administrativo:template_editar' template.id %}",
+                        type: 'POST',
+                        data: formData,
+                        processData: false,
+                        contentType: false,
+                        success: function(response) {
+                            if (response.success) {
+                                // Armazena a mensagem de sucesso no localStorage
+                                localStorage.setItem('toastMessage', 'Template atualizado com sucesso!');
+                                localStorage.setItem('toastType', 'success');
+                                window.location.href = response.redirect_url;
+                            } else {
+                                toastr.error(response.message);
+                            }
+                        },
+                        error: function() {
+                            toastr.error('Erro ao salvar template');
+                        }
+                    });
+                });
+            });
+
+            function deleteStage(stageId) {
+                fetch(`{% url 'administrativo:template_delete_stage' template.id 0 %}`.replace('0', stageId), {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        toastr.success('Fase excluída com sucesso!');
+                        window.location.reload();
+                    } else {
+                        toastr.error(data.message || 'Erro ao excluir a fase');
+                    }
+                })
+                .catch(() => {
+                    toastr.error('Erro ao excluir a fase');
+                });
+            }
+
+            // Manipulação do modal de exclusão de fase
+            let stageIdToDelete = null;
+            
+            $('.delete-stage-btn').on('click', function() {
+                stageIdToDelete = $(this).data('id');
+                $('#modalDeleteStage').modal('show');
+            });
+
+            $('#confirmDeleteStage').on('click', function() {
+                if (stageIdToDelete) {
+                    deleteStage(stageIdToDelete);
+                    $('#modalDeleteStage').modal('hide');
+                }
             });
         </script>
     </body>

@@ -1,219 +1,230 @@
-{% extends 'administrativo/base.html' %}
 {% load static %}
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-{% block extra_css %}
-<link rel="stylesheet" href="{% static 'administrativo/plugins/select2/css/select2.min.css' %}">
-<link rel="stylesheet" href="{% static 'administrativo/plugins/select2-bootstrap4-theme/select2-bootstrap4.min.css' %}">
-{% endblock %}
+        <title>Editar Time</title>
 
-{% block content %}
-<div class="content-wrapper">
-    <section class="content-header">
-        <div class="container-fluid">
-            <div class="row mb-2">
-                <div class="col-sm-6">
-                    <h1>Editar Time</h1>
+        <link href="{% static 'administrativo/css/bootstrap.min.css' %}" rel="stylesheet">
+        <link href="{% static 'administrativo/font-awesome/css/font-awesome.css' %}" rel="stylesheet">
+        <link href="{% static 'administrativo/css/plugins/toastr/toastr.min.css' %}" rel="stylesheet">
+        <link href="{% static 'administrativo/css/plugins/select2/select2.min.css' %}" rel="stylesheet">
+        <link href="{% static 'administrativo/css/animate.css' %}" rel="stylesheet">
+        <link href="{% static 'administrativo/css/style.css' %}" rel="stylesheet">  
+        
+        <!-- Custom -->      
+        <link href="{% static 'administrativo/css/custom.css' %}" rel="stylesheet">
+
+        <!-- Favicon -->
+        <link rel="icon" href="{% static 'administrativo/img/futmundi.ico' %}" type="image/png">
+    </head>
+    <body>
+        {% csrf_token %}
+        <div id="wrapper">
+            {% include 'administrativo/menu.html' %}
+            <div id="page-wrapper" class="gray-bg">
+                {% include 'administrativo/header.html' %}
+                <div class="row wrapper border-bottom white-bg page-heading">
+                    <div class="col-lg-10">
+                        <h2>Editar Time</h2>
+                    </div>
                 </div>
-                <div class="col-sm-6">
-                    <ol class="breadcrumb float-sm-right">
-                        <li class="breadcrumb-item"><a href="{% url 'administrativo:index' %}">Home</a></li>
-                        <li class="breadcrumb-item"><a href="{% url 'administrativo:times' %}">Times</a></li>
-                        <li class="breadcrumb-item active">Editar Time</li>
-                    </ol>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <section class="content">
-        <div class="container-fluid">
-            <div class="row">
-                <div class="col-12">
-                    <div class="card">
-                        <form action="{% url 'administrativo:time_editar' team.id %}" method="post" enctype="multipart/form-data">
-                            {% csrf_token %}
-                            <div class="card-body">
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label for="name">Nome *</label>
-                                            <input type="text" class="form-control" id="name" name="name" value="{{ team.name }}" required>
-                                        </div>
+                <div class="wrapper wrapper-content">
+                    <div class="row">
+                        <div class="col-lg-12">
+                            <div class="ibox-content">
+                                <div class="row mt10">
+                                    <div class="col-lg-4">
+                                        <form id="team-form" method="post" action="{% url 'administrativo:time_editar' team.id %}" enctype="multipart/form-data" class="mt10">
+                                            {% csrf_token %}
+                                            <div class="form-group col-lg-8">
+                                                <input type="text" id="name" name="name" class="form-control" value="{{ team.name }}" required>
+                                                <label class="form-control-placeholder" for="name">Nome</label>
+                                            </div>
+                                            <div class="card ui-card-shadow ui-widget ui-widget-content ui-corner-all card-small ml15">
+                                                <div class="card-heading">
+                                                    <h5>Escudo</h5>
+                                                </div>
+                                                <div class="card-content">
+                                                    <label class="label-card label-card-small">
+                                                        <i class="fa fa-file-image-o label-content" style="cursor:pointer;"></i>
+                                                        <input type="file" id="image" name="image" class="input-image" accept="image/*">
+                                                    </label>
+                                                    {% if team.image %}
+                                                    <div class="mt-2">
+                                                        <img src="{{ team.image.url }}" alt="{{ team.name }}" style="max-height: 100px;">
+                                                        <div class="checkbox mt-2">
+                                                            <label>
+                                                                <input type="checkbox" name="remove_image" id="remove_image"> Remover imagem
+                                                            </label>
+                                                        </div>
+                                                    </div>
+                                                    {% endif %}
+                                                    <div id="image-preview" class="mt-2"></div>
+                                                </div>                              
+                                            </div>
+                                            <div>
+                                                <button type="submit" class="btn btn-success ml15"><i class="glyphicon glyphicon-save mr5"></i> Salvar</button>
+                                                <a href="{% url 'administrativo:times' %}" class="btn btn-danger ml15"><i class="fa fa-ban mr5"></i> Cancelar</a>
+                                            </div>
+                                        </form>
                                     </div>
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label for="continent">Continente *</label>
-                                            <select class="form-control select2" id="continent" name="continent" required {% if has_championships %}disabled{% endif %}>
-                                                <option value="">Selecione...</option>
-                                                {% for continent in continents %}
-                                                <option value="{{ continent.id }}" {% if continent.id == team.continent.id %}selected{% endif %}>{{ continent.name }}</option>
-                                                {% endfor %}
-                                            </select>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label for="country">País *</label>
-                                            <select class="form-control select2" id="country" name="country" required {% if has_championships %}disabled{% endif %}>
-                                                <option value="">Selecione...</option>
+                                    <div class="col-lg-2 mlm50 mtm10 mr20">
+                                        <div class="mt5">
+                                            <label class="control-label" for="country">País</label>
+                                            <select class="form-control select2" id="country" name="country" required>
+                                                <option value="">Selecione um país</option>
                                                 {% for country in countries %}
-                                                <option value="{{ country.id }}" data-continent="{{ country.continent_id }}" {% if country.id == team.country.id %}selected{% endif %}>{{ country.name }}</option>
+                                                    <option value="{{ country.id }}" {% if team.country.id == country.id %}selected{% endif %}>{{ country.name }}</option>
                                                 {% endfor %}
-                                            </select>
+                                            </select>                                         
                                         </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label for="state">Estado</label>
-                                            <select class="form-control select2" id="state" name="state" {% if has_championships or team.is_national_team %}disabled{% endif %}>
-                                                <option value="">Selecione...</option>
+                                        <div class="mt5">
+                                            <label class="control-label" for="state">Estado</label>
+                                            <select class="form-control select2" id="state" name="state">
+                                                <option value="">Selecione um estado</option>
                                                 {% for state in states %}
-                                                <option value="{{ state.id }}" data-country="{{ state.country_id }}" {% if state.id == team.state.id %}selected{% endif %}>{{ state.name }}</option>
+                                                    <option value="{{ state.id }}" {% if team.state and team.state.id == state.id %}selected{% endif %}>{{ state.name }}</option>
                                                 {% endfor %}
-                                            </select>
+                                            </select>                                       
                                         </div>
-                                    </div>
-                                </div>
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <div class="custom-control custom-switch">
-                                                <input type="checkbox" class="custom-control-input" id="is_national_team" name="is_national_team" {% if team.is_national_team %}checked{% endif %} {% if has_championships %}disabled{% endif %}>
-                                                <label class="custom-control-label" for="is_national_team">É uma seleção nacional?</label>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label for="image">Logo</label>
-                                            <div class="input-group">
-                                                <div class="custom-file">
-                                                    <input type="file" class="custom-file-input" id="image" name="image" accept="image/*">
-                                                    <label class="custom-file-label" for="image">Escolher arquivo</label>
+                                        <div class="row">
+                                            <div class="col-lg-12 mt15">
+                                                <div class="i-checks">
+                                                    <label><input type="checkbox" name="is_national" id="is_national" {% if team.is_national %}checked{% endif %}> É seleção</label>
                                                 </div>
-                                            </div>
-                                            {% if team.image %}
-                                            <div class="mt-2">
-                                                <img src="{{ team.image.url }}" alt="{{ team.name }}" class="img-fluid" style="max-height: 100px;">
-                                                <div class="custom-control custom-checkbox mt-2">
-                                                    <input type="checkbox" class="custom-control-input" id="remove_image" name="remove_image">
-                                                    <label class="custom-control-label" for="remove_image">Remover imagem</label>
-                                                </div>
-                                            </div>
-                                            {% endif %}
+                                            </div>                                               
                                         </div>
                                     </div>
-                                </div>
-                                {% if championships %}
-                                <div class="row">
-                                    <div class="col-12">
-                                        <div class="form-group">
-                                            <label>Campeonatos Vinculados</label>
-                                            <div class="table-responsive">
-                                                <table class="table table-bordered table-striped">
-                                                    <thead>
-                                                        <tr>
-                                                            <th>Nome</th>
-                                                            <th>Âmbito</th>
-                                                            <th>Status</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        {% for championship in championships %}
-                                                        <tr>
-                                                            <td>{{ championship.name }}</td>
-                                                            <td>{{ championship.scope.name }}</td>
-                                                            <td>
-                                                                {% if championship.is_active %}
-                                                                <span class="badge badge-success">Ativo</span>
-                                                                {% else %}
-                                                                <span class="badge badge-secondary">Inativo</span>
-                                                                {% endif %}
-                                                            </td>
-                                                        </tr>
-                                                        {% endfor %}
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                        </div>
+                                    <div class="col-lg-4 ml30 mt10">
+                                        <table class="table table-bordered table-striped">
+                                            <thead>
+                                                <tr>
+                                                    <th class="per100">Campeonatos Vinculados</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for championship in championships %}
+                                                <tr>
+                                                    <td>{{ championship.name }}</td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
                                     </div>
                                 </div>
-                                {% endif %}
                             </div>
-                            <div class="card-footer">
-                                <button type="submit" class="btn btn-primary">Salvar</button>
-                                <a href="{% url 'administrativo:times' %}" class="btn btn-default">Cancelar</a>
-                            </div>
-                        </form>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-    </section>
-</div>
-{% endblock %}
 
-{% block extra_js %}
-<script src="{% static 'administrativo/plugins/select2/js/select2.full.min.js' %}"></script>
-<script src="{% static 'administrativo/plugins/bs-custom-file-input/bs-custom-file-input.min.js' %}"></script>
+        <!-- Scripts -->
+        <script src="{% static 'administrativo/js/jquery-3.4.1.min.js' %}"></script>
+        <script src="{% static 'administrativo/js/popper.min.js' %}"></script>
+        <script src="{% static 'administrativo/js/bootstrap.js' %}"></script>
+        <script src="{% static 'administrativo/js/plugins/metisMenu/jquery.metisMenu.js' %}"></script>
+        <script src="{% static 'administrativo/js/plugins/slimscroll/jquery.slimscroll.min.js' %}"></script>
+        <script src="{% static 'administrativo/js/inspinia.js' %}"></script>
+        <script src="{% static 'administrativo/js/plugins/pace/pace.min.js' %}"></script>
+        <script src="{% static 'administrativo/js/plugins/toastr/toastr.min.js' %}"></script>
+        <script src="{% static 'administrativo/js/plugins/select2/select2.min.js' %}"></script>
 
-<script>
-$(function () {
-    // Inicializa o Select2
-    $('.select2').select2({
-        theme: 'bootstrap4'
-    });
+        <script>
+            $(document).ready(function() {
+                // Inicializa Select2
+                $('.select2').select2();
 
-    // Inicializa o custom file input
-    bsCustomFileInput.init();
+                // Preview da imagem
+                $('#image').on('change', function() {
+                    var file = this.files[0];
+                    if (file) {
+                        var reader = new FileReader();
+                        reader.onload = function(e) {
+                            $('#image-preview').html('<img src="' + e.target.result + '" style="max-height: 100px;">');
+                        }
+                        reader.readAsDataURL(file);
+                    }
+                });
 
-    // Filtra países por continente
-    $('#continent').change(function() {
-        var continentId = $(this).val();
-        var $country = $('#country');
-        
-        $country.val('').trigger('change');
-        $country.find('option').each(function() {
-            if (!continentId || $(this).val() === '' || $(this).data('continent') == continentId) {
-                $(this).show();
-            } else {
-                $(this).hide();
-            }
-        });
-    });
+                // Carrega estados quando país é selecionado
+                $('#country').on('change', function() {
+                    var countryId = $(this).val();
+                    if (countryId) {
+                        $.ajax({
+                            url: "{% url 'administrativo:get_states_by_country' %}",
+                            data: { country_id: countryId },
+                            success: function(data) {
+                                var stateSelect = $('#state');
+                                stateSelect.empty().append('<option value="">Selecione um estado</option>');
+                                data.states.forEach(function(state) {
+                                    stateSelect.append(`<option value="${state.id}">${state.name}</option>`);
+                                });
+                            }
+                        });
+                    }
+                });
 
-    // Filtra estados por país
-    $('#country').change(function() {
-        var countryId = $(this).val();
-        var $state = $('#state');
-        
-        $state.val('').trigger('change');
-        $state.find('option').each(function() {
-            if (!countryId || $(this).val() === '' || $(this).data('country') == countryId) {
-                $(this).show();
-            } else {
-                $(this).hide();
-            }
-        });
-    });
+                // Desabilita estado se for seleção nacional
+                $('#is_national').change(function() {
+                    if ($(this).is(':checked')) {
+                        $('#state').val('').prop('disabled', true);
+                    } else {
+                        $('#state').prop('disabled', false);
+                    }
+                });
 
-    // Desabilita estado se for seleção nacional
-    $('#is_national_team').change(function() {
-        var $state = $('#state');
-        if ($(this).is(':checked')) {
-            $state.val('').trigger('change');
-            $state.prop('disabled', true);
-        } else {
-            $state.prop('disabled', false);
-        }
-    });
+                // Desabilita upload se remover imagem estiver marcado
+                $('#remove_image').change(function() {
+                    $('#image').prop('disabled', $(this).is(':checked'));
+                });
 
-    // Desabilita o upload de imagem se remover imagem estiver marcado
-    $('#remove_image').change(function() {
-        $('#image').prop('disabled', $(this).is(':checked'));
-    });
-});
-</script>
-{% endblock %} 
+                // Configurações do toastr
+                toastr.options = {
+                    closeButton: true,
+                    progressBar: true,
+                    positionClass: "toast-top-right",
+                    timeOut: "3000"
+                };
+
+                // Validação e envio do formulário
+                $('#team-form').on('submit', function(e) {
+                    e.preventDefault();
+                    
+                    var formData = new FormData(this);
+                    
+                    $.ajax({
+                        url: $(this).attr('action'),
+                        type: 'POST',
+                        data: formData,
+                        processData: false,
+                        contentType: false,
+                        success: function(response) {
+                            if (response.success) {
+                                toastr.success(response.message);
+                                setTimeout(function() {
+                                    window.location.href = "{% url 'administrativo:times' %}";
+                                }, 1000);
+                            } else {
+                                toastr.error(response.message);
+                            }
+                        },
+                        error: function(xhr, status, error) {
+                            toastr.error('Erro ao editar time: ' + error);
+                        }
+                    });
+                });
+
+                // Mostra mensagens do Django
+                {% if messages %}
+                    {% for message in messages %}
+                        toastr.{{ message.tags }}("{{ message }}");
+                    {% endfor %}
+                {% endif %}
+            });
+        </script>
+    </body>
+</html> 

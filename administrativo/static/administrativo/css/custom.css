@@ -469,3 +469,24 @@ input::-webkit-inner-spin-button {
 .alert-info li {
     margin-bottom: 5px;
 }
+
+/* Estilos para drag and drop de fases */
+.drag-handle {
+    cursor: move;
+    padding: 5px;
+    color: #666;
+}
+
+.drag-handle:hover {
+    color: #333;
+}
+
+.sortable-ghost {
+    opacity: 0.4;
+    background-color: #f8f9fa;
+}
+
+.sortable-chosen {
+    background-color: #fff;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}

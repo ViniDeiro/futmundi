@@ -137,7 +137,7 @@
                                     </div>
                                     <div class="group-options-right mr10">
                                         <a href="{% url 'administrativo:pais_exportar' %}" class="btn btn-default btn-sm" title="Exportar"><i class="glyphicon glyphicon-download-alt"></i></a>
-                                        <button type="button" class="btn btn-default btn-sm" title="Excluir" onclick="excluirSelecionados()"><i class="glyphicon glyphicon-trash"></i></button>
+                                        <button type="button" class="btn btn-default btn-sm" title="Excluir em Massa" onclick="excluirSelecionados()"><i class="glyphicon glyphicon-trash"></i></button>
                                     </div>
                                     <div class="table-responsive">
                                         <table class="table table-striped table-bordered table-hover dataTables-paises" >
@@ -229,15 +229,6 @@
                     <form id="formImportar" method="POST" action="{% url 'administrativo:pais_importar' %}" enctype="multipart/form-data">
                         {% csrf_token %}
                         <div class="modal-body">
-                            <div class="alert alert-info">
-                                <h5>Instruções:</h5>
-                                <p>O arquivo Excel deve conter as seguintes colunas:</p>
-                                <ul>
-                                    <li><strong>nome</strong>: Nome do país</li>
-                                    <li><strong>continente</strong>: Nome do continente ao qual o país pertence</li>
-                                    <li><strong>sigla</strong>: Sigla do país (2 caracteres)</li>
-                                </ul>
-                            </div>
                             <div class="form-group">
                                 <label for="file">Selecione o arquivo</label>
                                 <div class="fileinput fileinput-new input-group" data-provides="fileinput">
@@ -245,15 +236,22 @@
                                         <i class="fa fa-file fileinput-exists"></i>
                                         <span class="fileinput-filename"></span>
                                     </div>
-                                    <span class="input-group-append">
+                                    <div class="input-group-append">
                                         <span class="input-group-text btn btn-default btn-file">
                                             <span class="fileinput-new">Selecionar arquivo</span>
                                             <span class="fileinput-exists">Alterar</span>
                                             <input type="file" name="file" accept=".xlsx,.xls" required/>
                                         </span>
-                                        <a href="#" class="input-group-text btn btn-default fileinput-exists" data-dismiss="fileinput">Remover</a>
-                                    </span>
+                                    </div>
                                 </div>
+                            </div>
+                            <div class="alert alert-info mt15">
+                                <h5>Instruções:</h5>
+                                <p>O arquivo Excel deve conter as seguintes colunas:</p>
+                                <ul>
+                                    <li><strong>Nome</strong>: Nome do país</li>
+                                    <li><strong>Continente</strong>: Nome do continente ao qual o país pertence</li>
+                                </ul>
                             </div>
                         </div>
                         <div class="modal-footer">

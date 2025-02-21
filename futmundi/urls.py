@@ -22,8 +22,6 @@ from django.views.generic.base import RedirectView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    # Redireciona a raiz para o login
-    path('', RedirectView.as_view(url='login/', permanent=True)),
     # Inclui todas as URLs do app administrativo
     path('', include('administrativo.urls')),
-] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT) + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+        <title>Novo Time</title>
+
+        <link href="css/bootstrap.min.css" rel="stylesheet">
+        <link href="font-awesome/css/font-awesome.css" rel="stylesheet">
+        
+        <link href="css/plugins/toastr/toastr.min.css" rel="stylesheet">
+        
+        <link href="css/plugins/select2/select2.min.css" rel="stylesheet">
+        <link href="css/animate.css" rel="stylesheet">
+        <link href="css/style.css" rel="stylesheet">  
+        
+        <!-- Custom -->      
+        <link href="css/custom.css" rel="stylesheet">
+
+        <!-- Favicon -->
+        <link rel="icon" href="img/futmundi.ico" type="image/png">
+    </head>
+    <body>
+        <div id="wrapper">
+            <nav class="navbar-default navbar-static-side">
+                <div class="sidebar-collapse">
+                    <ul class="nav metismenu" id="side-menu">
+                        <li class="nav-header">
+                            <div class="dropdown profile-element">
+                                <a href="usuarios.html">
+                                    <img src="img/logo.svg" alt="Futmundi logo">
+                                </a>
+                            </div>
+                            <div class="logo-element">
+                                <a href="usuarios.html">
+                                    <img src="img/logosm.svg" alt="Futmundi logo">
+                                </a>                            
+                            </div>
+                        </li>
+                        <li class="active">
+                            <a href="usuarios.html"><i class="fa fa-user"></i> <span class="nav-label">Usuários</span></a>
+                        </li>
+                        <li>
+                            <a href="#"><i class="fa fa-trophy"></i> <span class="nav-label">Campeonatos</span><span class="fa arrow"></span></a>
+                            <ul class="nav nav-second-level collapse">
+                                <li><a href="ambitos.html">Âmbitos</a></li>
+                                <li><a href="campeonatos.html">Campeonatos</a></li>
+                                <li><a href="templates.html">Templates</a></li>
+                                <li><a href="times.html">Times</a></li>
+                            </ul>
+                        </li>
+                        <li>
+                            <a href="#"><i class="fa fa-shopping-cart"></i> <span class="nav-label">Pacotes</span><span class="fa arrow"></span></a>
+                            <ul class="nav nav-second-level collapse">
+                                <li><a href="futcoins.html">Futcoins</a></li>
+                                <li><a href="planos.html">Planos</a></li>
+                            </ul>
+                        </li>
+                        <li>
+                            <a href="#"><i class="fa fa-diamond"></i> <span class="nav-label">Futligas</span><span class="fa arrow"></span></a>
+                            <ul class="nav nav-second-level collapse">
+                                <li><a href="futligas-classicas.html">Clássicas</a></li>
+                                <li><a href="futligas-jogadores.html">Jogadores</a></li>
+                            </ul>
+                        </li>
+                        <li>
+                            <a href="#"><i class="fa fa-globe"></i> <span class="nav-label">Locais</span><span class="fa arrow"></span></a>
+                            <ul class="nav nav-second-level collapse">
+                                <li><a href="continentes.html">Continentes</a></li>
+                                <li><a href="paises.html">Países</a></li>
+                                <li><a href="estados.html">Estados</a></li>
+                            </ul>
+                        </li>
+                        <li>
+                            <a href="#"><i class="fa fa-gear"></i> <span class="nav-label">Configurações</span><span class="fa arrow"></span></a>
+                            <ul class="nav nav-second-level collapse">
+                                <li><a href="parametros.html">Parâmetros</a></li>
+                                <li><a href="termo.html">Termo</a></li>
+                                <li><a href="notificacoes.html">Notificações</a></li>
+                            </ul>
+                        </li>
+                        <li>
+                            <a href="relatorios.html"><i class="fa fa-pie-chart"></i> <span class="nav-label">Relatórios</span></a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+            <div id="page-wrapper" class="gray-bg">
+                <div class="row border-bottom">
+                    <nav class="navbar navbar-static-top" style="margin-bottom: 0">
+                        <div class="navbar-header">
+                            <a class="navbar-minimalize minimalize-styl-2 btn btn-success " href="#"><i class="fa fa-bars"></i> </a>
+                        </div>
+                        <ul class="nav navbar-top-links navbar-right">
+                            <li>
+                                <span class="m-r-sm text-muted welcome-message">Andrews Cristhian</span>
+                            </li>
+                            <li class="dropdown">
+                                <a class="dropdown-toggle count-info" data-toggle="dropdown" href="#">
+                                    <i class="fa fa-gear"></i>
+                                </a>
+                                <ul class="dropdown-menu dropdown-alerts">
+                                    <li>
+                                        <a href="administradores.html" class="dropdown-item">
+                                            <div>
+                                                <i class="fa fa-users"></i> Administradores
+                                            </div>
+                                        </a>
+                                    </li>
+                                    <li class="dropdown-divider"></li>
+                                    <li>
+                                        <a href="login.html" class="dropdown-item">
+                                            <div>
+                                                <i class="fa fa-sign-out"></i> Sair
+                                            </div>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+                <div class="row wrapper border-bottom white-bg page-heading">
+                    <div class="col-lg-10">
+                        <h2>Novo Time</h2>
+                    </div>
+                </div>
+                <div class="wrapper wrapper-content">
+                    <div class="row">
+                        <div class="col-lg-12">
+                            <div class="ibox-content">
+                                <div class="row mt10">
+                                    <div class="col-lg-4">
+                                    <form class="mt10">
+                                        <div class="form-group col-lg-8">
+                                            <input type="text" id="nome" class="form-control" required>
+                                            <label class="form-control-placeholder" for="nome">Nome</label>
+                                        </div>
+                                        <div class="card ui-card-shadow ui-widget ui-widget-content ui-corner-all card-small ml15">
+                                            <div class="card-heading">
+                                                <h5>Imagem</h5>
+                                            </div>
+                                            <div class="card-content">
+                                                <label class="label-card label-card-small">
+                                                    <i class="fa fa-file-image-o label-content" style="cursor:pointer;"></i>
+                                                    <input accept="image/*" type="file" class="input-image">
+                                                </label>
+                                            </div>                              
+                                        </div>
+                                        <div>
+                                            <button type="button" class="btn btn-success ml15" id="successToast"><i class="glyphicon glyphicon-save mr5"></i> Salvar</button>  
+                                            <button type="button" class="btn btn-danger ml15"><i class="fa fa-ban mr5"></i> Cancelar</button>  
+                                        </div>
+                                    </form>
+                                    </div>
+                                    <div class="col-lg-2 mlm50 mtm10 mr20">
+                                        <div class="mt5">
+                                            <label class="control-label" for="pais">País</label>
+                                            <select class="form-control js-basic-single" id="pais">
+                                                <option value="Amsterdam">Amsterdam</option>
+                                                <option value="Washington">Washington</option>
+                                            </select>                                         
+                                        </div>
+                                        <div class="mt5">
+                                            <label class="control-label" for="estado">Estado</label>
+                                            <select class="form-control js-basic-single" id="estado">
+                                                <option value="Amsterdam">Amsterdam</option>
+                                                <option value="Washington">Washington</option>
+                                            </select>                                       
+                                        </div>  
+										<div class="row">
+                                                <div class="col-lg-12 mt15">
+                                                     <div class="i-checks"><label><input type="checkbox"> É seleção</label></div>
+                                                </div>                                               
+                                            </div>
+                                    </div> 
+                                    <div class="col-lg-4 ml30 mt10">
+                                        <table class="table table-bordered table-striped">
+                                            <thead>
+                                                <tr>
+                                                    <th class="per100">Campeonatos Vinculados</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td>Campeonato Brasileiro</td>                                         
+                                                </tr>
+                                                <tr>
+                                                    <td>Libertadores da América</td>                                         
+                                                </tr>
+                                                <tr>
+                                                    <td>Liga dos Campeões Europa</td>                                         
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div> 
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Mainly scripts -->
+        <script src="js/jquery-3.4.1.min.js"></script>
+        <script src="js/popper.min.js"></script>
+        <script src="js/bootstrap.js"></script>
+        <script src="js/plugins/metisMenu/jquery.metisMenu.js"></script>
+        <script src="js/plugins/slimscroll/jquery.slimscroll.min.js"></script>
+        <!-- Custom and plugin javascript -->
+        <script src="js/inspinia.js"></script>
+        <script src="js/plugins/pace/pace.min.js"></script>
+        <script src="js/plugins/toastr/toastr.min.js"></script>
+        <script src="js/plugins/select2/select2.min.js"></script>  
+        <script src="js/settings.js"></script>
+    </body>
+</html>

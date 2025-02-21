@@ -67,34 +67,58 @@ def import_from_excel(file, model, fields, unique_fields):
         
         records_created = 0
         records_skipped = 0
+        errors = []
         
         with transaction.atomic():
             for _, row in df.iterrows():
-                data = {}
-                for display_name, value in row.items():
-                    if display_name in field_map:
-                        field_name = field_map[display_name]
-                        # Remove espaços extras e converte para string se não for nulo
-                        data[field_name] = str(value).strip() if pd.notnull(value) else None
-                
-                # Verificar duplicatas
-                unique_filters = {field: data[field] for field in unique_fields if field in data}
-                if model.objects.filter(**unique_filters).exists():
-                    records_skipped += 1
-                    continue
-                
-                obj = model(**data)
-                obj.full_clean()  # Valida o objeto
-                obj.save()
-                records_created += 1
+                try:
+                    data = {}
+                    related_objects = {}
+                    
+                    for display_name, value in row.items():
+                        if display_name in field_map:
+                            field_name = field_map[display_name]
+                            
+                            # Remove espaços extras e converte para string se não for nulo
+                            value = str(value).strip() if pd.notnull(value) else None
+                            
+                            # Se é um campo relacionado (contém '__')
+                            if '__' in field_name:
+                                model_field, related_field = field_name.split('__')
+                                related_model = model._meta.get_field(model_field).remote_field.model
+                                
+                                # Tenta encontrar ou criar o objeto relacionado
+                                related_obj, created = related_model.objects.get_or_create(**{related_field: value})
+                                related_objects[model_field] = related_obj
+                            else:
+                                data[field_name] = value
+                    
+                    # Adiciona os objetos relacionados aos dados
+                    data.update(related_objects)
+                    
+                    # Verificar duplicatas
+                    unique_filters = {field: data[field] for field in unique_fields if field in data}
+                    if model.objects.filter(**unique_filters).exists():
+                        records_skipped += 1
+                        continue
+                    
+                    obj = model(**data)
+                    obj.full_clean()  # Valida o objeto
+                    obj.save()
+                    records_created += 1
+                    
+                except ValidationError as e:
+                    errors.append(f"Linha {_+2}: {str(e)}")
+                except Exception as e:
+                    errors.append(f"Linha {_+2}: {str(e)}")
         
         message = f"{records_created} registro(s) importado(s) com sucesso."
         if records_skipped > 0:
             message += f" {records_skipped} registro(s) ignorado(s) por já existirem."
+        if errors:
+            message += f"\nErros: {' | '.join(errors)}"
             
-        return True, message
+        return len(errors) == 0, message
     
-    except ValidationError as e:
-        return False, f"Erro de validação: {str(e)}"
     except Exception as e:
         return False, f"Erro ao importar: {str(e)}" 

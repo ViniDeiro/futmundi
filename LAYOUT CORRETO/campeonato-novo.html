@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+        <title>Novo Campeonato</title>
+
+        <link href="css/bootstrap.min.css" rel="stylesheet">
+        <link href="font-awesome/css/font-awesome.css" rel="stylesheet">
+
+        <!-- Toastr style -->
+        <link href="css/plugins/toastr/toastr.min.css" rel="stylesheet">
+        <link href="css/plugins/iCheck/custom.css" rel="stylesheet">
+        <link href="css/plugins/jasny/jasny-bootstrap.min.css" rel="stylesheet">
+        <link href="css/plugins/select2/select2.min.css" rel="stylesheet">
+        <link href="css/animate.css" rel="stylesheet">
+        <link href="css/style.css" rel="stylesheet">  
+        <link href="css/plugins/dualListbox/bootstrap-duallistbox.min.css" rel="stylesheet">  
+        <link href="css/plugins/tempusdominus/tempusdominus-bootstrap-4.min.css" rel="stylesheet">  
+            
+        <!-- Custom -->      
+        <link href="css/custom.css" rel="stylesheet">
+
+        <!-- Favicon -->
+        <link rel="icon" href="img/futmundi.ico" type="image/png">
+    </head>
+    <body>
+        <div id="wrapper">
+            <nav class="navbar-default navbar-static-side">
+                <div class="sidebar-collapse">
+                    <ul class="nav metismenu" id="side-menu">
+                        <li class="nav-header">
+                            <div class="dropdown profile-element">
+                                <a href="usuarios.html">
+                                    <img src="img/logo.svg" alt="Futmundi logo">
+                                </a>
+                            </div>
+                            <div class="logo-element">
+                                <a href="usuarios.html">
+                                    <img src="img/logosm.svg" alt="Futmundi logo">
+                                </a>                            
+                            </div>
+                        </li>
+                        <li class="active">
+                            <a href="usuarios.html"><i class="fa fa-user"></i> <span class="nav-label">Usuários</span></a>
+                        </li>
+                        <li>
+                            <a href="#"><i class="fa fa-trophy"></i> <span class="nav-label">Campeonatos</span><span class="fa arrow"></span></a>
+                            <ul class="nav nav-second-level collapse">
+                                <li><a href="ambitos.html">Âmbitos</a></li>
+                                <li><a href="campeonatos.html">Campeonatos</a></li>
+                                <li><a href="templates.html">Templates</a></li>
+                                <li><a href="times.html">Times</a></li>
+                            </ul>
+                        </li>
+                        <li>
+                            <a href="#"><i class="fa fa-shopping-cart"></i> <span class="nav-label">Pacotes</span><span class="fa arrow"></span></a>
+                            <ul class="nav nav-second-level collapse">
+                                <li><a href="futcoins.html">Futcoins</a></li>
+                                <li><a href="planos.html">Planos</a></li>
+                            </ul>
+                        </li>
+                        <li>
+                            <a href="#"><i class="fa fa-diamond"></i> <span class="nav-label">Futligas</span><span class="fa arrow"></span></a>
+                            <ul class="nav nav-second-level collapse">
+                                <li><a href="futligas-classicas.html">Clássicas</a></li>
+                                <li><a href="futligas-jogadores.html">Jogadores</a></li>
+                            </ul>
+                        </li>
+                        <li>
+                            <a href="#"><i class="fa fa-globe"></i> <span class="nav-label">Locais</span><span class="fa arrow"></span></a>
+                            <ul class="nav nav-second-level collapse">
+                                <li><a href="continentes.html">Continentes</a></li>
+                                <li><a href="paises.html">Países</a></li>
+                                <li><a href="estados.html">Estados</a></li>
+                            </ul>
+                        </li>
+                        <li>
+                            <a href="#"><i class="fa fa-gear"></i> <span class="nav-label">Configurações</span><span class="fa arrow"></span></a>
+                            <ul class="nav nav-second-level collapse">
+                                <li><a href="parametros.html">Parâmetros</a></li>
+                                <li><a href="termo.html">Termo</a></li>
+                                <li><a href="notificacoes.html">Notificações</a></li>
+                            </ul>
+                        </li>
+                        <li>
+                            <a href="relatorios.html"><i class="fa fa-pie-chart"></i> <span class="nav-label">Relatórios</span></a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+            <div id="page-wrapper" class="gray-bg">
+                <div class="row border-bottom">
+                    <nav class="navbar navbar-static-top" style="margin-bottom: 0">
+                        <div class="navbar-header">
+                            <a class="navbar-minimalize minimalize-styl-2 btn btn-success " href="#"><i class="fa fa-bars"></i> </a>
+                        </div>
+                        <ul class="nav navbar-top-links navbar-right">
+                            <li>
+                                <span class="m-r-sm text-muted welcome-message">Andrews Cristhian</span>
+                            </li>
+                            <li class="dropdown">
+                                <a class="dropdown-toggle count-info" data-toggle="dropdown" href="#">
+                                    <i class="fa fa-gear"></i>
+                                </a>
+                                <ul class="dropdown-menu dropdown-alerts">
+                                    <li>
+                                        <a href="administradores.html" class="dropdown-item">
+                                            <div>
+                                                <i class="fa fa-users"></i> Administradores
+                                            </div>
+                                        </a>
+                                    </li>
+                                    <li class="dropdown-divider"></li>
+                                    <li>
+                                        <a href="login.html" class="dropdown-item">
+                                            <div>
+                                                <i class="fa fa-sign-out"></i> Sair
+                                            </div>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+                <div class="row wrapper border-bottom white-bg page-heading">
+                    <div class="col-lg-10">
+                        <h2>Novo Campeonato</h2>
+                    </div>
+                </div>
+                <div class="wrapper wrapper-content">
+                    <div class="row">
+                        <div class="col-lg-12">
+                            <div class="tabs-container">
+                                <ul class="nav nav-tabs" role="tablist">
+                                    <li><a class="nav-link active" data-toggle="tab" href="#geral">Geral</a></li>
+                                    <li><a class="nav-link" data-toggle="tab" href="#times">Times</a></li>
+                                    <li><a class="nav-link" data-toggle="tab" href="#rodadas">Rodadas</a></li>
+                                </ul>
+                                <div class="tab-content">
+                                    <div id="geral" class="tab-pane active">
+                                        <div class="panel-body">
+                                            <div class="row">
+                                                <div class="row col-lg-6 mt10">
+                                                    <div class="col-lg-6">
+                                                        <div class="col-lg-12">
+                                                            <input type="text" id="nome" class="form-control" required>
+                                                            <label class="form-control-placeholder" for="nome">Nome</label>
+                                                        </div> 
+                                                        <div class="col-lg-12 mt11">
+                                                            <label class="control-label">Template</label>
+                                                            <select class="form-control js-basic-single" id="campeonato">
+                                                                <option value="Brasileiro">Brasileiro</option>
+                                                                <option value="Inglês">Inglês</option>
+                                                            </select> 
+                                                        </div>
+                                                        <div class="col-lg-12 mt15">
+                                                            <div class="i-checks"><label><input type="checkbox"> Ativo</label></div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-lg-6">
+                                                        <div class="col-lg-6">
+                                                            <input type="number" min="0" id="temporada" class="form-control" required>
+                                                            <label class="form-control-placeholder" for="temporada">Temporada</label>
+                                                        </div> 
+                                                        <div class="col-lg-6 mt30">
+                                                            <input type="number" min="0" id="pontuacao" class="form-control" required>
+                                                            <label class="form-control-placeholder" for="pontuacao">Pontuação</label> 
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-lg-6 mtm20">
+                                                    <div class="row mt11">
+                                                        <div class="col-lg-4">
+                                                            <label class="control-label" for="ambito">Âmbito</label>
+                                                            <select class="form-control" id="ambito">
+                                                                <option value="Estadual">Estadual</option>
+                                                                <option value="Nacional">Nacional</option>
+                                                                <option value="Continental">Continental</option>
+                                                                <option value="Mundial">Mundial</option>
+                                                            </select> 
+                                                        </div>                                                       
+                                                    </div>
+                                                    <div class="row mt11">
+                                                        <div class="col-lg-4">
+                                                            <label class="control-label" for="continente">Continente</label>
+                                                            <select class="form-control js-basic-single" id="continente">
+                                                                <option value="Estadual">Ásia</option>
+                                                                <option value="Nacional">América</option>
+                                                            </select>
+                                                        </div>  
+                                                        <div class="col-lg-4">
+                                                            <label class="control-label" for="pais">País</label>
+                                                            <select class="form-control js-basic-single" id="pais">
+                                                                <option value="Estadual">Brasil</option>
+                                                                <option value="Nacional">Inglaterra</option>
+                                                                <option value="Continental">Portugal</option>
+                                                            </select>  
+                                                        </div>
+                                                        <div class="col-lg-4">
+                                                            <label class="control-label" for="estado">Estado</label>
+                                                            <select class="form-control js-basic-single" id="estado">
+                                                                <option value="Estadual">Acre</option>
+                                                                <option value="Nacional">Bahia</option>
+                                                            </select>  
+                                                        </div>                                            
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div id="times" class="tab-pane">
+                                        <div class="panel-body">
+                                            <div class="col-lg-2">
+                                                <label class="control-label" for="filtrar-por">Filtrar por</label>
+                                                <select class="form-control" id="filtrar-por">
+                                                    <option value="Todos">Todos</option>
+                                                    <option value="Times">Times</option>
+                                                    <option value="Seleções">Seleções</option>
+                                                </select>   
+                                            </div> 
+                                            <div class="col-lg-12 mt20">
+                                                <form action="#" class="wizard-big">
+                                                    <select class="form-control dual_select" multiple>
+                                                        <option value="United States">United States</option>
+                                                        <option value="United Kingdom">United Kingdom</option>
+                                                        <option value="Australia">Australia</option>
+                                                        <option selected value="Austria">Austria</option>
+                                                        <option selected value="Bahamas">Bahamas</option>
+                                                        <option value="Barbados">Barbados</option>
+                                                        <option value="Belgium">Belgium</option>
+                                                        <option value="Bermuda">Bermuda</option>
+                                                        <option value="Brazil">Brazil</option>
+                                                        <option value="Bulgaria">Bulgaria</option>
+                                                        <option value="Cameroon">Cameroon</option>
+                                                        <option value="Canada">Canada</option>
+                                                    </select>
+                                                </form>
+                                            </div>                                            
+                                        </div>
+                                    </div>
+                                    <div id="rodadas" class="tab-pane">
+                                        <div class="panel-body">
+                                            <div class="row col-lg-12">
+                                                <div class="col-lg-2">
+                                                    <label class="control-label" for="fase">Fase</label>
+                                                    <select class="form-control js-basic-single" id="fase">
+                                                        <option value="Brasileiro">Fase de Grupos</option>
+                                                        <option value="Ingles">Oitavas de Final</option>
+                                                    </select> 
+                                                </div>
+                                                <div class="col-lg-2">
+                                                    <label class="control-label" for="rodada">Rodada</label>
+                                                    <select class="form-control js-basic-single" id="rodada" style="width: 60%">
+                                                        <option value="1">1</option>
+                                                        <option value="2">2</option>
+                                                    </select> 
+                                                </div>
+                                                <div class="col-lg-4 mb10">   
+                                                <button type="button" class="btn btn-primary ml20" data-toggle="modal" data-target="#modalImportXLS"><i class="fa fa-upload mr5"></i> Importar</button>      
+                                                </div>
+                                            </div>
+                                            <div class="row col-lg-12 mt10">
+                                                <div class="col-lg-2">
+                                                    <select class="form-control js-templating" style="width: 100%">
+                                                        <option value="audax">Audax</option>
+                                                        <option value="bragantino">Bragantino</option>
+                                                        <option value="corinthians">Corinthians</option>
+                                                        <option value="guarani">Guarani</option>
+                                                        <option value="ituano">Ituano</option>
+                                                    </select>
+                                                </div>
+                                                <div class="col-lg-1 ml35 mrm15">
+                                                <input type="number" min="0" class="form-control placar">
+                                                </div>
+                                                <div class="col-lg-1 mlm30 mrm15">
+                                                <input type="number" min="0" class="form-control placar">
+                                                </div>
+                                                <div class="col-lg-2 mlm30 mr25">
+                                                    <select class="form-control js-templating" style="width: 100%">
+                                                        <option value="audax">Audax</option>
+                                                        <option value="bragantino">Bragantino</option>
+                                                        <option value="corinthians">Corinthians</option>
+                                                        <option value="guarani">Guarani</option>
+                                                        <option value="ituano">Ituano</option>
+                                                    </select>
+                                                </div>
+                                                <div class="col-lg-3 ml10">
+                                                    <input type="text" class="form-control datetimepicker-input" style="width: 50%" id="datetimepicker" data-toggle="datetimepicker" data-target="#datetimepicker"/>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="panel panel-default col-lg-12 p15">
+                                <button type="button" class="btn btn-success ml20" id="successToast"><i class="glyphicon glyphicon-save mr5"></i> Salvar</button>
+                                <button type="button" class="btn btn-primary ml20" id="successToast"><i class="glyphicon glyphicon-ok mr5"></i> Aplicar</button>
+                                <button type="button" class="btn btn-danger ml15"><i class="fa fa-ban mr5"></i> Cancelar</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+		
+		<div class="modal inmodal" id="modalImportXLS" tabindex="-1" role="dialog"  aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content animated fadeIn">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                        <h4 class="modal-title">Importar Arquivo</h4>
+                    </div>
+                    <div class="modal-body">
+                        <div class="fileinput fileinput-new" data-provides="fileinput">
+                            <span class="btn btn-primary btn-file"><span class="fileinput-new">Selecionar</span><span class="fileinput-exists">Mudar</span><input type="file" accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" name="..."></span>
+                            <span class="fileinput-filename"></span>
+                            <a href="#" class="close fileinput-exists" data-dismiss="fileinput" style="float: none">&times;</a>
+                        </div>                
+                        <table class="table table-bordered">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th class="per10">Campeonato</th>
+                                    <th class="per5">Fase</th>
+                                    <th class="per5">Rodada</th>
+                                    <th class="per20">Mandante</th>
+                                    <th class="per15">Placar M.</th>
+                                    <th class="per15">Placar V.</th>
+                                    <th class="per20">Visitante</th>
+                                    <th class="per5">Data</th>
+                                    <th class="per5">Hora</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Libertadores</td>
+                                    <td>Oitavas</td>                                      
+                                    <td>2</td>  
+                                    <td>Athletico Paranaense</td> 
+                                    <td>2</td>                                    
+                                    <td>2</td>    
+                                    <td>Athletico Paranaense</td>                                 
+                                    <td>31/03</td>                                 
+                                    <td>13:00</td>                                 
+                                </tr>
+                                <tr>
+                                    <td>Libertadores</td>
+                                    <td>Oitavas</td>                                      
+                                    <td>2</td>  
+                                    <td>Athletico Paranaense</td> 
+                                    <td>2</td>                                    
+                                    <td>2</td>    
+                                    <td>Athletico Paranaense</td>                                 
+                                    <td>31/03</td>                                 
+                                    <td>13:00</td>                                 
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
+                        <button type="button" class="btn btn-success">Salvar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+       
+        <!-- Mainly scripts -->
+        <script src="js/jquery-3.4.1.min.js"></script>
+        <script src="js/popper.min.js"></script>
+        <script src="js/bootstrap.js"></script>
+        <script src="js/plugins/metisMenu/jquery.metisMenu.js"></script>
+        <script src="js/plugins/slimscroll/jquery.slimscroll.min.js"></script>
+        <!-- Custom and plugin javascript -->
+        <script src="js/inspinia.js"></script>
+        <script src="js/plugins/pace/pace.min.js"></script>
+        <script src="js/plugins/select2/select2.min.js"></script>  
+        <script src="js/plugins/toastr/toastr.min.js"></script>
+        <script src="js/plugins/jasny/jasny-bootstrap.min.js"></script>        
+        <script src="js/plugins/iCheck/icheck.min.js"></script>
+        <script src="js/plugins/dualListbox/jquery.bootstrap-duallistbox.js"></script>
+        <script src="js/plugins/moment/moment.js"></script>
+        <script src="js/plugins/tempusdominus/tempusdominus-bootstrap-4.min.js"></script>
+        <script src="js/settings.js"></script>
+    </body>
+</html>

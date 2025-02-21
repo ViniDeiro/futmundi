@@ -1,5 +1,5 @@
-<!DOCTYPE html>
 {% load static %}
+<!DOCTYPE html>
 <html lang="en">
     <head>
         <meta charset="utf-8">
@@ -9,9 +9,7 @@
 
         <link href="{% static 'administrativo/css/bootstrap.min.css' %}" rel="stylesheet">
         <link href="{% static 'administrativo/font-awesome/css/font-awesome.css' %}" rel="stylesheet">
-        
         <link href="{% static 'administrativo/css/plugins/toastr/toastr.min.css' %}" rel="stylesheet">
-        
         <link href="{% static 'administrativo/css/plugins/select2/select2.min.css' %}" rel="stylesheet">
         <link href="{% static 'administrativo/css/animate.css' %}" rel="stylesheet">
         <link href="{% static 'administrativo/css/style.css' %}" rel="stylesheet">  
@@ -23,105 +21,11 @@
         <link rel="icon" href="{% static 'administrativo/img/futmundi.ico' %}" type="image/png">
     </head>
     <body>
+        {% csrf_token %}
         <div id="wrapper">
-            <nav class="navbar-default navbar-static-side">
-                <div class="sidebar-collapse">
-                    <ul class="nav metismenu" id="side-menu">
-                        <li class="nav-header">
-                            <div class="dropdown profile-element">
-                                <a href="{% url 'administrativo:usuarios' %}">
-                                    <img src="{% static 'administrativo/img/logo.svg' %}" alt="Futmundi logo">
-                                </a>
-                            </div>
-                            <div class="logo-element">
-                                <a href="{% url 'administrativo:usuarios' %}">
-                                    <img src="{% static 'administrativo/img/logosm.svg' %}" alt="Futmundi logo">
-                                </a>                            
-                            </div>
-                        </li>
-                        <li class="active">
-                            <a href="{% url 'administrativo:usuarios' %}"><i class="fa fa-user"></i> <span class="nav-label">Usuários</span></a>
-                        </li>
-                        <li>
-                            <a href="#"><i class="fa fa-trophy"></i> <span class="nav-label">Campeonatos</span><span class="fa arrow"></span></a>
-                            <ul class="nav nav-second-level collapse">
-                                <li><a href="{% url 'administrativo:ambitos' %}">Âmbitos</a></li>
-                                <li><a href="{% url 'administrativo:campeonatos' %}">Campeonatos</a></li>
-                                <li><a href="{% url 'administrativo:templates' %}">Templates</a></li>
-                                <li><a href="{% url 'administrativo:times' %}">Times</a></li>
-                            </ul>
-                        </li>
-                        <li>
-                            <a href="#"><i class="fa fa-shopping-cart"></i> <span class="nav-label">Pacotes</span><span class="fa arrow"></span></a>
-                            <ul class="nav nav-second-level collapse">
-                                <li><a href="{% url 'administrativo:futcoins' %}">Futcoins</a></li>
-                                <li><a href="{% url 'administrativo:planos' %}">Planos</a></li>
-                            </ul>
-                        </li>
-                        <li>
-                            <a href="#"><i class="fa fa-diamond"></i> <span class="nav-label">Futligas</span><span class="fa arrow"></span></a>
-                            <ul class="nav nav-second-level collapse">
-                                <li><a href="{% url 'administrativo:futligas_classicas' %}">Clássicas</a></li>
-                                <li><a href="{% url 'administrativo:futligas_jogadores' %}">Jogadores</a></li>
-                            </ul>
-                        </li>
-                        <li>
-                            <a href="#"><i class="fa fa-globe"></i> <span class="nav-label">Locais</span><span class="fa arrow"></span></a>
-                            <ul class="nav nav-second-level collapse">
-                                <li><a href="{% url 'administrativo:continentes' %}">Continentes</a></li>
-                                <li><a href="{% url 'administrativo:paises' %}">Países</a></li>
-                                <li><a href="{% url 'administrativo:estados' %}">Estados</a></li>
-                            </ul>
-                        </li>
-                        <li>
-                            <a href="#"><i class="fa fa-gear"></i> <span class="nav-label">Configurações</span><span class="fa arrow"></span></a>
-                            <ul class="nav nav-second-level collapse">
-                                <li><a href="{% url 'administrativo:parametros' %}">Parâmetros</a></li>
-                                <li><a href="{% url 'administrativo:termo' %}">Termo</a></li>
-                                <li><a href="{% url 'administrativo:notificacoes' %}">Notificações</a></li>
-                            </ul>
-                        </li>
-                        <li>
-                            <a href="{% url 'administrativo:relatorios' %}"><i class="fa fa-pie-chart"></i> <span class="nav-label">Relatórios</span></a>
-                        </li>
-                    </ul>
-                </div>
-            </nav>
+            {% include 'administrativo/menu.html' %}
             <div id="page-wrapper" class="gray-bg">
-                <div class="row border-bottom">
-                    <nav class="navbar navbar-static-top" style="margin-bottom: 0">
-                        <div class="navbar-header">
-                            <a class="navbar-minimalize minimalize-styl-2 btn btn-success " href="#"><i class="fa fa-bars"></i> </a>
-                        </div>
-                        <ul class="nav navbar-top-links navbar-right">
-                            <li>
-                                <span class="m-r-sm text-muted welcome-message">Andrews Cristhian</span>
-                            </li>
-                            <li class="dropdown">
-                                <a class="dropdown-toggle count-info" data-toggle="dropdown" href="#">
-                                    <i class="fa fa-gear"></i>
-                                </a>
-                                <ul class="dropdown-menu dropdown-alerts">
-                                    <li>
-                                        <a href="{% url 'administrativo:administradores' %}" class="dropdown-item">
-                                            <div>
-                                                <i class="fa fa-users"></i> Administradores
-                                            </div>
-                                        </a>
-                                    </li>
-                                    <li class="dropdown-divider"></li>
-                                    <li>
-                                        <a href="{% url 'administrativo:login' %}" class="dropdown-item">
-                                            <div>
-                                                <i class="fa fa-sign-out"></i> Sair
-                                            </div>
-                                        </a>
-                                    </li>
-                                </ul>
-                            </li>
-                        </ul>
-                    </nav>
-                </div>
+                {% include 'administrativo/header.html' %}
                 <div class="row wrapper border-bottom white-bg page-heading">
                     <div class="col-lg-10">
                         <h2>Novo Time</h2>
@@ -133,33 +37,34 @@
                             <div class="ibox-content">
                                 <div class="row mt10">
                                     <div class="col-lg-4">
-                                    <form class="mt10" method="post" action="{% url 'administrativo:time_novo' %}" enctype="multipart/form-data" id="team-form">
-                                        {% csrf_token %}
-                                        <div class="form-group col-lg-8">
-                                            <input type="text" id="name" name="name" class="form-control" placeholder="Nome" required>
-                                        </div>
-                                        <div class="card ui-card-shadow ui-widget ui-widget-content ui-corner-all card-small ml15">
-                                            <div class="card-heading">
-                                                <h5>Imagem</h5>
+                                        <form id="team-form" method="post" action="{% url 'administrativo:time_novo' %}" enctype="multipart/form-data" class="mt10">
+                                            {% csrf_token %}
+                                            <div class="form-group col-lg-8">
+                                                <input type="text" id="name" name="name" class="form-control" required>
+                                                <label class="form-control-placeholder" for="name">Nome</label>
                                             </div>
-                                            <div class="card-content">
-                                                <label class="label-card label-card-small">
-                                                    <i class="fa fa-file-image-o label-content" style="cursor:pointer;"></i>
-                                                    <input accept="image/*" type="file" name="image" id="image" class="input-image" style="display:none;" required>
-                                                </label>
-                                                <div id="image-preview" class="mt10"></div>
-                                            </div>                              
-                                        </div>
-                                        <div class="form-group mt15">
-                                            <button type="submit" class="btn btn-success ml15"><i class="fa fa-save mr5"></i> Salvar</button>  
-                                            <a href="{% url 'administrativo:times' %}" class="btn btn-danger ml15"><i class="fa fa-ban mr5"></i> Cancelar</a>  
-                                        </div>
-                                    </form>
+                                            <div class="card ui-card-shadow ui-widget ui-widget-content ui-corner-all card-small ml15">
+                                                <div class="card-heading">
+                                                    <h5>Escudo</h5>
+                                                </div>
+                                                <div class="card-content">
+                                                    <label class="label-card label-card-small">
+                                                        <i class="fa fa-file-image-o label-content" style="cursor:pointer;"></i>
+                                                        <input type="file" id="image" name="image" class="input-image" accept="image/*" required>
+                                                    </label>
+                                                    <div id="image-preview" class="mt-2"></div>
+                                                </div>                              
+                                            </div>
+                                            <div>
+                                                <button type="submit" class="btn btn-success ml15"><i class="glyphicon glyphicon-save mr5"></i> Salvar</button>
+                                                <a href="{% url 'administrativo:times' %}" class="btn btn-danger ml15"><i class="fa fa-ban mr5"></i> Cancelar</a>
+                                            </div>
+                                        </form>
                                     </div>
                                     <div class="col-lg-2 mlm50 mtm10 mr20">
                                         <div class="mt5">
                                             <label class="control-label" for="country">País</label>
-                                            <select class="form-control js-basic-single" id="country" name="country" form="team-form" required>
+                                            <select class="form-control select2" id="country" name="country" required>
                                                 <option value="">Selecione um país</option>
                                                 {% for country in countries %}
                                                     <option value="{{ country.id }}">{{ country.name }}</option>
@@ -168,43 +73,20 @@
                                         </div>
                                         <div class="mt5">
                                             <label class="control-label" for="state">Estado</label>
-                                            <select class="form-control js-basic-single" id="state" name="state" form="team-form">
+                                            <select class="form-control select2" id="state" name="state">
                                                 <option value="">Selecione um estado</option>
-                                                {% for state in states %}
-                                                    <option value="{{ state.id }}">{{ state.name }}</option>
-                                                {% endfor %}
                                             </select>                                       
-                                        </div>  
+                                        </div>
                                         <div class="row">
                                             <div class="col-lg-12 mt15">
                                                 <div class="i-checks">
-                                                    <label>
-                                                        <input type="checkbox" name="is_national_team" id="is_national_team" form="team-form"> É seleção
-                                                    </label>
+                                                    <label><input type="checkbox" name="is_national" id="is_national"> É seleção</label>
                                                 </div>
                                             </div>                                               
                                         </div>
-                                    </div> 
+                                    </div>
                                     <div class="col-lg-4 ml30 mt10">
-                                        <table class="table table-bordered table-striped">
-                                            <thead>
-                                                <tr>
-                                                    <th class="per100">Campeonatos Vinculados</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr>
-                                                    <td>Campeonato Brasileiro</td>                                         
-                                                </tr>
-                                                <tr>
-                                                    <td>Libertadores da América</td>                                         
-                                                </tr>
-                                                <tr>
-                                                    <td>Liga dos Campeões Europa</td>                                         
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                    </div> 
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -212,124 +94,88 @@
                 </div>
             </div>
         </div>
-        <!-- Mainly scripts -->
+
+        <!-- Scripts -->
         <script src="{% static 'administrativo/js/jquery-3.4.1.min.js' %}"></script>
         <script src="{% static 'administrativo/js/popper.min.js' %}"></script>
         <script src="{% static 'administrativo/js/bootstrap.js' %}"></script>
         <script src="{% static 'administrativo/js/plugins/metisMenu/jquery.metisMenu.js' %}"></script>
         <script src="{% static 'administrativo/js/plugins/slimscroll/jquery.slimscroll.min.js' %}"></script>
-        <!-- Custom and plugin javascript -->
         <script src="{% static 'administrativo/js/inspinia.js' %}"></script>
         <script src="{% static 'administrativo/js/plugins/pace/pace.min.js' %}"></script>
         <script src="{% static 'administrativo/js/plugins/toastr/toastr.min.js' %}"></script>
-        <script src="{% static 'administrativo/js/plugins/select2/select2.min.js' %}"></script>  
-        <script src="{% static 'administrativo/js/settings.js' %}"></script>
+        <script src="{% static 'administrativo/js/plugins/select2/select2.min.js' %}"></script>
+
         <script>
             $(document).ready(function() {
-                // Inicializa o Select2
-                $('.js-basic-single').select2();
-
-                // Inicializa o iCheck
-                $('.i-checks').iCheck({
-                    checkboxClass: 'icheckbox_square-green',
-                    radioClass: 'iradio_square-green'
-                });
-
-                // Carrega os estados quando o país é alterado
-                $('#country').on('change', function() {
-                    var countryId = $(this).val();
-                    var stateSelect = $('#state');
-                    
-                    stateSelect.empty().append('<option value="">Selecione um estado</option>');
-                    
-                    if (countryId) {
-                        $.ajax({
-                            url: "{% url 'administrativo:get_states_by_country' %}",
-                            data: { 'country_id': countryId },
-                            success: function(data) {
-                                if (data.states && data.states.length > 0) {
-                                    $.each(data.states, function(index, state) {
-                                        stateSelect.append($('<option></option>')
-                                            .attr('value', state.id)
-                                            .text(state.name));
-                                    });
-                                    stateSelect.prop('disabled', false);
-                                } else {
-                                    stateSelect.prop('disabled', true);
-                                }
-                                stateSelect.trigger('change');
-                            }
-                        });
-                    } else {
-                        stateSelect.prop('disabled', true);
-                    }
-                });
+                // Inicializa Select2
+                $('.select2').select2();
 
                 // Preview da imagem
-                $('.fa-file-image-o').click(function() {
-                    $('#image').click();
-                });
-
                 $('#image').on('change', function() {
                     var file = this.files[0];
                     if (file) {
                         var reader = new FileReader();
                         reader.onload = function(e) {
-                            $('#image-preview').html('<img src="' + e.target.result + '" style="max-width: 100%; max-height: 200px;">');
+                            $('#image-preview').html('<img src="' + e.target.result + '" style="max-height: 100px;">');
                         }
                         reader.readAsDataURL(file);
                     }
                 });
 
-                // Desabilita o campo de estado quando é seleção
-                $('#is_national_team').on('ifChanged', function() {
-                    var stateSelect = $('#state');
-                    stateSelect.prop('disabled', this.checked);
-                    if (this.checked) {
-                        stateSelect.val('').trigger('change');
+                // Carrega estados quando país é selecionado
+                $('#country').on('change', function() {
+                    var countryId = $(this).val();
+                    if (countryId) {
+                        $.ajax({
+                            url: "{% url 'administrativo:get_states_by_country' %}",
+                            data: { country_id: countryId },
+                            success: function(data) {
+                                var stateSelect = $('#state');
+                                stateSelect.empty().append('<option value="">Selecione um estado</option>');
+                                data.states.forEach(function(state) {
+                                    stateSelect.append(`<option value="${state.id}">${state.name}</option>`);
+                                });
+                            }
+                        });
                     }
                 });
 
-                // Validação do formulário
-                $('#team-form').on('submit', function(e) {
-                    var name = $('#name').val().trim();
-                    var country = $('#country').val();
-                    var state = $('#state').val();
-                    var image = $('#image')[0].files[0];
-                    var isNationalTeam = $('#is_national_team').is(':checked');
-
-                    if (!name) {
-                        toastr.error('Por favor, preencha o nome do time');
-                        e.preventDefault();
-                        return false;
-                    }
-
-                    if (!country) {
-                        toastr.error('Por favor, selecione um país');
-                        e.preventDefault();
-                        return false;
-                    }
-
-                    if (!image) {
-                        toastr.error('Por favor, selecione uma imagem');
-                        e.preventDefault();
-                        return false;
-                    }
-
-                    if (!isNationalTeam && !state) {
-                        toastr.error('Por favor, selecione um estado');
-                        e.preventDefault();
-                        return false;
-                    }
-                });
-
-                // Configura o toastr
+                // Configurações do toastr
                 toastr.options = {
-                    "closeButton": true,
-                    "progressBar": true,
-                    "positionClass": "toast-top-right",
-                    "timeOut": "3000"
+                    closeButton: true,
+                    progressBar: true,
+                    positionClass: "toast-top-right",
+                    timeOut: "3000"
                 };
+
+                // Validação e envio do formulário
+                $('#team-form').on('submit', function(e) {
+                    e.preventDefault();
+                    
+                    var formData = new FormData(this);
+                    
+                    $.ajax({
+                        url: $(this).attr('action'),
+                        type: 'POST',
+                        data: formData,
+                        processData: false,
+                        contentType: false,
+                        success: function(response) {
+                            if (response.success) {
+                                toastr.success(response.message);
+                                setTimeout(function() {
+                                    window.location.href = "{% url 'administrativo:times' %}";
+                                }, 1000);
+                            } else {
+                                toastr.error(response.message);
+                            }
+                        },
+                        error: function(xhr, status, error) {
+                            toastr.error('Erro ao criar time: ' + error);
+                        }
+                    });
+                });
 
                 // Mostra mensagens do Django
                 {% if messages %}

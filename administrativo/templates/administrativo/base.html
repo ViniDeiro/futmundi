@@ -41,7 +41,7 @@
                     <li {% if request.resolver_match.url_name == 'usuarios' %}class="active"{% endif %}>
                         <a href="{% url 'administrativo:usuarios' %}"><i class="fa fa-user"></i> <span class="nav-label">Usuários</span></a>
                     </li>
-                    <li {% if request.resolver_match.url_name in 'ambitos,campeonatos,templates,times'.split(',') %}class="active"{% endif %}>
+                    <li {% if request.resolver_match.url_name in 'ambitos campeonatos templates times' %}class="active"{% endif %}>
                         <a href="#"><i class="fa fa-trophy"></i> <span class="nav-label">Campeonatos</span><span class="fa arrow"></span></a>
                         <ul class="nav nav-second-level collapse">
                             <li><a href="{% url 'administrativo:ambitos' %}">Âmbitos</a></li>
@@ -50,21 +50,21 @@
                             <li><a href="{% url 'administrativo:times' %}">Times</a></li>
                         </ul>
                     </li>
-                    <li {% if request.resolver_match.url_name in 'futcoins,planos' %}class="active"{% endif %}>
+                    <li {% if request.resolver_match.url_name in 'futcoins planos' %}class="active"{% endif %}>
                         <a href="#"><i class="fa fa-shopping-cart"></i> <span class="nav-label">Pacotes</span><span class="fa arrow"></span></a>
                         <ul class="nav nav-second-level collapse">
                             <li><a href="{% url 'administrativo:futcoins' %}">Futcoins</a></li>
                             <li><a href="{% url 'administrativo:planos' %}">Planos</a></li>
                         </ul>
                     </li>
-                    <li {% if request.resolver_match.url_name in 'futligas_classicas,futligas_jogadores' %}class="active"{% endif %}>
+                    <li {% if request.resolver_match.url_name in 'futligas_classicas futligas_jogadores' %}class="active"{% endif %}>
                         <a href="#"><i class="fa fa-diamond"></i> <span class="nav-label">Futligas</span><span class="fa arrow"></span></a>
                         <ul class="nav nav-second-level collapse">
                             <li><a href="{% url 'administrativo:futligas_classicas' %}">Clássicas</a></li>
                             <li><a href="{% url 'administrativo:futligas_jogadores' %}">Jogadores</a></li>
                         </ul>
                     </li>
-                    <li {% if request.resolver_match.url_name in 'continentes,paises,estados' %}class="active"{% endif %}>
+                    <li {% if request.resolver_match.url_name in 'continentes paises estados' %}class="active"{% endif %}>
                         <a href="#"><i class="fa fa-globe"></i> <span class="nav-label">Locais</span><span class="fa arrow"></span></a>
                         <ul class="nav nav-second-level collapse">
                             <li><a href="{% url 'administrativo:continentes' %}">Continentes</a></li>
@@ -72,7 +72,7 @@
                             <li><a href="{% url 'administrativo:estados' %}">Estados</a></li>
                         </ul>
                     </li>
-                    <li {% if request.resolver_match.url_name in 'parametros,termo,notificacoes' %}class="active"{% endif %}>
+                    <li {% if request.resolver_match.url_name in 'parametros termo notificacoes' %}class="active"{% endif %}>
                         <a href="#"><i class="fa fa-gear"></i> <span class="nav-label">Configurações</span><span class="fa arrow"></span></a>
                         <ul class="nav nav-second-level collapse">
                             <li><a href="{% url 'administrativo:parametros' %}">Parâmetros</a></li>

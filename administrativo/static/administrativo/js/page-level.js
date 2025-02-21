@@ -96,20 +96,7 @@ $(document).ready(function() {
     responsive: true,
     order: [[3, 'desc']],
     dom: '<"html5buttons"B>lTfgitp',
-    buttons: [
-      { extend: 'copy', text: 'Copiar' },
-      { extend: 'csv' },
-      { extend: 'excel', title: 'Templates' },
-      { extend: 'pdf', title: 'Templates' },
-      { extend: 'print', text: 'Imprimir',
-        customize: function (win) {
-          $(win.document.body).addClass('white-bg');
-          $(win.document.body).find('table')
-            .addClass('compact')
-            .css('font-size', 'inherit');
-        }
-      }
-    ],
+    buttons: [],
     language: {
       url: "//cdn.datatables.net/plug-ins/1.10.19/i18n/Portuguese-Brasil.json"
     }

@@ -19,6 +19,7 @@
         <link rel="icon" href="{% static 'administrativo/img/futmundi.ico' %}" type="image/png">
     </head>
     <body>
+        {% csrf_token %}
         <div id="wrapper">
             <nav class="navbar-default navbar-static-side">
                 <div class="sidebar-collapse">
@@ -128,13 +129,6 @@
                         <div class="col-lg-12">
                             <div class="ibox">
                                 <div class="ibox-content">
-                                    {% if messages %}
-                                        {% for message in messages %}
-                                            <div class="alert alert-{{ message.tags }}">
-                                                {{ message }}
-                                            </div>
-                                        {% endfor %}
-                                    {% endif %}
                                     <div class="group-options-left ml5">
                                         <a href="{% url 'administrativo:administrador_novo' %}" class="btn btn-success btn-sm" title="Novo"><i class="fa fa-plus"></i></a>
                                     </div>
@@ -171,7 +165,7 @@
                                                     <td>{{ admin.created_at|date:"d/m/Y H:i:s" }}</td>
                                                     <td>
                                                         <a href="{% url 'administrativo:administrador_editar' admin.id %}" class="btn btn-info btn-xs" title="Editar"><i class="glyphicon glyphicon-pencil"></i></a>
-                                                        <button type="button" class="btn btn-danger btn-xs" title="Excluir" data-toggle="modal" data-target="#modalAlert2" data-id="{{ admin.id }}"><i class="glyphicon glyphicon-trash"></i></button>
+                                                        <button type="button" class="btn btn-danger btn-xs delete-btn" title="Excluir" data-id="{{ admin.id }}"><i class="glyphicon glyphicon-trash"></i></button>
                                                     </td>
                                                 </tr>
                                                 {% endfor %}
@@ -216,7 +210,7 @@
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
-                        <button type="button" class="btn btn-danger" onclick="excluirAdmin()">Deletar</button>
+                        <button type="button" class="btn btn-danger" id="confirmDelete">Deletar</button>
                     </div>
                 </div>
             </div>
@@ -233,21 +227,62 @@
         <script src="{% static 'administrativo/js/inspinia.js' %}"></script>
         <script src="{% static 'administrativo/js/plugins/pace/pace.min.js' %}"></script>
         <script src="{% static 'administrativo/js/plugins/checkAll/checkAll.js' %}"></script>
+        <script src="{% static 'administrativo/js/plugins/toastr/toastr.min.js' %}"></script>
         <script src="{% static 'administrativo/js/page-level.js' %}"></script>
         <script>
-            // Função para exclusão individual
-            var adminIdToDelete;
+            // Configurações do Toastr
+            toastr.options = {
+                closeButton: true,
+                progressBar: true,
+                showMethod: 'slideDown',
+                timeOut: 4000,
+                positionClass: "toast-top-right"
+            };
 
-            $('#modalAlert2').on('show.bs.modal', function (event) {
-                var button = $(event.relatedTarget);
-                adminIdToDelete = button.data('id');
-            });
-
-            function excluirAdmin() {
-                if (adminIdToDelete) {
-                    window.location.href = "{% url 'administrativo:administrador_excluir' 0 %}".replace('0', adminIdToDelete);
+            // Função para atualizar a mensagem de "Exibindo X a Y de Z registros"
+            function atualizarInfoRegistros() {
+                var totalRows = $('.dataTables-usuarios-internos tbody tr').length;
+                if (totalRows === 0) {
+                    $('.dataTables-usuarios-internos tbody').html('<tr><td colspan="5" class="text-center">Não há dados disponíveis na tabela</td></tr>');
                 }
             }
+
+            // Função para excluir um administrador
+            function excluirAdmin(id) {
+                $('#modalAlert2').modal('show');
+                $('#confirmDelete').off('click').on('click', function() {
+                    $.ajax({
+                        url: `/administrador/excluir/${id}/`,
+                        type: 'POST',
+                        headers: {
+                            'X-CSRFToken': $('[name=csrfmiddlewaretoken]').val()
+                        },
+                        success: function(response) {
+                            $('#modalAlert2').modal('hide');
+                            if (response.success) {
+                                var row = $(`button[data-id="${id}"]`).closest('tr');
+                                row.fadeOut(400, function() {
+                                    row.remove();
+                                    atualizarInfoRegistros();
+                                });
+                                toastr.success(response.message);
+                            } else {
+                                toastr.error(response.message);
+                            }
+                        },
+                        error: function(xhr, status, error) {
+                            $('#modalAlert2').modal('hide');
+                            toastr.error('Erro ao excluir administrador: ' + error);
+                        }
+                    });
+                });
+            }
+
+            // Handler para excluir administrador
+            $(document).on('click', '.delete-btn', function() {
+                var adminId = $(this).data('id');
+                excluirAdmin(adminId);
+            });
 
             // Nova função simplificada de exclusão em massa
             function excluirMassa() {
@@ -257,7 +292,7 @@
                 });
 
                 if (ids.length === 0) {
-                    alert('Selecione pelo menos um administrador para excluir');
+                    toastr.warning('Selecione pelo menos um administrador para excluir');
                     return;
                 }
 
@@ -269,10 +304,23 @@
                         'csrfmiddlewaretoken': '{{ csrf_token }}'
                     },
                     success: function(response) {
-                        window.location.reload();
+                        $('#modalAlert').modal('hide');
+                        if (response.success) {
+                            ids.forEach(function(id) {
+                                var row = $(`input[value="${id}"]`).closest('tr');
+                                row.fadeOut(400, function() {
+                                    row.remove();
+                                    atualizarInfoRegistros();
+                                });
+                            });
+                            toastr.success(response.message);
+                        } else {
+                            toastr.error(response.message);
+                        }
                     },
                     error: function() {
-                        alert('Erro ao excluir administradores');
+                        $('#modalAlert').modal('hide');
+                        toastr.error('Erro ao excluir administradores');
                     }
                 });
             }

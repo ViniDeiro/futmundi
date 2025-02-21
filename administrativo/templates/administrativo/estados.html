@@ -17,6 +17,7 @@
           
         <link href="{% static 'administrativo/css/plugins/awesome-bootstrap-checkbox/awesome-bootstrap-checkbox.css' %}" rel="stylesheet">        
         <link href="{% static 'administrativo/css/plugins/jasny/jasny-bootstrap.min.css' %}" rel="stylesheet">
+        <link href="{% static 'administrativo/css/plugins/toastr/toastr.min.css' %}" rel="stylesheet">
         <!-- Custom -->      
         <link href="{% static 'administrativo/css/custom.css' %}" rel="stylesheet">
         <!-- Favicon -->
@@ -141,17 +142,13 @@
                                     {% endif %}
                                     <div class="group-options-left ml5">
                                         <a href="{% url 'administrativo:estado_novo' %}" class="btn btn-success btn-sm" title="Novo"><i class="fa fa-plus"></i></a>
-                                        <form action="{% url 'administrativo:estado_importar' %}" method="post" enctype="multipart/form-data" style="display: inline;">
-                                            {% csrf_token %}
-                                            <span class="btn btn-primary btn-sm btn-file" title="Importar">
-                                                <i class="fa fa-upload"></i>
-                                                <input type="file" name="file" onchange="this.form.submit()">
-                                            </span>
-                                        </form>
+                                        <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#modalImportar" title="Importar">
+                                            <i class="fa fa-upload"></i>
+                                        </button>
                                     </div>
                                     <div class="group-options-right mr10">
                                         <a href="{% url 'administrativo:estado_exportar' %}" class="btn btn-default btn-sm" title="Exportar"><i class="glyphicon glyphicon-download-alt"></i></a>
-                                        <button type="button" class="btn btn-default btn-sm" title="Excluir" onclick="excluirSelecionados()"><i class="glyphicon glyphicon-trash"></i></button>
+                                        <button type="button" class="btn btn-default btn-sm" id="delete-selected" title="Excluir em Massa"><i class="glyphicon glyphicon-trash"></i></button>
                                     </div>
                                     <div class="table-responsive">
                                         <table class="table table-striped table-bordered table-hover dataTables-estados">
@@ -183,7 +180,7 @@
                                                     <td>{{ state.created_at|date:"d/m/Y H:i" }}</td>
                                                     <td>
                                                         <a href="{% url 'administrativo:estado_editar' state.id %}" class="btn btn-info btn-xs" title="Editar"><i class="glyphicon glyphicon-pencil"></i></a>
-                                                        <button type="button" class="btn btn-danger btn-xs delete-btn" title="Excluir" data-id="{{ state.id }}"><i class="glyphicon glyphicon-trash"></i></button>
+                                                        <button type="button" class="btn btn-danger btn-xs delete-btn" data-id="{{ state.id }}" title="Excluir"><i class="glyphicon glyphicon-trash"></i></button>
                                                     </td>
                                                 </tr>
                                                 {% empty %}
@@ -213,17 +210,13 @@
                         <p>Tem certeza que deseja excluir os registros selecionados?</p>
                     </div>
                     <div class="modal-footer">
-                        <form id="deleteForm" method="post" action="{% url 'administrativo:estado_excluir_em_massa' %}">
-                            {% csrf_token %}
-                            <input type="hidden" name="ids" id="deleteIds">
-                            <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
-                            <button type="submit" class="btn btn-danger">Deletar</button>
-                        </form>
+                        <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
+                        <button type="button" class="btn btn-danger">OK</button>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="modal inmodal" id="modalDelete" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal inmodal" id="modalAlert2" tabindex="-1" role="dialog" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered modal-sm">
                 <div class="modal-content animated fadeIn">
                     <div class="modal-header">
@@ -234,11 +227,8 @@
                         <p>Tem certeza que deseja excluir este estado?</p>
                     </div>
                     <div class="modal-footer">
-                        <form id="deleteForm" method="post">
-                            {% csrf_token %}
-                            <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
-                            <button type="submit" class="btn btn-danger">Deletar</button>
-                        </form>
+                        <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
+                        <button type="button" class="btn btn-danger">OK</button>
                     </div>
                 </div>
             </div>
@@ -254,15 +244,6 @@
                     <form id="formImportar" method="POST" action="{% url 'administrativo:estado_importar' %}" enctype="multipart/form-data">
                         {% csrf_token %}
                         <div class="modal-body">
-                            <div class="alert alert-info">
-                                <h5>Instruções:</h5>
-                                <p>O arquivo Excel deve conter as seguintes colunas:</p>
-                                <ul>
-                                    <li><strong>nome</strong>: Nome do estado</li>
-                                    <li><strong>pais</strong>: Nome do país ao qual o estado pertence</li>
-                                    <li><strong>sigla</strong>: Sigla do estado (2 caracteres)</li>
-                                </ul>
-                            </div>
                             <div class="form-group">
                                 <label for="file">Selecione o arquivo</label>
                                 <div class="fileinput fileinput-new input-group" data-provides="fileinput">
@@ -279,6 +260,14 @@
                                         <a href="#" class="input-group-text btn btn-default fileinput-exists" data-dismiss="fileinput">Remover</a>
                                     </span>
                                 </div>
+                            </div>
+                            <div class="alert alert-info mt15">
+                                <h5>Instruções:</h5>
+                                <p>O arquivo Excel deve conter as seguintes colunas:</p>
+                                <ul>
+                                    <li><strong>Nome</strong>: Nome do estado</li>
+                                    <li><strong>País</strong>: Nome do país ao qual o estado pertence</li>
+                                </ul>
                             </div>
                         </div>
                         <div class="modal-footer">
@@ -302,14 +291,92 @@
         <script src="{% static 'administrativo/js/plugins/pace/pace.min.js' %}"></script>
         <script src="{% static 'administrativo/js/plugins/jasny/jasny-bootstrap.min.js' %}"></script>
         <script src="{% static 'administrativo/js/plugins/checkAll/checkAll.js' %}"></script>
+        <script src="{% static 'administrativo/js/plugins/toastr/toastr.min.js' %}"></script>
         <script src="{% static 'administrativo/js/page-level.js' %}"></script>
         <script>
+            // Função para excluir múltiplos registros
+            function excluirSelecionados() {
+                const ids = [];
+                $('.check-item:checked').each(function() {
+                    ids.push($(this).val());
+                });
+
+                if (ids.length === 0) {
+                    toastr.warning('Selecione pelo menos um estado para excluir');
+                    return;
+                }
+
+                $('#modalAlert').modal('show');
+                $('#modalAlert .btn-danger').off('click').on('click', function() {
+                    $.ajax({
+                        url: "{% url 'administrativo:estado_excluir_em_massa' %}",
+                        type: 'POST',
+                        data: {
+                            'ids[]': ids,
+                            'csrfmiddlewaretoken': $('[name=csrfmiddlewaretoken]').val()
+                        },
+                        success: function(response) {
+                            $('#modalAlert').modal('hide');
+                            if (response.success) {
+                                toastr.success(response.message);
+                                setTimeout(function() {
+                                    window.location.reload();
+                                }, 1000);
+                            } else {
+                                toastr.error(response.message);
+                            }
+                        },
+                        error: function(xhr) {
+                            $('#modalAlert').modal('hide');
+                            let errorMessage = 'Erro ao excluir estados';
+                            if (xhr.responseJSON && xhr.responseJSON.message) {
+                                errorMessage = xhr.responseJSON.message;
+                            }
+                            toastr.error(errorMessage);
+                        }
+                    });
+                });
+            }
+
             $(document).ready(function() {
+                // Configurações do toastr
+                toastr.options = {
+                    closeButton: true,
+                    debug: false,
+                    progressBar: true,
+                    preventDuplicates: false,
+                    positionClass: "toast-top-right",
+                    onclick: null,
+                    showDuration: "400",
+                    hideDuration: "1000",
+                    timeOut: 4000,
+                    extendedTimeOut: "400",
+                    showEasing: "swing",
+                    hideEasing: "linear",
+                    showMethod: 'slideDown'
+                };
+
+                // Botão de excluir em massa
+                $('#delete-selected').click(function() {
+                    excluirSelecionados();
+                });
+
+                // Handler para excluir estado
+                $(document).on('click', '.delete-btn', function() {
+                    var stateId = $(this).data('id');
+                    excluirEstado(stateId);
+                });
+
+                // Checkbox para selecionar todos
+                $('#check-all').change(function() {
+                    $('.check-item').prop('checked', $(this).prop('checked'));
+                });
+
                 // Inicializa DataTables
                 var table = $('.dataTables-estados');
                 if (!$.fn.DataTable.isDataTable(table)) {
                     table.DataTable({
-                        pageLength: 25,
+                        pageLength: 10,
                         responsive: true,
                         dom: '<"html5buttons"B>lTfgitp',
                         buttons: [],
@@ -319,50 +386,64 @@
                     });
                 }
 
-                // Função para excluir múltiplos registros
-                window.excluirSelecionados = function() {
-                    var selectedIds = [];
-                    $('.check-item:checked').each(function() {
-                        selectedIds.push($(this).val());
-                    });
+                // Manipula o envio do formulário de importação via AJAX
+                $('#formImportar').on('submit', function(e) {
+                    e.preventDefault();
+                    var formData = new FormData(this);
 
-                    if (selectedIds.length === 0) {
-                        toastr.error('Selecione pelo menos um estado para excluir');
-                        return;
-                    }
-
-                    $('#modalAlert').modal('show');
-                    $('#modalAlert .btn-danger').off('click').on('click', function() {
-                        $.ajax({
-                            url: "{% url 'administrativo:estado_excluir_em_massa' %}",
-                            type: 'POST',
-                            data: {
-                                'ids[]': selectedIds,
-                                'csrfmiddlewaretoken': '{{ csrf_token }}'
-                            },
-                            success: function(response) {
-                                $('#modalAlert').modal('hide');
-                                if (response.message) {
-                                    toastr.success(response.message);
-                                    window.location.reload();
-                                }
-                            },
-                            error: function(xhr) {
-                                $('#modalAlert').modal('hide');
-                                toastr.error(xhr.responseJSON?.error || 'Erro ao excluir estados');
+                    $.ajax({
+                        url: $(this).attr('action'),
+                        type: 'POST',
+                        data: formData,
+                        processData: false,
+                        contentType: false,
+                        success: function(response) {
+                            $('#modalImportar').modal('hide');
+                            if (response.success) {
+                                toastr.success(response.message);
+                                // Recarrega a página após 1 segundo
+                                setTimeout(function() {
+                                    location.reload();
+                                }, 1000);
+                            } else {
+                                toastr.error(response.message);
                             }
-                        });
+                        },
+                        error: function(xhr, status, error) {
+                            $('#modalImportar').modal('hide');
+                            toastr.error('Erro ao importar estados: ' + error);
+                        }
                     });
-                };
-
-                // Configuração do botão de exclusão individual
-                $('.delete-btn').click(function() {
-                    var stateId = $(this).data('id');
-                    var form = $('#modalDelete').find('form');
-                    form.attr('action', "{% url 'administrativo:estado_excluir' 0 %}".replace('0', stateId));
-                    $('#modalDelete').modal('show');
                 });
             });
+
+            function excluirEstado(id) {
+                $('#modalAlert2').modal('show');
+                $('#modalAlert2 .btn-danger').off('click').on('click', function() {
+                    $.ajax({
+                        url: "{% url 'administrativo:estado_excluir' 0 %}".replace('0', id),
+                        type: 'POST',
+                        headers: {
+                            'X-CSRFToken': $('[name=csrfmiddlewaretoken]').val()
+                        },
+                        success: function(response) {
+                            $('#modalAlert2').modal('hide');
+                            if (response.success) {
+                                toastr.success(response.message);
+                                setTimeout(function() {
+                                    window.location.reload();
+                                }, 1000);
+                            } else {
+                                toastr.error(response.message);
+                            }
+                        },
+                        error: function(xhr, status, error) {
+                            $('#modalAlert2').modal('hide');
+                            toastr.error('Erro ao excluir estado: ' + error);
+                        }
+                    });
+                });
+            }
         </script>
     </body>
 </html>

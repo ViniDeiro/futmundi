@@ -24,6 +24,17 @@
 
         <!-- Favicon -->
         <link rel="icon" href="{% static 'administrativo/img/futmundi.ico' %}" type="image/png">
+        
+        <style>
+            .btn-cancel {
+                background-color: #ed5565;
+                color: white;
+            }
+            .btn-cancel:hover {
+                background-color: #ec4758;
+                color: white;
+            }
+        </style>
     </head>
     <body>
         <div id="wrapper">
@@ -142,14 +153,35 @@
                                     <div id="geral" class="tab-pane active">
                                         <div class="panel-body">
                                             <div class="row">
-                                                <div class="col-lg-4">
-                                                    <form id="form-template" method="post">
+                                                <div class="col-lg-6">
+                                                    {% if messages %}
+                                                        {% for message in messages %}
+                                                            <div class="alert alert-{{ message.tags }}">
+                                                                {{ message }}
+                                                            </div>
+                                                        {% endfor %}
+                                                    {% endif %}
+                                                    <form method="post" action="{% url 'administrativo:template_novo' %}" class="mt10">
                                                         {% csrf_token %}
-                                                        <div class="form-group">
-                                                            <input type="text" id="name" name="name" class="form-control" required>
+                                                        <div class="form-group col-lg-8">
+                                                            <input type="text" 
+                                                                   id="name" 
+                                                                   name="name" 
+                                                                   class="form-control" 
+                                                                   required
+                                                                   oninvalid="this.setCustomValidity('Por favor, preencha este campo')"
+                                                                   oninput="this.setCustomValidity('')">
                                                             <label class="form-control-placeholder" for="name">Nome</label>
                                                         </div>
+                                                        <div class="col-lg-12 mt15">
+                                                            <div class="i-checks"><label><input type="checkbox" name="enabled" checked> Ativo</label></div>
+                                                        </div>
                                                         <input type="hidden" id="number_of_stages" name="number_of_stages" value="0">
+                                                        <input type="hidden" name="stages" id="stages-data">
+                                                        <div class="mt25">
+                                                            <button type="submit" class="btn btn-success ml15"><i class="glyphicon glyphicon-save mr5"></i> Salvar</button>
+                                                            <a href="{% url 'administrativo:templates' %}" class="btn btn-cancel ml15"><i class="fa fa-ban mr5"></i> Cancelar</a>
+                                                        </div>
                                                     </form>
                                                 </div>
                                             </div>
@@ -185,16 +217,18 @@
                                                 </div>
                                                 <div class="col-lg-8">
                                                     <div class="table-responsive">
-                                                        <table id="stages-table" class="table table-bordered table-hover">
+                                                        <table id="phases-table" class="table table-bordered table-striped">
                                                             <thead>
-                                                                <tr>                                                    
-                                                                    <th class="per20">Fase</th>
-                                                                    <th class="per15">Rodadas</th>
-                                                                    <th class="per10">Jogos/Rodada</th>
-                                                                    <th class="per15">Ações</th>
+                                                                <tr>
+                                                                    <th style="width: 30px"></th>
+                                                                    <th>Fase</th>
+                                                                    <th>Rodadas</th>
+                                                                    <th>Jogos por Rodada</th>
+                                                                    <th style="width: 100px">Ações</th>
                                                                 </tr>
                                                             </thead>
                                                             <tbody>
+                                                                <!-- As fases serão adicionadas aqui dinamicamente -->
                                                             </tbody>
                                                         </table>
                                                     </div>
@@ -204,28 +238,25 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="panel panel-default col-lg-12 mtm25 p15">
-                                <button type="button" class="btn btn-success ml20" id="btn-save">
-                                    <i class="fa fa-save mr5"></i> Salvar
-                                </button>
-                                <a href="{% url 'administrativo:templates' %}" class="btn btn-danger ml15">
-                                    <i class="fa fa-times mr5"></i> Cancelar
-                                </a>
-                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+        <!-- Adiciona o Sortable.js antes dos outros scripts -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.14.0/Sortable.min.js"></script>
+
         <!-- Mainly scripts -->
         <script src="{% static 'administrativo/js/jquery-3.4.1.min.js' %}"></script>
         <script src="{% static 'administrativo/js/popper.min.js' %}"></script>
         <script src="{% static 'administrativo/js/bootstrap.js' %}"></script>
         <script src="{% static 'administrativo/js/plugins/metisMenu/jquery.metisMenu.js' %}"></script>
         <script src="{% static 'administrativo/js/plugins/slimscroll/jquery.slimscroll.min.js' %}"></script>
+
         <!-- Custom and plugin javascript -->
         <script src="{% static 'administrativo/js/inspinia.js' %}"></script>
         <script src="{% static 'administrativo/js/plugins/pace/pace.min.js' %}"></script>
+
         <!-- Toastr script -->
         <script src="{% static 'administrativo/js/plugins/toastr/toastr.min.js' %}"></script>     
         <script src="{% static 'administrativo/js/plugins/iCheck/icheck.min.js' %}"></script>
@@ -234,7 +265,6 @@
         <script src="{% static 'administrativo/js/plugins/tempusdominus/tempusdominus-bootstrap-4.min.js' %}"></script>
         <script src="{% static 'administrativo/js/settings.js' %}"></script>
         <script src="{% static 'administrativo/js/plugins/checkAll/checkAll.js' %}"></script>
-        <script src="{% static 'administrativo/js/plugins/jquery-ui/jquery-ui.min.js' %}"></script>
         <script>
             $(document).ready(function() {
                 var stages = [];
@@ -244,6 +274,22 @@
                     checkboxClass: 'icheckbox_square-green',
                     radioClass: 'iradio_square-green'
                 });
+                
+                // Configuração do toastr
+                toastr.options = {
+                    closeButton: true,
+                    progressBar: true,
+                    positionClass: "toast-top-right",
+                    preventDuplicates: true,
+                    showDuration: "300",
+                    hideDuration: "1000",
+                    timeOut: "5000",
+                    extendedTimeOut: "1000",
+                    showEasing: "swing",
+                    hideEasing: "linear",
+                    showMethod: "fadeIn",
+                    hideMethod: "fadeOut"
+                };
                 
                 // Adiciona uma fase
                 $('#btn-add-stage').click(function() {
@@ -278,11 +324,12 @@
                     stages.push({
                         name: stageName,
                         rounds: stageRounds,
-                        matches: stageMatches
+                        matches_per_round: stageMatches
                     });
                     
                     // Adiciona a linha na tabela
-                    var row = $('<tr>');
+                    var row = $('<tr>').attr('data-id', stageIndex);
+                    row.append($('<td>').html('<span class="drag-handle">⋮</span>'));
                     row.append($('<td>').text(stageName));
                     row.append($('<td>').text(stageRounds));
                     row.append($('<td>').text(stageMatches));
@@ -298,36 +345,16 @@
                     actions.append(editBtn).append(deleteBtn);
                     row.append(actions);
                     
-                    $('#stages-table tbody').append(row);
+                    $('#phases-table tbody').append(row);
                     
                     // Limpa os campos
                     $('#stage_name').val('');
                     $('#stage_rounds').val('');
                     $('#stage_matches').val('');
                     
-                    // Atualiza o contador de fases
+                    // Atualiza os campos hidden
+                    $('#stages-data').val(JSON.stringify(stages));
                     $('#number_of_stages').val(stages.length);
-                    
-                    // Adiciona campos hidden ao formulário
-                    $('#form-template').append(
-                        $('<input>').attr({
-                            type: 'hidden',
-                            name: 'stage_name_' + stageIndex,
-                            value: stageName
-                        })
-                    ).append(
-                        $('<input>').attr({
-                            type: 'hidden',
-                            name: 'stage_rounds_' + stageIndex,
-                            value: stageRounds
-                        })
-                    ).append(
-                        $('<input>').attr({
-                            type: 'hidden',
-                            name: 'stage_matches_per_round_' + stageIndex,
-                            value: stageMatches
-                        })
-                    );
                 });
                 
                 // Editar fase
@@ -337,58 +364,74 @@
                     
                     $('#stage_name').val(stage.name);
                     $('#stage_rounds').val(stage.rounds);
-                    $('#stage_matches').val(stage.matches);
+                    $('#stage_matches').val(stage.matches_per_round);
                     
                     // Remove a fase atual
                     stages.splice(index, 1);
                     $(this).closest('tr').remove();
                     
-                    // Atualiza o contador de fases
+                    // Atualiza os campos hidden
+                    $('#stages-data').val(JSON.stringify(stages));
                     $('#number_of_stages').val(stages.length);
-                    
-                    // Remove os campos hidden
-                    $('input[name="stage_name_' + index + '"]').remove();
-                    $('input[name="stage_rounds_' + index + '"]').remove();
-                    $('input[name="stage_matches_per_round_' + index + '"]').remove();
                 });
                 
                 // Excluir fase
-                $(document).on('click', '.btn-danger', function() {
+                $(document).on('click', '.btn-danger.btn-xs', function() {
                     var index = $(this).data('index');
                     
                     // Remove a fase
                     stages.splice(index, 1);
                     $(this).closest('tr').remove();
                     
-                    // Atualiza o contador de fases
+                    // Atualiza os campos hidden
+                    $('#stages-data').val(JSON.stringify(stages));
                     $('#number_of_stages').val(stages.length);
-                    
-                    // Remove os campos hidden
-                    $('input[name="stage_name_' + index + '"]').remove();
-                    $('input[name="stage_rounds_' + index + '"]').remove();
-                    $('input[name="stage_matches_per_round_' + index + '"]').remove();
                 });
                 
-                // Salvar template
-                $('#btn-save').click(function() {
-                    if (!$('#name').val()) {
-                        toastr.error('Preencha o nome do template');
-                        return;
+                // Configuração do drag and drop
+                var el = document.querySelector('#phases-table tbody');
+                new Sortable(el, {
+                    animation: 150,
+                    handle: '.drag-handle',
+                    onEnd: function() {
+                        // Atualiza a ordem das fases
+                        var newStages = [];
+                        $('#phases-table tbody tr').each(function(index) {
+                            var oldIndex = $(this).attr('data-id');
+                            newStages[index] = stages[oldIndex];
+                        });
+                        stages = newStages;
+                        
+                        // Atualiza os campos hidden
+                        $('#stages-data').val(JSON.stringify(stages));
+                        $('#number_of_stages').val(stages.length);
                     }
+                });
+
+                // Validação e envio do formulário
+                $('form').on('submit', function(e) {
+                    e.preventDefault();
                     
                     if (stages.length === 0) {
-                        toastr.error('Adicione pelo menos uma fase');
-                        return;
+                        toastr.error('Por favor, adicione pelo menos uma fase');
+                        return false;
                     }
-                    
+
+                    var formData = new FormData(this);
+                    formData.append('stages', JSON.stringify(stages));
+
                     $.ajax({
-                        url: '{% url "administrativo:template_novo" %}',
+                        url: $(this).attr('action'),
                         type: 'POST',
-                        data: $('#form-template').serialize(),
+                        data: formData,
+                        processData: false,
+                        contentType: false,
                         success: function(response) {
                             if (response.success) {
                                 toastr.success(response.message);
-                                window.location.href = response.redirect;
+                                setTimeout(function() {
+                                    window.location.href = "{% url 'administrativo:templates' %}";
+                                }, 1000);
                             } else {
                                 toastr.error(response.message);
                             }
@@ -397,22 +440,6 @@
                             toastr.error('Erro ao salvar template');
                         }
                     });
-                });
-
-                // Inicializa o sortable na tabela de fases
-                $("#stages-table tbody").sortable({
-                    handle: ".fa-arrows",
-                    update: function(event, ui) {
-                        // Atualiza a ordem das fases
-                        $("#stages-table tbody tr").each(function(index) {
-                            $(this).find('input[name^="stage_order_"]').val(index);
-                        });
-                    }
-                });
-                
-                // Adiciona ícone de arraste nas linhas da tabela
-                $("#stages-table tbody tr").each(function() {
-                    $(this).prepend('<td><i class="fa fa-arrows"></i></td>');
                 });
             });
         </script>

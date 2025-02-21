@@ -14,6 +14,7 @@
         <link href="{% static 'administrativo/css/style.css' %}" rel="stylesheet">
         <link href="{% static 'administrativo/css/plugins/awesome-bootstrap-checkbox/awesome-bootstrap-checkbox.css' %}" rel="stylesheet">        
         <link href="{% static 'administrativo/css/plugins/jasny/jasny-bootstrap.min.css' %}" rel="stylesheet">
+        <link href="{% static 'administrativo/css/plugins/toastr/toastr.min.css' %}" rel="stylesheet">
         <!-- Custom -->      
         <link href="{% static 'administrativo/css/custom.css' %}" rel="stylesheet">
         <!-- Favicon -->
@@ -22,6 +23,8 @@
             .modal-content {
                 border-radius: 8px;
                 box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                max-height: 90vh;
+                overflow-y: auto;
             }
             .modal-header {
                 background-color: #f8f9fa;
@@ -35,59 +38,72 @@
             }
             .fileinput {
                 width: 100%;
+                display: flex;
             }
             .fileinput .form-control {
-                border-top-left-radius: 4px;
-                border-bottom-left-radius: 4px;
-            }
-            .input-group-text {
-                border-color: #e5e6e7;
-            }
-            .btn-file {
-                position: relative;
                 overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                padding-right: 50px;
+                max-width: 100%;
+                flex: 1;
+                border-radius: 4px 0 0 4px;
             }
-            .btn-file input[type=file] {
-                position: absolute;
-                top: 0;
-                right: 0;
-                min-width: 100%;
-                min-height: 100%;
-                font-size: 100px;
-                text-align: right;
-                opacity: 0;
-                outline: none;
-                background: white;
+            .input-group {
+                display: flex;
+                width: 100%;
+            }
+            .input-group .form-control {
+                flex: 1;
+                border-radius: 4px 0 0 4px;
+            }
+            .input-group-append {
+                display: flex;
+                margin-left: -1px;
+            }
+            .input-group-append .input-group-text {
+                border-radius: 0 4px 4px 0;
+                background-color: #f8f9fa;
                 cursor: pointer;
-                display: block;
             }
             .alert-info {
+                margin-top: 20px;
                 background-color: #f8fafc;
                 border-color: #e5e9f2;
+                padding: 15px;
             }
             .alert-info h5 {
                 color: #2f4050;
+                margin-bottom: 15px;
+                font-weight: 600;
             }
             .alert-info ul {
-                margin-left: 1.5rem;
+                margin-left: 20px;
+                padding-left: 0;
             }
             .alert-info li {
-                margin-bottom: 0.5rem;
+                margin-bottom: 8px;
                 color: #5c6b7f;
+                list-style-type: disc;
             }
             .alert-info li strong {
                 color: #2f4050;
+                font-weight: 600;
+            }
+            .alert-info p {
+                margin-bottom: 10px;
+                color: #5c6b7f;
             }
             .modal-footer {
                 border-top: 1px solid #eaeaea;
             }
             .btn-primary {
-                background-color: #1ab394;
-                border-color: #1ab394;
+                background-color: #337ab7;
+                border-color: #2e6da4;
             }
             .btn-primary:hover {
-                background-color: #18a689;
-                border-color: #18a689;
+                background-color: #286090;
+                border-color: #204d74;
             }
             .btn-action {
                 padding: 6px 12px;
@@ -126,12 +142,12 @@
                 color: white;
             }
             
-            .btn-delete {
+            .btn-danger.btn-xs {
                 background-color: #ed5565;
                 color: white;
             }
             
-            .btn-delete:hover {
+            .btn-danger.btn-xs:hover {
                 background-color: #ec4758;
                 color: white;
             }
@@ -262,7 +278,7 @@
                                     </div>
                                     <div class="group-options-right mr10">
                                         <a href="{% url 'administrativo:template_exportar' %}" class="btn btn-default btn-sm" title="Exportar"><i class="glyphicon glyphicon-download-alt"></i></a>
-                                        <button type="button" class="btn btn-default btn-sm" title="Excluir" onclick="excluirSelecionados()"><i class="glyphicon glyphicon-trash"></i></button>
+                                        <button type="button" class="btn btn-default btn-sm" title="Excluir em Massa" onclick="excluirSelecionados()"><i class="glyphicon glyphicon-trash"></i></button>
                                     </div>
                                     <div class="table-responsive">
                                         <table class="table table-striped table-bordered table-hover dataTables-templates" >
@@ -291,26 +307,19 @@
                                                     </td>
                                                     <td>{{ template.name }}</td>
                                                     <td>{{ template.stages.count }}</td>
-                                                    <td>{{ template.created_at|date:"d/m/Y" }}</td>
+                                                    <td>{{ template.created_at|date:"d/m/Y H:i" }}</td>
                                                     <td>
                                                         <a href="{% url 'administrativo:template_editar' template.id %}" class="btn btn-info btn-xs" title="Editar"><i class="glyphicon glyphicon-pencil"></i></a>
                                                         <button type="button" class="btn btn-xs btn-toggle {% if template.enabled %}btn-danger{% else %}btn-success{% endif %}" data-template-id="{{ template.id }}" data-enabled="{{ template.enabled|yesno:'true,false' }}" title="{% if template.enabled %}Desativar{% else %}Ativar{% endif %}">
                                                             <i class="glyphicon glyphicon-{% if template.enabled %}remove{% else %}ok{% endif %}" style="color: white;"></i>
                                                         </button>
                                                         <a href="{% url 'administrativo:template_duplicar' template.id %}" class="btn btn-warning btn-xs btn-duplicate" title="Criar Cópia"><i class="glyphicon glyphicon-file"></i></a>
-                                                        <button type="button" class="btn btn-danger btn-xs" data-template-id="{{ template.id }}" title="Excluir"><i class="glyphicon glyphicon-trash" data-toggle="modal" data-target="#modalAlert2"></i></button>
+                                                        <button type="button" class="btn btn-danger btn-xs delete-template" data-template-id="{{ template.id }}" data-toggle="modal" data-target="#modalAlert2" title="Excluir"><i class="glyphicon glyphicon-trash"></i></button>
                                                     </td>
                                                 </tr>
                                                 {% endfor %}
                                             </tbody>
                                         </table>
-                                    </div>
-                                    <div class="row m-b-sm">
-                                        <div class="col-md-12">
-                                            <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#modalImportar">
-                                                <i class="fa fa-upload"></i> Importar
-                                            </button>
-                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -362,42 +371,49 @@
                         <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
                         <h4 class="modal-title">Importar Template</h4>
                     </div>
-                    <form id="formImportar" method="POST" action="{% url 'administrativo:template_importar' %}" enctype="multipart/form-data">
-                        {% csrf_token %}
-                        <div class="modal-body">
+                    <div class="modal-body">
+                        <div class="alert alert-info">
+                            <h5>Instruções:</h5>
+                            <p>O arquivo Excel deve conter as seguintes colunas:</p>
+                            <ul>
+                                <li><strong>nome</strong> - Nome do template</li>
+                                <li><strong>fase</strong> - Nome da fase</li>
+                                <li><strong>rodadas</strong> - Número de rodadas</li>
+                                <li><strong>jogos_por_rodada</strong> - Número de jogos por rodada</li>
+                            </ul>
+                            <p>Observações importantes:</p>
+                            <ul>
+                                <li>O arquivo deve estar no formato Excel (.xlsx ou .xls)</li>
+                                <li>A primeira linha deve conter os nomes das colunas</li>
+                                <li>Todas as colunas são obrigatórias</li>
+                                <li>O nome do template deve ser único</li>
+                                <li>Os números de rodadas e jogos por rodada devem ser maiores que zero</li>
+                            </ul>
+                        </div>
+                        <form id="formImportar" method="POST" action="{% url 'administrativo:template_importar' %}" enctype="multipart/form-data">
+                            {% csrf_token %}
                             <div class="form-group">
                                 <label for="file">Selecione o arquivo</label>
-                                <div class="fileinput fileinput-new input-group" data-provides="fileinput">
-                                    <div class="form-control" data-trigger="fileinput">
-                                        <i class="fa fa-file fileinput-exists"></i>
-                                        <span class="fileinput-filename"></span>
+                                <div class="row">
+                                    <div class="col-lg-12">
+                                        <div class="input-group">
+                                            <input type="text" class="form-control" readonly>
+                                            <div class="input-group-append">
+                                                <label class="input-group-text btn btn-default">
+                                                    Selecionar arquivo
+                                                    <input type="file" name="file" accept=".xlsx,.xls" required style="display: none;" onchange="updateFileName(this)"/>
+                                                </label>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <span class="input-group-append">
-                                        <span class="input-group-text btn btn-default btn-file">
-                                            <span class="fileinput-new">Selecionar arquivo</span>
-                                            <span class="fileinput-exists">Alterar</span>
-                                            <input type="file" name="file" accept=".xlsx,.xls" required/>
-                                        </span>
-                                        <a href="#" class="input-group-text btn btn-default fileinput-exists" data-dismiss="fileinput">Remover</a>
-                                    </span>
                                 </div>
                             </div>
-                            <div class="alert alert-info">
-                                <h5>Instruções:</h5>
-                                <p>O arquivo Excel deve conter as seguintes colunas:</p>
-                                <ul>
-                                    <li><strong>nome</strong> - Nome do template</li>
-                                    <li><strong>fase</strong> - Nome da fase</li>
-                                    <li><strong>rodadas</strong> - Número de rodadas</li>
-                                    <li><strong>jogos_por_rodada</strong> - Número de jogos por rodada</li>
-                                </ul>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
+                                <button type="submit" class="btn btn-primary">Importar</button>
                             </div>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
-                            <button type="submit" class="btn btn-primary">Importar</button>
-                        </div>
-                    </form>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
@@ -418,6 +434,36 @@
         <script src="{% static 'administrativo/js/plugins/toastr/toastr.min.js' %}"></script>
         <script src="{% static 'administrativo/js/settings.js' %}"></script>
         <script>
+            // Configuração do toastr
+            toastr.options = {
+                closeButton: true,
+                progressBar: true,
+                positionClass: "toast-top-right",
+                preventDuplicates: true,
+                showDuration: "300",
+                hideDuration: "1000",
+                timeOut: "5000",
+                extendedTimeOut: "1000",
+                showEasing: "swing",
+                hideEasing: "linear",
+                showMethod: "fadeIn",
+                hideMethod: "fadeOut"
+            };
+
+            function excluirSelecionados() {
+                var ids = [];
+                $('input[type="checkbox"]:checked').not('.checkAll').each(function() {
+                    ids.push($(this).val());
+                });
+
+                if (ids.length === 0) {
+                    toastr.warning('Selecione pelo menos um template para excluir');
+                    return;
+                }
+
+                $('#modalAlert').modal('show');
+            }
+
             $(document).ready(function() {
                 // Ativar/Desativar template
                 $('.btn-toggle').click(function(e) {
@@ -437,19 +483,10 @@
                         },
                         success: function(response) {
                             if (response.success) {
-                                // Atualiza o ícone e o status
-                                var icon = btn.find('i');
-                                if (response.enabled) {
-                                    icon.removeClass('glyphicon-ok').addClass('glyphicon-remove');
-                                    btn.removeClass('btn-success').addClass('btn-danger');
-                                    btn.attr('title', 'Desativar');
-                                    btn.data('enabled', true);
-                                } else {
-                                    icon.removeClass('glyphicon-remove').addClass('glyphicon-ok');
-                                    btn.removeClass('btn-danger').addClass('btn-success');
-                                    btn.attr('title', 'Ativar');
-                                    btn.data('enabled', false);
-                                }
+                                btn.toggleClass('btn-danger btn-success');
+                                btn.find('i').toggleClass('glyphicon-remove glyphicon-ok');
+                                btn.attr('title', isEnabled ? 'Ativar' : 'Desativar');
+                                btn.data('enabled', !isEnabled);
                                 toastr.success(response.message);
                             } else {
                                 toastr.error(response.message);
@@ -505,9 +542,9 @@
                 var templateIdToDelete;
 
                 // Quando o botão de exclusão individual é clicado
-                $('.btn-danger.btn-xs').not('.btn-toggle').click(function(e) {
-                    e.preventDefault(); // Previne o comportamento padrão
-                    e.stopPropagation(); // Impede a propagação do evento
+                $(document).on('click', '.delete-template', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
                     templateIdToDelete = $(this).data('template-id');
                     $('#modalAlert2').modal('show');
                 });
@@ -551,10 +588,11 @@
                         type: 'GET',
                         success: function(response) {
                             if (response.success) {
-                                toastr.success(response.message);
-                                if (response.redirect) {
-                                    window.location.href = response.redirect;
-                                }
+                                // Armazena a mensagem no localStorage
+                                localStorage.setItem('toastMessage', response.message);
+                                localStorage.setItem('toastType', 'success');
+                                // Redireciona imediatamente
+                                window.location.href = response.redirect;
                             } else {
                                 toastr.error(response.message);
                             }
@@ -564,6 +602,17 @@
                         }
                     });
                 });
+
+                // Verifica se existe mensagem no localStorage ao carregar a página
+                var message = localStorage.getItem('toastMessage');
+                var type = localStorage.getItem('toastType');
+                
+                if (message) {
+                    toastr[type](message);
+                    // Limpa as mensagens do localStorage
+                    localStorage.removeItem('toastMessage');
+                    localStorage.removeItem('toastType');
+                }
 
                 // Importar template
                 $('#formImportar').on('submit', function(e) {
@@ -579,7 +628,18 @@
                         success: function(response) {
                             $('#modalImportar').modal('hide');
                             if (response.success) {
-                                toastr.success(response.message);
+                                var messages = response.message.split('.');
+                                messages.forEach(function(msg) {
+                                    if (msg.trim()) {
+                                        if (msg.includes('atualizado')) {
+                                            toastr.info(msg.trim());
+                                        } else if (msg.includes('criado')) {
+                                            toastr.success(msg.trim());
+                                        } else if (msg.includes('erro')) {
+                                            toastr.warning(msg.trim());
+                                        }
+                                    }
+                                });
                                 window.location.reload();
                             } else {
                                 toastr.error(response.message);
@@ -591,6 +651,11 @@
                         }
                     });
                 });
+
+                function updateFileName(input) {
+                    var fileName = input.files[0] ? input.files[0].name : '';
+                    input.closest('.input-group').querySelector('input[type="text"]').value = fileName;
+                }
             });
         </script>
     </body>

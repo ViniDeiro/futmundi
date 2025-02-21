@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+        <title>Parâmetros</title>
+
+        <link href="css/bootstrap.min.css" rel="stylesheet">
+        <link href="font-awesome/css/font-awesome.css" rel="stylesheet">        
+        <link href="css/plugins/toastr/toastr.min.css" rel="stylesheet">
+        <link href="css/plugins/clockpicker/clockpicker.css" rel="stylesheet">
+        <link href="css/plugins/jasny/jasny-bootstrap.min.css" rel="stylesheet">
+        <link href="css/animate.css" rel="stylesheet">
+        <link href="css/style.css" rel="stylesheet">  
+        <!-- Custom -->      
+        <link href="css/custom.css" rel="stylesheet">
+        <!-- Favicon -->
+        <link rel="icon" href="img/futmundi.ico" type="image/png">
+    </head>
+    <body>
+        <div id="wrapper">
+            <nav class="navbar-default navbar-static-side">
+                <div class="sidebar-collapse">
+                    <ul class="nav metismenu" id="side-menu">
+                        <li class="nav-header">
+                            <div class="dropdown profile-element">
+                                <a href="usuarios.html">
+                                    <img src="img/logo.svg" alt="Futmundi logo">
+                                </a>
+                            </div>
+                            <div class="logo-element">
+                                <a href="usuarios.html">
+                                    <img src="img/logosm.svg" alt="Futmundi logo">
+                                </a>                            
+                            </div>
+                        </li>
+                        <li class="active">
+                            <a href="usuarios.html"><i class="fa fa-user"></i> <span class="nav-label">Usuários</span></a>
+                        </li>
+                        <li>
+                            <a href="#"><i class="fa fa-trophy"></i> <span class="nav-label">Campeonatos</span><span class="fa arrow"></span></a>
+                            <ul class="nav nav-second-level collapse">
+                                <li><a href="ambitos.html">Âmbitos</a></li>
+                                <li><a href="campeonatos.html">Campeonatos</a></li>
+                                <li><a href="templates.html">Templates</a></li>
+                                <li><a href="times.html">Times</a></li>
+                            </ul>
+                        </li>
+                        <li>
+                            <a href="#"><i class="fa fa-shopping-cart"></i> <span class="nav-label">Pacotes</span><span class="fa arrow"></span></a>
+                            <ul class="nav nav-second-level collapse">
+                                <li><a href="futcoins.html">Futcoins</a></li>
+                                <li><a href="planos.html">Planos</a></li>
+                            </ul>
+                        </li>
+                        <li>
+                            <a href="#"><i class="fa fa-diamond"></i> <span class="nav-label">Futligas</span><span class="fa arrow"></span></a>
+                            <ul class="nav nav-second-level collapse">
+                                <li><a href="futligas-classicas.html">Clássicas</a></li>
+                                <li><a href="futligas-jogadores.html">Jogadores</a></li>
+                            </ul>
+                        </li>
+                        <li>
+                            <a href="#"><i class="fa fa-globe"></i> <span class="nav-label">Locais</span><span class="fa arrow"></span></a>
+                            <ul class="nav nav-second-level collapse">
+                                <li><a href="continentes.html">Continentes</a></li>
+                                <li><a href="paises.html">Países</a></li>
+                                <li><a href="estados.html">Estados</a></li>
+                            </ul>
+                        </li>
+                        <li>
+                            <a href="#"><i class="fa fa-gear"></i> <span class="nav-label">Configurações</span><span class="fa arrow"></span></a>
+                            <ul class="nav nav-second-level collapse">
+                                <li><a href="parametros.html">Parâmetros</a></li>
+                                <li><a href="termo.html">Termo</a></li>
+                                <li><a href="notificacoes.html">Notificações</a></li>
+                            </ul>
+                        </li>
+                        <li>
+                            <a href="relatorios.html"><i class="fa fa-pie-chart"></i> <span class="nav-label">Relatórios</span></a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+            <div id="page-wrapper" class="gray-bg">
+                <div class="row border-bottom">
+                    <nav class="navbar navbar-static-top" style="margin-bottom: 0">
+                        <div class="navbar-header">
+                            <a class="navbar-minimalize minimalize-styl-2 btn btn-success " href="#"><i class="fa fa-bars"></i> </a>
+                        </div>
+                        <ul class="nav navbar-top-links navbar-right">
+                            <li>
+                                <span class="m-r-sm text-muted welcome-message">Andrews Cristhian</span>
+                            </li>
+                            <li class="dropdown">
+                                <a class="dropdown-toggle count-info" data-toggle="dropdown" href="#">
+                                    <i class="fa fa-gear"></i>
+                                </a>
+                                <ul class="dropdown-menu dropdown-alerts">
+                                    <li>
+                                        <a href="administradores.html" class="dropdown-item">
+                                            <div>
+                                                <i class="fa fa-users"></i> Administradores
+                                            </div>
+                                        </a>
+                                    </li>
+                                    <li class="dropdown-divider"></li>
+                                    <li>
+                                        <a href="login.html" class="dropdown-item">
+                                            <div>
+                                                <i class="fa fa-sign-out"></i> Sair
+                                            </div>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+                <div class="row wrapper border-bottom white-bg page-heading">
+                    <div class="col-lg-10">
+                        <h2>Parâmetros</h2>
+                    </div>
+                </div>
+                <div class="wrapper wrapper-content">
+                    <div class="row">
+                        <div class="col-lg-12">
+                            <div class="tabs-container">
+                                <ul class="nav nav-tabs" role="tablist">
+                                    <li><a class="nav-link active" data-toggle="tab" href="#login">Login</a></li>
+                                    <li><a class="nav-link" data-toggle="tab" href="#recompensas">Recompensas</a></li>
+                                    <li><a class="nav-link" data-toggle="tab" href="#limites">Limites</a></li>
+                                    <li><a class="nav-link" data-toggle="tab" href="#outros">Outros</a></li>
+									<li><a class="nav-link" data-toggle="tab" href="#redes">Redes Sociais</a></li>
+                                </ul>
+                                <div class="tab-content">
+                                    <div id="login" class="tab-pane active">
+                                        <div class="panel-body">
+                                            <div class="row">
+                                                <div class="col-lg-6">
+                                                    <div class="ibox-title">
+                                                        <h5>Recompensas </h5>
+                                                        <form class="mt10">
+                                                            <div class="form-group col-lg-12">
+                                                                <div class="row">
+                                                                    <div class="col-lg-4">
+                                                                        <input type="number" id="dia1" class="form-control" required>
+                                                                        <label class="form-control-placeholder" for="dia1">Dia 1 (f$)</label>
+                                                                    </div>
+                                                                    <div class="col-lg-4">
+                                                                        <input type="number" id="dia2" class="form-control" required>
+                                                                        <label class="form-control-placeholder" for="dia2">Dia 2 (f$)</label>
+                                                                    </div>
+                                                                </div>
+                                                            </div>   
+                                                            <div class="form-group col-lg-12">
+                                                                <div class="row">
+                                                                    <div class="col-lg-4">
+                                                                        <input type="number" id="dia1" class="form-control" required>
+                                                                        <label class="form-control-placeholder" for="dia3">Dia 3 (f$)</label>
+                                                                    </div>
+                                                                    <div class="col-lg-4">
+                                                                        <input type="number" id="dia2" class="form-control" required>
+                                                                        <label class="form-control-placeholder" for="dia4">Dia 4 (f$)</label>
+                                                                    </div>
+                                                                </div>
+                                                            </div> 
+                                                            <div class="form-group col-lg-12">
+                                                                <div class="row">
+                                                                    <div class="col-lg-4">
+                                                                        <input type="number" id="dia1" class="form-control" required>
+                                                                        <label class="form-control-placeholder" for="dia5">Dia 5 (f$)</label>
+                                                                    </div>
+                                                                    <div class="col-lg-4">
+                                                                        <input type="number" id="dia2" class="form-control" required>
+                                                                        <label class="form-control-placeholder" for="dia6">Dia 6 (f$)</label>
+                                                                    </div>
+                                                                </div>
+                                                            </div> 
+                                                            <div class="form-group col-lg-12">
+                                                                <div class="row">
+                                                                    <div class="col-lg-4">
+                                                                        <input type="number" id="dia1" class="form-control" required>
+                                                                        <label class="form-control-placeholder" for="dia7">Dia 7 (f$)</label>
+                                                                    </div>                                                                
+                                                                </div>
+                                                            </div>                                                                               
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                                <div class="col-lg-6">
+                                                    <div class="ibox-title">
+                                                        <h5>Premiação </h5>
+                                                        <form class="mt10">                                                            
+                                                            <div class="form-group col-lg-12">
+                                                                <div class="row">                                                                    
+                                                                    <div class="form-group col-lg-4">
+                                                                        <label class="control-label" for="hora-premiacao">Horário Premiação </label>
+                                                                        <div class="input-group clockpicker" data-autoclose="true" style="width: 80%">
+                                                                            <input type="text" class="form-control">
+                                                                            <span class="input-group-addon">
+                                                                                <span class="fa fa-clock-o"></span>
+                                                                            </span>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>                                                                               
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div id="recompensas" class="tab-pane">
+                                        <div class="panel-body">
+                                            <div class="row">
+                                                <div class="col-lg-6">
+                                                    <div class="ibox-title">
+                                                        <h5>Gratuítas </h5>
+                                                        <form class="mt15">
+                                                            <div class="form-group col-lg-6">
+                                                                <input type="number" min="0" id="video" class="form-control input-medium" required>
+                                                                <label class="form-control-placeholder" for="video">Assistir vídeo</label>
+                                                            </div>
+                                                            <div class="form-group col-lg-6">
+                                                                <input type="number" min="0" id="acerto" class="form-control input-medium" required>
+                                                                <label class="form-control-placeholder" for="acerto">Acerto palpites</label>
+                                                            </div>
+                                                            <div class="form-group col-lg-6">
+                                                                <input type="number" min="0" id="curtida" class="form-control input-medium" required>
+                                                                <label class="form-control-placeholder" for="curtida">Curtida fanpage</label>
+                                                            </div>                                                           
+                                                        </form>
+                                                    </div>                                                    
+                                                </div>
+                                                <div class="col-lg-6">
+                                                    <div class="ibox-title">
+                                                        <h5>Craques </h5>
+                                                        <form class="mt15">
+                                                            <div class="form-group col-lg-6">
+                                                                <input type="number" min="0" id="assinatura" class="form-control input-medium" required>
+                                                                <label class="form-control-placeholder" for="assinatura">Assinatura craque</label>
+                                                            </div>
+                                                            <div class="form-group col-lg-6">
+                                                                <input type="number" min="0" id="impulsos-lv3" class="form-control input-medium" required>
+                                                                <label class="form-control-placeholder" for="impulsos-lv3">Impulsos LV3 (%)</label>
+                                                            </div>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div id="limites" class="tab-pane">
+                                        <div class="panel-body">
+                                            <div class="row">
+                                                <div class="col-lg-4">
+                                                    <form class="mt10">
+                                                        <div class="form-group col-lg-8">
+                                                            <input type="number" min="0" id="limite" class="form-control input-medium" required>
+                                                            <label class="form-control-placeholder" for="limite">Videos diários</label>
+                                                        </div>
+                                                        <div class="form-group col-lg-8">
+                                                            <input type="number" min="0" id="limite-comum" class="form-control input-medium" required>
+                                                            <label class="form-control-placeholder" for="limite-comum">Participação futligas (Comum)</label>
+                                                        </div>
+                                                        <div class="form-group col-lg-8">
+                                                            <input type="number" min="0" id="limite-craque" class="form-control input-medium" required>
+                                                            <label class="form-control-placeholder" for="limite-craque">Participação futligas (Craque)</label>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div id="outros" class="tab-pane">									
+                                        <div class="panel-body">
+                                            <div class="row">                                                
+                                                <div class="col-lg-6">
+                                                    <div class="ibox-title">
+                                                        <h5>IDs </h5>
+                                                        <form class="mt15">
+															<div class="form-group col-lg-6">
+                                                                <input type="text" min="0" id="idgoogle" class="form-control input-medium">
+                                                                <label class="form-control-placeholder" for="contato">Email Contato</label>
+                                                            </div>
+                                                            <div class="form-group col-lg-6">
+                                                                <input type="text" min="0" id="idgoogle" class="form-control input-medium">
+                                                                <label class="form-control-placeholder" for="idgoogle">Chave de api (Tiny)</label>
+                                                            </div>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+									<div id="redes" class="tab-pane">
+										<div class="panel-body">
+                                            <div class="row">
+                                                <div class="col-lg-4">
+                                                    <form class="mt10">
+                                                        <div class="form-group col-lg-8">
+                                                            <input type="text" min="0" id="facebook" class="form-control input-medium" required>
+                                                            <label class="form-control-placeholder" for="facebook">Facebook</label>
+                                                        </div>
+														<div class="form-group col-lg-8">
+                                                            <input type="text" min="0" id="kwai" class="form-control input-medium" required>
+                                                            <label class="form-control-placeholder" for="kwai">Kwai</label>
+                                                        </div>
+                                                        <div class="form-group col-lg-8">
+                                                            <input type="text" min="0" id="instagram" class="form-control input-medium" required>
+                                                            <label class="form-control-placeholder" for="instagram">Instagram</label>
+                                                        </div>
+                                                        <div class="form-group col-lg-8">
+                                                            <input type="text" min="0" id="tiktok" class="form-control input-medium" required>
+                                                            <label class="form-control-placeholder" for="tiktok">Tiktok</label>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+								</div>
+                            </div>
+                            <div class="panel panel-default col-lg-12 mtm5 p15">
+                                <button type="button" class="btn btn-success ml20" id="successToast"><i class="glyphicon glyphicon-save mr5"></i> Salvar</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal inmodal" id="modalImportXLS" tabindex="-1" role="dialog"  aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+                <div class="modal-content animated fadeIn">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                        <h4 class="modal-title">Importar Arquivo</h4>
+                    </div>
+                    <div class="modal-body">
+                        <div class="fileinput fileinput-new" data-provides="fileinput">
+                            <span class="btn btn-primary btn-file"><span class="fileinput-new">Selecionar</span><span class="fileinput-exists">Mudar</span><input type="file" accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" name="..."></span>
+                            <span class="fileinput-filename"></span>
+                            <a href="#" class="close fileinput-exists" data-dismiss="fileinput" style="float: none">&times;</a>
+                        </div>                
+                        <table class="table table-bordered">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th class="per15">Nível</th>
+                                    <th class="per10">Participantes</th>
+                                    <th class="per5">Craques</th>
+                                    <th class="per15">Dono Craque</th>
+                                    <th class="per5">Limite</th>
+                                    <th class="per5">1°</th>                                    
+                                    <th class="per5">2°</th>                                    
+                                    <th class="per5">3°</th>                                    
+                                    <th class="per5">4°</th>                                    
+                                    <th class="per5">5°</th>                                    
+                                    <th class="per5">6°</th>                                    
+                                    <th class="per5">7°</th>                                    
+                                    <th class="per5">8°</th>                                    
+                                    <th class="per5">9°</th>                                    
+                                    <th class="per5">10°</th>                                    
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Internacional III</td>
+                                    <td>200</td>                                      
+                                    <td>100</td>  
+                                    <td>Sim</td> 
+                                    <td>300</td>   
+                                    <td>1000</td>                            
+                                    <td>900</td>                            
+                                    <td>800</td>                            
+                                    <td>700</td>                            
+                                    <td>600</td>                            
+                                    <td>500</td>                            
+                                    <td>400</td>                            
+                                    <td>300</td>                            
+                                    <td>200</td>                            
+                                    <td>100</td>                            
+                                </tr>
+                                <tr>
+                                    <td>Internacional III</td>
+                                    <td>200</td>                                      
+                                    <td>100</td>  
+                                    <td>Sim</td> 
+                                    <td>300</td>   
+                                    <td>1000</td>                            
+                                    <td>900</td>                            
+                                    <td>800</td>                            
+                                    <td>700</td>                            
+                                    <td>600</td>                            
+                                    <td>500</td>                            
+                                    <td>400</td>                            
+                                    <td>300</td>                            
+                                    <td>200</td>                            
+                                    <td>100</td>                            
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
+                        <button type="button" class="btn btn-success">Salvar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Mainly scripts -->
+        <script src="js/jquery-3.4.1.min.js"></script>
+        <script src="js/popper.min.js"></script>
+        <script src="js/bootstrap.js"></script>
+        <script src="js/plugins/metisMenu/jquery.metisMenu.js"></script>
+        <script src="js/plugins/slimscroll/jquery.slimscroll.min.js"></script>
+        <!-- Custom and plugin javascript -->
+        <script src="js/inspinia.js"></script>
+        <script src="js/plugins/pace/pace.min.js"></script>
+        <script src="js/plugins/toastr/toastr.min.js"></script>
+        <script src="js/plugins/clockpicker/clockpicker.js"></script>
+        <script src="js/plugins/jasny/jasny-bootstrap.min.js"></script>
+        <script src="js/settings.js"></script>
+    </body>
+</html>

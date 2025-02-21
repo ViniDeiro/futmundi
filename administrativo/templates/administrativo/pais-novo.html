@@ -28,60 +28,60 @@
                     <ul class="nav metismenu" id="side-menu">
                         <li class="nav-header">
                             <div class="dropdown profile-element">
-                                <a href="{% url "administrativo:usuarios" %}">
+                                <a href="{% url 'administrativo:usuarios' %}">
                                     <img src="{% static 'administrativo/img/logo.svg' %}" alt="Futmundi logo">
                                 </a>
                             </div>
                             <div class="logo-element">
-                                <a href="{% url "administrativo:usuarios" %}">
+                                <a href="{% url 'administrativo:usuarios' %}">
                                     <img src="{% static 'administrativo/img/logosm.svg' %}" alt="Futmundi logo">
                                 </a>                            
                             </div>
                         </li>
                         <li>
-                            <a href="{% url "administrativo:usuarios" %}"><i class="fa fa-user"></i> <span class="nav-label">Usuários</span></a>
+                            <a href="{% url 'administrativo:usuarios' %}"><i class="fa fa-user"></i> <span class="nav-label">Usuários</span></a>
                         </li>
                         <li>
                             <a href="#"><i class="fa fa-trophy"></i> <span class="nav-label">Campeonatos</span><span class="fa arrow"></span></a>
                             <ul class="nav nav-second-level collapse">
-                                <li><a href="{% url "administrativo:ambitos" %}">Âmbitos</a></li>
-                                <li><a href="{% url "administrativo:campeonatos" %}">Campeonatos</a></li>
-                                <li><a href="{% url "administrativo:templates" %}">Templates</a></li>
-                                <li><a href="{% url "administrativo:times" %}">Times</a></li>
+                                <li><a href="{% url 'administrativo:ambitos' %}">Âmbitos</a></li>
+                                <li><a href="{% url 'administrativo:campeonatos' %}">Campeonatos</a></li>
+                                <li><a href="{% url 'administrativo:templates' %}">Templates</a></li>
+                                <li><a href="{% url 'administrativo:times' %}">Times</a></li>
                             </ul>
                         </li>
                         <li>
                             <a href="#"><i class="fa fa-shopping-cart"></i> <span class="nav-label">Pacotes</span><span class="fa arrow"></span></a>
                             <ul class="nav nav-second-level collapse">
-                                <li><a href="{% url "administrativo:futcoins" %}">Futcoins</a></li>
-                                <li><a href="{% url "administrativo:planos" %}">Planos</a></li>
+                                <li><a href="{% url 'administrativo:futcoins' %}">Futcoins</a></li>
+                                <li><a href="{% url 'administrativo:planos' %}">Planos</a></li>
                             </ul>
                         </li>
                         <li>
                             <a href="#"><i class="fa fa-diamond"></i> <span class="nav-label">Futligas</span><span class="fa arrow"></span></a>
                             <ul class="nav nav-second-level collapse">
-                                <li><a href="{% url "administrativo:futligas_classicas" %}">Clássicas</a></li>
-                                <li><a href="{% url "administrativo:futligas_jogadores" %}">Jogadores</a></li>
+                                <li><a href="{% url 'administrativo:futligas_classicas' %}">Clássicas</a></li>
+                                <li><a href="{% url 'administrativo:futligas_jogadores' %}">Jogadores</a></li>
                             </ul>
                         </li>
                         <li class="active">
                             <a href="#"><i class="fa fa-globe"></i> <span class="nav-label">Locais</span><span class="fa arrow"></span></a>
                             <ul class="nav nav-second-level collapse">
-                                <li><a href="{% url "administrativo:continentes" %}">Continentes</a></li>
-                                <li class="active"><a href="{% url "administrativo:paises" %}">Países</a></li>
-                                <li><a href="{% url "administrativo:estados" %}">Estados</a></li>
+                                <li><a href="{% url 'administrativo:continentes' %}">Continentes</a></li>
+                                <li class="active"><a href="{% url 'administrativo:paises' %}">Países</a></li>
+                                <li><a href="{% url 'administrativo:estados' %}">Estados</a></li>
                             </ul>
                         </li>
                         <li>
                             <a href="#"><i class="fa fa-gear"></i> <span class="nav-label">Configurações</span><span class="fa arrow"></span></a>
                             <ul class="nav nav-second-level collapse">
-                                <li><a href="{% url "administrativo:parametros" %}">Parâmetros</a></li>
-                                <li><a href="{% url "administrativo:termo" %}">Termo</a></li>
-                                <li><a href="{% url "administrativo:notificacoes" %}">Notificações</a></li>
+                                <li><a href="{% url 'administrativo:parametros' %}">Parâmetros</a></li>
+                                <li><a href="{% url 'administrativo:termo' %}">Termo</a></li>
+                                <li><a href="{% url 'administrativo:notificacoes' %}">Notificações</a></li>
                             </ul>
                         </li>
                         <li>
-                            <a href="{% url "administrativo:relatorios" %}"><i class="fa fa-pie-chart"></i> <span class="nav-label">Relatórios</span></a>
+                            <a href="{% url 'administrativo:relatorios' %}"><i class="fa fa-pie-chart"></i> <span class="nav-label">Relatórios</span></a>
                         </li>
                     </ul>
                 </div>
@@ -102,7 +102,7 @@
                                 </a>
                                 <ul class="dropdown-menu dropdown-alerts">
                                     <li>
-                                        <a href="{% url "administrativo:administradores" %}" class="dropdown-item">
+                                        <a href="{% url 'administrativo:administradores' %}" class="dropdown-item">
                                             <div>
                                                 <i class="fa fa-users"></i> Administradores
                                             </div>
@@ -130,44 +130,37 @@
                     <div class="row">
                         <div class="col-lg-12">
                             <div class="ibox-content">
-                                {% if messages %}
-                                    {% for message in messages %}
-                                        <div class="alert alert-{{ message.tags }}">
-                                            {{ message }}
-                                        </div>
-                                    {% endfor %}
-                                {% endif %}
-                                <form method="post" action="{% url 'administrativo:pais_novo' %}" class="mt10">
-                                    {% csrf_token %}
-                                    <div class="form-group col-lg-4">
-                                        <label for="name">Nome</label>
-                                        <input type="text" 
-                                               id="name" 
-                                               name="name" 
-                                               class="form-control" 
-                                               required
-                                               oninvalid="this.setCustomValidity('Por favor, preencha este campo')"
-                                               oninput="this.setCustomValidity('')">
+                                <div class="row mt10">
+                                    <div class="col-lg-4">
+                                        <form method="post" action="{% url 'administrativo:pais_novo' %}" class="mt10">
+                                            {% csrf_token %}
+                                            {% if messages %}
+                                                {% for message in messages %}
+                                                    <div class="alert alert-{{ message.tags }}">
+                                                        {{ message }}
+                                                    </div>
+                                                {% endfor %}
+                                            {% endif %}
+                                            <div class="form-group col-lg-6">
+                                                <input type="text" id="name" name="name" class="form-control" required>
+                                                <label class="form-control-placeholder" for="name">Nome</label>
+                                            </div>
+                                            <div class="form-group col-lg-6 mtm10">
+                                                <label class="control-label" for="continent">Continente</label>
+                                                <select class="form-control js-basic-single" id="continent" name="continent" required>
+                                                    <option value="">Selecione...</option>
+                                                    {% for continent in continents %}
+                                                        <option value="{{ continent.id }}">{{ continent.name }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <button type="submit" class="btn btn-success ml15"><i class="glyphicon glyphicon-save mr5"></i> Salvar</button>
+                                                <a href="{% url 'administrativo:paises' %}" class="btn btn-danger ml15"><i class="fa fa-ban mr5"></i> Cancelar</a>
+                                            </div>
+                                        </form>
                                     </div>
-                                    <div class="form-group col-lg-4">
-                                        <label for="continent">Continente</label>
-                                        <select id="continent" 
-                                                name="continent" 
-                                                class="form-control" 
-                                                required
-                                                oninvalid="this.setCustomValidity('Por favor, selecione um continente')"
-                                                oninput="this.setCustomValidity('')">
-                                            <option value="">Selecione...</option>
-                                            {% for continent in continents %}
-                                                <option value="{{ continent.id }}">{{ continent.name }}</option>
-                                            {% endfor %}
-                                        </select>
-                                    </div>
-                                    <div class="form-group col-lg-12">
-                                        <button type="submit" class="btn btn-success" id="successToast"><i class="fa fa-save mr5"></i> Salvar</button>
-                                        <a href="{% url 'administrativo:paises' %}" class="btn btn-danger ml15"><i class="fa fa-times mr5"></i> Cancelar</a>
-                                    </div>
-                                </form>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -186,5 +179,49 @@
         <script src="{% static 'administrativo/js/plugins/toastr/toastr.min.js' %}"></script>
         <script src="{% static 'administrativo/js/plugins/select2/select2.min.js' %}"></script>  
         <script src="{% static 'administrativo/js/settings.js' %}"></script>
+        <script>
+            $(document).ready(function() {
+                // Configurações do toastr
+                toastr.options = {
+                    closeButton: true,
+                    debug: false,
+                    progressBar: true,
+                    preventDuplicates: false,
+                    positionClass: "toast-top-right",
+                    onclick: null,
+                    showDuration: "400",
+                    hideDuration: "1000",
+                    timeOut: 4000,
+                    extendedTimeOut: "400",
+                    showEasing: "swing",
+                    hideEasing: "linear",
+                    showMethod: 'slideDown'
+                };
+
+                // Envio do formulário via AJAX
+                $('form').on('submit', function(e) {
+                    e.preventDefault();
+                    
+                    $.ajax({
+                        url: $(this).attr('action'),
+                        type: 'POST',
+                        data: $(this).serialize(),
+                        success: function(response) {
+                            if (response.success) {
+                                toastr.success(response.message);
+                                setTimeout(function() {
+                                    window.location.href = response.redirect;
+                                }, 1000);
+                            } else {
+                                toastr.error(response.message);
+                            }
+                        },
+                        error: function(xhr, status, error) {
+                            toastr.error('Erro ao criar país: ' + error);
+                        }
+                    });
+                });
+            });
+        </script>
     </body>
 </html>

@@ -20,6 +20,7 @@ import pandas as pd
 import csv
 import os
 from datetime import datetime
+import json
 
 def login(request):
     # Limpa as mensagens antigas
@@ -39,6 +40,16 @@ def login(request):
         if not administrator or not check_password(password, administrator.password):
             messages.error(request, 'Email ou senha inválidos')
             return render(request, 'administrativo/login.html')
+            
+        # Autentica o usuário no Django
+        user = authenticate(request, username=email, password=password)
+        if user is None:
+            # Se o usuário não existe no Django, cria um novo
+            from django.contrib.auth.models import User
+            user = User.objects.create_user(username=email, email=email, password=password)
+            
+        # Faz o login do usuário
+        auth_login(request, user)
             
         # Salva os dados do admin na sessão com os nomes corretos das variáveis
         request.session['admin_id'] = administrator.id
@@ -502,39 +513,48 @@ def template_novo(request):
     """
     if request.method == 'POST':
         try:
+            # Verifica se já existe um template com o mesmo nome
+            name = request.POST.get('name')
+            if Template.objects.filter(name=name).exists():
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Já existe um template com este nome'
+                })
+
             with transaction.atomic():
                 # Cria o template
                 template = Template.objects.create(
-                    name=request.POST.get('name'),
-                    enabled=request.POST.get('enabled', 'off') == 'on',
-                    number_of_stages=int(request.POST.get('number_of_stages', 1))
+                    name=name,
+                    enabled=request.POST.get('enabled') == 'on',  # Checkbox retorna 'on' quando marcado
+                    number_of_stages=0  # Será atualizado após criar as fases
                 )
                 
-                # Cria as fases
-                stages_data = []
-                for i in range(template.number_of_stages):
-                    stage_name = request.POST.get(f'stage_name_{i}')
-                    rounds = int(request.POST.get(f'stage_rounds_{i}', 0))
-                    matches_per_round = int(request.POST.get(f'stage_matches_per_round_{i}', 0))
-                    
-                    if stage_name and rounds > 0 and matches_per_round > 0:
-                        stages_data.append({
-                            'template': template,
-                            'name': stage_name,
-                            'rounds': rounds,
-                            'matches_per_round': matches_per_round,
-                            'order': i
-                        })
+                # Processa as fases do JSON
+                stages_data = json.loads(request.POST.get('stages', '[]'))
+                if not stages_data:
+                    template.delete()
+                    return JsonResponse({
+                        'success': False,
+                        'message': 'Adicione pelo menos uma fase ao template'
+                    })
                 
-                # Cria todas as fases de uma vez
-                TemplateStage.objects.bulk_create([
-                    TemplateStage(**data) for data in stages_data
-                ])
+                # Cria as fases
+                for index, stage in enumerate(stages_data):
+                    TemplateStage.objects.create(
+                        template=template,
+                        name=stage['name'],
+                        rounds=int(stage['rounds']),
+                        matches_per_round=int(stage['matches_per_round']),
+                        order=index
+                    )
+                
+                # Atualiza o número de fases
+                template.number_of_stages = len(stages_data)
+                template.save()
                 
                 return JsonResponse({
                     'success': True,
-                    'message': 'Template criado com sucesso!',
-                    'redirect': reverse('administrativo:templates')
+                    'message': 'Template criado com sucesso!'
                 })
                 
         except Exception as e:
@@ -542,94 +562,46 @@ def template_novo(request):
                 'success': False,
                 'message': f'Erro ao criar template: {str(e)}'
             })
+            
     return render(request, 'administrativo/template-novo.html')
 
+@login_required
 def template_editar(request, id):
-    """
-    Edita um template existente.
-    """
     template = get_object_or_404(Template, id=id)
     
     if request.method == 'POST':
         try:
-            # Verifica se o nome foi alterado e se já existe
-            new_name = request.POST.get('name')
-            if new_name != template.name and Template.objects.filter(name=new_name).exists():
+            name = request.POST.get('name')
+            enabled = request.POST.get('enabled') == 'on'
+            
+            # Verificar se já existe outro template com o mesmo nome
+            if Template.objects.filter(name=name).exclude(id=id).exists():
                 messages.error(request, 'Já existe um template com este nome')
-                return redirect('administrativo:template_editar', id=id)
-
-            # Verifica se o template está em uso
-            template_in_use = template.championships.exists()
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Já existe um template com este nome'
+                })
             
-            with transaction.atomic():
-                # Atualiza dados básicos do template
-                template.name = new_name
-                template.enabled = request.POST.get('enabled') == 'on'
-                template.save()
-                
-                # Atualiza as fases existentes e cria novas se necessário
-                existing_stages = {stage.order: stage for stage in template.stages.all()}
-                new_stages_data = []
-                stages_to_delete = set(existing_stages.keys())
-                
-                for i in range(int(request.POST.get('number_of_stages', 1))):
-                    stage_name = request.POST.get(f'stage_name_{i}')
-                    rounds = int(request.POST.get(f'stage_rounds_{i}', 0))
-                    matches_per_round = int(request.POST.get(f'stage_matches_per_round_{i}', 0))
-                    
-                    if not stage_name or rounds <= 0 or matches_per_round <= 0:
-                        messages.error(request, f'Dados inválidos para a fase {i+1}')
-                        return redirect('administrativo:template_editar', id=id)
-                    
-                    if i in existing_stages:
-                        stage = existing_stages[i]
-                        
-                        # Se o template está em uso, verifica alterações críticas
-                        if template_in_use:
-                            if stage.rounds != rounds or stage.matches_per_round != matches_per_round:
-                                messages.error(request, 'Não é possível alterar o número de rodadas ou jogos por rodada em templates em uso')
-                                return redirect('administrativo:template_editar', id=id)
-                        
-                        # Atualiza fase existente
-                        stage.name = stage_name
-                        stage.rounds = rounds
-                        stage.matches_per_round = matches_per_round
-                        stage.save()
-                        stages_to_delete.remove(i)
-                    else:
-                        # Cria nova fase
-                        new_stages_data.append(TemplateStage(
-                            template=template,
-                            name=stage_name,
-                            rounds=rounds,
-                            matches_per_round=matches_per_round,
-                            order=i
-                        ))
-                
-                # Remove fases que não existem mais
-                if not template_in_use and stages_to_delete:
-                    TemplateStage.objects.filter(
-                        template=template,
-                        order__in=stages_to_delete
-                    ).delete()
-                
-                # Cria novas fases
-                if new_stages_data:
-                    TemplateStage.objects.bulk_create(new_stages_data)
-                
-                # Atualiza número de fases
-                template.number_of_stages = template.stages.count()
-                template.save()
-                
-                messages.success(request, 'Template atualizado com sucesso!')
-                return redirect('administrativo:templates')
-                
-        except ValueError as e:
-            messages.error(request, f'Dados inválidos: {str(e)}')
+            template.name = name
+            template.enabled = enabled
+            template.save()
+            
+            messages.success(request, 'Template atualizado com sucesso')
+            return JsonResponse({
+                'success': True,
+                'redirect_url': reverse('administrativo:templates')
+            })
+            
         except Exception as e:
-            messages.error(request, f'Erro ao atualizar template: {str(e)}')
-            
-    return render(request, 'administrativo/template-editar.html', {'template': template})
+            messages.error(request, str(e))
+            return JsonResponse({
+                'success': False,
+                'message': str(e)
+            })
+    
+    return render(request, 'administrativo/template-editar.html', {
+        'template': template
+    })
 
 def template_excluir(request, id):
     """
@@ -784,8 +756,10 @@ def template_importar(request):
             
             required_columns = ['nome', 'fase', 'rodadas', 'jogos_por_rodada']
             if not all(col in df.columns for col in required_columns):
-                messages.error(request, 'Arquivo não contém todas as colunas necessárias: ' + ', '.join(required_columns))
-                return redirect('administrativo:templates')
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Arquivo não contém todas as colunas necessárias: ' + ', '.join(required_columns)
+                })
                 
             with transaction.atomic():
                 templates_created = 0
@@ -841,26 +815,39 @@ def template_importar(request):
                             template.save()
                         else:
                             template.delete()
-                            templates_created -= 1
+                            if created:
+                                templates_created -= 1
+                            else:
+                                templates_updated -= 1
                             errors.append(f'Template {template_name}: Nenhuma fase válida encontrada')
                             
                     except Exception as e:
                         errors.append(f'Erro ao processar template {template_name}: {str(e)}')
                 
                 # Mensagens de resultado
+                message = ''
                 if templates_created > 0:
-                    messages.success(request, f'{templates_created} template(s) criado(s) com sucesso')
+                    message += f'{templates_created} template(s) criado(s) com sucesso. '
                 if templates_updated > 0:
-                    messages.info(request, f'{templates_updated} template(s) atualizado(s)')
+                    message += f'{templates_updated} template(s) atualizado(s). '
                 if errors:
-                    messages.warning(request, 'Alguns erros ocorreram durante a importação:')
-                    for error in errors:
-                        messages.warning(request, error)
+                    message += 'Alguns erros ocorreram durante a importação: ' + ' | '.join(errors)
+
+                return JsonResponse({
+                    'success': templates_created > 0 or templates_updated > 0,
+                    'message': message.strip()
+                })
                         
         except Exception as e:
-            messages.error(request, f'Erro ao processar arquivo: {str(e)}')
+            return JsonResponse({
+                'success': False,
+                'message': f'Erro ao processar arquivo: {str(e)}'
+            })
             
-    return redirect('administrativo:templates')
+    return JsonResponse({
+        'success': False,
+        'message': 'Nenhum arquivo enviado'
+    })
 
 def template_exportar(request):
     """
@@ -1376,18 +1363,30 @@ def continente_exportar(request):
     Exporta os continentes para Excel
     """
     continents = Continent.objects.all().order_by('name')
-    fields = [
-        ('name', 'Nome'),
-        ('created_at', 'Data Criação')
-    ]
-    return export_to_excel(continents, fields, 'continentes.xlsx')
+    
+    # Prepara os dados ajustando o fuso horário
+    data = []
+    for continent in continents:
+        data.append({
+            'Nome': continent.name,
+            'Data Criação': (continent.created_at - timezone.timedelta(hours=3)).strftime('%d/%m/%Y %H:%M')
+        })
+    
+    # Cria o DataFrame com os dados já formatados
+    df = pd.DataFrame(data)
+    
+    response = HttpResponse(content_type='application/vnd.ms-excel')
+    response['Content-Disposition'] = 'attachment; filename="continentes.xlsx"'
+    
+    df.to_excel(response, index=False)
+    return response
 
 def continente_importar(request):
     """
     Importa continentes de um arquivo Excel
     """
     if request.method == 'POST' and request.FILES.get('file'):
-        fields = [('name', 'name')]
+        fields = [('name', 'Nome')]
         unique_fields = ['name']
         
         success, message = import_from_excel(
@@ -1428,10 +1427,12 @@ def pais_novo(request):
             messages.error(request, 'Todos os campos são obrigatórios')
             return redirect('administrativo:pais_novo')
             
-        # Verifica se já existe um país com este nome no continente
-        if Country.objects.filter(name=name, continent_id=continent_id).exists():
-            messages.error(request, 'Já existe um país com este nome neste continente')
-            return redirect('administrativo:pais_novo')
+        # Verifica se já existe um país com este nome
+        if Country.objects.filter(name=name).exists():
+            return JsonResponse({
+                'success': False,
+                'message': 'País já existe'
+            })
             
         try:
             continent = Continent.objects.get(id=continent_id)
@@ -1439,15 +1440,32 @@ def pais_novo(request):
                 name=name,
                 continent=continent
             )
-            messages.success(request, 'País criado com sucesso')
-            return redirect('administrativo:paises')
+            return JsonResponse({
+                'success': True,
+                'message': 'País criado com sucesso',
+                'redirect': reverse('administrativo:paises')
+            })
+        except Continent.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'message': 'Continente não encontrado'
+            })
         except Exception as e:
-            messages.error(request, f'Erro ao criar país: {str(e)}')
-            return redirect('administrativo:pais_novo')
+            return JsonResponse({
+                'success': False,
+                'message': str(e)
+            })
     
     continents = Continent.objects.all().order_by('name')
+    states = []  # Lista vazia pois é um novo país
+    teams = []   # Lista vazia pois é um novo país
+    championships = []  # Lista vazia pois é um novo país
+    
     return render(request, 'administrativo/pais-novo.html', {
-        'continents': continents
+        'continents': continents,
+        'states': states,
+        'teams': teams,
+        'championships': championships
     })
 
 def pais_editar(request, id):
@@ -1571,35 +1589,38 @@ def pais_exportar(request):
 
 def pais_importar(request):
     """
-    Importa países de um arquivo Excel.
+    Importa países de um arquivo Excel
     """
-    if request.method != 'POST' or 'file' not in request.FILES:
-        messages.error(request, 'Nenhum arquivo foi enviado')
+    if request.method == 'POST' and request.FILES.get('file'):
+        fields = [('name', 'Nome'), ('continent__name', 'Continente')]
+        unique_fields = ['name']
+        
+        success, message = import_from_excel(
+            request.FILES['file'],
+            Country,
+            fields,
+            unique_fields
+        )
+        
+        if success:
+            messages.success(request, message)
+        else:
+            messages.error(request, message)
+        
         return redirect('administrativo:paises')
     
-    file = request.FILES['file']
-    fields = [
-        ('name', 'name'),
-        ('continent__name', 'continent')
-    ]
-    
-    success, message = import_from_excel(file, Country, fields, ['name'])
-    
-    if success:
-        messages.success(request, message)
-    else:
-        messages.error(request, message)
-    
+    messages.error(request, 'Nenhum arquivo enviado.')
     return redirect('administrativo:paises')
 
 def estados(request):
     """
     Lista todos os estados.
     """
-    # Limpa as mensagens antigas
+    # Limpa TODAS as mensagens antigas
     storage = messages.get_messages(request)
-    for _ in storage:
-        pass  # Limpa as mensagens antigas
+    for message in storage:
+        pass  # Consome todas as mensagens
+    storage.used = True
     
     states = State.objects.all().order_by('country__name', 'name')
     return render(request, 'administrativo/estados.html', {'states': states})
@@ -1608,26 +1629,38 @@ def estado_novo(request):
     """
     Cria um novo estado.
     """
-    # Limpa as mensagens antigas
-    storage = messages.get_messages(request)
-    for _ in storage:
-        pass  # Limpa as mensagens antigas
-    
     if request.method == 'POST':
         name = request.POST.get('name')
         country_id = request.POST.get('country')
         
         try:
             country = Country.objects.get(id=country_id)
+            
+            # Verifica se já existe um estado com este nome no país
+            if State.objects.filter(name=name, country=country).exists():
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Estado já existe'
+                })
+            
             state = State(name=name, country=country)
             state.full_clean()
             state.save()
-            messages.success(request, 'Estado criado com sucesso!')
-            return redirect('administrativo:estados')
+            return JsonResponse({
+                'success': True,
+                'message': 'Estado criado com sucesso!',
+                'redirect': reverse('administrativo:estados')
+            })
         except ValidationError as e:
-            messages.error(request, f'Erro de validação: {str(e)}')
+            return JsonResponse({
+                'success': False,
+                'message': f'Erro de validação: {str(e)}'
+            })
         except Exception as e:
-            messages.error(request, f'Erro ao criar estado: {str(e)}')
+            return JsonResponse({
+                'success': False,
+                'message': f'Erro ao criar estado: {str(e)}'
+            })
     
     countries = Country.objects.all().order_by('name')
     return render(request, 'administrativo/estado-novo.html', {'countries': countries})
@@ -1641,17 +1674,28 @@ def estado_excluir(request, id):
             state = get_object_or_404(State, id=id)
             
             # Verifica se tem campeonatos vinculados
-            if Championship.objects.filter(country=state.country).exists():
-                messages.error(request, 'Não é possível excluir o estado pois existem campeonatos vinculados')
-                return redirect('administrativo:estados')
+            if Championship.objects.filter(state=state).exists():
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Não é possível excluir o estado pois existem campeonatos vinculados'
+                })
                 
             state.delete()
-            messages.success(request, 'Estado excluído com sucesso')
+            return JsonResponse({
+                'success': True,
+                'message': 'Estado excluido com sucesso'
+            }, json_dumps_params={'ensure_ascii': False})
             
         except Exception as e:
-            messages.error(request, f'Erro ao excluir estado: {str(e)}')
+            return JsonResponse({
+                'success': False,
+                'message': f'Erro ao excluir estado: {str(e)}'
+            }, json_dumps_params={'ensure_ascii': False})
             
-    return redirect('administrativo:estados')
+    return JsonResponse({
+        'success': False,
+        'message': 'Método não permitido'
+    }, status=405, json_dumps_params={'ensure_ascii': False})
 
 def estado_excluir_em_massa(request):
     """
@@ -1660,7 +1704,10 @@ def estado_excluir_em_massa(request):
     if request.method == 'POST':
         ids = request.POST.getlist('ids[]')
         if not ids:
-            return JsonResponse({'error': 'Nenhum estado selecionado'}, status=400)
+            return JsonResponse({
+                'success': False,
+                'message': 'Nenhum estado selecionado'
+            })
             
         try:
             # Verifica se algum estado tem times ou campeonatos vinculados
@@ -1673,40 +1720,52 @@ def estado_excluir_em_massa(request):
             
             if non_deletable_states:
                 return JsonResponse({
-                    'error': f'Os seguintes estados não podem ser excluídos pois possuem registros vinculados: {", ".join(non_deletable_states)}'
-                }, status=400)
+                    'success': False,
+                    'message': f'Os seguintes estados não podem ser excluídos pois possuem registros vinculados: {", ".join(non_deletable_states)}'
+                })
                 
             # Exclui os estados que podem ser excluídos
             states.delete()
-            return JsonResponse({'message': 'Estados excluídos com sucesso'})
+            return JsonResponse({
+                'success': True,
+                'message': 'Estados excluídos com sucesso'
+            })
             
         except Exception as e:
-            return JsonResponse({'error': str(e)}, status=500)
+            return JsonResponse({
+                'success': False,
+                'message': f'Erro ao excluir estados: {str(e)}'
+            })
     
-    return JsonResponse({'error': 'Método não permitido'}, status=405)
+    return JsonResponse({
+        'success': False,
+        'message': 'Método não permitido'
+    })
 
 def estado_importar(request):
     """
-    Importa estados a partir de um arquivo Excel.
+    Importa estados de um arquivo Excel
     """
-    if request.method != 'POST' or 'file' not in request.FILES:
-        messages.error(request, 'Nenhum arquivo foi enviado')
-        return redirect('administrativo:estados')
+    if request.method == 'POST' and request.FILES.get('file'):
+        fields = [('name', 'Nome'), ('country__name', 'País')]
+        unique_fields = ['name', 'country']
+        
+        success, message = import_from_excel(
+            request.FILES['file'],
+            State,
+            fields,
+            unique_fields
+        )
+        
+        return JsonResponse({
+            'success': success,
+            'message': message
+        })
     
-    file = request.FILES['file']
-    fields = [
-        ('name', 'name'),
-        ('country__name', 'country')
-    ]
-    
-    success, message = import_from_excel(file, State, fields, ['name', 'country'])
-    
-    if success:
-        messages.success(request, message)
-    else:
-        messages.error(request, message)
-    
-    return redirect('administrativo:estados')
+    return JsonResponse({
+        'success': False,
+        'message': 'Nenhum arquivo enviado.'
+    })
 
 def estado_exportar(request):
     """
@@ -1736,8 +1795,8 @@ def estado_editar(request, id):
     
     if request.method == 'GET':
         # Busca times e campeonatos vinculados
-        teams = Team.objects.filter(championship__country=state.country).order_by('name')
-        championships = Championship.objects.filter(country=state.country).order_by('name')
+        teams = Team.objects.filter(state=state).order_by('name')
+        championships = Championship.objects.filter(state=state).order_by('name')
         
         # Verifica se tem campeonatos vinculados
         has_championships = championships.exists()
@@ -1760,7 +1819,7 @@ def estado_editar(request, id):
         
     try:
         # Verifica se tem campeonatos vinculados
-        has_championships = Championship.objects.filter(country=state.country).exists()
+        has_championships = Championship.objects.filter(state=state).exists()
         
         # Se tem campeonatos, só permite editar o nome
         if has_championships:
@@ -1882,26 +1941,57 @@ def administrador_excluir(request, id):
     
     # Não permite excluir o usuário root
     if admin.is_root:
-        messages.error(request, 'Não é permitido excluir o usuário root')
-        return redirect('administrativo:administradores')
+        return JsonResponse({
+            'success': False,
+            'message': 'Não é permitido excluir o usuário root'
+        })
         
-    admin.delete()
-    messages.success(request, 'Administrador excluído com sucesso')
-    return redirect('administrativo:administradores')
+    try:
+        admin.delete()
+        return JsonResponse({
+            'success': True,
+            'message': 'Administrador excluído com sucesso'
+        })
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Erro ao excluir administrador: {str(e)}'
+        })
 
 def administradores_excluir_massa(request):
     if request.method == 'POST':
         ids = request.POST.getlist('administradores[]')
-        # Garante que não exclui o usuário root
-        Administrator.objects.filter(id__in=ids, is_root=False).delete()
-        messages.success(request, 'Administradores excluídos com sucesso')
-        return JsonResponse({'status': 'success'})
-    return JsonResponse({'status': 'error'}, status=400)
+        
+        if not ids:
+            return JsonResponse({
+                'success': False,
+                'message': 'Nenhum administrador selecionado'
+            })
+            
+        try:
+            # Garante que não exclui o usuário root
+            deleted_count = Administrator.objects.filter(id__in=ids, is_root=False).delete()[0]
+            return JsonResponse({
+                'success': True,
+                'message': f'{deleted_count} administrador(es) excluído(s) com sucesso'
+            })
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': f'Erro ao excluir administradores: {str(e)}'
+            })
+            
+    return JsonResponse({
+        'success': False,
+        'message': 'Método não permitido'
+    })
 
 def logout(request):
     # Limpa a sessão
     request.session.flush()
-    return redirect('administrativo:login') 
+    # Faz o logout do Django
+    auth_logout(request)
+    return redirect('administrativo:login')
 
 def campeonato_importar_jogos(request):
     """
@@ -2144,4 +2234,158 @@ def campeonato_toggle_status(request):
     return JsonResponse({
         'success': False,
         'message': 'Método não permitido.'
-    }) 
+    })
+
+@login_required
+def template_reorder_stages(request, id):
+    if request.method == 'POST':
+        try:
+            template = Template.objects.get(id=id)
+            orders = json.loads(request.POST.get('orders', '[]'))
+            
+            with transaction.atomic():
+                for order_data in orders:
+                    stage_id = order_data.get('id')
+                    new_order = order_data.get('order')
+                    if stage_id and new_order:
+                        TemplateStage.objects.filter(
+                            id=stage_id,
+                            template=template
+                        ).update(order=new_order)
+            
+            return JsonResponse({'success': True})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    
+    return JsonResponse({'success': False, 'error': 'Método não permitido'})
+
+@login_required
+def template_delete_stage(request, template_id, stage_id):
+    """
+    Exclui uma fase do template.
+    """
+    if request.method == 'POST':
+        template = get_object_or_404(Template, id=template_id)
+        stage = get_object_or_404(TemplateStage, id=stage_id, template=template)
+        
+        if template.championships.exists():
+            return JsonResponse({
+                'success': False,
+                'message': 'Não é possível excluir fases de um template em uso'
+            })
+            
+        try:
+            with transaction.atomic():
+                # Remove a fase
+                stage.delete()
+                
+                # Reordena as fases restantes
+                for i, s in enumerate(template.stages.all().order_by('order')):
+                    s.order = i
+                    s.save()
+                
+                # Atualiza o número de fases
+                template.number_of_stages = template.stages.count()
+                template.save()
+            
+            return JsonResponse({
+                'success': True,
+                'message': 'Fase excluída com sucesso'
+            })
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': f'Erro ao excluir fase: {str(e)}'
+            })
+            
+    return JsonResponse({
+        'success': False,
+        'message': 'Método não permitido'
+    })
+
+@login_required
+def template_add_stage(request, template_id):
+    if request.method == 'POST':
+        template = get_object_or_404(Template, id=template_id)
+        
+        try:
+            name = request.POST.get('name')
+            rounds = int(request.POST.get('rounds'))
+            matches_per_round = int(request.POST.get('matches_per_round'))
+            
+            # Verificar se já existe uma fase com o mesmo nome
+            if TemplateStage.objects.filter(template=template, name=name).exists():
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Já existe uma fase com este nome'
+                })
+            
+            # Criar nova fase
+            order = template.stages.count()  # Nova fase será adicionada ao final
+            stage = TemplateStage.objects.create(
+                template=template,
+                name=name,
+                rounds=rounds,
+                matches_per_round=matches_per_round,
+                order=order
+            )
+            
+            # Atualizar número de fases do template
+            template.number_of_stages = template.stages.count()
+            template.save()
+            
+            return JsonResponse({
+                'success': True,
+                'message': 'Fase adicionada com sucesso'
+            })
+            
+        except (ValueError, ValidationError) as e:
+            return JsonResponse({
+                'success': False,
+                'message': str(e)
+            })
+    
+    return JsonResponse({
+        'success': False,
+        'message': 'Método não permitido'
+    })
+
+@login_required
+def template_edit_stage(request, template_id, stage_id):
+    if request.method == 'POST':
+        template = get_object_or_404(Template, id=template_id)
+        stage = get_object_or_404(TemplateStage, id=stage_id, template=template)
+        
+        try:
+            name = request.POST.get('name')
+            rounds = int(request.POST.get('rounds'))
+            matches_per_round = int(request.POST.get('matches_per_round'))
+            
+            # Verificar se já existe outra fase com o mesmo nome
+            if TemplateStage.objects.filter(template=template, name=name).exclude(id=stage_id).exists():
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Já existe uma fase com este nome'
+                })
+            
+            # Atualizar fase
+            stage.name = name
+            stage.rounds = rounds
+            stage.matches_per_round = matches_per_round
+            stage.save()
+            
+            return JsonResponse({
+                'success': True,
+                'message': 'Fase atualizada com sucesso'
+            })
+            
+        except (ValueError, ValidationError) as e:
+            return JsonResponse({
+                'success': False,
+                'message': str(e)
+            })
+    
+    return JsonResponse({
+        'success': False,
+        'message': 'Método não permitido'
+    })

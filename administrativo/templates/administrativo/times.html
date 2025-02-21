@@ -14,323 +14,230 @@
         <link href="{% static 'administrativo/css/style.css' %}" rel="stylesheet">          
         <link href="{% static 'administrativo/css/plugins/awesome-bootstrap-checkbox/awesome-bootstrap-checkbox.css' %}" rel="stylesheet">        
         <link href="{% static 'administrativo/css/plugins/jasny/jasny-bootstrap.min.css' %}" rel="stylesheet">
+        <link href="{% static 'administrativo/css/plugins/toastr/toastr.min.css' %}" rel="stylesheet">
         <!-- Custom -->      
         <link href="{% static 'administrativo/css/custom.css' %}" rel="stylesheet">
         <!-- Favicon -->
         <link rel="icon" href="{% static 'administrativo/img/futmundi.ico' %}" type="image/png">
     </head>
     <body>
+        {% csrf_token %}
         <div id="wrapper">
-            <nav class="navbar-default navbar-static-side">
-                <div class="sidebar-collapse">
-                    <ul class="nav metismenu" id="side-menu">
-                        <li class="nav-header">
-                            <div class="dropdown profile-element">
-                                <a href="{% url 'administrativo:usuarios' %}">
-                                    <img src="{% static 'administrativo/img/logo.svg' %}" alt="Futmundi logo">
-                                </a>
-                            </div>
-                            <div class="logo-element">
-                                <a href="{% url 'administrativo:usuarios' %}">
-                                    <img src="{% static 'administrativo/img/logosm.svg' %}" alt="Futmundi logo">
-                                </a>                            
-                            </div>
-                        </li>
-                        <li class="active">
-                            <a href="{% url 'administrativo:usuarios' %}"><i class="fa fa-user"></i> <span class="nav-label">Usuários</span></a>
-                        </li>
-                        <li>
-                            <a href="#"><i class="fa fa-trophy"></i> <span class="nav-label">Campeonatos</span><span class="fa arrow"></span></a>
-                            <ul class="nav nav-second-level collapse">
-                                <li><a href="{% url 'administrativo:ambitos' %}">Âmbitos</a></li>
-                                <li><a href="{% url 'administrativo:campeonatos' %}">Campeonatos</a></li>
-                                <li><a href="{% url 'administrativo:templates' %}">Templates</a></li>
-                                <li><a href="{% url 'administrativo:times' %}">Times</a></li>
-                            </ul>
-                        </li>
-                        <li>
-                            <a href="#"><i class="fa fa-shopping-cart"></i> <span class="nav-label">Pacotes</span><span class="fa arrow"></span></a>
-                            <ul class="nav nav-second-level collapse">
-                                <li><a href="{% url 'administrativo:futcoins' %}">Futcoins</a></li>
-                                <li><a href="{% url 'administrativo:planos' %}">Planos</a></li>
-                            </ul>
-                        </li>
-                        <li>
-                            <a href="#"><i class="fa fa-diamond"></i> <span class="nav-label">Futligas</span><span class="fa arrow"></span></a>
-                            <ul class="nav nav-second-level collapse">
-                                <li><a href="{% url 'administrativo:futligas_classicas' %}">Clássicas</a></li>
-                                <li><a href="{% url 'administrativo:futligas_jogadores' %}">Jogadores</a></li>
-                            </ul>
-                        </li>
-                        <li>
-                            <a href="#"><i class="fa fa-globe"></i> <span class="nav-label">Locais</span><span class="fa arrow"></span></a>
-                            <ul class="nav nav-second-level collapse">
-                                <li><a href="{% url 'administrativo:continentes' %}">Continentes</a></li>
-                                <li><a href="{% url 'administrativo:paises' %}">Países</a></li>
-                                <li><a href="{% url 'administrativo:estados' %}">Estados</a></li>
-                            </ul>
-                        </li>
-                        <li>
-                            <a href="#"><i class="fa fa-gear"></i> <span class="nav-label">Configurações</span><span class="fa arrow"></span></a>
-                            <ul class="nav nav-second-level collapse">
-                                <li><a href="{% url 'administrativo:parametros' %}">Parâmetros</a></li>
-                                <li><a href="{% url 'administrativo:termo' %}">Termo</a></li>
-                                <li><a href="{% url 'administrativo:notificacoes' %}">Notificações</a></li>
-                            </ul>
-                        </li>
-                        <li>
-                            <a href="{% url 'administrativo:relatorios' %}"><i class="fa fa-pie-chart"></i> <span class="nav-label">Relatórios</span></a>
-                        </li>
-                    </ul>
-                </div>
-            </nav>
+            {% include 'administrativo/menu.html' %}
             <div id="page-wrapper" class="gray-bg">
-                <div class="row border-bottom">
-                    <nav class="navbar navbar-static-top" style="margin-bottom: 0">
-                        <div class="navbar-header">
-                            <a class="navbar-minimalize minimalize-styl-2 btn btn-success " href="#"><i class="fa fa-bars"></i> </a>
-                        </div>
-                        <ul class="nav navbar-top-links navbar-right">
-                            <li>
-                                <span class="m-r-sm text-muted welcome-message">Andrews Cristhian</span>
-                            </li>
-                            <li class="dropdown">
-                                <a class="dropdown-toggle count-info" data-toggle="dropdown" href="#">
-                                    <i class="fa fa-gear"></i>
-                                </a>
-                                <ul class="dropdown-menu dropdown-alerts">
-                                    <li>
-                                        <a href="{% url 'administrativo:administradores' %}" class="dropdown-item">
-                                            <div>
-                                                <i class="fa fa-users"></i> Administradores
-                                            </div>
-                                        </a>
-                                    </li>
-                                    <li class="dropdown-divider"></li>
-                                    <li>
-                                        <a href="{% url 'administrativo:logout' %}" class="dropdown-item">
-                                            <div>
-                                                <i class="fa fa-sign-out"></i> Sair
-                                            </div>
-                                        </a>
-                                    </li>
-                                </ul>
-                            </li>
-                        </ul>
-                    </nav>
-                </div>
+                {% include 'administrativo/header.html' %}
                 <div class="row wrapper border-bottom white-bg page-heading">
                     <div class="col-lg-10">
                         <h2>Times</h2>
-            </div>
-        </div>
+                    </div>
+                </div>
                 <div class="wrapper wrapper-content">
-            <div class="row">
+                    <div class="row">
                         <div class="col-lg-12">
                             <div class="ibox">
                                 <div class="ibox-content">
                                     <div class="group-options-left ml5">
                                         <a href="{% url 'administrativo:time_novo' %}" class="btn btn-success btn-sm" title="Novo"><i class="fa fa-plus"></i></a>
-                                        <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#modalImportXLS" title="Importar"><i class="fa fa-upload"></i></button>
-                                        <button type="button" class="btn btn-info btn-sm" data-toggle="modal" data-target="#modalImportIMG" title="Importar Escudos"><i class="fa fa-upload"></i></button>
-                                        </div>
+                                        <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#modalImportar" title="Importar Times">
+                                            <i class="fa fa-upload"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-success btn-sm" data-toggle="modal" data-target="#modalImportarEscudo" title="Importar Escudo">
+                                            <i class="fa fa-upload"></i>
+                                        </button>
+                                    </div>
                                     <div class="group-options-right mr10">
-                                        <a href="{% url 'administrativo:time_exportar' %}" class="btn btn-default btn-sm" title="Exportar"><i class="fa fa-download"></i></a>
-                                        <button type="button" class="btn btn-danger btn-sm" id="btn-excluir-em-massa" disabled title="Excluir em Massa"><i class="fa fa-trash"></i></button>
+                                        <button type="button" class="btn btn-default btn-sm" title="Excluir em Massa" onclick="excluirSelecionados()"><i class="glyphicon glyphicon-trash"></i></button>
                                     </div>
                                     <div class="table-responsive">
                                         <table class="table table-striped table-bordered table-hover dataTables-times">
-                                <thead>
-                                    <tr>
+                                            <thead>
+                                                <tr>
                                                     <th class="per10 center-middle">
                                                         <div class="checkbox checkbox-success">
-                                                            <input id="check-all" type="checkbox" class="checkAll" name="checkAll">
-                                                            <label for="check-all"></label>
+                                                            <input id="checkbox" type="checkbox" class="checkAll" name="checkAll">
+                                                            <label for="checkbox"></label>
                                                         </div>
-                                        </th>
-                                                    <th class="per25">Nome</th>
-                                                    <th class="per15">Continente</th>
-                                                    <th class="per15">País</th>
-                                                    <th class="per10">Estado</th>
-                                                    <th class="per10">Escudo</th>
+                                                    </th>
+                                                    <th class="per20">Nome</th>
+                                                    <th class="per20">País</th>
+                                                    <th class="per15">Escudo</th>
+                                                    <th class="per20">Data Criação</th>
                                                     <th class="per15">Ações</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for team in teams %}
-                                    <tr>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for team in teams %}
+                                                <tr>
                                                     <td class="center-middle">
                                                         <div class="checkbox checkbox-success">
-                                                            <input id="check-{{ team.id }}" type="checkbox" class="team-checkbox" value="{{ team.id }}" {% if team.championship_set.exists %}disabled{% endif %}>
-                                                            <label for="check-{{ team.id }}"></label>
+                                                            <input id="checkbox{{ team.id }}" type="checkbox" class="check-item" value="{{ team.id }}">
+                                                            <label for="checkbox{{ team.id }}"></label>
                                                         </div>
-                                        </td>
-                                        <td>{{ team.name }}</td>
-                                        <td>{{ team.continent.name }}</td>
-                                        <td>{{ team.country.name }}</td>
-                                                    <td>{{ team.state.name|default:"-" }}</td>
+                                                    </td>
+                                                    <td>{{ team.name }}</td>
+                                                    <td>{{ team.country.name }}</td>
                                                     <td class="center-middle">
                                                         {% if team.image %}
-                                                            <img src="{{ team.get_image_url }}" class="img-sm" alt="{{ team.name }}">
-                                            {% else %}
-                                                            <img src="{% static 'administrativo/img/generic-shield.png' %}" class="img-sm" alt="Escudo genérico">
-                                            {% endif %}
-                                        </td>
-                                        <td>
-                                                        <a href="{% url 'administrativo:time_editar' team.id %}" class="btn btn-action btn-edit" title="Editar"><i class="fa fa-pencil"></i></a>
-                                                        {% if not team.championship_set.exists %}
-                                                        <button type="button" class="btn btn-action btn-delete btn-excluir" 
-                                                                data-id="{{ team.id }}" 
-                                                                data-url="{% url 'administrativo:time_excluir' team.id %}"
-                                                                title="Excluir">
-                                                            <i class="fa fa-trash"></i>
-                                                        </button>
-                                                {% endif %}
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
+                                                            <img src="{{ team.image.url }}" alt="{{ team.name }}" class="team-shield" style="max-width: 40px; max-height: 40px; object-fit: contain; display: block; margin: 0 auto;">
+                                                        {% else %}
+                                                            <span class="text-muted">Sem escudo</span>
+                                                        {% endif %}
+                                                    </td>
+                                                    <td>{{ team.created_at|date:"d/m/Y H:i" }}</td>
+                                                    <td>
+                                                        <a href="{% url 'administrativo:time_editar' team.id %}" class="btn btn-info btn-xs" title="Editar"><i class="glyphicon glyphicon-pencil"></i></a>
+                                                        <button type="button" class="btn btn-danger btn-xs delete-btn" title="Excluir" data-id="{{ team.id }}"><i class="glyphicon glyphicon-trash"></i></button>
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-                </div>
-            </div>
-        </div>
-        <!-- Modals -->
-        <div class="modal inmodal" id="modalExcluirEmMassa" tabindex="-1" role="dialog" aria-hidden="true">
+
+        <!-- Modal de exclusão em massa -->
+        <div class="modal inmodal" id="modalAlert" tabindex="-1" role="dialog" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered modal-sm">
                 <div class="modal-content animated fadeIn">
                     <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
                         <h4 class="modal-title">Tem certeza?</h4>
-                        <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Fechar</span></button>
                     </div>
                     <div class="modal-body">
-                        <p>Tem certeza que deseja excluir os times selecionados?</p>
+                        <p>Tem certeza que deseja excluir os registros selecionados?</p>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-white" data-dismiss="modal">Cancelar</button>
-                        <button type="button" class="btn btn-danger" id="btn-confirmar-exclusao-em-massa">Excluir</button>
+                        <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
+                        <button type="button" class="btn btn-danger">Deletar</button>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="modal inmodal" id="modalExcluir" tabindex="-1" role="dialog" aria-hidden="true">
+        <!-- Modal de exclusão individual -->
+        <div class="modal inmodal" id="modalAlert2" tabindex="-1" role="dialog" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered modal-sm">
                 <div class="modal-content animated fadeIn">
                     <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
                         <h4 class="modal-title">Tem certeza?</h4>
-                        <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Fechar</span></button>
                     </div>
                     <div class="modal-body">
                         <p>Tem certeza que deseja excluir este time?</p>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-white" data-dismiss="modal">Cancelar</button>
-                        <button type="button" class="btn btn-danger" id="btn-confirmar-exclusao">Excluir</button>
+                        <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
+                        <button type="button" class="btn btn-danger">Deletar</button>
                     </div>
                 </div>
             </div>
-</div>
+        </div>
 
-        <div class="modal inmodal" id="modalImportXLS" tabindex="-1" role="dialog" aria-hidden="true">
+        <!-- Modal Importar -->
+        <div class="modal inmodal" id="modalImportar" tabindex="-1" role="dialog" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content animated fadeIn">
-                    <form id="form-importar-times" method="post" enctype="multipart/form-data">
-                {% csrf_token %}
-                <div class="modal-header">
-                    <h4 class="modal-title">Importar Times</h4>
-                            <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Fechar</span></button>
-                </div>
-                <div class="modal-body">
-                            <div class="fileinput fileinput-new input-group" data-provides="fileinput">
-                                <div class="form-control" data-trigger="fileinput">
-                                    <i class="fa fa-file fileinput-exists"></i>
-                                    <span class="fileinput-filename"></span>
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                        <h4 class="modal-title">Importar Time</h4>
+                    </div>
+                    <form id="formImportar" method="POST" action="{% url 'administrativo:time_importar' %}" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <div class="modal-body">
+                            <div class="form-group">
+                                <label for="file">Selecione o arquivo</label>
+                                <div class="fileinput fileinput-new input-group" data-provides="fileinput">
+                                    <div class="form-control" data-trigger="fileinput">
+                                        <i class="fa fa-file fileinput-exists"></i>
+                                        <span class="fileinput-filename"></span>
+                                    </div>
+                                    <div class="input-group-append">
+                                        <span class="input-group-text btn btn-default btn-file">
+                                            <span class="fileinput-new">Selecionar arquivo</span>
+                                            <span class="fileinput-exists">Alterar</span>
+                                            <input type="file" name="file" accept=".xlsx,.xls" required/>
+                                        </span>
+                                    </div>
                                 </div>
-                                <span class="input-group-append">
-                                    <span class="input-group-text btn btn-default btn-file">
-                                        <span class="fileinput-new">Selecionar arquivo</span>
-                                        <span class="fileinput-exists">Alterar</span>
-                                        <input type="file" name="file" accept=".xlsx,.xls" required/>
-                                    </span>
-                                    <a href="#" class="input-group-text btn btn-default fileinput-exists" data-dismiss="fileinput">Remover</a>
-                                </span>
                             </div>
-                            <div class="alert alert-info mt-4">
-                                <h5 class="alert-heading mb-2"><i class="fa fa-info-circle mr-2"></i>Instruções</h5>
-                                <p class="mb-2">O arquivo Excel deve conter as seguintes colunas:</p>
-                                <ul class="mb-0 pl-3">
-                                    <li><strong>nome</strong> - Nome do time</li>
-                                    <li><strong>continente</strong> - Nome do continente</li>
-                                    <li><strong>pais</strong> - Nome do país</li>
-                                    <li><strong>estado</strong> - Nome do estado (opcional)</li>
-                                    <li><strong>selecao</strong> - Se é seleção (Sim/Não)</li>
+                            <div class="alert alert-info mt15">
+                                <h5>Instruções:</h5>
+                                <p>O arquivo Excel deve conter as seguintes colunas:</p>
+                                <ul>
+                                    <li><strong>Nome</strong>: Nome do time</li>
+                                    <li><strong>País</strong>: Nome do país ao qual o time pertence</li>
                                 </ul>
                             </div>
                         </div>
                         <div class="modal-footer">
-                            <button type="button" class="btn btn-white" data-dismiss="modal">Cancelar</button>
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fa fa-upload mr-2"></i>Importar
-                            </button>
+                            <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn btn-primary">Importar</button>
+                        </div>
+                    </form>
                 </div>
-            </form>
+            </div>
         </div>
-    </div>
-</div>
 
-        <div class="modal inmodal" id="modalImportIMG" tabindex="-1" role="dialog" aria-hidden="true">
+        <!-- Modal Importar Escudo -->
+        <div class="modal inmodal" id="modalImportarEscudo" tabindex="-1" role="dialog" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content animated fadeIn">
-                    <form id="form-importar-escudos" method="post" enctype="multipart/form-data">
-                {% csrf_token %}
-                <div class="modal-header">
-                            <h4 class="modal-title">Importar Escudos</h4>
-                            <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Fechar</span></button>
-                </div>
-                <div class="modal-body">
-                            <div class="fileinput fileinput-new input-group" data-provides="fileinput">
-                                <div class="form-control" data-trigger="fileinput">
-                                    <i class="fa fa-file fileinput-exists"></i>
-                                    <span class="fileinput-filename"></span>
-                                </div>
-                                <span class="input-group-append">
-                                    <span class="input-group-text btn btn-default btn-file">
-                                        <span class="fileinput-new">Selecionar arquivo</span>
-                                        <span class="fileinput-exists">Alterar</span>
-                                        <input type="file" name="images" accept="image/*" required multiple/>
-                                    </span>
-                                    <a href="#" class="input-group-text btn btn-default fileinput-exists" data-dismiss="fileinput">Remover</a>
-                                </span>
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                        <h4 class="modal-title">Importar Escudo</h4>
+                    </div>
+                    <form id="formImportarEscudo" method="POST" action="{% url 'administrativo:time_importar' %}" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <div class="modal-body">
+                            <div class="form-group">
+                                <label for="team">Selecione o Time</label>
+                                <select class="form-control select2" name="team" id="team" required>
+                                    <option value="">Selecione um time</option>
+                                    {% for team in teams %}
+                                        <option value="{{ team.id }}">{{ team.name }}</option>
+                                    {% endfor %}
+                                </select>
                             </div>
-                            <div class="alert alert-info mt-4">
-                                <h5 class="alert-heading mb-2"><i class="fa fa-info-circle mr-2"></i>Instruções</h5>
-                                <p class="mb-2">Selecione os arquivos de imagem dos escudos:</p>
-                                <ul class="mb-0 pl-3">
-                                    <li>O nome do arquivo deve corresponder ao nome do time</li>
+                            <div class="form-group">
+                                <label for="shield_file">Selecione o escudo</label>
+                                <div class="fileinput fileinput-new input-group" data-provides="fileinput">
+                                    <div class="form-control" data-trigger="fileinput">
+                                        <i class="fa fa-file fileinput-exists"></i>
+                                        <span class="fileinput-filename"></span>
+                                    </div>
+                                    <div class="input-group-append">
+                                        <span class="input-group-text btn btn-default btn-file">
+                                            <span class="fileinput-new">Selecionar arquivo</span>
+                                            <span class="fileinput-exists">Alterar</span>
+                                            <input type="file" name="shield_file" accept="image/*" required/>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="alert alert-info mt15">
+                                <h5>Instruções:</h5>
+                                <p>Selecione o time e o arquivo de imagem do escudo para importar.</p>
+                                <ul>
                                     <li>Formatos aceitos: PNG, JPG, JPEG</li>
-                                    <li>Tamanho máximo por arquivo: 2MB</li>
+                                    <li>Tamanho máximo: 2MB</li>
                                 </ul>
-                            </div>
-                            <div id="preview-container" class="mt-3">
-                                <!-- Aqui serão exibidos os previews das imagens -->
                             </div>
                         </div>
                         <div class="modal-footer">
-                            <button type="button" class="btn btn-white" data-dismiss="modal">Cancelar</button>
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fa fa-upload mr-2"></i>Importar
-                            </button>
+                            <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn btn-primary">Importar</button>
+                        </div>
+                    </form>
                 </div>
-            </form>
+            </div>
         </div>
-    </div>
-</div>
-		
+
         <!-- Mainly scripts -->
         <script src="{% static 'administrativo/js/jquery-3.4.1.min.js' %}"></script>
         <script src="{% static 'administrativo/js/popper.min.js' %}"></script>
@@ -342,350 +249,132 @@
         <!-- Custom and plugin javascript -->
         <script src="{% static 'administrativo/js/inspinia.js' %}"></script>
         <script src="{% static 'administrativo/js/plugins/pace/pace.min.js' %}"></script>
+        <!-- Jasny -->
         <script src="{% static 'administrativo/js/plugins/jasny/jasny-bootstrap.min.js' %}"></script>
+        <script src="{% static 'administrativo/js/plugins/toastr/toastr.min.js' %}"></script>
         <script src="{% static 'administrativo/js/plugins/checkAll/checkAll.js' %}"></script>
-        <script src="{% static 'administrativo/js/page-level.js' %}"></script>
-<script>
+        <script>
             $(document).ready(function() {
-                // Inicializa a tabela com DataTables
+                // Configurações do toastr
+                toastr.options = {
+                    closeButton: true,
+                    debug: false,
+                    progressBar: true,
+                    preventDuplicates: false,
+                    positionClass: "toast-top-right",
+                    onclick: null,
+                    showDuration: "400",
+                    hideDuration: "1000",
+                    timeOut: 4000,
+                    extendedTimeOut: "400",
+                    showEasing: "swing",
+                    hideEasing: "linear",
+                    showMethod: 'slideDown'
+                };
+
+                // Inicializa DataTables
                 var table = $('.dataTables-times');
                 if (!$.fn.DataTable.isDataTable(table)) {
                     table.DataTable({
-                        pageLength: 25,
+                        pageLength: 10,
                         responsive: true,
                         dom: '<"html5buttons"B>lTfgitp',
-                        buttons: [
-                            { extend: 'copy', text: 'Copiar' },
-                            { extend: 'csv' },
-                            { extend: 'excel', title: 'Times' },
-                            { extend: 'pdf', title: 'Times' },
-                            { extend: 'print', text: 'Imprimir',
-                                customize: function (win) {
-                                    $(win.document.body).addClass('white-bg');
-                                    $(win.document.body).css('font-size', '10px');
-                                    $(win.document.body).find('table')
-                                        .addClass('compact')
-                                        .css('font-size', 'inherit');
-                                }
-                            }
-                        ],
+                        buttons: [],
                         language: {
-                            url: "{% static 'administrativo/js/plugins/dataTables/i18n/Portuguese-Brasil.json' %}"
+                            url: "//cdn.datatables.net/plug-ins/1.10.19/i18n/Portuguese-Brasil.json"
                         }
                     });
                 }
 
-                // Manipulação de checkboxes
-                $('#check-all').on('change', function() {
-        $('.team-checkbox:not(:disabled)').prop('checked', $(this).prop('checked'));
-                    atualizarBotaoExcluirEmMassa();
+                // Handler para excluir time
+                $('.delete-btn').on('click', function() {
+                    var teamId = $(this).data('id');
+                    excluirTime(teamId);
                 });
 
-                $('.team-checkbox').on('change', function() {
-                    atualizarBotaoExcluirEmMassa();
-                });
+                // Mensagens do Django
+                {% if messages %}
+                    {% for message in messages %}
+                        toastr.{{ message.tags }}("{{ message }}");
+                    {% endfor %}
+                {% endif %}
+            });
 
-                function atualizarBotaoExcluirEmMassa() {
-                    var temSelecionado = $('.team-checkbox:checked').length > 0;
-                    $('#btn-excluir-em-massa').prop('disabled', !temSelecionado);
-                }
-
-                // Exclusão em massa
-                $('#btn-excluir-em-massa').on('click', function() {
-                    $('#modalExcluirEmMassa').modal('show');
-                });
-
-                $('#btn-confirmar-exclusao-em-massa').on('click', function() {
-                    var ids = $('.team-checkbox:checked').map(function() {
-                        return $(this).val();
-                    }).get();
-
-            $.ajax({
-                url: "{% url 'administrativo:time_excluir_em_massa' %}",
-                type: 'POST',
-                data: {
-                            ids: ids,
-                            csrfmiddlewaretoken: '{{ csrf_token }}'
+            // Função para excluir um time
+            function excluirTime(id) {
+                $('#modalAlert2').modal('show');
+                $('#modalAlert2 .btn-danger').off('click').on('click', function() {
+                    $.ajax({
+                        url: `/time/excluir/${id}/`,
+                        type: 'POST',
+                        headers: {
+                            'X-CSRFToken': $('[name=csrfmiddlewaretoken]').val()
                         },
                         success: function(response) {
+                            $('#modalAlert2').modal('hide');
                             if (response.success) {
-                                window.location.reload();
+                                $(`button[data-id="${id}"]`).closest('tr').fadeOut(400, function() {
+                                    $(this).remove();
+                                });
+                                toastr.success(response.message);
                             } else {
                                 toastr.error(response.message);
                             }
                         },
-                        error: function() {
-                            toastr.error('Erro ao excluir os times.');
+                        error: function(xhr, status, error) {
+                            $('#modalAlert2').modal('hide');
+                            toastr.error('Erro ao excluir time: ' + error);
                         }
                     });
                 });
+            }
 
-                // Exclusão individual
-                var timeIdParaExcluir;
-                var btnExcluir;
-
-                $('.btn-excluir').on('click', function() {
-                    timeIdParaExcluir = $(this).data('id');
-                    btnExcluir = $(this);
-                    $('#modalExcluir').modal('show');
+            // Função para excluir múltiplos times
+            function excluirSelecionados() {
+                const ids = [];
+                $('.check-item:checked').each(function() {
+                    ids.push($(this).val());
                 });
 
-                $('#btn-confirmar-exclusao').on('click', function() {
+                if (ids.length === 0) {
+                    toastr.warning('Selecione pelo menos um time para excluir');
+                    return;
+                }
+
+                $('#modalAlert').modal('show');
+                $('#modalAlert .btn-danger').off('click').on('click', function() {
                     $.ajax({
-                        url: btnExcluir.data('url'),
+                        url: "{% url 'administrativo:time_excluir_em_massa' %}",
                         type: 'POST',
                         data: {
-                            csrfmiddlewaretoken: '{{ csrf_token }}'
-                },
-                success: function(response) {
-                            $('#modalExcluir').modal('hide');
+                            'ids[]': ids,
+                            'csrfmiddlewaretoken': $('[name=csrfmiddlewaretoken]').val()
+                        },
+                        success: function(response) {
+                            $('#modalAlert').modal('hide');
                             if (response.success) {
-                                window.location.reload();
+                                ids.forEach(function(id) {
+                                    $(`input[value="${id}"]`).closest('tr').fadeOut(400, function() {
+                                        $(this).remove();
+                                    });
+                                });
+                                toastr.success(response.message);
                             } else {
                                 toastr.error(response.message);
                             }
                         },
                         error: function() {
-                            $('#modalExcluir').modal('hide');
-                            toastr.error('Erro ao excluir o time.');
+                            $('#modalAlert').modal('hide');
+                            toastr.error('Erro ao excluir times');
                         }
                     });
                 });
+            }
 
-                // Importação de times
-                $('#form-importar-times').on('submit', function(e) {
-                    e.preventDefault();
-                    var formData = new FormData(this);
-                    
-                    $.ajax({
-                        url: "{% url 'administrativo:time_importar' %}",
-                        type: 'POST',
-                        data: formData,
-                        processData: false,
-                        contentType: false,
-                        success: function(response) {
-                            if (response.success) {
-                                window.location.reload();
-                            } else {
-                                toastr.error(response.message);
-                            }
-                        },
-                        error: function() {
-                            toastr.error('Erro ao importar times.');
-                        }
-                    });
-                });
-
-                // Importação de escudos
-                $('#form-importar-escudos').on('submit', function(e) {
-                    e.preventDefault();
-                    var formData = new FormData(this);
-                    
-                    $.ajax({
-                        url: "{% url 'administrativo:time_importar_imagens' %}",
-                        type: 'POST',
-                        data: formData,
-                        processData: false,
-                        contentType: false,
-                        success: function(response) {
-                            if (response.success) {
-                                window.location.reload();
-                    } else {
-                        toastr.error(response.message);
-                    }
-                },
-                error: function() {
-                            toastr.error('Erro ao importar escudos.');
-                        }
-                    });
-                });
-
-                // Preview de imagens
-                $('input[name="images"][accept="image/*"]').on('change', function() {
-                    var files = this.files;
-                    var container = $('#preview-container');
-                    container.empty();
-
-                    for (var i = 0; i < files.length; i++) {
-                        var file = files[i];
-                        if (!file.type.startsWith('image/')) continue;
-
-                        var reader = new FileReader();
-                        var previewItem = $('<div class="preview-item">');
-                        var img = $('<img>');
-                        var removeBtn = $('<button type="button" class="remove-preview" title="Remover">&times;</button>');
-                        
-                        previewItem.append(img);
-                        previewItem.append(removeBtn);
-                        container.append(previewItem);
-
-                        (function(file, img) {
-                            reader.onload = function(e) {
-                                img.attr('src', e.target.result);
-                                img.attr('title', file.name);
-                            };
-                            reader.readAsDataURL(file);
-                        })(file, img);
-
-                        removeBtn.on('click', function() {
-                            $(this).closest('.preview-item').remove();
-            });
-        }
-    });
-
-                // Limpar previews quando o modal for fechado
-                $('#modalImportIMG').on('hidden.bs.modal', function() {
-                    $('#preview-container').empty();
-                    $('#form-importar-escudos')[0].reset();
-                });
+            // Checkbox "Selecionar todos"
+            $('.checkAll').on('change', function() {
+                $('.check-item').prop('checked', $(this).prop('checked'));
             });
         </script>
-        <style>
-            .modal-content {
-                border-radius: 8px;
-                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            }
-            .modal-header {
-                background-color: #f8f9fa;
-                border-top-left-radius: 8px;
-                border-top-right-radius: 8px;
-                border-bottom: 1px solid #eaeaea;
-            }
-            .modal-title {
-                color: #2f4050;
-                font-weight: 600;
-            }
-            .fileinput {
-                width: 100%;
-            }
-            .fileinput .form-control {
-                border-top-left-radius: 4px;
-                border-bottom-left-radius: 4px;
-            }
-            .input-group-text {
-                border-color: #e5e6e7;
-            }
-            .btn-file {
-                position: relative;
-                overflow: hidden;
-            }
-            .btn-file input[type=file] {
-                position: absolute;
-                top: 0;
-                right: 0;
-                min-width: 100%;
-                min-height: 100%;
-                font-size: 100px;
-                text-align: right;
-                opacity: 0;
-                outline: none;
-                background: white;
-                cursor: pointer;
-                display: block;
-            }
-            .alert-info {
-                background-color: #f8fafc;
-                border-color: #e5e9f2;
-            }
-            .alert-info h5 {
-                color: #2f4050;
-            }
-            .alert-info ul {
-                margin-left: 1.5rem;
-            }
-            .alert-info li {
-                margin-bottom: 0.5rem;
-                color: #5c6b7f;
-            }
-            .alert-info li strong {
-                color: #2f4050;
-            }
-            .modal-footer {
-                border-top: 1px solid #eaeaea;
-            }
-            .btn-action {
-                padding: 6px 12px;
-                border-radius: 3px;
-                border: none;
-                margin-right: 5px;
-            }
-            
-            .btn-edit {
-                background-color: #23c6c8;
-                color: white;
-            }
-            
-            .btn-edit:hover {
-                background-color: #1f9ea0;
-                color: white;
-            }
-            
-            .btn-delete {
-                background-color: #ed5565;
-                color: white;
-            }
-            
-            .btn-delete:hover {
-                background-color: #ec4758;
-                color: white;
-            }
-
-            .img-sm {
-                width: 32px;
-                height: 32px;
-                object-fit: contain;
-            }
-
-            #preview-container {
-                display: grid;
-                grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-                gap: 10px;
-                margin-top: 15px;
-            }
-
-            .preview-item {
-                position: relative;
-                width: 100px;
-                height: 100px;
-                border: 1px solid #ddd;
-                border-radius: 4px;
-                overflow: hidden;
-            }
-
-            .preview-item img {
-                width: 100%;
-                height: 100%;
-                object-fit: contain;
-            }
-
-            .preview-item .remove-preview {
-                position: absolute;
-                top: 5px;
-                right: 5px;
-                background: rgba(255,255,255,0.8);
-                border: none;
-                border-radius: 50%;
-                width: 20px;
-                height: 20px;
-                line-height: 20px;
-                text-align: center;
-                cursor: pointer;
-                color: #ed5565;
-            }
-
-            .preview-item .remove-preview:hover {
-                background: rgba(255,255,255,1);
-                color: #ec4758;
-            }
-
-            .center-middle {
-                text-align: center;
-                vertical-align: middle !important;
-            }
-
-            .checkbox.checkbox-success {
-                margin: 0;
-            }
-        </style>
     </body>
 </html>

@@ -167,6 +167,10 @@ SESSION_COOKIE_SECURE = False  # Permite cookies em conexões não-HTTPS em dese
 SESSION_COOKIE_HTTPONLY = True  # Previne acesso via JavaScript por segurança
 SESSION_COOKIE_SAMESITE = 'Lax'  # Configuração de segurança para cookies
 
+# Login settings
+LOGIN_URL = 'administrativo:login'
+LOGIN_REDIRECT_URL = 'administrativo:index'
+
 # CORS settings
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",  # React frontend
