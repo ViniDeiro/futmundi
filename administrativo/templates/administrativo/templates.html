@@ -310,7 +310,7 @@
                                                     <td>{{ template.created_at|date:"d/m/Y H:i" }}</td>
                                                     <td>
                                                         <a href="{% url 'administrativo:template_editar' template.id %}" class="btn btn-info btn-xs" title="Editar"><i class="glyphicon glyphicon-pencil"></i></a>
-                                                        <button type="button" class="btn btn-xs btn-toggle {% if template.enabled %}btn-danger{% else %}btn-success{% endif %}" data-template-id="{{ template.id }}" data-enabled="{{ template.enabled|yesno:'true,false' }}" title="{% if template.enabled %}Desativar{% else %}Ativar{% endif %}">
+                                                        <button type="button" class="btn btn-xs btn-toggle-template {% if template.enabled %}btn-danger{% else %}btn-success{% endif %}" data-template-id="{{ template.id }}" data-enabled="{{ template.enabled|yesno:'true,false' }}" title="{% if template.enabled %}Desativar{% else %}Ativar{% endif %}">
                                                             <i class="glyphicon glyphicon-{% if template.enabled %}remove{% else %}ok{% endif %}" style="color: white;"></i>
                                                         </button>
                                                         <a href="{% url 'administrativo:template_duplicar' template.id %}" class="btn btn-warning btn-xs btn-duplicate" title="Criar Cópia"><i class="glyphicon glyphicon-file"></i></a>
@@ -466,7 +466,7 @@
 
             $(document).ready(function() {
                 // Ativar/Desativar template
-                $('.btn-toggle').click(function(e) {
+                $('.btn-toggle-template').click(function(e) {
                     e.preventDefault(); // Previne o comportamento padrão
                     e.stopPropagation(); // Impede a propagação do evento
                     

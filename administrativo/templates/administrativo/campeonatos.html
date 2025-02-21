@@ -188,7 +188,7 @@
                                                     <td>{{ championship.created_at|date:"d/m/Y" }}</td>
                                                     <td>
                                                         <a href="{% url 'administrativo:campeonato_editar' championship.id %}" class="btn btn-info btn-xs" title="Editar"><i class="glyphicon glyphicon-pencil"></i></a>
-                                                        <button type="button" class="btn btn-success btn-xs btn-toggle" title="Ativar/Desativar" data-id="{{ championship.id }}">
+                                                        <button type="button" class="btn btn-success btn-xs btn-toggle-championship" title="Ativar/Desativar" data-id="{{ championship.id }}">
                                                             <i class="glyphicon glyphicon-{% if championship.is_active %}ok{% else %}remove{% endif %}"></i>
                                                         </button>
                                                         <a href="{% url 'administrativo:campeonato_resultados' championship.id %}" class="btn btn-warning btn-xs" title="Ver Resultados"><i class="glyphicon glyphicon-th"></i></a>
@@ -328,28 +328,9 @@
                     $('#modalExcluirMassa').modal('show');
                 };
 
-                // Configuração do botão de exclusão individual
-                $('.btn-excluir').click(function() {
-                    var stateId = $(this).data('id');
-                    var form = $('#formExcluirIndividual');
-                    form.attr('action', "{% url 'administrativo:campeonato_excluir' 0 %}".replace('0', stateId));
-                    $('#modalExcluirIndividual').modal('show');
-                });
-
-                // Checkbox "Selecionar todos"
-                $('.checkAll').on('change', function() {
-                    $('input[name="ids[]"]:not(:disabled)').prop('checked', $(this).prop('checked'));
-                });
-
-                // Atualiza o estado do "Selecionar todos" quando os checkboxes individuais são alterados
-                $(document).on('change', 'input[name="ids[]"]', function() {
-                    var totalCheckboxes = $('input[name="ids[]"]:not(:disabled)').length;
-                    var checkedCheckboxes = $('input[name="ids[]"]:checked').length;
-                    $('.checkAll').prop('checked', totalCheckboxes === checkedCheckboxes && totalCheckboxes > 0);
-                });
-
                 // Ativar/Desativar campeonato
-                $('.btn-toggle').on('click', function() {
+                $('.btn-toggle-championship').off('click').on('click', function(e) {
+                    e.stopPropagation();  // Impede propagação do evento
                     var btn = $(this);
                     var championshipId = btn.data('id');
                     
@@ -364,10 +345,10 @@
                             if (response.success) {
                                 var icon = btn.find('i');
                                 if (response.enabled) {
-                                    icon.removeClass('fa-times').addClass('fa-check');
+                                    icon.removeClass('glyphicon-remove').addClass('glyphicon-ok');
                                     btn.attr('title', 'Desativar');
                                 } else {
-                                    icon.removeClass('fa-check').addClass('fa-times');
+                                    icon.removeClass('glyphicon-ok').addClass('glyphicon-remove');
                                     btn.attr('title', 'Ativar');
                                 }
                                 toastr.success(response.message);
@@ -379,6 +360,26 @@
                             toastr.error('Erro ao alterar o status do campeonato.');
                         }
                     });
+                });
+
+                // Excluir campeonato
+                $('.btn-excluir').off('click').on('click', function(e) {
+                    e.stopPropagation();  // Impede propagação do evento
+                    var championshipId = $(this).data('id');
+                    var championshipName = $(this).data('name');
+                    excluirCampeonato(championshipId, championshipName);
+                });
+
+                // Checkbox "Selecionar todos"
+                $('.checkAll').on('change', function() {
+                    $('input[name="ids[]"]:not(:disabled)').prop('checked', $(this).prop('checked'));
+                });
+
+                // Atualiza o estado do "Selecionar todos" quando os checkboxes individuais são alterados
+                $(document).on('change', 'input[name="ids[]"]', function() {
+                    var totalCheckboxes = $('input[name="ids[]"]:not(:disabled)').length;
+                    var checkedCheckboxes = $('input[name="ids[]"]:checked').length;
+                    $('.checkAll').prop('checked', totalCheckboxes === checkedCheckboxes && totalCheckboxes > 0);
                 });
             });
         </script>
