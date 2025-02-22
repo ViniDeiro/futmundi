@@ -1,5 +1,6 @@
 from django.db import models
 from django.utils import timezone
+from django.templatetags.static import static
 
 class User(models.Model):
     PLAN_CHOICES = [
@@ -474,10 +475,10 @@ class Team(models.Model):
     """
     
     name = models.CharField(max_length=255)
-    image = models.CharField(max_length=255, null=True, blank=True)  # Caminho da imagem no storage
+    image = models.ImageField(upload_to='teams/shields/', null=True, blank=True)
     is_national_team = models.BooleanField(default=False)
     continent = models.ForeignKey('Continent', on_delete=models.PROTECT, null=True, blank=True)
-    country = models.ForeignKey('Country', on_delete=models.PROTECT, null=True, blank=True)
+    country = models.ForeignKey('Country', on_delete=models.PROTECT)
     state = models.ForeignKey('State', on_delete=models.PROTECT, null=True, blank=True)
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
@@ -512,14 +513,33 @@ class Team(models.Model):
         Retorna a URL da imagem do time ou a URL do escudo genérico.
         """
         if self.image:
-            return self.image
-        return 'static/administrativo/img/generic-shield.png'
+            return self.image.url
+        return '/static/administrativo/img/Generico.png'
+
+    def has_championships(self):
+        """
+        Verifica se o time tem campeonatos vinculados.
+        """
+        return Championship.objects.filter(teams=self).exists()
 
     def save(self, *args, **kwargs):
         # Se o país não tem estados, garante que state seja None
-        if not self.country.state_set.exists():
+        if self.country and not self.country.state_set.exists():
             self.state = None
+            
+        # Garante que o continente seja o mesmo do país
+        if self.country and self.country.continent:
+            self.continent = self.country.continent
+            
         super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        """
+        Remove a imagem do storage antes de excluir o time
+        """
+        if self.image:
+            self.image.delete(save=False)
+        super().delete(*args, **kwargs)
 
 # Pacotes
 class FutcoinPackage(models.Model):

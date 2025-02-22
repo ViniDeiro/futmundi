@@ -77,11 +77,7 @@
                                                     <td>{{ team.name }}</td>
                                                     <td>{{ team.country.name }}</td>
                                                     <td class="center-middle">
-                                                        {% if team.image %}
-                                                            <img src="{{ team.image.url }}" alt="{{ team.name }}" class="team-shield" style="max-width: 40px; max-height: 40px; object-fit: contain; display: block; margin: 0 auto;">
-                                                        {% else %}
-                                                            <span class="text-muted">Sem escudo</span>
-                                                        {% endif %}
+                                                        <img src="{{ team.get_image_url }}" alt="{{ team.name }}" class="team-shield" style="max-width: 40px; max-height: 40px; object-fit: contain; display: block; margin: 0 auto;">
                                                     </td>
                                                     <td>{{ team.created_at|date:"d/m/Y H:i" }}</td>
                                                     <td>
@@ -190,47 +186,26 @@
                 <div class="modal-content animated fadeIn">
                     <div class="modal-header">
                         <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
-                        <h4 class="modal-title">Importar Escudo</h4>
+                        <h4 class="modal-title">Importar Escudos</h4>
                     </div>
-                    <form id="formImportarEscudo" method="POST" action="{% url 'administrativo:time_importar' %}" enctype="multipart/form-data">
+                    <form id="formImportarEscudo" method="POST" action="{% url 'administrativo:time_importar_imagens' %}" enctype="multipart/form-data">
                         {% csrf_token %}
                         <div class="modal-body">
-                            <div class="form-group">
-                                <label for="team">Selecione o Time</label>
-                                <select class="form-control select2" name="team" id="team" required>
-                                    <option value="">Selecione um time</option>
-                                    {% for team in teams %}
-                                        <option value="{{ team.id }}">{{ team.name }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label for="shield_file">Selecione o escudo</label>
-                                <div class="fileinput fileinput-new input-group" data-provides="fileinput">
-                                    <div class="form-control" data-trigger="fileinput">
-                                        <i class="fa fa-file fileinput-exists"></i>
-                                        <span class="fileinput-filename"></span>
-                                    </div>
-                                    <div class="input-group-append">
-                                        <span class="input-group-text btn btn-default btn-file">
-                                            <span class="fileinput-new">Selecionar arquivo</span>
-                                            <span class="fileinput-exists">Alterar</span>
-                                            <input type="file" name="shield_file" accept="image/*" required/>
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="alert alert-info mt15">
-                                <h5>Instruções:</h5>
-                                <p>Selecione o time e o arquivo de imagem do escudo para importar.</p>
+                            <div class="alert alert-info">
+                                <p><strong>Instruções:</strong></p>
                                 <ul>
+                                    <li>O nome do arquivo deve ser igual ao nome do time</li>
                                     <li>Formatos aceitos: PNG, JPG, JPEG</li>
-                                    <li>Tamanho máximo: 2MB</li>
+                                    <li>Tamanho máximo por arquivo: 2MB</li>
                                 </ul>
+                            </div>
+                            <div class="form-group">
+                                <label for="images">Selecione as Imagens</label>
+                                <input type="file" class="form-control" name="images" id="images" accept="image/*" multiple required>
                             </div>
                         </div>
                         <div class="modal-footer">
-                            <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
+                            <button type="button" class="btn btn-white" data-dismiss="modal">Cancelar</button>
                             <button type="submit" class="btn btn-primary">Importar</button>
                         </div>
                     </form>
@@ -305,7 +280,7 @@
                 $('#modalAlert2').modal('show');
                 $('#modalAlert2 .btn-danger').off('click').on('click', function() {
                     $.ajax({
-                        url: `/time/excluir/${id}/`,
+                        url: "{% url 'administrativo:time_excluir' 0 %}".replace('0', id),
                         type: 'POST',
                         headers: {
                             'X-CSRFToken': $('[name=csrfmiddlewaretoken]').val()
@@ -353,12 +328,42 @@
                         success: function(response) {
                             $('#modalAlert').modal('hide');
                             if (response.success) {
-                                ids.forEach(function(id) {
-                                    $(`input[value="${id}"]`).closest('tr').fadeOut(400, function() {
-                                        $(this).remove();
-                                    });
-                                });
                                 toastr.success(response.message);
+                                
+                                var table = $('.dataTables-times').DataTable();
+                                
+                                if (response.deleted > 0) {
+                                    ids.forEach(function(id) {
+                                        var row = $(`input[value="${id}"]`).closest('tr');
+                                        var teamName = row.find('td:eq(1)').text();
+                                        var canDelete = true;
+                                        
+                                        if (response.errors && response.errors.length > 0) {
+                                            for (var i = 0; i < response.errors.length; i++) {
+                                                if (response.errors[i].includes(teamName)) {
+                                                    canDelete = false;
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                        
+                                        if (canDelete) {
+                                            table.row(row).remove().draw(false);
+                                        }
+                                    });
+                                }
+                                
+                                if (response.errors && response.errors.length > 0) {
+                                    response.errors.forEach(function(error) {
+                                        toastr.warning(error);
+                                    });
+                                }
+                                
+                                $('.checkAll').prop('checked', false);
+                                
+                                if (table.data().count() === 0) {
+                                    table.clear().draw();
+                                }
                             } else {
                                 toastr.error(response.message);
                             }

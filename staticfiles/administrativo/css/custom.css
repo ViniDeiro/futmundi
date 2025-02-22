@@ -1,0 +1,492 @@
+/*Diminuição padding logo menu*/
+.nav-header {
+  padding: 15px 25px;
+}
+
+/*Grupos de botões acima da tabela*/
+.group-options-left {
+  float: left;
+  padding: 10px;
+}
+
+.group-options-right {
+  float: right;
+  padding: 10px;
+}
+
+/*Aplicar cor quando ativar checkbox na tabela*/
+table.table tbody tr.selected {
+    background-color: #f0f0f0;
+}
+
+/*Diminuir padding cabeçalho e corpo da modal*/
+.inmodal .modal-header {
+    padding: 10px 15px;
+    text-align: center;
+    display: block;
+}
+
+.modal-body {
+    padding: 20px;
+}
+
+.inmodal .modal-title {
+    font-size: 22px;
+}
+
+/*Centralizar horizontal/vertical*/
+.center-middle {
+  text-align: center !important;
+  vertical-align: middle !important;
+}
+
+/*Alinhar elemento horizontalmente ao centro*/
+.center-horizontally {
+    text-align: center
+}
+
+/*Implementar mover placeholder para o topo do campo quando há informações digitadas no campo*/
+/*Inicio*/
+.form-group {
+  position: relative;
+  margin-bottom: 1.5rem;
+}
+
+.form-control-placeholder {
+  font-weight: normal;
+  position: absolute;
+  top: 0;
+  padding: 7px 0 0 13px;
+  transition: all 200ms;
+  opacity: 0.8;
+}
+
+.form-control:focus + .form-control-placeholder,
+.form-control:valid + .form-control-placeholder {
+  font-size: 75%;
+  transform: translate3d(0, -100%, 0);
+  opacity: 1;
+  padding: 7px 0 0 1px;
+}
+/*Fim*/
+
+/*Colocar nome do campo fixo acima do input em comboboxes e textareas*/
+.control-label {
+  opacity: 0.9;
+  font-size: 75%;
+  margin-bottom: 0;
+}
+
+/*Configuração cor fonte texto tabela*/
+.table {
+    color: #686B6D;
+}
+
+/*Card Inicio*/
+.card {
+  position: relative;
+  display: block;
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+  flex-direction: column;
+  min-width: 0px;
+  overflow-wrap: break-word;
+  background-color: rgb(255, 255, 255);
+  background-clip: border-box;
+  border-width: 1px;
+  border-style: solid;
+  border-image: initial;
+  border-radius: 0.25rem;
+}
+
+.card-heading {
+    padding: 5px 5px;
+    color: #495057;
+    text-align: center;
+}
+
+.card-large {
+  width: 130px;
+  height: 160px;
+  margin: 0 0 0 10px;
+}
+
+.card-small {
+  width: 90px;
+  height: 90px;
+  margin-bottom: 15px;
+}
+
+.ui-card-shadow {
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.2), 0 1px 1px 0 rgba(0, 0, 0, 0.14),
+    0 2px 1px -1px rgba(0, 0, 0, 0.12);
+  -webkit-box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.2),
+    0 1px 1px 0 rgba(0, 0, 0, 0.14), 0 2px 1px -1px rgba(0, 0, 0, 0.12);
+  -moz-box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.2),
+    0 1px 1px 0 rgba(0, 0, 0, 0.14), 0 2px 1px -1px rgba(0, 0, 0, 0.12);
+}
+
+.ui-widget {
+  box-sizing: border-box;
+  display: inline-block;
+}
+
+.ui-widget-content {
+  background-color: #ffffff;
+  border: 1px solid #b6b7c2;
+}
+
+.ui-corner-all {
+  -moz-border-radius: 2px;
+  -webkit-border-radius: 2px;
+  border-radius: 2px;
+}
+
+/*Conteudo Card*/
+.input-image[type="file"] {
+  outline: 0;
+  opacity: 0;
+  pointer-events: none;
+  user-select: none;
+}
+
+.card-content {
+  height: 50px;
+  padding: 0px;
+}
+
+.label-card {
+  background-color: white;
+  border: 2px dashed grey;
+  border-radius: 5px;
+  display: block;
+  padding: 1.2em;
+  transition: border 300ms ease;
+  cursor: pointer;
+  margin-left: 15%;
+  margin: 0 auto;
+}
+
+.label-card-large {
+  width: 60px;
+  height: 60px;
+}
+
+.label-card-small {
+  position: relative;
+  width: 40px;
+  height: 40px;
+}
+
+.label-card-large i {
+  display: block;
+  font-size: 30px;
+  padding-bottom: 16px;
+  margin: 0 0 0 0;
+}
+
+.label-card-small i {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 24px;
+}
+
+.label-card i,
+.label-card {
+  color: grey;
+  transition: 200ms color;
+}
+
+.label-card:hover {
+  border: 2px solid black;
+}
+
+.label-card:hover i,
+.label-card:hover {
+  color: black;
+}
+
+/*Rodapé Card*/
+.card-footer {
+  background-color: transparent;
+  border-color: transparent;
+  padding-top: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+/* Card Fim */
+
+/*Correcoes input futcashes na aba Login apos colocar input type como number*/
+.card-footer input {
+  width: 80px;
+}
+
+.input-group-addon {
+    height: 33px;
+    background-color: #f4f4f4;
+    border: 1px solid #bfc7cc;
+}
+
+/*Retirada da borda arredondada do panel para usar o panel com o botão de salvar abaixo das páginas com abas*/
+.panel {
+    border-radius: 0;
+}
+
+/* Mudança tamanho fonte combobox */
+.form-control {
+    font-size: 0.8rem;
+}
+
+/* Configuração largura linha tabela pequena */
+.table-small {
+    width: 50%;
+}
+
+/* Centralizar conteúdo widget relatórios acessos */
+.widget-content-center {
+	display: flex;
+	align-items: center;
+}
+
+.text-muted {
+  color: #777777 !important;
+}
+
+/* Diminuição intensidade negrito nas descricoes das informações na tela de usuário editar */
+dt {
+    font-weight: 600;
+}
+
+/* Configurações Timeline */
+.vertical-timeline-content h2 {
+    margin-top: 0px;
+    margin-bottom: 5px;
+    margin-left: 15px;
+}
+
+.vertical-timeline-content p {
+    margin: 0em 0;
+}
+
+/*DL, DT, DD TAGS LIST DATA*/
+.list dt {
+  background: #29b6d8;
+  color: #fff;
+  float: left;
+  font-weight: normal;
+  padding: 4px;
+  margin-right: 2px;
+  width: 106px;
+  box-sizing: initial;
+}
+
+.list dd {
+  padding: 5px 3px;
+  display:table-cell;
+  vertical-align:middle;
+}
+
+/* Configurações Dropdown do select2 para ficar igual ao padrão Bootstrap 4 */
+.select2-container--default .select2-selection--single, .select2-container--default .select2-selection--multiple {
+    border-color: #bfc7cc;
+}
+
+.select2-container--default .select2-selection--single {
+    background-color: #fff;
+    border: 1px solid #bfc7cc;
+    border-radius: 1px;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__rendered {
+    color: #666;
+}
+
+.select2-container .select2-selection--single {
+    height: 33px;
+    padding: 2px 10px;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__arrow {
+    top: 4px;
+    right: 0px; 
+}
+
+.select2-container--default .select2-selection--single .select2-selection__arrow b {
+    border-color: #676A6C transparent transparent transparent;
+    border-width: 6px 3px 0 3px;
+}
+
+.select2-container .select2-selection--single .select2-selection__rendered {
+    padding-left: 2px;
+}
+
+/* Configurações DualListBox */
+.bootstrap-duallistbox-container label {
+    display: unset;
+    font-weight: 600;
+}
+
+.bootstrap-duallistbox-container .info-container {
+    float: right;
+}
+
+.bootstrap-duallistbox-container .info {
+    margin-right: 5px;
+}
+
+.bootstrap-duallistbox-container .box1.filtered .clear1, .bootstrap-duallistbox-container .box2.filtered .clear2 {
+    margin-bottom: 1px;
+}
+
+/* Configurações campos tela Novo Campeonato, aba Rodadas */
+.datetimepicker-input {
+    width: 65%;
+}
+
+.img-xm {
+  width: 24px;
+  height: 24px;
+}
+
+.placar {
+  width: 40px;
+}
+
+/* Configurações campos placares para deixar o texto centralizado */
+.form-control, .single-line {
+    padding: 6px 8px;
+}
+
+/*Ocultar arrows do input type number*/
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/*Mudar cor header tablelas impulsos*/
+#header-alav th {
+  background-color: #c3e6cb;
+  color: #333;
+}
+
+#header-seg th {
+  background-color: #f5c6cb;
+  color: #333;
+}
+
+/* Classes de largura percentual */
+.per5 { width: 5% !important; }
+.per10 { width: 10% !important; }
+.per15 { width: 15% !important; }
+.per20 { width: 20% !important; }
+
+/* Estilo para tabelas */
+.table-responsive {
+    overflow-x: auto;
+}
+
+.table thead th {
+    vertical-align: middle;
+    background-color: #f5f5f6;
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+/* Estilos para o modal */
+.modal-dialog-centered {
+    display: flex;
+    align-items: center;
+    min-height: calc(100% - 1rem);
+}
+
+.modal-content {
+    border-radius: 4px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.modal-header {
+    background-color: #f8f9fa;
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+    border-bottom: 1px solid #eaeaea;
+    padding: 15px;
+}
+
+.modal-title {
+    color: #2f4050;
+    font-weight: 600;
+    margin: 0;
+}
+
+.modal-footer {
+    border-top: 1px solid #eaeaea;
+    padding: 15px;
+}
+
+.btn-file {
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-file input[type=file] {
+    position: absolute;
+    top: 0;
+    right: 0;
+    min-width: 100%;
+    min-height: 100%;
+    font-size: 100px;
+    text-align: right;
+    opacity: 0;
+    outline: none;
+    background: white;
+    cursor: pointer;
+    display: block;
+}
+
+.alert-info {
+    margin-top: 15px;
+    margin-bottom: 15px;
+    padding: 15px;
+    display: block !important;
+}
+
+.alert-info h5 {
+    margin-bottom: 10px;
+    font-weight: bold;
+}
+
+.alert-info ul {
+    margin-bottom: 0;
+    padding-left: 20px;
+}
+
+.alert-info li {
+    margin-bottom: 5px;
+}
+
+/* Estilos para drag and drop de fases */
+.drag-handle {
+    cursor: move;
+    padding: 5px;
+    color: #666;
+}
+
+.drag-handle:hover {
+    color: #333;
+}
+
+.sortable-ghost {
+    opacity: 0.4;
+    background-color: #f8f9fa;
+}
+
+.sortable-chosen {
+    background-color: #fff;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}

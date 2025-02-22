@@ -37,7 +37,7 @@
                             <div class="ibox-content">
                                 <div class="row mt10">
                                     <div class="col-lg-4">
-                                        <form id="team-form" method="post" action="{% url 'administrativo:time_editar' team.id %}" enctype="multipart/form-data" class="mt10">
+                                        <form id="team-form" method="post" action="{% url 'administrativo:time_editar' team.id %}" enctype="multipart/form-data">
                                             {% csrf_token %}
                                             <div class="form-group col-lg-8">
                                                 <input type="text" id="name" name="name" class="form-control" value="{{ team.name }}" required>
@@ -47,34 +47,34 @@
                                                 <div class="card-heading">
                                                     <h5>Escudo</h5>
                                                 </div>
-                                                <div class="card-content">
-                                                    <label class="label-card label-card-small">
-                                                        <i class="fa fa-file-image-o label-content" style="cursor:pointer;"></i>
-                                                        <input type="file" id="image" name="image" class="input-image" accept="image/*">
-                                                    </label>
-                                                    {% if team.image %}
-                                                    <div class="mt-2">
-                                                        <img src="{{ team.image.url }}" alt="{{ team.name }}" style="max-height: 100px;">
-                                                        <div class="checkbox mt-2">
-                                                            <label>
-                                                                <input type="checkbox" name="remove_image" id="remove_image"> Remover imagem
-                                                            </label>
-                                                        </div>
+                                                <div class="card-content" style="position: relative; padding: 0;">
+                                                    <div id="image-preview" style="display: flex; justify-content: center; padding: 0; margin-top: -15px;">
+                                                        {% if team.image %}
+                                                            <img src="{{ team.image.url }}" alt="{{ team.name }}" style="max-width: 80px; max-height: 80px; object-fit: contain; cursor: pointer;" onclick="document.getElementById('image').click()">
+                                                            <button type="button" class="btn btn-danger btn-xs" id="remove_image_btn" style="position: absolute; bottom: -15px; right: -30px;">
+                                                                <i class="fa fa-trash"></i>
+                                                            </button>
+                                                            <input type="checkbox" name="remove_image" id="remove_image" style="display: none;">
+                                                        {% else %}
+                                                            <i class="fa fa-file-image-o" style="font-size: 48px; color: #ccc; cursor: pointer;" onclick="document.getElementById('image').click()"></i>
+                                                        {% endif %}
                                                     </div>
-                                                    {% endif %}
-                                                    <div id="image-preview" class="mt-2"></div>
+                                                    <input type="file" id="image" name="image" class="input-image" accept="image/*" style="display: none;">
                                                 </div>                              
                                             </div>
                                             <div>
                                                 <button type="submit" class="btn btn-success ml15"><i class="glyphicon glyphicon-save mr5"></i> Salvar</button>
                                                 <a href="{% url 'administrativo:times' %}" class="btn btn-danger ml15"><i class="fa fa-ban mr5"></i> Cancelar</a>
                                             </div>
+                                            <input type="hidden" name="country" id="country_hidden">
+                                            <input type="hidden" name="state" id="state_hidden">
+                                            <input type="hidden" name="is_national_team" id="is_national_team_hidden" value="false">
                                         </form>
                                     </div>
                                     <div class="col-lg-2 mlm50 mtm10 mr20">
                                         <div class="mt5">
                                             <label class="control-label" for="country">País</label>
-                                            <select class="form-control select2" id="country" name="country" required>
+                                            <select class="form-control select2" id="country" required>
                                                 <option value="">Selecione um país</option>
                                                 {% for country in countries %}
                                                     <option value="{{ country.id }}" {% if team.country.id == country.id %}selected{% endif %}>{{ country.name }}</option>
@@ -83,7 +83,7 @@
                                         </div>
                                         <div class="mt5">
                                             <label class="control-label" for="state">Estado</label>
-                                            <select class="form-control select2" id="state" name="state">
+                                            <select class="form-control select2" id="state">
                                                 <option value="">Selecione um estado</option>
                                                 {% for state in states %}
                                                     <option value="{{ state.id }}" {% if team.state and team.state.id == state.id %}selected{% endif %}>{{ state.name }}</option>
@@ -93,7 +93,7 @@
                                         <div class="row">
                                             <div class="col-lg-12 mt15">
                                                 <div class="i-checks">
-                                                    <label><input type="checkbox" name="is_national" id="is_national" {% if team.is_national %}checked{% endif %}> É seleção</label>
+                                                    <label><input type="checkbox" id="is_national_team" {% if team.is_national_team %}checked{% endif %}> É seleção</label>
                                                 </div>
                                             </div>                                               
                                         </div>
@@ -144,15 +144,40 @@
                     if (file) {
                         var reader = new FileReader();
                         reader.onload = function(e) {
-                            $('#image-preview').html('<img src="' + e.target.result + '" style="max-height: 100px;">');
+                            $('#image-preview').html(`
+                                <img src="${e.target.result}" style="max-width: 80px; max-height: 80px; object-fit: contain; cursor: pointer;" onclick="document.getElementById('image').click()">
+                                <button type="button" class="btn btn-danger btn-xs" id="remove_image_btn" style="position: absolute; bottom: -15px; right: -30px;">
+                                    <i class="fa fa-trash"></i>
+                                </button>
+                                <input type="checkbox" name="remove_image" id="remove_image" style="display: none;">
+                            `);
+                            $('#image-preview').css('margin-top', '-15px');
+                            
+                            // Adiciona o handler do botão remover
+                            $('#remove_image_btn').click(function() {
+                                $('#remove_image').prop('checked', true);
+                                $('#image-preview').html(`
+                                    <i class="fa fa-file-image-o" style="font-size: 48px; color: #ccc; cursor: pointer;" onclick="document.getElementById('image').click()"></i>
+                                `);
+                            });
                         }
                         reader.readAsDataURL(file);
                     }
                 });
 
+                // Handler do botão remover
+                $('#remove_image_btn').click(function() {
+                    $('#remove_image').prop('checked', true);
+                    $('#image-preview').html(`
+                        <i class="fa fa-file-image-o" style="font-size: 48px; color: #ccc; cursor: pointer;" onclick="document.getElementById('image').click()"></i>
+                    `);
+                    $('#image').val('');
+                });
+
                 // Carrega estados quando país é selecionado
                 $('#country').on('change', function() {
                     var countryId = $(this).val();
+                    $('#country_hidden').val(countryId);
                     if (countryId) {
                         $.ajax({
                             url: "{% url 'administrativo:get_states_by_country' %}",
@@ -168,10 +193,18 @@
                     }
                 });
 
+                // Sincroniza estado quando alterado
+                $('#state').on('change', function() {
+                    $('#state_hidden').val($(this).val());
+                });
+
                 // Desabilita estado se for seleção nacional
-                $('#is_national').change(function() {
-                    if ($(this).is(':checked')) {
+                $('#is_national_team').change(function() {
+                    var isNational = $(this).is(':checked');
+                    $('#is_national_team_hidden').val(isNational);
+                    if (isNational) {
                         $('#state').val('').prop('disabled', true);
+                        $('#state_hidden').val('');
                     } else {
                         $('#state').prop('disabled', false);
                     }
@@ -181,6 +214,11 @@
                 $('#remove_image').change(function() {
                     $('#image').prop('disabled', $(this).is(':checked'));
                 });
+
+                // Inicializa os campos ocultos com os valores atuais
+                $('#country_hidden').val($('#country').val());
+                $('#state_hidden').val($('#state').val());
+                $('#is_national_team_hidden').val($('#is_national_team').is(':checked'));
 
                 // Configurações do toastr
                 toastr.options = {
@@ -205,9 +243,11 @@
                         success: function(response) {
                             if (response.success) {
                                 toastr.success(response.message);
-                                setTimeout(function() {
-                                    window.location.href = "{% url 'administrativo:times' %}";
-                                }, 1000);
+                                if (response.redirect_url) {
+                                    setTimeout(function() {
+                                        window.location.href = response.redirect_url;
+                                    }, 1000);
+                                }
                             } else {
                                 toastr.error(response.message);
                             }

@@ -35,10 +35,10 @@
                     <div class="row">
                         <div class="col-lg-12">
                             <div class="ibox-content">
-                                <div class="row mt10">
-                                    <div class="col-lg-4">
-                                        <form id="team-form" method="post" action="{% url 'administrativo:time_novo' %}" enctype="multipart/form-data" class="mt10">
-                                            {% csrf_token %}
+                                <form id="team-form" method="post" action="{% url 'administrativo:time_novo' %}" enctype="multipart/form-data" class="mt10">
+                                    {% csrf_token %}
+                                    <div class="row mt10">
+                                        <div class="col-lg-4">
                                             <div class="form-group col-lg-8">
                                                 <input type="text" id="name" name="name" class="form-control" required>
                                                 <label class="form-control-placeholder" for="name">Nome</label>
@@ -47,47 +47,46 @@
                                                 <div class="card-heading">
                                                     <h5>Escudo</h5>
                                                 </div>
-                                                <div class="card-content">
-                                                    <label class="label-card label-card-small">
-                                                        <i class="fa fa-file-image-o label-content" style="cursor:pointer;"></i>
-                                                        <input type="file" id="image" name="image" class="input-image" accept="image/*" required>
-                                                    </label>
-                                                    <div id="image-preview" class="mt-2"></div>
+                                                <div class="card-content text-center">
+                                                    <div id="image-preview" style="display: flex; align-items: center; justify-content: center; padding: 0 10px 10px 10px; margin-top: -10px;">
+                                                        <i class="fa fa-file-image-o" style="font-size: 48px; color: #ccc; cursor: pointer;" onclick="document.getElementById('image').click()"></i>
+                                                    </div>
+                                                    <input type="file" id="image" name="image" class="input-image" accept="image/*" style="display: none;">
                                                 </div>                              
                                             </div>
-                                            <div>
-                                                <button type="submit" class="btn btn-success ml15"><i class="glyphicon glyphicon-save mr5"></i> Salvar</button>
-                                                <a href="{% url 'administrativo:times' %}" class="btn btn-danger ml15"><i class="fa fa-ban mr5"></i> Cancelar</a>
+                                        </div>
+                                        <div class="col-lg-2 mlm50 mtm10 mr20">
+                                            <div class="mt5">
+                                                <label class="control-label" for="country">País</label>
+                                                <select class="form-control select2" id="country" name="country" required>
+                                                    <option value="">Selecione um país</option>
+                                                    {% for country in countries %}
+                                                        <option value="{{ country.id }}">{{ country.name }}</option>
+                                                    {% endfor %}
+                                                </select>                                         
                                             </div>
-                                        </form>
-                                    </div>
-                                    <div class="col-lg-2 mlm50 mtm10 mr20">
-                                        <div class="mt5">
-                                            <label class="control-label" for="country">País</label>
-                                            <select class="form-control select2" id="country" name="country" required>
-                                                <option value="">Selecione um país</option>
-                                                {% for country in countries %}
-                                                    <option value="{{ country.id }}">{{ country.name }}</option>
-                                                {% endfor %}
-                                            </select>                                         
-                                        </div>
-                                        <div class="mt5">
-                                            <label class="control-label" for="state">Estado</label>
-                                            <select class="form-control select2" id="state" name="state">
-                                                <option value="">Selecione um estado</option>
-                                            </select>                                       
-                                        </div>
-                                        <div class="row">
-                                            <div class="col-lg-12 mt15">
-                                                <div class="i-checks">
-                                                    <label><input type="checkbox" name="is_national" id="is_national"> É seleção</label>
-                                                </div>
-                                            </div>                                               
+                                            <div class="mt5" id="state-container">
+                                                <label class="control-label" for="state">Estado</label>
+                                                <select class="form-control select2" id="state" name="state">
+                                                    <option value="">Selecione um estado</option>
+                                                </select>                                       
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-lg-12 mt15">
+                                                    <div class="i-checks">
+                                                        <label><input type="checkbox" name="is_national_team" id="is_national_team"> É seleção</label>
+                                                    </div>
+                                                </div>                                               
+                                            </div>
                                         </div>
                                     </div>
-                                    <div class="col-lg-4 ml30 mt10">
+                                    <div class="row mt-3">
+                                        <div class="col-lg-6">
+                                            <button type="submit" class="btn btn-success ml15"><i class="glyphicon glyphicon-save mr5"></i> Salvar</button>
+                                            <a href="{% url 'administrativo:times' %}" class="btn btn-danger ml15"><i class="fa fa-ban mr5"></i> Cancelar</a>
+                                        </div>
                                     </div>
-                                </div>
+                                </form>
                             </div>
                         </div>
                     </div>
@@ -117,7 +116,7 @@
                     if (file) {
                         var reader = new FileReader();
                         reader.onload = function(e) {
-                            $('#image-preview').html('<img src="' + e.target.result + '" style="max-height: 100px;">');
+                            $('#image-preview').html('<img src="' + e.target.result + '" style="max-width: 80px; max-height: 80px; object-fit: contain;">');
                         }
                         reader.readAsDataURL(file);
                     }
@@ -129,17 +128,50 @@
                     if (countryId) {
                         $.ajax({
                             url: "{% url 'administrativo:get_states_by_country' %}",
-                            data: { country_id: countryId },
+                            type: 'POST',
+                            data: { 
+                                country_id: countryId,
+                                csrfmiddlewaretoken: $('[name=csrfmiddlewaretoken]').val()
+                            },
                             success: function(data) {
-                                var stateSelect = $('#state');
-                                stateSelect.empty().append('<option value="">Selecione um estado</option>');
-                                data.states.forEach(function(state) {
-                                    stateSelect.append(`<option value="${state.id}">${state.name}</option>`);
-                                });
+                                if (data.success) {
+                                    var stateSelect = $('#state');
+                                    stateSelect.empty().append('<option value="">Selecione um estado</option>');
+                                    data.states.forEach(function(state) {
+                                        stateSelect.append(`<option value="${state.id}">${state.name}</option>`);
+                                    });
+                                } else {
+                                    toastr.error(data.message || 'Erro ao carregar estados');
+                                }
+                                
+                                // Mostra/esconde o campo de estado com base no checkbox
+                                toggleStateField();
+                            },
+                            error: function() {
+                                toastr.error('Erro ao carregar estados');
                             }
                         });
+                    } else {
+                        var stateSelect = $('#state');
+                        stateSelect.empty().append('<option value="">Selecione um estado</option>');
+                        toggleStateField();
                     }
                 });
+
+                // Toggle do campo de estado quando marca/desmarca "É seleção"
+                $('#is_national_team').on('change', function() {
+                    toggleStateField();
+                });
+
+                function toggleStateField() {
+                    var isNationalTeam = $('#is_national_team').is(':checked');
+                    if (isNationalTeam) {
+                        $('#state-container').hide();
+                        $('#state').val('').trigger('change');
+                    } else {
+                        $('#state-container').show();
+                    }
+                }
 
                 // Configurações do toastr
                 toastr.options = {
@@ -152,6 +184,14 @@
                 // Validação e envio do formulário
                 $('#team-form').on('submit', function(e) {
                     e.preventDefault();
+                    
+                    var isNationalTeam = $('#is_national_team').is(':checked');
+                    var state = $('#state').val();
+                    
+                    if (!isNationalTeam && !state) {
+                        toastr.error('O estado é obrigatório para times que não são seleções');
+                        return false;
+                    }
                     
                     var formData = new FormData(this);
                     
@@ -183,6 +223,9 @@
                         toastr.{{ message.tags }}("{{ message }}");
                     {% endfor %}
                 {% endif %}
+
+                // Inicializa o estado do campo de estado
+                toggleStateField();
             });
         </script>
     </body>

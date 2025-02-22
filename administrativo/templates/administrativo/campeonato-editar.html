@@ -1,240 +1,250 @@
-{% extends 'administrativo/base.html' %}
 {% load static %}
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-{% block extra_css %}
-<link rel="stylesheet" href="{% static 'administrativo/plugins/toastr/toastr.min.css' %}">
-<link rel="stylesheet" href="{% static 'administrativo/plugins/select2/css/select2.min.css' %}">
-<link rel="stylesheet" href="{% static 'administrativo/plugins/select2-bootstrap4-theme/select2-bootstrap4.min.css' %}">
-<link rel="stylesheet" href="{% static 'administrativo/plugins/duallistbox/bootstrap-duallistbox.min.css' %}">
-<link rel="stylesheet" href="{% static 'administrativo/plugins/icheck-bootstrap/icheck-bootstrap.min.css' %}">
-{% endblock %}
+        <title>Editar Campeonato</title>
 
-{% block content %}
-<div class="content-wrapper">
-    <section class="content-header">
-        <div class="container-fluid">
-            <div class="row mb-2">
-                <div class="col-sm-6">
-                    <h1>Editar Campeonato</h1>
+        <link href="{% static 'administrativo/css/bootstrap.min.css' %}" rel="stylesheet">
+        <link href="{% static 'administrativo/font-awesome/css/font-awesome.css' %}" rel="stylesheet">
+        <link href="{% static 'administrativo/css/plugins/toastr/toastr.min.css' %}" rel="stylesheet">
+        <link href="{% static 'administrativo/css/plugins/select2/select2.min.css' %}" rel="stylesheet">
+        <link href="{% static 'administrativo/css/animate.css' %}" rel="stylesheet">
+        <link href="{% static 'administrativo/css/style.css' %}" rel="stylesheet">
+        <!-- Custom -->      
+        <link href="{% static 'administrativo/css/custom.css' %}" rel="stylesheet">
+        <!-- Favicon -->
+        <link rel="icon" href="{% static 'administrativo/img/futmundi.ico' %}" type="image/png">
+    </head>
+    <body>
+        <div id="wrapper">
+            {% include 'administrativo/menu.html' %}
+            <div id="page-wrapper" class="gray-bg">
+                {% include 'administrativo/header.html' %}
+                <div class="row wrapper border-bottom white-bg page-heading">
+                    <div class="col-lg-10">
+                        <h2>Editar Campeonato</h2>
+                    </div>
                 </div>
-                <div class="col-sm-6">
-                    <ol class="breadcrumb float-sm-right">
-                        <li class="breadcrumb-item"><a href="{% url 'administrativo:index' %}">Home</a></li>
-                        <li class="breadcrumb-item"><a href="{% url 'administrativo:campeonatos' %}">Campeonatos</a></li>
-                        <li class="breadcrumb-item active">Editar Campeonato</li>
-                    </ol>
-                </div>
-            </div>
-        </div>
-    </section>
+                <div class="wrapper wrapper-content">
+                    <div class="row">
+                        <div class="col-lg-12">
+                            <div class="ibox">
+                                <div class="ibox-content">
+                                    <h3>Informações do Campeonato</h3>
+                                    <div class="row mt10">
+                                        <div class="col-lg-12">
+                                            <form id="formCampeonato" method="post" action="{% url 'administrativo:campeonato_editar' championship.id %}">
+                                                {% csrf_token %}
+                                                <div class="row">
+                                                    <div class="col-lg-6">
+                                                        <div class="form-group">
+                                                            <label for="name">Nome *</label>
+                                                            <input type="text" class="form-control" id="name" name="name" value="{{ championship.name }}" required>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-lg-6">
+                                                        <div class="form-group">
+                                                            <label for="season">Temporada *</label>
+                                                            <input type="text" class="form-control" id="season" name="season" value="{{ championship.season }}" required>
+                                                        </div>
+                                                    </div>
+                                                </div>
 
-    <section class="content">
-        <div class="container-fluid">
-            <div class="row">
-                <div class="col-12">
-                    <div class="card">
-                        <div class="card-header">
-                            <h3 class="card-title">Informações do Campeonato</h3>
+                                                <div class="row">
+                                                    <div class="col-lg-6">
+                                                        <div class="form-group">
+                                                            <label for="template">Template *</label>
+                                                            <select class="form-control select2" id="template" name="template" required>
+                                                                <option value="">Selecione...</option>
+                                                                {% for template in templates %}
+                                                                    <option value="{{ template.id }}" {% if template.id == championship.template_id %}selected{% endif %}>{{ template.name }}</option>
+                                                                {% endfor %}
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-lg-6">
+                                                        <div class="form-group">
+                                                            <label for="scope">Âmbito *</label>
+                                                            <select class="form-control select2" id="scope" name="scope" required>
+                                                                <option value="">Selecione...</option>
+                                                                {% for scope in scopes %}
+                                                                    <option value="{{ scope.id }}" {% if scope.id == championship.scope_id %}selected{% endif %}>{{ scope.name }}</option>
+                                                                {% endfor %}
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div class="row">
+                                                    <div class="col-lg-4">
+                                                        <div class="form-group">
+                                                            <label for="continent">Continente</label>
+                                                            <select class="form-control select2" id="continent" name="continent" {% if championship.scope.name == 'Mundial' %}disabled{% endif %}>
+                                                                <option value="">Selecione...</option>
+                                                                {% for continent in continents %}
+                                                                    <option value="{{ continent.id }}" {% if continent.id == championship.continent_id %}selected{% endif %}>{{ continent.name }}</option>
+                                                                {% endfor %}
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-lg-4">
+                                                        <div class="form-group">
+                                                            <label for="country">País *</label>
+                                                            <select class="form-control select2" id="country" name="country" {% if championship.scope.name == 'Mundial' or championship.scope.name == 'Continental' %}disabled{% endif %}>
+                                                                <option value="">Selecione...</option>
+                                                                {% for country in countries %}
+                                                                    <option value="{{ country.id }}" data-continent="{{ country.continent_id }}" {% if country.id == championship.country_id %}selected{% endif %}>{{ country.name }}</option>
+                                                                {% endfor %}
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-lg-4">
+                                                        <div class="form-group">
+                                                            <label for="state">Estado</label>
+                                                            <select class="form-control select2" id="state" name="state" {% if championship.scope.name != 'Estadual' %}disabled{% endif %}>
+                                                                <option value="">Selecione...</option>
+                                                                {% for state in states %}
+                                                                    <option value="{{ state.id }}" data-country="{{ state.country_id }}" {% if state.id == championship.state_id %}selected{% endif %}>{{ state.name }}</option>
+                                                                {% endfor %}
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div class="row">
+                                                    <div class="col-lg-12">
+                                                        <div class="checkbox">
+                                                            <label>
+                                                                <input type="checkbox" id="is_active" name="is_active" {% if championship.is_active %}checked{% endif %}> Ativo
+                                                            </label>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {% if championship.can_edit_teams %}
+                                                <div class="row mt-4">
+                                                    <div class="col-lg-12">
+                                                        <div class="form-group">
+                                                            <label>Times</label>
+                                                            <select class="duallistbox" multiple="multiple" name="teams[]">
+                                                                {% for team in teams %}
+                                                                    <option value="{{ team.id }}" data-type="{{ team.is_selection|yesno:'selection,team' }}" {% if team in selected_teams %}selected{% endif %}>{{ team.name }}</option>
+                                                                {% endfor %}
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                {% endif %}
+
+                                                <div class="row mt-3">
+                                                    <div class="col-lg-12">
+                                                        <button type="submit" class="btn btn-primary">Salvar</button>
+                                                        <a href="{% url 'administrativo:campeonatos' %}" class="btn btn-default">Cancelar</a>
+                                                    </div>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <form action="{% url 'administrativo:campeonato_editar' championship.id %}" method="post">
-                            {% csrf_token %}
-                            
-                            <div class="card-body">
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label for="name">Nome *</label>
-                                            <input type="text" class="form-control" id="name" name="name" value="{{ championship.name }}" required>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label for="season">Temporada *</label>
-                                            <input type="text" class="form-control" id="season" name="season" value="{{ championship.season }}" required>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label for="template">Template *</label>
-                                            <select class="form-control select2" id="template" name="template" required>
-                                                <option value="">Selecione...</option>
-                                                {% for template in templates %}
-                                                <option value="{{ template.id }}" {% if template.id == championship.template_id %}selected{% endif %}>
-                                                    {{ template.name }}
-                                                </option>
-                                                {% endfor %}
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label for="scope">Âmbito *</label>
-                                            <select class="form-control select2" id="scope" name="scope" required>
-                                                <option value="">Selecione...</option>
-                                                {% for scope in scopes %}
-                                                <option value="{{ scope.id }}" {% if scope.id == championship.scope_id %}selected{% endif %}>
-                                                    {{ scope.name }}
-                                                </option>
-                                                {% endfor %}
-                                            </select>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="row">
-                                    <div class="col-md-4">
-                                        <div class="form-group">
-                                            <label for="continent">Continente</label>
-                                            <select class="form-control select2" id="continent" name="continent">
-                                                <option value="">Selecione...</option>
-                                                {% for continent in continents %}
-                                                <option value="{{ continent.id }}" {% if continent.id == championship.continent_id %}selected{% endif %}>
-                                                    {{ continent.name }}
-                                                </option>
-                                                {% endfor %}
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="form-group">
-                                            <label for="country">País *</label>
-                                            <select class="form-control select2" id="country" name="country" required>
-                                                <option value="">Selecione...</option>
-                                                {% for country in countries %}
-                                                <option value="{{ country.id }}" data-continent="{{ country.continent_id }}" 
-                                                        {% if country.id == championship.country_id %}selected{% endif %}>
-                                                    {{ country.name }}
-                                                </option>
-                                                {% endfor %}
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="form-group">
-                                            <label for="state">Estado</label>
-                                            <select class="form-control select2" id="state" name="state">
-                                                <option value="">Selecione...</option>
-                                                {% for state in states %}
-                                                <option value="{{ state.id }}" data-country="{{ state.country_id }}"
-                                                        {% if state.id == championship.state_id %}selected{% endif %}>
-                                                    {{ state.name }}
-                                                </option>
-                                                {% endfor %}
-                                            </select>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="row">
-                                    <div class="col-md-12">
-                                        <div class="form-group">
-                                            <div class="icheck-primary">
-                                                <input type="checkbox" id="is_active" name="is_active" {% if championship.is_active %}checked{% endif %}>
-                                                <label for="is_active">Ativo</label>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                {% if championship.can_edit_teams %}
-                                <div class="row mt-4">
-                                    <div class="col-md-12">
-                                        <div class="form-group">
-                                            <label>Times</label>
-                                            <select class="duallistbox" multiple="multiple" name="teams[]">
-                                                {% for team in teams %}
-                                                <option value="{{ team.id }}" data-type="{{ team.is_selection|yesno:'selection,team' }}"
-                                                        {% if team in selected_teams %}selected{% endif %}>
-                                                    {{ team.name }}
-                                                </option>
-                                                {% endfor %}
-                                            </select>
-                                        </div>
-                                    </div>
-                                </div>
-                                {% endif %}
-                            </div>
-                            
-                            <div class="card-footer">
-                                <button type="submit" class="btn btn-primary">Salvar</button>
-                                <a href="{% url 'administrativo:campeonatos' %}" class="btn btn-default">Cancelar</a>
-                            </div>
-                        </form>
                     </div>
                 </div>
             </div>
         </div>
-    </section>
-</div>
-{% endblock %}
 
-{% block extra_js %}
-<script src="{% static 'administrativo/plugins/toastr/toastr.min.js' %}"></script>
-<script src="{% static 'administrativo/plugins/select2/js/select2.full.min.js' %}"></script>
-<script src="{% static 'administrativo/plugins/duallistbox/jquery.bootstrap-duallistbox.min.js' %}"></script>
+        <!-- Scripts -->
+        <script src="{% static 'administrativo/js/jquery-3.4.1.min.js' %}"></script>
+        <script src="{% static 'administrativo/js/popper.min.js' %}"></script>
+        <script src="{% static 'administrativo/js/bootstrap.js' %}"></script>
+        <script src="{% static 'administrativo/js/plugins/metisMenu/jquery.metisMenu.js' %}"></script>
+        <script src="{% static 'administrativo/js/plugins/slimscroll/jquery.slimscroll.min.js' %}"></script>
+        <script src="{% static 'administrativo/js/inspinia.js' %}"></script>
+        <script src="{% static 'administrativo/js/plugins/pace/pace.min.js' %}"></script>
+        <script src="{% static 'administrativo/js/plugins/select2/select2.full.min.js' %}"></script>
+        <script src="{% static 'administrativo/js/plugins/toastr/toastr.min.js' %}"></script>
+        <script src="{% static 'administrativo/js/plugins/duallistbox/jquery.bootstrap-duallistbox.min.js' %}"></script>
 
-<script>
-$(function () {
-    // Inicializa o Select2
-    $('.select2').select2({
-        theme: 'bootstrap4'
-    });
+        <script>
+            $(document).ready(function() {
+                // Inicializa Select2
+                $('.select2').select2({
+                    theme: 'bootstrap4'
+                });
 
-    // Inicializa o Bootstrap Duallistbox
-    $('.duallistbox').bootstrapDualListbox({
-        nonSelectedListLabel: 'Times Disponíveis',
-        selectedListLabel: 'Times Selecionados',
-        preserveSelectionOnMove: 'moved',
-        moveOnSelect: false,
-        infoText: 'Mostrando {0}',
-        infoTextEmpty: 'Lista vazia',
-        filterPlaceHolder: 'Filtrar',
-        filterTextClear: 'Mostrar todos',
-        moveSelectedLabel: 'Mover selecionados',
-        moveAllLabel: 'Mover todos',
-        removeSelectedLabel: 'Remover selecionados',
-        removeAllLabel: 'Remover todos'
-    });
+                // Inicializa DualListbox
+                $('.duallistbox').bootstrapDualListbox({
+                    nonSelectedListLabel: 'Times Disponíveis',
+                    selectedListLabel: 'Times Selecionados',
+                    preserveSelectionOnMove: 'moved',
+                    moveOnSelect: false,
+                    infoText: 'Mostrando {0}',
+                    infoTextEmpty: 'Lista vazia',
+                    filterPlaceHolder: 'Filtrar',
+                    filterTextClear: 'Mostrar todos',
+                    moveSelectedLabel: 'Mover selecionados',
+                    moveAllLabel: 'Mover todos',
+                    removeSelectedLabel: 'Remover selecionados',
+                    removeAllLabel: 'Remover todos'
+                });
 
-    // Filtra países por continente
-    $('#continent').change(function() {
-        var continentId = $(this).val();
-        var $country = $('#country');
-        
-        $country.val('').trigger('change');
-        $country.find('option').each(function() {
-            if (!continentId || $(this).val() === '' || $(this).data('continent') == continentId) {
-                $(this).show();
-            } else {
-                $(this).hide();
-            }
-        });
-    });
+                // Filtra países por continente
+                $('#continent').change(function() {
+                    var continentId = $(this).val();
+                    var $country = $('#country');
+                    
+                    $country.val('').trigger('change');
+                    $country.find('option').each(function() {
+                        if (!continentId || $(this).val() === '' || $(this).data('continent') == continentId) {
+                            $(this).show();
+                        } else {
+                            $(this).hide();
+                        }
+                    });
+                });
 
-    // Filtra estados por país
-    $('#country').change(function() {
-        var countryId = $(this).val();
-        var $state = $('#state');
-        
-        $state.val('').trigger('change');
-        $state.find('option').each(function() {
-            if (!countryId || $(this).val() === '' || $(this).data('country') == countryId) {
-                $(this).show();
-            } else {
-                $(this).hide();
-            }
-        });
-    });
+                // Filtra estados por país
+                $('#country').change(function() {
+                    var countryId = $(this).val();
+                    var $state = $('#state');
+                    
+                    $state.val('').trigger('change');
+                    $state.find('option').each(function() {
+                        if (!countryId || $(this).val() === '' || $(this).data('country') == countryId) {
+                            $(this).show();
+                        } else {
+                            $(this).hide();
+                        }
+                    });
+                });
 
-    // Exibe mensagens do Django
-    {% if messages %}
-        {% for message in messages %}
-            toastr.{{ message.tags }}('{{ message }}');
-        {% endfor %}
-    {% endif %}
-});
-</script>
-{% endblock %} 
+                // Lógica para habilitar/desabilitar campos baseado no âmbito
+                $('#scope').on('change', function() {
+                    var scopeName = $(this).find('option:selected').text();
+                    
+                    if (scopeName === 'Mundial') {
+                        $('#continent, #country, #state').prop('disabled', true).val('').trigger('change');
+                    } else if (scopeName === 'Continental') {
+                        $('#continent').prop('disabled', false);
+                        $('#country, #state').prop('disabled', true).val('').trigger('change');
+                    } else if (scopeName === 'Nacional') {
+                        $('#continent, #country').prop('disabled', false);
+                        $('#state').prop('disabled', true).val('').trigger('change');
+                    } else { // Estadual
+                        $('#continent, #country, #state').prop('disabled', false);
+                    }
+                });
+
+                // Exibe mensagens do Django
+                {% if messages %}
+                    {% for message in messages %}
+                        toastr.{{ message.tags }}('{{ message }}');
+                    {% endfor %}
+                {% endif %}
+            });
+        </script>
+    </body>
+</html> 

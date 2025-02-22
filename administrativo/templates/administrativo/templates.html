@@ -25,6 +25,7 @@
                 box-shadow: 0 2px 10px rgba(0,0,0,0.1);
                 max-height: 90vh;
                 overflow-y: auto;
+                overflow-x: hidden;
             }
             .modal-header {
                 background-color: #f8f9fa;
@@ -150,6 +151,9 @@
             .btn-danger.btn-xs:hover {
                 background-color: #ec4758;
                 color: white;
+            }
+            .modal-body {
+                overflow-x: hidden;
             }
         </style>
     </head>
@@ -310,7 +314,11 @@
                                                     <td>{{ template.created_at|date:"d/m/Y H:i" }}</td>
                                                     <td>
                                                         <a href="{% url 'administrativo:template_editar' template.id %}" class="btn btn-info btn-xs" title="Editar"><i class="glyphicon glyphicon-pencil"></i></a>
-                                                        <button type="button" class="btn btn-xs btn-toggle-template {% if template.enabled %}btn-danger{% else %}btn-success{% endif %}" data-template-id="{{ template.id }}" data-enabled="{{ template.enabled|yesno:'true,false' }}" title="{% if template.enabled %}Desativar{% else %}Ativar{% endif %}">
+                                                        <button type="button" class="btn btn-xs btn-toggle-template {% if template.enabled %}btn-danger{% else %}btn-success{% endif %}" 
+                                                                data-template-id="{{ template.id }}" 
+                                                                data-enabled="{{ template.enabled|yesno:'true,false' }}" 
+                                                                title="{% if template.enabled %}Desativar{% else %}Ativar{% endif %}"
+                                                                {% if template.template_championships.exists and template.enabled %}disabled{% endif %}>
                                                             <i class="glyphicon glyphicon-{% if template.enabled %}remove{% else %}ok{% endif %}" style="color: white;"></i>
                                                         </button>
                                                         <a href="{% url 'administrativo:template_duplicar' template.id %}" class="btn btn-warning btn-xs btn-duplicate" title="Criar Cópia"><i class="glyphicon glyphicon-file"></i></a>
@@ -401,7 +409,7 @@
                                             <div class="input-group-append">
                                                 <label class="input-group-text btn btn-default">
                                                     Selecionar arquivo
-                                                    <input type="file" name="file" accept=".xlsx,.xls" required style="display: none;" onchange="updateFileName(this)"/>
+                                                    <input type="file" name="file" accept=".xlsx,.xls" required style="display: none;"/>
                                                 </label>
                                             </div>
                                         </div>
@@ -434,45 +442,66 @@
         <script src="{% static 'administrativo/js/plugins/toastr/toastr.min.js' %}"></script>
         <script src="{% static 'administrativo/js/settings.js' %}"></script>
         <script>
-            // Configuração do toastr
-            toastr.options = {
-                closeButton: true,
-                progressBar: true,
-                positionClass: "toast-top-right",
-                preventDuplicates: true,
-                showDuration: "300",
-                hideDuration: "1000",
-                timeOut: "5000",
-                extendedTimeOut: "1000",
-                showEasing: "swing",
-                hideEasing: "linear",
-                showMethod: "fadeIn",
-                hideMethod: "fadeOut"
-            };
-
-            function excluirSelecionados() {
-                var ids = [];
-                $('input[type="checkbox"]:checked').not('.checkAll').each(function() {
-                    ids.push($(this).val());
+            $(document).ready(function() {
+                // Configuração inicial dos botões de excluir
+                $('.btn-toggle-template').each(function() {
+                    var isEnabled = $(this).data('enabled') === true;
+                    var deleteBtn = $(this).siblings('.delete-template');
+                    if (isEnabled) {
+                        deleteBtn.prop('disabled', true);
+                    }
                 });
 
-                if (ids.length === 0) {
-                    toastr.warning('Selecione pelo menos um template para excluir');
-                    return;
+                // Configuração do toastr
+                toastr.options = {
+                    closeButton: true,
+                    progressBar: true,
+                    positionClass: "toast-top-right",
+                    preventDuplicates: true,
+                    showDuration: "300",
+                    hideDuration: "1000",
+                    timeOut: "5000",
+                    extendedTimeOut: "1000",
+                    showEasing: "swing",
+                    hideEasing: "linear",
+                    showMethod: "fadeIn",
+                    hideMethod: "fadeOut"
+                };
+
+                // Atualiza o nome do arquivo quando selecionado
+                $('#modalImportar input[type="file"]').on('change', function() {
+                    var fileName = this.files[0] ? this.files[0].name : '';
+                    $(this).closest('.input-group').find('input[type="text"]').val(fileName);
+                });
+
+                function excluirSelecionados() {
+                    var ids = [];
+                    $('input[type="checkbox"]:checked').not('.checkAll').each(function() {
+                        ids.push($(this).val());
+                    });
+
+                    if (ids.length === 0) {
+                        toastr.warning('Selecione pelo menos um template para excluir');
+                        return;
+                    }
+
+                    $('#modalAlert').modal('show');
                 }
 
-                $('#modalAlert').modal('show');
-            }
-
-            $(document).ready(function() {
                 // Ativar/Desativar template
                 $('.btn-toggle-template').click(function(e) {
-                    e.preventDefault(); // Previne o comportamento padrão
-                    e.stopPropagation(); // Impede a propagação do evento
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.stopImmediatePropagation();
                     
                     var btn = $(this);
                     var templateId = btn.data('template-id');
                     var isEnabled = btn.data('enabled') === true;
+                    var deleteBtn = btn.siblings('.delete-template');
+                    
+                    // Desabilita todos os botões da linha durante a operação
+                    var allButtons = btn.closest('td').find('button');
+                    allButtons.prop('disabled', true);
                     
                     $.ajax({
                         url: '{% url "administrativo:template_toggle_status" %}',
@@ -483,17 +512,34 @@
                         },
                         success: function(response) {
                             if (response.success) {
+                                // Atualiza o estado do botão de ativar/desativar
                                 btn.toggleClass('btn-danger btn-success');
                                 btn.find('i').toggleClass('glyphicon-remove glyphicon-ok');
                                 btn.attr('title', isEnabled ? 'Ativar' : 'Desativar');
                                 btn.data('enabled', !isEnabled);
+                                
+                                // Atualiza o estado do botão de excluir
+                                if (isEnabled) { // Se estava ativado e foi desativado
+                                    deleteBtn.prop('disabled', false);
+                                } else { // Se estava desativado e foi ativado
+                                    deleteBtn.prop('disabled', true);
+                                }
+                                
                                 toastr.success(response.message);
                             } else {
                                 toastr.error(response.message);
+                                // Restaura o estado original dos botões em caso de erro
+                                deleteBtn.prop('disabled', isEnabled);
                             }
                         },
                         error: function() {
                             toastr.error('Erro ao alterar status do template');
+                            // Restaura o estado original dos botões em caso de erro
+                            deleteBtn.prop('disabled', isEnabled);
+                        },
+                        complete: function() {
+                            // Reabilita o botão de ativar/desativar
+                            btn.prop('disabled', false);
                         }
                     });
                 });
@@ -545,7 +591,16 @@
                 $(document).on('click', '.delete-template', function(e) {
                     e.preventDefault();
                     e.stopPropagation();
-                    templateIdToDelete = $(this).data('template-id');
+                    e.stopImmediatePropagation();
+                    
+                    var btn = $(this);
+                    
+                    // Se o botão estiver desabilitado ou o template estiver ativo, não faz nada
+                    if (btn.prop('disabled') || btn.siblings('.btn-toggle-template').data('enabled') === true) {
+                        return;
+                    }
+                    
+                    templateIdToDelete = btn.data('template-id');
                     $('#modalAlert2').modal('show');
                 });
 
@@ -555,6 +610,11 @@
                         toastr.error('Template não identificado');
                         return;
                     }
+
+                    // Desabilita todos os botões da linha durante a exclusão
+                    var row = $('.delete-template[data-template-id="' + templateIdToDelete + '"]').closest('tr');
+                    var allButtons = row.find('button');
+                    allButtons.prop('disabled', true);
 
                     $.ajax({
                         url: '{% url "administrativo:template_excluir" 0 %}'.replace('0', templateIdToDelete),
@@ -569,11 +629,15 @@
                                 window.location.reload();
                             } else {
                                 toastr.error(response.message);
+                                // Restaura o estado dos botões em caso de erro
+                                allButtons.prop('disabled', false);
                             }
                         },
                         error: function() {
                             $('#modalAlert2').modal('hide');
                             toastr.error('Erro ao excluir template');
+                            // Restaura o estado dos botões em caso de erro
+                            allButtons.prop('disabled', false);
                         }
                     });
                 });
@@ -651,11 +715,6 @@
                         }
                     });
                 });
-
-                function updateFileName(input) {
-                    var fileName = input.files[0] ? input.files[0].name : '';
-                    input.closest('.input-group').querySelector('input[type="text"]').value = fileName;
-                }
             });
         </script>
     </body>
