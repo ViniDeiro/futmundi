@@ -645,7 +645,8 @@ class Country(models.Model):
         """
         return {
             'states': self.state_set.order_by('name').all(),
-            'championships': Championship.objects.filter(country=self).order_by('name')
+            'championships': Championship.objects.filter(country=self).order_by('name'),
+            'teams': self.team_set.order_by('name').all()
         }
 
 class State(models.Model):

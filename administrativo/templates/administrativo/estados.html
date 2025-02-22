@@ -128,18 +128,18 @@
                         <h2>Estados</h2>
                     </div>
                 </div>
+                {% if messages %}
+                    <div id="toast-messages" style="display: none;">
+                        {% for message in messages %}
+                            <div class="toast-message" data-type="{{ message.tags }}" data-message="{{ message }}"></div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
                 <div class="wrapper wrapper-content">
                     <div class="row">
                         <div class="col-lg-12">
                             <div class="ibox">
                                 <div class="ibox-content">
-                                    {% if messages %}
-                                        {% for message in messages %}
-                                            <div class="alert alert-{{ message.tags }}">
-                                                {{ message }}
-                                            </div>
-                                        {% endfor %}
-                                    {% endif %}
                                     <div class="group-options-left ml5">
                                         <a href="{% url 'administrativo:estado_novo' %}" class="btn btn-success btn-sm" title="Novo"><i class="fa fa-plus"></i></a>
                                         <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#modalImportar" title="Importar">
@@ -246,19 +246,15 @@
                         <div class="modal-body">
                             <div class="form-group">
                                 <label for="file">Selecione o arquivo</label>
-                                <div class="fileinput fileinput-new input-group" data-provides="fileinput">
-                                    <div class="form-control" data-trigger="fileinput">
-                                        <i class="fa fa-file fileinput-exists"></i>
-                                        <span class="fileinput-filename"></span>
-                                    </div>
-                                    <span class="input-group-append">
+                                <div class="input-group">
+                                    <input type="text" class="form-control" readonly>
+                                    <div class="input-group-append">
                                         <span class="input-group-text btn btn-default btn-file">
-                                            <span class="fileinput-new">Selecionar arquivo</span>
+                                            <span class="fileinput-new">Selecionar arquivo/</span>
                                             <span class="fileinput-exists">Alterar</span>
                                             <input type="file" name="file" accept=".xlsx,.xls" required/>
                                         </span>
-                                        <a href="#" class="input-group-text btn btn-default fileinput-exists" data-dismiss="fileinput">Remover</a>
-                                    </span>
+                                    </div>
                                 </div>
                             </div>
                             <div class="alert alert-info mt15">
@@ -294,7 +290,128 @@
         <script src="{% static 'administrativo/js/plugins/toastr/toastr.min.js' %}"></script>
         <script src="{% static 'administrativo/js/page-level.js' %}"></script>
         <script>
-            // Função para excluir múltiplos registros
+            $(document).ready(function() {
+                // Configuração do toastr
+                toastr.options = {
+                    closeButton: true,
+                    progressBar: true,
+                    positionClass: "toast-top-right",
+                    preventDuplicates: true,
+                    showDuration: "300",
+                    hideDuration: "1000",
+                    timeOut: "5000",
+                    extendedTimeOut: "1000",
+                    showEasing: "swing",
+                    hideEasing: "linear",
+                    showMethod: "fadeIn",
+                    hideMethod: "fadeOut",
+                    onHidden: function() {
+                        // Remove a mensagem do DOM após ser exibida
+                        $('#toast-messages').remove();
+                    }
+                };
+
+                var table = $('.dataTables-estados');
+                if (!$.fn.DataTable.isDataTable(table)) {
+                    table.DataTable({
+                        pageLength: 10,
+                        responsive: true,
+                        dom: '<"html5buttons"B>lTfgitp',
+                        buttons: [],
+                        language: {
+                            url: "//cdn.datatables.net/plug-ins/1.10.19/i18n/Portuguese-Brasil.json"
+                        }
+                    });
+                }
+
+                // Handler para excluir estado
+                $('.delete-btn').on('click', function() {
+                    var stateId = $(this).data('id');
+                    excluirEstado(stateId);
+                });
+
+                // Atualiza o nome do arquivo selecionado
+                $('input[type="file"]').change(function(e) {
+                    var fileName = e.target.files[0].name;
+                    $(this).closest('.input-group').find('input[type="text"]').val(fileName);
+                });
+
+                // Checkbox "Selecionar todos"
+                $('.checkAll').on('change', function() {
+                    $('.check-item').prop('checked', $(this).prop('checked'));
+                });
+
+                // Handler para importação via AJAX
+                $('#formImportar').on('submit', function(e) {
+                    e.preventDefault();
+                    var formData = new FormData(this);
+
+                    $.ajax({
+                        url: $(this).attr('action'),
+                        type: 'POST',
+                        data: formData,
+                        processData: false,
+                        contentType: false,
+                        success: function(response) {
+                            $('#modalImportar').modal('hide');
+                            if (response.success) {
+                                toastr.success(response.message);
+                                setTimeout(function() {
+                                    window.location.reload();
+                                }, 1500);
+                            } else {
+                                toastr.error(response.message);
+                            }
+                        },
+                        error: function(xhr) {
+                            $('#modalImportar').modal('hide');
+                            toastr.error(xhr.responseJSON?.message || 'Erro ao importar estados');
+                        }
+                    });
+                });
+
+                // Exibe as mensagens como toast
+                $('.toast-message').each(function() {
+                    var type = $(this).data('type');
+                    var message = $(this).data('message');
+                    
+                    // Converte 'error' para 'danger' se necessário
+                    if (type === 'error') {
+                        type = 'error';
+                    }
+                    
+                    toastr[type](message);
+                });
+            });
+
+            function excluirEstado(id) {
+                $('#modalAlert2').modal('show');
+                $('#modalAlert2 .btn-danger').off('click').on('click', function() {
+                    $.ajax({
+                        url: "{% url 'administrativo:estado_excluir' 0 %}".replace('0', id),
+                        type: 'POST',
+                        data: {
+                            'csrfmiddlewaretoken': '{{ csrf_token }}'
+                        },
+                        success: function(response) {
+                            $('#modalAlert2').modal('hide');
+                            if (response.success) {
+                                toastr.success(response.message);
+                                setTimeout(function() {
+                                    window.location.reload();
+                                }, 1500);
+                            } else {
+                                toastr.error(response.message);
+                            }
+                        },
+                        error: function(xhr) {
+                            $('#modalAlert2').modal('hide');
+                            toastr.error(xhr.responseJSON?.message || 'Erro ao excluir estado');
+                        }
+                    });
+                });
+            }
+
             function excluirSelecionados() {
                 const ids = [];
                 $('.check-item:checked').each(function() {
@@ -313,7 +430,7 @@
                         type: 'POST',
                         data: {
                             'ids[]': ids,
-                            'csrfmiddlewaretoken': $('[name=csrfmiddlewaretoken]').val()
+                            'csrfmiddlewaretoken': '{{ csrf_token }}'
                         },
                         success: function(response) {
                             $('#modalAlert').modal('hide');
@@ -321,125 +438,14 @@
                                 toastr.success(response.message);
                                 setTimeout(function() {
                                     window.location.reload();
-                                }, 1000);
+                                }, 1500);
                             } else {
-                                toastr.error(response.message);
+                                toastr.warning(response.message);
                             }
                         },
                         error: function(xhr) {
                             $('#modalAlert').modal('hide');
-                            let errorMessage = 'Erro ao excluir estados';
-                            if (xhr.responseJSON && xhr.responseJSON.message) {
-                                errorMessage = xhr.responseJSON.message;
-                            }
-                            toastr.error(errorMessage);
-                        }
-                    });
-                });
-            }
-
-            $(document).ready(function() {
-                // Configurações do toastr
-                toastr.options = {
-                    closeButton: true,
-                    debug: false,
-                    progressBar: true,
-                    preventDuplicates: false,
-                    positionClass: "toast-top-right",
-                    onclick: null,
-                    showDuration: "400",
-                    hideDuration: "1000",
-                    timeOut: 4000,
-                    extendedTimeOut: "400",
-                    showEasing: "swing",
-                    hideEasing: "linear",
-                    showMethod: 'slideDown'
-                };
-
-                // Botão de excluir em massa
-                $('#delete-selected').click(function() {
-                    excluirSelecionados();
-                });
-
-                // Handler para excluir estado
-                $(document).on('click', '.delete-btn', function() {
-                    var stateId = $(this).data('id');
-                    excluirEstado(stateId);
-                });
-
-                // Checkbox para selecionar todos
-                $('#check-all').change(function() {
-                    $('.check-item').prop('checked', $(this).prop('checked'));
-                });
-
-                // Inicializa DataTables
-                var table = $('.dataTables-estados');
-                if (!$.fn.DataTable.isDataTable(table)) {
-                    table.DataTable({
-                        pageLength: 10,
-                        responsive: true,
-                        dom: '<"html5buttons"B>lTfgitp',
-                        buttons: [],
-                        language: {
-                            url: "//cdn.datatables.net/plug-ins/1.10.19/i18n/Portuguese-Brasil.json"
-                        }
-                    });
-                }
-
-                // Manipula o envio do formulário de importação via AJAX
-                $('#formImportar').on('submit', function(e) {
-                    e.preventDefault();
-                    var formData = new FormData(this);
-
-                    $.ajax({
-                        url: $(this).attr('action'),
-                        type: 'POST',
-                        data: formData,
-                        processData: false,
-                        contentType: false,
-                        success: function(response) {
-                            $('#modalImportar').modal('hide');
-                            if (response.success) {
-                                toastr.success(response.message);
-                                // Recarrega a página após 1 segundo
-                                setTimeout(function() {
-                                    location.reload();
-                                }, 1000);
-                            } else {
-                                toastr.error(response.message);
-                            }
-                        },
-                        error: function(xhr, status, error) {
-                            $('#modalImportar').modal('hide');
-                            toastr.error('Erro ao importar estados: ' + error);
-                        }
-                    });
-                });
-            });
-
-            function excluirEstado(id) {
-                $('#modalAlert2').modal('show');
-                $('#modalAlert2 .btn-danger').off('click').on('click', function() {
-                    $.ajax({
-                        url: "{% url 'administrativo:estado_excluir' 0 %}".replace('0', id),
-                        type: 'POST',
-                        headers: {
-                            'X-CSRFToken': $('[name=csrfmiddlewaretoken]').val()
-                        },
-                        success: function(response) {
-                            $('#modalAlert2').modal('hide');
-                            if (response.success) {
-                                toastr.success(response.message);
-                                setTimeout(function() {
-                                    window.location.reload();
-                                }, 1000);
-                            } else {
-                                toastr.error(response.message);
-                            }
-                        },
-                        error: function(xhr, status, error) {
-                            $('#modalAlert2').modal('hide');
-                            toastr.error('Erro ao excluir estado: ' + error);
+                            toastr.error(xhr.responseJSON?.message || 'Erro ao excluir estados');
                         }
                     });
                 });

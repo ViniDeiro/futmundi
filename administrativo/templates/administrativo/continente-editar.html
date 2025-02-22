@@ -154,55 +154,59 @@
                                     </div>
                                     {% if countries or championships %}
                                     <div class="col-lg-8">
-                                        {% if countries %}
-                                        <div class="mb20">
-                                            <h4>Países Vinculados</h4>
-                                            <div class="table-responsive">
-                                                <table class="table table-striped">
-                                                    <thead>
-                                                        <tr>
-                                                            <th>Nome</th>
-                                                            <th>Data Criação</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        {% for country in countries %}
-                                                        <tr>
-                                                            <td>{{ country.name }}</td>
-                                                            <td>{{ country.created_at|date:"d/m/Y H:i" }}</td>
-                                                        </tr>
-                                                        {% endfor %}
-                                                    </tbody>
-                                                </table>
+                                        <div class="row">
+                                            {% if countries %}
+                                            <div class="col-lg-6">
+                                                <div class="mb20">
+                                                    <h4>Países Vinculados</h4>
+                                                    <div class="table-responsive">
+                                                        <table class="table table-striped">
+                                                            <thead>
+                                                                <tr>
+                                                                    <th>Nome</th>
+                                                                    <th>Data Criação</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                {% for country in countries %}
+                                                                <tr>
+                                                                    <td>{{ country.name }}</td>
+                                                                    <td>{{ country.created_at|date:"d/m/Y H:i" }}</td>
+                                                                </tr>
+                                                                {% endfor %}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
                                             </div>
-                                        </div>
-                                        {% endif %}
-                                        
-                                        {% if championships %}
-                                        <div>
-                                            <h4>Campeonatos Vinculados</h4>
-                                            <div class="table-responsive">
-                                                <table class="table table-striped">
-                                                    <thead>
-                                                        <tr>
-                                                            <th>Nome</th>
-                                                            <th>Temporada</th>
-                                                            <th>Data Criação</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        {% for championship in championships %}
-                                                        <tr>
-                                                            <td>{{ championship.name }}</td>
-                                                            <td>{{ championship.season }}</td>
-                                                            <td>{{ championship.created_at|date:"d/m/Y H:i" }}</td>
-                                                        </tr>
-                                                        {% endfor %}
-                                                    </tbody>
-                                                </table>
+                                            {% endif %}
+                                            
+                                            {% if championships %}
+                                            <div class="col-lg-6">
+                                                <div class="mb20">
+                                                    <h4>Campeonatos Vinculados</h4>
+                                                    <div class="table-responsive">
+                                                        <table class="table table-striped">
+                                                            <thead>
+                                                                <tr>
+                                                                    <th>Nome</th>
+                                                                    <th>Data Criação</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                {% for championship in championships %}
+                                                                <tr>
+                                                                    <td>{{ championship.name }}</td>
+                                                                    <td>{{ championship.created_at|date:"d/m/Y H:i" }}</td>
+                                                                </tr>
+                                                                {% endfor %}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
                                             </div>
+                                            {% endif %}
                                         </div>
-                                        {% endif %}
                                     </div>
                                     {% endif %}
                                 </div>

@@ -1645,6 +1645,7 @@ def pais_editar(request, id):
     related_data = country.get_related_data()
     states = related_data['states']
     championships = related_data['championships']
+    teams = related_data['teams']
     
     # Verifica se tem campeonatos vinculados
     has_championships = championships.exists()
@@ -1692,6 +1693,7 @@ def pais_editar(request, id):
         'country': country,
         'continents': continents,
         'states': states,
+        'teams': teams,
         'championships': championships,
         'has_championships': has_championships
     })
@@ -1704,15 +1706,23 @@ def pais_excluir(request, id):
     
     if not country.can_delete():
         messages.error(request, 'Não é possível excluir este país pois existem registros vinculados')
-        return redirect('administrativo:paises')
+        return JsonResponse({
+            'success': False,
+            'message': 'Não é possível excluir este país pois existem registros vinculados'
+        })
         
     try:
         country.delete()
         messages.success(request, 'País excluído com sucesso')
+        return JsonResponse({
+            'success': True,
+            'message': 'País excluído com sucesso'
+        })
     except Exception as e:
-        messages.error(request, f'Erro ao excluir país: {str(e)}')
-        
-    return redirect('administrativo:paises')
+        return JsonResponse({
+            'success': False,
+            'message': f'Erro ao excluir país: {str(e)}'
+        })
 
 def pais_excluir_em_massa(request):
     """
@@ -1721,7 +1731,10 @@ def pais_excluir_em_massa(request):
     if request.method == 'POST':
         ids = request.POST.getlist('ids[]')
         if not ids:
-            return JsonResponse({'error': 'Nenhum país selecionado'}, status=400)
+            return JsonResponse({
+                'success': False,
+                'message': 'Nenhum país selecionado'
+            })
             
         try:
             # Filtra apenas os países que podem ser excluídos
@@ -1733,15 +1746,25 @@ def pais_excluir_em_massa(request):
                 country.delete()
                 
             if len(deletable_countries) == len(ids):
-                message = 'Países excluídos com sucesso'
+                return JsonResponse({
+                    'success': True,
+                    'message': 'Países excluídos com sucesso'
+                })
             else:
-                message = f'{len(deletable_countries)} de {len(ids)} países foram excluídos. Alguns países não puderam ser excluídos por terem registros vinculados'
-                
-            return JsonResponse({'message': message})
+                return JsonResponse({
+                    'success': False,
+                    'message': f'{len(deletable_countries)} de {len(ids)} países foram excluídos. Alguns países não puderam ser excluídos por terem registros vinculados'
+                })
         except Exception as e:
-            return JsonResponse({'error': str(e)}, status=500)
+            return JsonResponse({
+                'success': False,
+                'message': str(e)
+            })
     
-    return JsonResponse({'error': 'Método não permitido'}, status=405)
+    return JsonResponse({
+        'success': False,
+        'message': 'Método não permitido'
+    })
 
 def pais_exportar(request):
     """
@@ -1770,23 +1793,29 @@ def pais_importar(request):
         )
         
         if success:
-            messages.success(request, message)
+            return JsonResponse({
+                'success': True,
+                'message': message
+            })
         else:
-            messages.error(request, message)
-        
-        return redirect('administrativo:paises')
+            return JsonResponse({
+                'success': False,
+                'message': message
+            })
     
-    messages.error(request, 'Nenhum arquivo enviado.')
-    return redirect('administrativo:paises')
+    return JsonResponse({
+        'success': False,
+        'message': 'Nenhum arquivo enviado.'
+    })
 
 def estados(request):
     """
     Lista todos os estados.
     """
-    # Limpa TODAS as mensagens antigas
+    # Limpa as mensagens antigas
     storage = messages.get_messages(request)
-    for message in storage:
-        pass  # Consome todas as mensagens
+    for _ in storage:
+        pass  # Itera sobre as mensagens para marcá-las como lidas
     storage.used = True
     
     states = State.objects.all().order_by('country__name', 'name')
@@ -1850,19 +1879,19 @@ def estado_excluir(request, id):
             state.delete()
             return JsonResponse({
                 'success': True,
-                'message': 'Estado excluido com sucesso'
-            }, json_dumps_params={'ensure_ascii': False})
+                'message': 'Estado excluído com sucesso'
+            })
             
         except Exception as e:
             return JsonResponse({
                 'success': False,
                 'message': f'Erro ao excluir estado: {str(e)}'
-            }, json_dumps_params={'ensure_ascii': False})
+            })
             
     return JsonResponse({
         'success': False,
         'message': 'Método não permitido'
-    }, status=405, json_dumps_params={'ensure_ascii': False})
+    }, status=405)
 
 def estado_excluir_em_massa(request):
     """
@@ -1886,9 +1915,10 @@ def estado_excluir_em_massa(request):
                     non_deletable_states.append(state.name)
             
             if non_deletable_states:
+                error_msg = f'Os seguintes estados não podem ser excluídos pois possuem registros vinculados: {", ".join(non_deletable_states)}'
                 return JsonResponse({
                     'success': False,
-                    'message': f'Os seguintes estados não podem ser excluídos pois possuem registros vinculados: {", ".join(non_deletable_states)}'
+                    'message': error_msg
                 })
                 
             # Exclui os estados que podem ser excluídos

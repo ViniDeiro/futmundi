@@ -14,116 +14,29 @@
         <link href="{% static 'administrativo/css/style.css' %}" rel="stylesheet">          
         <link href="{% static 'administrativo/css/plugins/awesome-bootstrap-checkbox/awesome-bootstrap-checkbox.css' %}" rel="stylesheet">        
         <link href="{% static 'administrativo/css/plugins/jasny/jasny-bootstrap.min.css' %}" rel="stylesheet">
+        <link href="{% static 'administrativo/css/plugins/toastr/toastr.min.css' %}" rel="stylesheet">
         <!-- Custom -->      
         <link href="{% static 'administrativo/css/custom.css' %}" rel="stylesheet">
         <!-- Favicon -->
-        <link rel="icon" href="img/futmundi.ico" type="image/png">
+        <link rel="icon" href="{% static 'administrativo/img/futmundi.ico' %}" type="image/png">
     </head>
     <body>
         <div id="wrapper">
-            <nav class="navbar-default navbar-static-side">
-                <div class="sidebar-collapse">
-                    <ul class="nav metismenu" id="side-menu">
-                        <li class="nav-header">
-                            <div class="dropdown profile-element">
-                                <a href="{% url "administrativo:usuarios" %}">
-                                    <img src="{% static 'administrativo/img/logo.svg' %}" alt="Futmundi logo">
-                                </a>
-                            </div>
-                            <div class="logo-element">
-                                <a href="{% url "administrativo:usuarios" %}">
-                                    <img src="{% static 'administrativo/img/logosm.svg' %}" alt="Futmundi logo">
-                                </a>                            
-                            </div>
-                        </li>
-                        <li class="active">
-                            <a href="{% url "administrativo:usuarios" %}"><i class="fa fa-user"></i> <span class="nav-label">Usuários</span></a>
-                        </li>
-                        <li>
-                            <a href="#"><i class="fa fa-trophy"></i> <span class="nav-label">Campeonatos</span><span class="fa arrow"></span></a>
-                            <ul class="nav nav-second-level collapse">
-                                <li><a href="{% url "administrativo:ambitos" %}">Âmbitos</a></li>
-                                <li><a href="{% url "administrativo:campeonatos" %}">Campeonatos</a></li>
-                                <li><a href="{% url "administrativo:templates" %}">Templates</a></li>
-                                <li><a href="{% url "administrativo:times" %}">Times</a></li>
-                            </ul>
-                        </li>
-                        <li>
-                            <a href="#"><i class="fa fa-shopping-cart"></i> <span class="nav-label">Pacotes</span><span class="fa arrow"></span></a>
-                            <ul class="nav nav-second-level collapse">
-                                <li><a href="{% url "administrativo:futcoins" %}">Futcoins</a></li>
-                                <li><a href="{% url "administrativo:planos" %}">Planos</a></li>
-                            </ul>
-                        </li>
-                        <li>
-                            <a href="#"><i class="fa fa-diamond"></i> <span class="nav-label">Futligas</span><span class="fa arrow"></span></a>
-                            <ul class="nav nav-second-level collapse">
-                                <li><a href="{% url "administrativo:futligas_classicas" %}">Clássicas</a></li>
-                                <li><a href="{% url "administrativo:futligas_jogadores" %}">Jogadores</a></li>
-                            </ul>
-                        </li>
-                        <li>
-                            <a href="#"><i class="fa fa-globe"></i> <span class="nav-label">Locais</span><span class="fa arrow"></span></a>
-                            <ul class="nav nav-second-level collapse">
-                                <li><a href="{% url "administrativo:continentes" %}">Continentes</a></li>
-                                <li><a href="{% url "administrativo:paises" %}">Países</a></li>
-                                <li><a href="{% url "administrativo:estados" %}">Estados</a></li>
-                            </ul>
-                        </li>
-                        <li>
-                            <a href="#"><i class="fa fa-gear"></i> <span class="nav-label">Configurações</span><span class="fa arrow"></span></a>
-                            <ul class="nav nav-second-level collapse">
-                                <li><a href="{% url "administrativo:parametros" %}">Parâmetros</a></li>
-                                <li><a href="{% url "administrativo:termo" %}">Termo</a></li>
-                                <li><a href="{% url "administrativo:notificacoes" %}">Notificações</a></li>
-                            </ul>
-                        </li>
-                        <li>
-                            <a href="{% url "administrativo:relatorios" %}"><i class="fa fa-pie-chart"></i> <span class="nav-label">Relatórios</span></a>
-                        </li>
-                    </ul>
-                </div>
-            </nav>
+            {% include 'administrativo/menu.html' %}
             <div id="page-wrapper" class="gray-bg">
-                <div class="row border-bottom">
-                    <nav class="navbar navbar-static-top" style="margin-bottom: 0">
-                        <div class="navbar-header">
-                            <a class="navbar-minimalize minimalize-styl-2 btn btn-success " href="#"><i class="fa fa-bars"></i> </a>
-                        </div>
-                        <ul class="nav navbar-top-links navbar-right">
-                            <li>
-                                <span class="m-r-sm text-muted welcome-message">{{ request.session.admin_name }}</span>
-                            </li>
-                            <li class="dropdown">
-                                <a class="dropdown-toggle count-info" data-toggle="dropdown" href="#">
-                                    <i class="fa fa-gear"></i>
-                                </a>
-                                <ul class="dropdown-menu dropdown-alerts">
-                                    <li>
-                                        <a href="{% url "administrativo:administradores" %}" class="dropdown-item">
-                                            <div>
-                                                <i class="fa fa-users"></i> Administradores
-                                            </div>
-                                        </a>
-                                    </li>
-                                    <li class="dropdown-divider"></li>
-                                    <li>
-                                        <a href="{% url "administrativo:login" %}" class="dropdown-item">
-                                            <div>
-                                                <i class="fa fa-sign-out"></i> Sair
-                                            </div>
-                                        </a>
-                                    </li>
-                                </ul>
-                            </li>
-                        </ul>
-                    </nav>
-                </div>
+                {% include 'administrativo/header.html' %}
                 <div class="row wrapper border-bottom white-bg page-heading">
                     <div class="col-lg-10">
                         <h2>Países</h2>
                     </div>
                 </div>
+                {% if messages %}
+                    <div id="toast-messages" style="display: none;">
+                        {% for message in messages %}
+                            <div class="toast-message" data-type="{{ message.tags }}" data-message="{{ message }}"></div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
                 <div class="wrapper wrapper-content">
                     <div class="row">
                         <div class="col-lg-12">
@@ -231,14 +144,11 @@
                         <div class="modal-body">
                             <div class="form-group">
                                 <label for="file">Selecione o arquivo</label>
-                                <div class="fileinput fileinput-new input-group" data-provides="fileinput">
-                                    <div class="form-control" data-trigger="fileinput">
-                                        <i class="fa fa-file fileinput-exists"></i>
-                                        <span class="fileinput-filename"></span>
-                                    </div>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" readonly>
                                     <div class="input-group-append">
                                         <span class="input-group-text btn btn-default btn-file">
-                                            <span class="fileinput-new">Selecionar arquivo</span>
+                                            <span class="fileinput-new">Selecionar arquivo/</span>
                                             <span class="fileinput-exists">Alterar</span>
                                             <input type="file" name="file" accept=".xlsx,.xls" required/>
                                         </span>
@@ -275,10 +185,27 @@
         <script src="{% static 'administrativo/js/plugins/pace/pace.min.js' %}"></script>
         <!-- Jasny -->
         <script src="{% static 'administrativo/js/plugins/jasny/jasny-bootstrap.min.js' %}"></script>
+        <script src="{% static 'administrativo/js/plugins/toastr/toastr.min.js' %}"></script>
         <script src="{% static 'administrativo/js/plugins/checkAll/checkAll.js' %}"></script>
         <script src="{% static 'administrativo/js/page-level.js' %}"></script>
         <script>
             $(document).ready(function() {
+                // Configuração do toastr
+                toastr.options = {
+                    closeButton: true,
+                    progressBar: true,
+                    positionClass: "toast-top-right",
+                    preventDuplicates: true,
+                    showDuration: "300",
+                    hideDuration: "1000",
+                    timeOut: "5000",
+                    extendedTimeOut: "1000",
+                    showEasing: "swing",
+                    hideEasing: "linear",
+                    showMethod: "fadeIn",
+                    hideMethod: "fadeOut"
+                };
+
                 var table = $('.dataTables-paises');
                 if (!$.fn.DataTable.isDataTable(table)) {
                     table.DataTable({
@@ -297,12 +224,86 @@
                     var countryId = $(this).data('id');
                     excluirPais(countryId);
                 });
+
+                // Atualiza o nome do arquivo selecionado
+                $('input[type="file"]').change(function(e) {
+                    var fileName = e.target.files[0].name;
+                    $(this).closest('.input-group').find('input[type="text"]').val(fileName);
+                });
+
+                // Checkbox "Selecionar todos"
+                $('.checkAll').on('change', function() {
+                    $('.check-item').prop('checked', $(this).prop('checked'));
+                });
+
+                // Handler para importação via AJAX
+                $('#formImportar').on('submit', function(e) {
+                    e.preventDefault();
+                    var formData = new FormData(this);
+
+                    $.ajax({
+                        url: $(this).attr('action'),
+                        type: 'POST',
+                        data: formData,
+                        processData: false,
+                        contentType: false,
+                        success: function(response) {
+                            $('#modalImportar').modal('hide');
+                            if (response.success) {
+                                toastr.success(response.message);
+                                setTimeout(function() {
+                                    window.location.reload();
+                                }, 1500);
+                            } else {
+                                toastr.error(response.message);
+                            }
+                        },
+                        error: function(xhr) {
+                            $('#modalImportar').modal('hide');
+                            toastr.error(xhr.responseJSON?.message || 'Erro ao importar países');
+                        }
+                    });
+                });
+
+                // Exibe as mensagens como toast
+                $('.toast-message').each(function() {
+                    var type = $(this).data('type');
+                    var message = $(this).data('message');
+                    
+                    // Converte 'error' para 'danger' se necessário
+                    if (type === 'error') {
+                        type = 'error';
+                    }
+                    
+                    toastr[type](message);
+                });
             });
 
             function excluirPais(id) {
                 $('#modalAlert2').modal('show');
                 $('#modalAlert2 .btn-danger').off('click').on('click', function() {
-                    window.location.href = "{% url 'administrativo:pais_excluir' 0 %}".replace('0', id);
+                    $.ajax({
+                        url: "{% url 'administrativo:pais_excluir' 0 %}".replace('0', id),
+                        type: 'POST',
+                        data: {
+                            'csrfmiddlewaretoken': '{{ csrf_token }}'
+                        },
+                        success: function(response) {
+                            $('#modalAlert2').modal('hide');
+                            if (response.success) {
+                                toastr.success(response.message);
+                                setTimeout(function() {
+                                    window.location.reload();
+                                }, 1500);
+                            } else {
+                                toastr.error(response.message);
+                            }
+                        },
+                        error: function(xhr) {
+                            $('#modalAlert2').modal('hide');
+                            toastr.error(xhr.responseJSON?.message || 'Erro ao excluir país');
+                        }
+                    });
                 });
             }
 
@@ -313,7 +314,7 @@
                 });
 
                 if (ids.length === 0) {
-                    alert('Selecione pelo menos um país para excluir');
+                    toastr.warning('Selecione pelo menos um país para excluir');
                     return;
                 }
 
@@ -327,19 +328,23 @@
                             'csrfmiddlewaretoken': '{{ csrf_token }}'
                         },
                         success: function(response) {
-                            window.location.reload();
+                            $('#modalAlert').modal('hide');
+                            if (response.success) {
+                                toastr.success(response.message);
+                                setTimeout(function() {
+                                    window.location.reload();
+                                }, 1500);
+                            } else {
+                                toastr.warning(response.message);
+                            }
                         },
                         error: function(xhr) {
-                            alert(xhr.responseJSON?.error || 'Erro ao excluir países');
+                            $('#modalAlert').modal('hide');
+                            toastr.error(xhr.responseJSON?.message || 'Erro ao excluir países');
                         }
                     });
                 });
             }
-
-            // Checkbox "Selecionar todos"
-            $('.checkAll').on('change', function() {
-                $('.check-item').prop('checked', $(this).prop('checked'));
-            });
         </script>
     </body>
 </html>

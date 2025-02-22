@@ -139,14 +139,11 @@
                         <div class="modal-body">
                             <div class="form-group">
                                 <label for="file">Selecione o arquivo</label>
-                                <div class="fileinput fileinput-new input-group" data-provides="fileinput">
-                                    <div class="form-control" data-trigger="fileinput">
-                                        <i class="fa fa-file fileinput-exists"></i>
-                                        <span class="fileinput-filename"></span>
-                                    </div>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" readonly>
                                     <div class="input-group-append">
                                         <span class="input-group-text btn btn-default btn-file">
-                                            <span class="fileinput-new">Selecionar arquivo</span>
+                                            <span class="fileinput-new">Selecionar arquivo/</span>
                                             <span class="fileinput-exists">Alterar</span>
                                             <input type="file" name="file" accept=".xlsx,.xls" required/>
                                         </span>
@@ -187,11 +184,19 @@
         <!-- Custom Continentes -->
         <script src="{% static 'administrativo/js/continentes.js' %}"></script>
         <script>
-            {% if messages %}
-                {% for message in messages %}
-                    toastr.{{ message.tags }}('{{ message }}');
-                {% endfor %}
-            {% endif %}
+            $(document).ready(function() {
+                // Atualiza o nome do arquivo selecionado
+                $('input[type="file"]').change(function(e) {
+                    var fileName = e.target.files[0].name;
+                    $(this).closest('.input-group').find('input[type="text"]').val(fileName);
+                });
+                
+                {% if messages %}
+                    {% for message in messages %}
+                        toastr.{{ message.tags }}('{{ message }}');
+                    {% endfor %}
+                {% endif %}
+            });
         </script>
     </body>
 </html>
