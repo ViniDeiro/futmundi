@@ -1888,6 +1888,13 @@ def estado_excluir(request, id):
         try:
             state = get_object_or_404(State, id=id)
             
+            # Verifica se tem times vinculados
+            if state.team_set.exists():
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Não é possível excluir o estado pois existem times vinculados'
+                })
+            
             # Verifica se tem campeonatos vinculados
             if Championship.objects.filter(state=state).exists():
                 return JsonResponse({
@@ -1904,7 +1911,7 @@ def estado_excluir(request, id):
         except Exception as e:
             return JsonResponse({
                 'success': False,
-                'message': f'Erro ao excluir estado: {str(e)}'
+                'message': 'Erro ao excluir estado. Verifique se não existem registros vinculados.'
             })
             
     return JsonResponse({
@@ -1927,21 +1934,29 @@ def estado_excluir_em_massa(request):
         try:
             # Verifica se algum estado tem times ou campeonatos vinculados
             states = State.objects.filter(id__in=ids)
-            non_deletable_states = []
+            states_to_delete = []
+            non_deletable_count = 0
             
             for state in states:
                 if state.team_set.exists() or Championship.objects.filter(state=state).exists():
-                    non_deletable_states.append(state.name)
+                    non_deletable_count += 1
+                else:
+                    states_to_delete.append(state.id)
             
-            if non_deletable_states:
-                error_msg = f'Os seguintes estados não podem ser excluídos pois possuem registros vinculados: {", ".join(non_deletable_states)}'
+            # Exclui apenas os estados que não têm vínculos
+            if states_to_delete:
+                State.objects.filter(id__in=states_to_delete).delete()
+            
+            if non_deletable_count > 0:
+                if len(states_to_delete) > 0:
+                    message = f'{len(states_to_delete)} estado(s) excluído(s) com sucesso. {non_deletable_count} estado(s) não foi(ram) excluído(s) pois possui(em) registros vinculados'
+                else:
+                    message = f'{non_deletable_count} estado(s) não pode(m) ser excluído(s) pois possui(em) registros vinculados'
                 return JsonResponse({
-                    'success': False,
-                    'message': error_msg
+                    'success': True,
+                    'message': message
                 })
-                
-            # Exclui os estados que podem ser excluídos
-            states.delete()
+            
             return JsonResponse({
                 'success': True,
                 'message': 'Estados excluídos com sucesso'
@@ -1950,7 +1965,7 @@ def estado_excluir_em_massa(request):
         except Exception as e:
             return JsonResponse({
                 'success': False,
-                'message': f'Erro ao excluir estados: {str(e)}'
+                'message': 'Erro ao excluir estados. Verifique se não existem registros vinculados.'
             })
     
     return JsonResponse({
