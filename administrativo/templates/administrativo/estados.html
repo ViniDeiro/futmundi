@@ -341,6 +341,11 @@
                     $('.check-item').prop('checked', $(this).prop('checked'));
                 });
 
+                // Handler para excluir em massa
+                $('#delete-selected').on('click', function() {
+                    excluirSelecionados();
+                });
+
                 // Handler para importação via AJAX
                 $('#formImportar').on('submit', function(e) {
                     e.preventDefault();
