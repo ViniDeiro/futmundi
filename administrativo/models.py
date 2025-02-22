@@ -450,6 +450,18 @@ class TemplateStage(models.Model):
     def __str__(self):
         return f"{self.template.name} - {self.name}"
 
+    def can_delete(self):
+        """
+        Verifica se a fase pode ser excluída.
+        Uma fase pode ser excluída se não estiver sendo usada em nenhuma rodada de campeonato.
+        """
+        # Verifica se há alguma fase de campeonato usando este template_stage que tenha rodadas
+        championship_stages = ChampionshipStage.objects.filter(template_stage=self)
+        for stage in championship_stages:
+            if stage.rounds.exists():
+                return False
+        return True
+
     def duplicate(self, new_template):
         return TemplateStage.objects.create(
             template=new_template,

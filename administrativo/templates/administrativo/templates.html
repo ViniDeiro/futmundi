@@ -19,143 +19,6 @@
         <link href="{% static 'administrativo/css/custom.css' %}" rel="stylesheet">
         <!-- Favicon -->
         <link rel="icon" href="{% static 'administrativo/img/futmundi.ico' %}" type="image/png">
-        <style>
-            .modal-content {
-                border-radius: 8px;
-                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-                max-height: 90vh;
-                overflow-y: auto;
-                overflow-x: hidden;
-            }
-            .modal-header {
-                background-color: #f8f9fa;
-                border-top-left-radius: 8px;
-                border-top-right-radius: 8px;
-                border-bottom: 1px solid #eaeaea;
-            }
-            .modal-title {
-                color: #2f4050;
-                font-weight: 600;
-            }
-            .fileinput {
-                width: 100%;
-                display: flex;
-            }
-            .fileinput .form-control {
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-                padding-right: 50px;
-                max-width: 100%;
-                flex: 1;
-                border-radius: 4px 0 0 4px;
-            }
-            .input-group {
-                display: flex;
-                width: 100%;
-            }
-            .input-group .form-control {
-                flex: 1;
-                border-radius: 4px 0 0 4px;
-            }
-            .input-group-append {
-                display: flex;
-                margin-left: -1px;
-            }
-            .input-group-append .input-group-text {
-                border-radius: 0 4px 4px 0;
-                background-color: #f8f9fa;
-                cursor: pointer;
-            }
-            .alert-info {
-                margin-top: 20px;
-                background-color: #f8fafc;
-                border-color: #e5e9f2;
-                padding: 15px;
-            }
-            .alert-info h5 {
-                color: #2f4050;
-                margin-bottom: 15px;
-                font-weight: 600;
-            }
-            .alert-info ul {
-                margin-left: 20px;
-                padding-left: 0;
-            }
-            .alert-info li {
-                margin-bottom: 8px;
-                color: #5c6b7f;
-                list-style-type: disc;
-            }
-            .alert-info li strong {
-                color: #2f4050;
-                font-weight: 600;
-            }
-            .alert-info p {
-                margin-bottom: 10px;
-                color: #5c6b7f;
-            }
-            .modal-footer {
-                border-top: 1px solid #eaeaea;
-            }
-            .btn-primary {
-                background-color: #337ab7;
-                border-color: #2e6da4;
-            }
-            .btn-primary:hover {
-                background-color: #286090;
-                border-color: #204d74;
-            }
-            .btn-action {
-                padding: 6px 12px;
-                border-radius: 3px;
-                border: none;
-                margin-right: 5px;
-            }
-            
-            .btn-edit {
-                background-color: #23c6c8;
-                color: white;
-            }
-            
-            .btn-edit:hover {
-                background-color: #1f9ea0;
-                color: white;
-            }
-            
-            .btn-toggle {
-                background-color: #1ab394;
-                color: white;
-            }
-            
-            .btn-toggle:hover {
-                background-color: #18a689;
-                color: white;
-            }
-            
-            .btn-duplicate {
-                background-color: #f8ac59;
-                color: white;
-            }
-            
-            .btn-duplicate:hover {
-                background-color: #f7a54a;
-                color: white;
-            }
-            
-            .btn-danger.btn-xs {
-                background-color: #ed5565;
-                color: white;
-            }
-            
-            .btn-danger.btn-xs:hover {
-                background-color: #ec4758;
-                color: white;
-            }
-            .modal-body {
-                overflow-x: hidden;
-            }
-        </style>
     </head>
     <body>
         <div id="wrapper">
@@ -305,7 +168,7 @@
                                                 <tr>
                                                     <td class="center-middle">
                                                         <div class="checkbox checkbox-success">
-                                                            <input id="checkbox{{ template.id }}" type="checkbox" value="{{ template.id }}">
+                                                            <input id="checkbox{{ template.id }}" type="checkbox" class="check-item" value="{{ template.id }}">
                                                             <label for="checkbox{{ template.id }}"></label>
                                                         </div>
                                                     </td>
@@ -313,16 +176,28 @@
                                                     <td>{{ template.stages.count }}</td>
                                                     <td>{{ template.created_at|date:"d/m/Y H:i" }}</td>
                                                     <td>
-                                                        <a href="{% url 'administrativo:template_editar' template.id %}" class="btn btn-info btn-xs" title="Editar"><i class="glyphicon glyphicon-pencil"></i></a>
+                                                        <a href="{% url 'administrativo:template_editar' template.id %}" class="btn btn-info btn-xs" title="Editar">
+                                                            <i class="glyphicon glyphicon-pencil"></i>
+                                                        </a>
                                                         <button type="button" class="btn btn-xs btn-toggle-template {% if template.enabled %}btn-danger{% else %}btn-success{% endif %}" 
                                                                 data-template-id="{{ template.id }}" 
-                                                                data-enabled="{{ template.enabled|yesno:'true,false' }}" 
+                                                                data-enabled="{{ template.enabled|yesno:'true,false' }}"
+                                                                data-has-championships="{{ template.template_championships.exists|yesno:'true,false' }}"
                                                                 title="{% if template.enabled %}Desativar{% else %}Ativar{% endif %}"
                                                                 {% if template.template_championships.exists and template.enabled %}disabled{% endif %}>
                                                             <i class="glyphicon glyphicon-{% if template.enabled %}remove{% else %}ok{% endif %}" style="color: white;"></i>
                                                         </button>
-                                                        <a href="{% url 'administrativo:template_duplicar' template.id %}" class="btn btn-warning btn-xs btn-duplicate" title="Criar Cópia"><i class="glyphicon glyphicon-file"></i></a>
-                                                        <button type="button" class="btn btn-danger btn-xs delete-template" data-template-id="{{ template.id }}" data-toggle="modal" data-target="#modalAlert2" title="Excluir"><i class="glyphicon glyphicon-trash"></i></button>
+                                                        <a href="{% url 'administrativo:template_duplicar' template.id %}" class="btn btn-warning btn-xs btn-duplicate" title="Criar Cópia">
+                                                            <i class="glyphicon glyphicon-file"></i>
+                                                        </a>
+                                                        <button type="button" class="btn btn-danger btn-xs delete-template" 
+                                                                data-template-id="{{ template.id }}" 
+                                                                data-toggle="modal" 
+                                                                data-target="#modalAlert2" 
+                                                                title="Excluir" 
+                                                                {% if template.template_championships.exists %}disabled{% endif %}>
+                                                            <i class="glyphicon glyphicon-trash"></i>
+                                                        </button>
                                                     </td>
                                                 </tr>
                                                 {% endfor %}
@@ -376,52 +251,48 @@
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content animated fadeIn">
                     <div class="modal-header">
-                        <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                        <button type="button" class="close" data-dismiss="modal">
+                            <span aria-hidden="true">&times;</span><span class="sr-only">Fechar</span>
+                        </button>
                         <h4 class="modal-title">Importar Template</h4>
                     </div>
-                    <div class="modal-body">
-                        <div class="alert alert-info">
-                            <h5>Instruções:</h5>
-                            <p>O arquivo Excel deve conter as seguintes colunas:</p>
-                            <ul>
-                                <li><strong>nome</strong> - Nome do template</li>
-                                <li><strong>fase</strong> - Nome da fase</li>
-                                <li><strong>rodadas</strong> - Número de rodadas</li>
-                                <li><strong>jogos_por_rodada</strong> - Número de jogos por rodada</li>
-                            </ul>
-                            <p>Observações importantes:</p>
-                            <ul>
-                                <li>O arquivo deve estar no formato Excel (.xlsx ou .xls)</li>
-                                <li>A primeira linha deve conter os nomes das colunas</li>
-                                <li>Todas as colunas são obrigatórias</li>
-                                <li>O nome do template deve ser único</li>
-                                <li>Os números de rodadas e jogos por rodada devem ser maiores que zero</li>
-                            </ul>
-                        </div>
-                        <form id="formImportar" method="POST" action="{% url 'administrativo:template_importar' %}" enctype="multipart/form-data">
-                            {% csrf_token %}
+                    <form id="formImportar" method="POST" action="{% url 'administrativo:template_importar' %}" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <div class="modal-body">
                             <div class="form-group">
                                 <label for="file">Selecione o arquivo</label>
-                                <div class="row">
-                                    <div class="col-lg-12">
-                                        <div class="input-group">
-                                            <input type="text" class="form-control" readonly>
-                                            <div class="input-group-append">
-                                                <label class="input-group-text btn btn-default">
-                                                    Selecionar arquivo
-                                                    <input type="file" name="file" accept=".xlsx,.xls" required style="display: none;"/>
-                                                </label>
-                                            </div>
-                                        </div>
+                                <div class="fileinput fileinput-new input-group" data-provides="fileinput">
+                                    <div class="form-control" data-trigger="fileinput">
+                                        <i class="fa fa-file fileinput-exists"></i>
+                                        <span class="fileinput-filename"></span>
+                                    </div>
+                                    <div class="input-group-append">
+                                        <span class="input-group-text btn btn-default btn-file">
+                                            <span class="fileinput-new">Selecionar arquivo</span>
+                                            <span class="fileinput-exists">Alterar</span>
+                                            <input type="file" name="file" accept=".xlsx,.xls" required/>
+                                        </span>
                                     </div>
                                 </div>
                             </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
-                                <button type="submit" class="btn btn-primary">Importar</button>
+
+                            <div style="background-color: #d9edf7; color: #31708f; padding: 15px; margin-bottom: 20px; border: 1px solid #bce8f1; border-radius: 4px;">
+                                <h5>Instruções:</h5>
+                                <p>O arquivo Excel deve conter as seguintes colunas:</p>
+                                <ul>
+                                    <li><strong>Nome:</strong> Nome do template</li>
+                                    <li><strong>fase:</strong> Nome da fase</li>
+                                    <li><strong>rodadas:</strong> Número de rodadas</li>
+                                    <li><strong>jogos_por_rodada:</strong> Número de jogos por rodada</li>
+                                </ul>
                             </div>
-                        </form>
-                    </div>
+                        </div>
+
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn btn-primary">Importar</button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
@@ -443,14 +314,34 @@
         <script src="{% static 'administrativo/js/settings.js' %}"></script>
         <script>
             $(document).ready(function() {
-                // Configuração inicial dos botões de excluir
-                $('.btn-toggle-template').each(function() {
-                    var isEnabled = $(this).data('enabled') === true;
-                    var deleteBtn = $(this).siblings('.delete-template');
-                    if (isEnabled) {
-                        deleteBtn.prop('disabled', true);
+                // Verifica se houve atualização de status de template
+                var statusUpdate = localStorage.getItem('template_status_updated');
+                if (statusUpdate) {
+                    var updateData = JSON.parse(statusUpdate);
+                    var btn = $('.btn-toggle-template[data-template-id="' + updateData.id + '"]');
+                    
+                    if (btn.length) {
+                        // Atualiza o botão com o novo status
+                        if (updateData.enabled) {
+                            btn.removeClass('btn-success').addClass('btn-danger');
+                            btn.find('i').removeClass('glyphicon-ok').addClass('glyphicon-remove');
+                            btn.attr('title', 'Desativar');
+                        } else {
+                            btn.removeClass('btn-danger').addClass('btn-success');
+                            btn.find('i').removeClass('glyphicon-remove').addClass('glyphicon-ok');
+                            btn.attr('title', 'Ativar');
+                        }
+                        btn.data('enabled', updateData.enabled);
+                        
+                        // Atualiza o estado do botão de excluir
+                        var hasChampionships = btn.data('has-championships') === true;
+                        var deleteBtn = btn.siblings('.delete-template');
+                        deleteBtn.prop('disabled', updateData.enabled && hasChampionships);
                     }
-                });
+                    
+                    // Limpa o localStorage
+                    localStorage.removeItem('template_status_updated');
+                }
 
                 // Configuração do toastr
                 toastr.options = {
@@ -468,15 +359,31 @@
                     hideMethod: "fadeOut"
                 };
 
+                // Função para atualizar o estado dos botões de excluir
+                function updateDeleteButtons() {
+                    $('.btn-toggle-template').each(function() {
+                        var isEnabled = $(this).data('enabled') === true;
+                        var hasChampionships = $(this).data('has-championships') === true;
+                        var deleteBtn = $(this).siblings('.delete-template');
+                        
+                        // Só desabilita o botão de excluir se o template estiver ativo E tiver campeonatos vinculados
+                        deleteBtn.prop('disabled', isEnabled && hasChampionships);
+                    });
+                }
+
+                // Inicializa os botões
+                updateDeleteButtons();
+
                 // Atualiza o nome do arquivo quando selecionado
-                $('#modalImportar input[type="file"]').on('change', function() {
+                $(document).on('change', '#modalImportar input[type="file"]', function() {
                     var fileName = this.files[0] ? this.files[0].name : '';
                     $(this).closest('.input-group').find('input[type="text"]').val(fileName);
                 });
 
-                function excluirSelecionados() {
-                    var ids = [];
-                    $('input[type="checkbox"]:checked').not('.checkAll').each(function() {
+                // Função para excluir múltiplos templates
+                window.excluirSelecionados = function() {
+                    const ids = [];
+                    $('.check-item:checked').each(function() {
                         ids.push($(this).val());
                     });
 
@@ -486,22 +393,59 @@
                     }
 
                     $('#modalAlert').modal('show');
+                    $('#modalAlert .btn-danger').off('click').on('click', function() {
+                        $.ajax({
+                            url: "{% url 'administrativo:template_excluir_em_massa' %}",
+                            type: 'POST',
+                            data: {
+                                'ids[]': ids,
+                                'csrfmiddlewaretoken': '{{ csrf_token }}'
+                            },
+                            success: function(response) {
+                                $('#modalAlert').modal('hide');
+                                if (response.success) {
+                                    toastr.success(response.message);
+                                    if (response.errors && response.errors.length > 0) {
+                                        response.errors.forEach(function(error) {
+                                            toastr.warning(error);
+                                        });
+                                    }
+                                    setTimeout(function() {
+                                        window.location.reload();
+                                    }, 1500);
+                                } else {
+                                    toastr.error(response.message);
+                                }
+                            },
+                            error: function() {
+                                $('#modalAlert').modal('hide');
+                                toastr.error('Erro ao excluir templates');
+                            }
+                        });
+                    });
                 }
 
+                // Checkbox "Selecionar todos"
+                $(document).on('change', '.checkAll', function() {
+                    $('.check-item').prop('checked', $(this).prop('checked'));
+                });
+
                 // Ativar/Desativar template
-                $('.btn-toggle-template').click(function(e) {
+                $(document).on('click', '.btn-toggle-template:not([disabled])', function(e) {
                     e.preventDefault();
                     e.stopPropagation();
+                    
+                    // Previne explicitamente que qualquer modal seja aberto
                     e.stopImmediatePropagation();
+                    $('.modal').modal('hide');
                     
                     var btn = $(this);
                     var templateId = btn.data('template-id');
                     var isEnabled = btn.data('enabled') === true;
+                    var hasChampionships = btn.data('has-championships') === true;
                     var deleteBtn = btn.siblings('.delete-template');
                     
-                    // Desabilita todos os botões da linha durante a operação
-                    var allButtons = btn.closest('td').find('button');
-                    allButtons.prop('disabled', true);
+                    btn.prop('disabled', true);
                     
                     $.ajax({
                         url: '{% url "administrativo:template_toggle_status" %}',
@@ -512,109 +456,47 @@
                         },
                         success: function(response) {
                             if (response.success) {
-                                // Atualiza o estado do botão de ativar/desativar
                                 btn.toggleClass('btn-danger btn-success');
                                 btn.find('i').toggleClass('glyphicon-remove glyphicon-ok');
                                 btn.attr('title', isEnabled ? 'Ativar' : 'Desativar');
                                 btn.data('enabled', !isEnabled);
                                 
-                                // Atualiza o estado do botão de excluir
-                                if (isEnabled) { // Se estava ativado e foi desativado
-                                    deleteBtn.prop('disabled', false);
-                                } else { // Se estava desativado e foi ativado
-                                    deleteBtn.prop('disabled', true);
-                                }
+                                deleteBtn.prop('disabled', !isEnabled && hasChampionships);
                                 
                                 toastr.success(response.message);
                             } else {
                                 toastr.error(response.message);
-                                // Restaura o estado original dos botões em caso de erro
-                                deleteBtn.prop('disabled', isEnabled);
                             }
                         },
                         error: function() {
                             toastr.error('Erro ao alterar status do template');
-                            // Restaura o estado original dos botões em caso de erro
-                            deleteBtn.prop('disabled', isEnabled);
                         },
                         complete: function() {
-                            // Reabilita o botão de ativar/desativar
-                            btn.prop('disabled', false);
+                            btn.prop('disabled', hasChampionships && !isEnabled);
                         }
                     });
-                });
-
-                // Exclusão em massa
-                $('#modalAlert .btn-danger').click(function() {
-                    var ids = [];
-                    $('input[type="checkbox"]:checked').not('.checkAll').each(function() {
-                        ids.push($(this).val());
-                    });
-
-                    if (ids.length === 0) {
-                        toastr.warning('Selecione pelo menos um template para excluir');
-                        return;
-                    }
-
-                    $.ajax({
-                        url: '{% url "administrativo:template_excluir_em_massa" %}',
-                        type: 'POST',
-                        data: {
-                            'ids[]': ids,
-                            'csrfmiddlewaretoken': '{{ csrf_token }}'
-                        },
-                        success: function(response) {
-                            $('#modalAlert').modal('hide');
-                            if (response.success) {
-                                toastr.success(response.message);
-                                if (response.errors && response.errors.length > 0) {
-                                    response.errors.forEach(function(error) {
-                                        toastr.warning(error);
-                                    });
-                                }
-                                window.location.reload();
-                            } else {
-                                toastr.error(response.message);
-                            }
-                        },
-                        error: function() {
-                            $('#modalAlert').modal('hide');
-                            toastr.error('Erro ao excluir templates');
-                        }
-                    });
-                });
-
-                // Variável para armazenar o ID do template a ser excluído
-                var templateIdToDelete;
-
-                // Quando o botão de exclusão individual é clicado
-                $(document).on('click', '.delete-template', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    e.stopImmediatePropagation();
                     
-                    var btn = $(this);
-                    
-                    // Se o botão estiver desabilitado ou o template estiver ativo, não faz nada
-                    if (btn.prop('disabled') || btn.siblings('.btn-toggle-template').data('enabled') === true) {
-                        return;
-                    }
-                    
-                    templateIdToDelete = btn.data('template-id');
-                    $('#modalAlert2').modal('show');
+                    return false;
                 });
 
                 // Exclusão individual
+                $(document).on('click', '.delete-template:not([disabled])', function(e) {
+                    e.preventDefault();
+                    templateIdToDelete = $(this).data('template-id');
+                    $('#modalAlert2').modal('show');
+                });
+
                 $('#modalAlert2 .btn-danger').click(function() {
                     if (!templateIdToDelete) {
                         toastr.error('Template não identificado');
                         return;
                     }
 
-                    // Desabilita todos os botões da linha durante a exclusão
                     var row = $('.delete-template[data-template-id="' + templateIdToDelete + '"]').closest('tr');
-                    var allButtons = row.find('button');
-                    allButtons.prop('disabled', true);
+                    var btn = row.find('.delete-template');
+                    
+                    // Desabilita apenas o botão de excluir durante a operação
+                    btn.prop('disabled', true);
 
                     $.ajax({
                         url: '{% url "administrativo:template_excluir" 0 %}'.replace('0', templateIdToDelete),
@@ -629,21 +511,19 @@
                                 window.location.reload();
                             } else {
                                 toastr.error(response.message);
-                                // Restaura o estado dos botões em caso de erro
-                                allButtons.prop('disabled', false);
+                                btn.prop('disabled', false);
                             }
                         },
                         error: function() {
                             $('#modalAlert2').modal('hide');
                             toastr.error('Erro ao excluir template');
-                            // Restaura o estado dos botões em caso de erro
-                            allButtons.prop('disabled', false);
+                            btn.prop('disabled', false);
                         }
                     });
                 });
 
                 // Manipulação do botão de duplicar
-                $('.btn-duplicate').click(function(e) {
+                $(document).on('click', '.btn-duplicate', function(e) {
                     e.preventDefault();
                     var url = $(this).attr('href');
                     
@@ -652,10 +532,8 @@
                         type: 'GET',
                         success: function(response) {
                             if (response.success) {
-                                // Armazena a mensagem no localStorage
                                 localStorage.setItem('toastMessage', response.message);
                                 localStorage.setItem('toastType', 'success');
-                                // Redireciona imediatamente
                                 window.location.href = response.redirect;
                             } else {
                                 toastr.error(response.message);
@@ -673,7 +551,6 @@
                 
                 if (message) {
                     toastr[type](message);
-                    // Limpa as mensagens do localStorage
                     localStorage.removeItem('toastMessage');
                     localStorage.removeItem('toastType');
                 }
@@ -704,7 +581,10 @@
                                         }
                                     }
                                 });
-                                window.location.reload();
+                                // Recarrega a página após um pequeno delay para permitir que as mensagens sejam vistas
+                                setTimeout(function() {
+                                    window.location.reload();
+                                }, 1500);
                             } else {
                                 toastr.error(response.message);
                             }
@@ -714,6 +594,27 @@
                             toastr.error('Erro ao importar template');
                         }
                     });
+                });
+
+                // Função para inicializar os handlers dos botões
+                function initializeButtonHandlers() {
+                    // Remove quaisquer data attributes de modal dos botões de toggle
+                    $('.btn-toggle-template').removeAttr('data-toggle').removeAttr('data-target');
+                    
+                    // Garante que os botões de delete tenham os atributos corretos
+                    $('.delete-template').attr('data-toggle', 'modal').attr('data-target', '#modalAlert2');
+                }
+
+                // Inicializa os handlers quando a página carrega
+                initializeButtonHandlers();
+
+                // Re-inicializa os handlers após qualquer operação que possa modificar a tabela
+                $(document).ajaxComplete(function(event, xhr, settings) {
+                    if (settings.url.includes('toggle_status') || 
+                        settings.url.includes('excluir') || 
+                        settings.url.includes('importar')) {
+                        initializeButtonHandlers();
+                    }
                 });
             });
         </script>

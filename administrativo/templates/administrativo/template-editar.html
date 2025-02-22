@@ -143,7 +143,6 @@
                                                                     </td>
                                                                     <td>
                                                                         <a href="{% url 'administrativo:campeonato_editar' championship.id %}" class="btn btn-info btn-xs" title="Editar"><i class="glyphicon glyphicon-pencil"></i></a>
-                                                                        <a href="{% url 'administrativo:campeonato_resultados' championship.id %}" class="btn btn-warning btn-xs" title="Ver Resultados"><i class="glyphicon glyphicon-th"></i></a>
                                                                     </td>
                                                                 </tr>
                                                                 {% endfor %}
@@ -441,30 +440,48 @@
                 // Salvar template
                 $('#btn-save').click(function() {
                     var name = $('#name').val();
-                    var enabled = $('#enabled').is(':checked');
+                    var enabled = $('input[name="enabled"]').is(':checked');
 
                     if (!name) {
                         toastr.error('Preencha o nome do template');
                         return;
                     }
 
+                    // Coleta as informações das fases
+                    var stages = [];
+                    $('#phases-table tbody tr').each(function() {
+                        stages.push({
+                            id: $(this).data('id'),
+                            name: $(this).find('td:eq(1)').text(),
+                            rounds: parseInt($(this).find('td:eq(2)').text()),
+                            matches_per_round: parseInt($(this).find('td:eq(3)').text())
+                        });
+                    });
+
                     var formData = new FormData();
                     formData.append('name', name);
                     formData.append('enabled', enabled);
+                    formData.append('stages', JSON.stringify(stages));
                     formData.append('csrfmiddlewaretoken', $('[name=csrfmiddlewaretoken]').val());
 
                     $.ajax({
-                        url: "{% url 'administrativo:template_editar' template.id %}",
+                        url: window.location.href,
                         type: 'POST',
                         data: formData,
                         processData: false,
                         contentType: false,
                         success: function(response) {
                             if (response.success) {
-                                // Armazena a mensagem de sucesso no localStorage
-                                localStorage.setItem('toastMessage', 'Template atualizado com sucesso!');
-                                localStorage.setItem('toastType', 'success');
-                                window.location.href = response.redirect_url;
+                                toastr.success(response.message);
+                                // Armazena o status do template no localStorage
+                                var templateData = {
+                                    id: {{ template.id }},
+                                    enabled: enabled
+                                };
+                                localStorage.setItem('template_status_updated', JSON.stringify(templateData));
+                                setTimeout(function() {
+                                    window.location.href = response.redirect_url;
+                                }, 1000);
                             } else {
                                 toastr.error(response.message);
                             }

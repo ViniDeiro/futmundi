@@ -258,27 +258,19 @@
                                                 </div>
                                                 <div class="row col-lg-12 mt10">
                                                     <div class="col-lg-2">
-                                                        <select class="form-control js-templating" style="width: 100%">
-                                                            <option value="audax">Audax</option>
-                                                            <option value="bragantino">Bragantino</option>
-                                                            <option value="corinthians">Corinthians</option>
-                                                            <option value="guarani">Guarani</option>
-                                                            <option value="ituano">Ituano</option>
+                                                        <select class="form-control js-templating time-select time-mandante" style="width: 100%">
+                                                            <option value="">Selecione o time</option>
                                                         </select>
                                                     </div>
                                                     <div class="col-lg-1 ml35 mrm15">
-                                                    <input type="number" min="0" class="form-control placar">
+                                                        <input type="number" min="0" class="form-control placar">
                                                     </div>
                                                     <div class="col-lg-1 mlm30 mrm15">
-                                                    <input type="number" min="0" class="form-control placar">
+                                                        <input type="number" min="0" class="form-control placar">
                                                     </div>
                                                     <div class="col-lg-2 mlm30 mr25">
-                                                        <select class="form-control js-templating" style="width: 100%">
-                                                            <option value="audax">Audax</option>
-                                                            <option value="bragantino">Bragantino</option>
-                                                            <option value="corinthians">Corinthians</option>
-                                                            <option value="guarani">Guarani</option>
-                                                            <option value="ituano">Ituano</option>
+                                                        <select class="form-control js-templating time-select time-visitante" style="width: 100%">
+                                                            <option value="">Selecione o time</option>
                                                         </select>
                                                     </div>
                                                     <div class="col-lg-3 ml10">
@@ -430,11 +422,13 @@
                     var filter = $(this).val();
                     $.ajax({
                         url: "{% url 'administrativo:times_por_tipo' %}",
-                        data: { 
-                            type: filter,
-                            csrfmiddlewaretoken: '{{ csrf_token }}'
-                        },
                         type: 'POST',
+                        headers: {
+                            'X-CSRFToken': '{{ csrf_token }}'
+                        },
+                        data: { 
+                            type: filter
+                        },
                         success: function(response) {
                             if (response.success) {
                                 var dualListbox = $('.dual_select');
@@ -456,6 +450,34 @@
                             toastr.error(xhr.responseJSON?.message || 'Erro ao carregar times');
                         }
                     });
+                });
+
+                // Função para atualizar os selects de times nas rodadas
+                function atualizarTimesRodadas() {
+                    var timesSelecionados = $('.dual_select').val();
+                    var options = '<option value="">Selecione o time</option>';
+                    
+                    if (timesSelecionados) {
+                        $('.dual_select option:selected').each(function() {
+                            options += '<option value="' + $(this).val() + '">' + $(this).text() + '</option>';
+                        });
+                    }
+                    
+                    $('.time-select').each(function() {
+                        $(this).html(options);
+                    });
+                }
+
+                // Atualiza os times das rodadas quando mudar a seleção na dual listbox
+                $('.dual_select').on('change', function() {
+                    atualizarTimesRodadas();
+                });
+
+                // Atualiza os times quando trocar para a aba de rodadas
+                $('a[data-toggle="tab"]').on('shown.bs.tab', function(e) {
+                    if ($(e.target).attr('href') === '#rodadas') {
+                        atualizarTimesRodadas();
+                    }
                 });
 
                 // Gerencia o envio do formulário em etapas

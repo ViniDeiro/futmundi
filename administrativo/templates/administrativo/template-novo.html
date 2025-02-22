@@ -179,7 +179,7 @@
                                                         <input type="hidden" id="number_of_stages" name="number_of_stages" value="0">
                                                         <input type="hidden" name="stages" id="stages-data">
                                                         <div class="mt25">
-                                                            <button type="submit" class="btn btn-success ml15"><i class="glyphicon glyphicon-save mr5"></i> Salvar</button>
+                                                            <button type="button" class="btn btn-success ml15" id="btn-save-geral"><i class="glyphicon glyphicon-save mr5"></i> Salvar</button>
                                                             <a href="{% url 'administrativo:templates' %}" class="btn btn-cancel ml15"><i class="fa fa-ban mr5"></i> Cancelar</a>
                                                         </div>
                                                     </form>
@@ -191,33 +191,33 @@
                                         <div class="panel-body">
                                             <div class="row">
                                                 <div class="col-lg-4">
-                                                        <div class="form-group col-lg-6">
-                                                            <input type="text" id="stage_name" class="form-control" required>
-                                                            <label class="form-control-placeholder" for="stage_name">Fase</label>
-                                                        </div>  
-                                                        <div class="form-group col-lg-6">
-                                                            <input type="number" id="stage_rounds" class="form-control" min="1" required>
-                                                            <label class="form-control-placeholder" for="stage_rounds">Rodadas</label>
-                                                        </div>  
-                                                        <div class="form-group mt10">
-                                                            <div class="col-lg-12">
-                                                                <div class="row">
-                                                                    <div class="col-lg-6">
-                                                                        <input type="number" min="1" id="stage_matches" class="form-control" required>
-                                                                        <label class="form-control-placeholder" for="stage_matches">Jogos/Rodada</label>
-                                                                    </div>
-                                                                    <div class="col-lg-6">
-                                                                        <button type="button" id="btn-add-stage" class="btn btn-primary">
-                                                                            <i class="fa fa-plus mr5"></i> Adicionar
-                                                                        </button> 
-                                                                    </div>
+                                                    <div class="form-group col-lg-6">
+                                                        <input type="text" id="stage_name" class="form-control" required>
+                                                        <label class="form-control-placeholder" for="stage_name">Fase</label>
+                                                    </div>  
+                                                    <div class="form-group col-lg-6">
+                                                        <input type="number" id="stage_rounds" class="form-control" min="1" required>
+                                                        <label class="form-control-placeholder" for="stage_rounds">Rodadas</label>
+                                                    </div>  
+                                                    <div class="form-group mt10">
+                                                        <div class="col-lg-12">
+                                                            <div class="row">
+                                                                <div class="col-lg-6">
+                                                                    <input type="number" min="1" id="stage_matches" class="form-control" required>
+                                                                    <label class="form-control-placeholder" for="stage_matches">Jogos/Rodada</label>
                                                                 </div>
-                                                            </div>                                    
-                                                        </div>
-                                                        <div class="mt25">
-                                                            <button type="submit" class="btn btn-success ml15"><i class="glyphicon glyphicon-save mr5"></i> Salvar</button>
-                                                            <a href="{% url 'administrativo:templates' %}" class="btn btn-cancel ml15"><i class="fa fa-ban mr5"></i> Cancelar</a>
-                                                        </div>
+                                                                <div class="col-lg-6">
+                                                                    <button type="button" id="btn-add-stage" class="btn btn-primary">
+                                                                        <i class="fa fa-plus mr5"></i> Adicionar
+                                                                    </button> 
+                                                                </div>
+                                                            </div>
+                                                        </div>                                    
+                                                    </div>
+                                                    <div class="mt25">
+                                                        <button type="button" class="btn btn-success ml15" id="btn-save-fases"><i class="glyphicon glyphicon-save mr5"></i> Salvar</button>
+                                                        <a href="{% url 'administrativo:templates' %}" class="btn btn-cancel ml15"><i class="fa fa-ban mr5"></i> Cancelar</a>
+                                                    </div>
                                                 </div>
                                                 <div class="col-lg-8">
                                                     <div class="table-responsive">
@@ -412,20 +412,10 @@
                     }
                 });
 
-                // Validação e envio do formulário
-                $('form').on('submit', function(e) {
-                    e.preventDefault();
-                    
-                    if (stages.length === 0) {
-                        toastr.error('Por favor, adicione pelo menos uma fase');
-                        return false;
-                    }
-
-                    var formData = new FormData(this);
-                    formData.append('stages', JSON.stringify(stages));
-
+                // Função para salvar o template
+                function saveTemplate(formData) {
                     $.ajax({
-                        url: $(this).attr('action'),
+                        url: "{% url 'administrativo:template_novo' %}",
                         type: 'POST',
                         data: formData,
                         processData: false,
@@ -444,6 +434,45 @@
                             toastr.error('Erro ao salvar template');
                         }
                     });
+                }
+
+                // Salvar na aba Geral
+                $('#btn-save-geral').click(function() {
+                    var name = $('#name').val();
+                    if (!name) {
+                        toastr.error('Preencha o nome do template');
+                        return;
+                    }
+
+                    var formData = new FormData();
+                    formData.append('name', name);
+                    formData.append('enabled', $('#enabled').is(':checked'));
+                    formData.append('stages', JSON.stringify(stages));
+                    formData.append('csrfmiddlewaretoken', $('[name=csrfmiddlewaretoken]').val());
+
+                    saveTemplate(formData);
+                });
+
+                // Salvar na aba Fases
+                $('#btn-save-fases').click(function() {
+                    if (stages.length === 0) {
+                        toastr.error('Por favor, adicione pelo menos uma fase');
+                        return;
+                    }
+
+                    var name = $('#name').val();
+                    if (!name) {
+                        toastr.error('Por favor, preencha o nome do template na aba Geral');
+                        return;
+                    }
+
+                    var formData = new FormData();
+                    formData.append('name', name);
+                    formData.append('enabled', $('#enabled').is(':checked'));
+                    formData.append('stages', JSON.stringify(stages));
+                    formData.append('csrfmiddlewaretoken', $('[name=csrfmiddlewaretoken]').val());
+
+                    saveTemplate(formData);
                 });
             });
         </script>

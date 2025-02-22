@@ -574,38 +574,71 @@ def template_novo(request):
 
 @login_required
 def template_editar(request, id):
-    template = get_object_or_404(Template.objects.prefetch_related('template_championships'), id=id)
+    """
+    View para editar um template existente.
+    """
+    template = get_object_or_404(Template, id=id)
     
     if request.method == 'POST':
         try:
             name = request.POST.get('name')
             enabled = request.POST.get('enabled') == 'on'
+            stages_data = json.loads(request.POST.get('stages', '[]'))
             
-            # Verificar se já existe outro template com o mesmo nome
+            # Validações
+            if not name:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'O nome é obrigatório'
+                })
+                
+            # Verifica se já existe outro template com o mesmo nome
             if Template.objects.filter(name=name).exclude(id=id).exists():
-                messages.error(request, 'Já existe um template com este nome')
                 return JsonResponse({
                     'success': False,
                     'message': 'Já existe um template com este nome'
                 })
-            
-            template.name = name
-            template.enabled = enabled
-            template.save()
-            
-            messages.success(request, 'Template atualizado com sucesso')
-            return JsonResponse({
-                'success': True,
-                'redirect_url': reverse('administrativo:templates')
-            })
-            
+                
+            with transaction.atomic():
+                # Atualiza os dados básicos do template
+                template.name = name
+                template.enabled = enabled
+                template.save()
+                
+                # Se o template tem campeonatos vinculados, não permite alterar as fases
+                if template.championships.exists():
+                    return JsonResponse({
+                        'success': True,
+                        'message': 'Template atualizado com sucesso',
+                        'redirect_url': reverse('administrativo:templates')
+                    })
+                
+                # Atualiza a ordem das fases
+                for index, stage_data in enumerate(stages_data):
+                    stage = template.stages.get(id=stage_data['id'])
+                    stage.name = stage_data['name']
+                    stage.rounds = stage_data['rounds']
+                    stage.matches_per_round = stage_data['matches_per_round']
+                    stage.order = index
+                    stage.save()
+                
+                # Atualiza o número de fases
+                template.number_of_stages = len(stages_data)
+                template.save()
+                
+                return JsonResponse({
+                    'success': True,
+                    'message': 'Template atualizado com sucesso',
+                    'redirect_url': reverse('administrativo:templates')
+                })
+                
         except Exception as e:
-            messages.error(request, str(e))
             return JsonResponse({
                 'success': False,
-                'message': str(e)
+                'message': f'Erro ao atualizar template: {str(e)}'
             })
     
+    # GET: renderiza o formulário
     return render(request, 'administrativo/template-editar.html', {
         'template': template
     })
@@ -2000,6 +2033,7 @@ def administradores(request):
     admins = Administrator.objects.filter(is_root=False).order_by('-created_at')
     return render(request, 'administrativo/administradores.html', {'admins': admins})
 
+@login_required
 def administrador_novo(request):
     # Limpa as mensagens antigas
     storage = messages.get_messages(request)
@@ -2018,15 +2052,19 @@ def administrador_novo(request):
             messages.error(request, 'Email já cadastrado')
             return render(request, 'administrativo/administrador_novo.html')
             
-        Administrator.objects.create(
-            name=name,
-            email=email,
-            password=make_password(password),
-            is_root=False
-        )
-        messages.success(request, 'Administrador criado com sucesso')
-        return redirect('administrativo:administradores')
-        
+        try:
+            Administrator.objects.create(
+                name=name,
+                email=email,
+                password=make_password(password),
+                is_root=False
+            )
+            messages.success(request, 'Administrador criado com sucesso')
+            return redirect('administrativo:administradores')
+        except Exception as e:
+            messages.error(request, f'Erro ao criar administrador: {str(e)}')
+            return render(request, 'administrativo/administrador_novo.html')
+            
     return render(request, 'administrativo/administrador_novo.html')
 
 def administrador_editar(request, id):
@@ -2301,9 +2339,9 @@ def times_por_tipo(request):
         
         teams = Team.objects.all()
         if filter_type == 'teams':
-            teams = teams.filter(is_selection=False)
+            teams = teams.filter(is_national_team=False)
         elif filter_type == 'selections':
-            teams = teams.filter(is_selection=True)
+            teams = teams.filter(is_national_team=True)
             
         return JsonResponse({
             'success': True,
@@ -2418,11 +2456,11 @@ def template_delete_stage(request, template_id, stage_id):
         template = get_object_or_404(Template, id=template_id)
         stage = get_object_or_404(TemplateStage, id=stage_id, template=template)
         
-        # Verifica se a fase está sendo usada em algum campeonato
-        if ChampionshipStage.objects.filter(template_stage=stage).exists():
+        # Verifica se a fase pode ser excluída
+        if not stage.can_delete():
             return JsonResponse({
                 'success': False,
-                'message': 'Não é possível excluir esta fase pois ela está sendo usada em um ou mais campeonatos'
+                'message': 'Não é possível excluir esta fase pois ela está sendo usada em rodadas de campeonatos'
             })
             
         try:
