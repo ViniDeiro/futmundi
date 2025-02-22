@@ -532,7 +532,7 @@ def template_novo(request):
                 # Cria o template
                 template = Template.objects.create(
                     name=name,
-                    enabled=request.POST.get('enabled') == 'on',  # Checkbox retorna 'on' quando marcado
+                    enabled=request.POST.get('enabled') == 'true',  # Mudado para comparar com 'true'
                     number_of_stages=0  # Será atualizado após criar as fases
                 )
                 
@@ -582,7 +582,7 @@ def template_editar(request, id):
     if request.method == 'POST':
         try:
             name = request.POST.get('name')
-            enabled = request.POST.get('enabled') == 'on'
+            enabled = request.POST.get('enabled') == 'true'  # Mudado para comparar com 'true'
             stages_data = json.loads(request.POST.get('stages', '[]'))
             
             # Validações
@@ -602,11 +602,19 @@ def template_editar(request, id):
             with transaction.atomic():
                 # Atualiza os dados básicos do template
                 template.name = name
+                
+                # Se o template tem campeonatos vinculados, não permite desativar
+                if template.template_championships.exists() and not enabled and template.enabled:
+                    return JsonResponse({
+                        'success': False,
+                        'message': 'Não é possível desativar um template que possui campeonatos vinculados'
+                    })
+                
                 template.enabled = enabled
                 template.save()
                 
                 # Se o template tem campeonatos vinculados, não permite alterar as fases
-                if template.championships.exists():
+                if template.template_championships.exists():
                     return JsonResponse({
                         'success': True,
                         'message': 'Template atualizado com sucesso',

@@ -453,7 +453,9 @@
                 // Salvar template
                 $('#btn-save').click(function() {
                     var name = $('#name').val();
-                    var enabled = $('input[name="enabled"]').is(':checked');
+                    var isInPhasesTab = $('.nav-tabs .active').attr('href') === '#fases';
+                    var currentEnabled = {{ template.enabled|yesno:"true,false" }};
+                    var enabled = isInPhasesTab ? currentEnabled : $('input[name="enabled"]').is(':checked');
 
                     if (!name) {
                         toastr.error('Preencha o nome do template');
@@ -486,12 +488,13 @@
                         success: function(response) {
                             if (response.success) {
                                 toastr.success(response.message);
-                                // Armazena o status do template no localStorage
-                                var templateData = {
-                                    id: {{ template.id }},
-                                    enabled: enabled
-                                };
-                                localStorage.setItem('template_status_updated', JSON.stringify(templateData));
+                                // Só atualiza o status no localStorage se estiver na aba geral e o status mudou
+                                if (!isInPhasesTab && currentEnabled !== enabled) {
+                                    localStorage.setItem('template_status_updated', JSON.stringify({
+                                        id: {{ template.id }},
+                                        enabled: enabled
+                                    }));
+                                }
                                 setTimeout(function() {
                                     window.location.href = response.redirect_url;
                                 }, 1000);

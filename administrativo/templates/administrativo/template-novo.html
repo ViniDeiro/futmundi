@@ -446,7 +446,7 @@
 
                     var formData = new FormData();
                     formData.append('name', name);
-                    formData.append('enabled', $('#enabled').is(':checked'));
+                    formData.append('enabled', $('input[name="enabled"]').is(':checked') ? 'true' : 'false');
                     formData.append('stages', JSON.stringify(stages));
                     formData.append('csrfmiddlewaretoken', $('[name=csrfmiddlewaretoken]').val());
 
@@ -468,7 +468,7 @@
 
                     var formData = new FormData();
                     formData.append('name', name);
-                    formData.append('enabled', $('#enabled').is(':checked'));
+                    formData.append('enabled', $('input[name="enabled"]').is(':checked') ? 'true' : 'false');
                     formData.append('stages', JSON.stringify(stages));
                     formData.append('csrfmiddlewaretoken', $('[name=csrfmiddlewaretoken]').val());
 
