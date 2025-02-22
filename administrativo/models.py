@@ -535,8 +535,11 @@ class Team(models.Model):
         return Championship.objects.filter(teams=self).exists()
 
     def save(self, *args, **kwargs):
+        # Se for seleção, garante que o estado seja None
+        if self.is_national_team:
+            self.state = None
         # Se o país não tem estados, garante que state seja None
-        if self.country and not self.country.state_set.exists():
+        elif self.country and not self.country.state_set.exists():
             self.state = None
             
         # Garante que o continente seja o mesmo do país

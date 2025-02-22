@@ -219,8 +219,8 @@
                     });
                 }
 
-                // Handler para excluir país
-                $('.delete-btn').on('click', function() {
+                // Handler para excluir país (usando delegação de eventos)
+                $(document).on('click', '.delete-btn', function() {
                     var countryId = $(this).data('id');
                     excluirPais(countryId);
                 });

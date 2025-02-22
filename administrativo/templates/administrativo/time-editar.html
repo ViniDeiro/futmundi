@@ -202,11 +202,20 @@
                 $('#is_national_team').change(function() {
                     var isNational = $(this).is(':checked');
                     $('#is_national_team_hidden').val(isNational);
+                    
                     if (isNational) {
-                        $('#state').val('').prop('disabled', true);
+                        var stateContainer = $('#state').closest('.mt5');
+                        stateContainer.hide();
+                        $('#state').val('').prop('disabled', true).trigger('change');
+                        $('#state').prop('required', false);
                         $('#state_hidden').val('');
+                        // Força limpeza do estado
+                        $('select[name="state"]').val('');
                     } else {
+                        var stateContainer = $('#state').closest('.mt5');
+                        stateContainer.show();
                         $('#state').prop('disabled', false);
+                        $('#state').prop('required', $('#state option').length > 1);
                     }
                 });
 
@@ -220,6 +229,28 @@
                 $('#state_hidden').val($('#state').val());
                 $('#is_national_team_hidden').val($('#is_national_team').is(':checked'));
 
+                // Inicializa o estado do campo de estado baseado no checkbox de seleção
+                function toggleStateField() {
+                    var isNationalTeam = $('#is_national_team').is(':checked');
+                    var stateContainer = $('#state').closest('.mt5');
+                    
+                    if (isNationalTeam) {
+                        stateContainer.hide();
+                        $('#state').val('').prop('disabled', true).trigger('change');
+                        $('#state').prop('required', false);
+                        $('#state_hidden').val('');
+                        // Força limpeza do estado
+                        $('select[name="state"]').val('');
+                    } else {
+                        stateContainer.show();
+                        $('#state').prop('disabled', false);
+                        $('#state').prop('required', $('#state option').length > 1);
+                    }
+                }
+
+                // Chama a função na inicialização
+                toggleStateField();
+
                 // Configurações do toastr
                 toastr.options = {
                     closeButton: true,
@@ -232,8 +263,46 @@
                 $('#team-form').on('submit', function(e) {
                     e.preventDefault();
                     
+                    var isNationalTeam = $('#is_national_team').is(':checked');
                     var formData = new FormData(this);
                     
+                    // Se for seleção, garante que o estado seja vazio
+                    if (isNationalTeam) {
+                        formData.delete('state'); // Remove o campo state do FormData
+                        formData.append('state', ''); // Adiciona vazio
+                        $('#state_hidden').val('');
+                        return $.ajax({
+                            url: $(this).attr('action'),
+                            type: 'POST',
+                            data: formData,
+                            processData: false,
+                            contentType: false,
+                            success: function(response) {
+                                if (response.success) {
+                                    toastr.success(response.message);
+                                    setTimeout(function() {
+                                        window.location.href = response.redirect_url;
+                                    }, 1500);
+                                } else {
+                                    toastr.error(response.message);
+                                }
+                            },
+                            error: function(xhr) {
+                                toastr.error(xhr.responseJSON?.message || 'Erro ao atualizar time');
+                            }
+                        });
+                    }
+                    
+                    // Se não for seleção, valida o estado
+                    var state = $('#state').val();
+                    var hasStates = $('#state option').length > 1;
+                    
+                    if (hasStates && !state) {
+                        toastr.error('O estado é obrigatório para times que não são seleções quando o país possui estados cadastrados');
+                        return false;
+                    }
+                    
+                    // Continua com o envio do formulário
                     $.ajax({
                         url: $(this).attr('action'),
                         type: 'POST',
@@ -243,17 +312,15 @@
                         success: function(response) {
                             if (response.success) {
                                 toastr.success(response.message);
-                                if (response.redirect_url) {
-                                    setTimeout(function() {
-                                        window.location.href = response.redirect_url;
-                                    }, 1000);
-                                }
+                                setTimeout(function() {
+                                    window.location.href = response.redirect_url;
+                                }, 1500);
                             } else {
                                 toastr.error(response.message);
                             }
                         },
-                        error: function(xhr, status, error) {
-                            toastr.error('Erro ao editar time: ' + error);
+                        error: function(xhr) {
+                            toastr.error(xhr.responseJSON?.message || 'Erro ao atualizar time');
                         }
                     });
                 });

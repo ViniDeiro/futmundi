@@ -975,6 +975,13 @@ def time_novo(request):
             if not is_national_team and state_id:
                 state = State.objects.get(id=state_id)
 
+            # Verifica se o país tem estados cadastrados e se é necessário um estado
+            if not is_national_team and country.state_set.exists() and not state_id:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'O estado é obrigatório para times que não são seleções quando o país possui estados cadastrados'
+                })
+
             # Verifica se já existe um time com o mesmo nome no país
             if Team.objects.filter(name=name, country=country).exists():
                 return JsonResponse({
@@ -1069,19 +1076,16 @@ def time_editar(request, id):
             state_id = request.POST.get('state')
             is_national_team = request.POST.get('is_national_team') == 'on'
             
-            # Validações
+            # Validações básicas
             if not name or not country_id:
                 return JsonResponse({
                     'success': False,
                     'message': 'Nome e país são obrigatórios'
                 })
                 
-            if not is_national_team and not state_id:
-                return JsonResponse({
-                    'success': False,
-                    'message': 'O estado é obrigatório para times que não são seleções'
-                })
-                
+            # Busca o país
+            country = Country.objects.get(id=country_id)
+            
             # Verifica se já existe outro time com o mesmo nome no país
             if Team.objects.filter(name=name, country_id=country_id).exclude(id=id).exists():
                 return JsonResponse({
@@ -1092,8 +1096,23 @@ def time_editar(request, id):
             # Atualiza os dados do time
             team.name = name
             team.country_id = country_id
-            team.state_id = state_id if not is_national_team else None
             team.is_national_team = is_national_team
+            
+            # Se for seleção, garante que o estado seja None
+            if is_national_team:
+                team.state = None
+            else:
+                # Se não for seleção e o país tiver estados, valida o estado
+                if country.state_set.exists():
+                    if not state_id:
+                        return JsonResponse({
+                            'success': False,
+                            'message': 'O estado é obrigatório para times que não são seleções quando o país possui estados cadastrados'
+                        })
+                    team.state_id = state_id
+                else:
+                    # Se o país não tem estados, garante que o estado seja None
+                    team.state = None
             
             # Trata a imagem
             if 'image' in request.FILES:
@@ -1752,7 +1771,7 @@ def pais_excluir_em_massa(request):
                 })
             else:
                 return JsonResponse({
-                    'success': False,
+                    'success': True,
                     'message': f'{len(deletable_countries)} de {len(ids)} países foram excluídos. Alguns países não puderam ser excluídos por terem registros vinculados'
                 })
         except Exception as e:

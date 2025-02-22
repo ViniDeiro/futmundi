@@ -160,7 +160,19 @@
 
                 // Toggle do campo de estado quando marca/desmarca "É seleção"
                 $('#is_national_team').on('change', function() {
-                    toggleStateField();
+                    var isNational = $(this).is(':checked');
+                    if (isNational) {
+                        $('#state-container').hide();
+                        $('#state').val('').trigger('change');
+                        $('#state').prop('disabled', true);
+                        $('#state').prop('required', false);
+                        // Força limpeza do estado
+                        $('select[name="state"]').val('');
+                    } else {
+                        $('#state-container').show();
+                        $('#state').prop('disabled', false);
+                        $('#state').prop('required', $('#state option').length > 1);
+                    }
                 });
 
                 function toggleStateField() {
@@ -168,8 +180,14 @@
                     if (isNationalTeam) {
                         $('#state-container').hide();
                         $('#state').val('').trigger('change');
+                        $('#state').prop('disabled', true);
+                        $('#state').prop('required', false);
+                        // Força limpeza do estado
+                        $('select[name="state"]').val('');
                     } else {
                         $('#state-container').show();
+                        $('#state').prop('disabled', false);
+                        $('#state').prop('required', $('#state option').length > 1);
                     }
                 }
 
@@ -186,15 +204,44 @@
                     e.preventDefault();
                     
                     var isNationalTeam = $('#is_national_team').is(':checked');
-                    var state = $('#state').val();
+                    var formData = new FormData(this);
                     
-                    if (!isNationalTeam && !state) {
-                        toastr.error('O estado é obrigatório para times que não são seleções');
+                    // Se for seleção, garante que o estado seja vazio
+                    if (isNationalTeam) {
+                        formData.delete('state'); // Remove o campo state do FormData
+                        formData.append('state', ''); // Adiciona vazio
+                        return $.ajax({
+                            url: $(this).attr('action'),
+                            type: 'POST',
+                            data: formData,
+                            processData: false,
+                            contentType: false,
+                            success: function(response) {
+                                if (response.success) {
+                                    toastr.success(response.message);
+                                    setTimeout(function() {
+                                        window.location.href = "{% url 'administrativo:times' %}";
+                                    }, 1000);
+                                } else {
+                                    toastr.error(response.message);
+                                }
+                            },
+                            error: function(xhr, status, error) {
+                                toastr.error('Erro ao criar time: ' + error);
+                            }
+                        });
+                    }
+                    
+                    // Se não for seleção, valida o estado
+                    var state = $('#state').val();
+                    var hasStates = $('#state option').length > 1;
+                    
+                    if (hasStates && !state) {
+                        toastr.error('O estado é obrigatório para times que não são seleções quando o país possui estados cadastrados');
                         return false;
                     }
                     
-                    var formData = new FormData(this);
-                    
+                    // Continua com o envio do formulário
                     $.ajax({
                         url: $(this).attr('action'),
                         type: 'POST',
