@@ -230,7 +230,7 @@
                                                 <div class="col-lg-12 mt20">
                                                     <select class="form-control dual_select" name="teams" multiple>
                                                         {% for team in teams %}
-                                                        <option value="{{ team.id }}">{{ team.name }}</option>
+                                                        <option value="{{ team.id }}" data-image="{{ team.get_image_url }}">{{ team.name }}</option>
                                                         {% endfor %}
                                                     </select>
                                                 </div>                                            
@@ -377,6 +377,10 @@
         <script src="{% static 'administrativo/js/settings.js' %}"></script>
         <script>
             $(document).ready(function() {
+                // Preenche o campo temporada com o ano atual
+                var anoAtual = new Date().getFullYear();
+                $('#temporada').val(anoAtual);
+
                 // Inicializa o Select2 para os selects
                 $('.js-basic-single').select2();
 
@@ -487,7 +491,8 @@
                                 response.teams.forEach(function(team) {
                                     dualListbox.append($('<option>', {
                                         value: team.id,
-                                        text: team.name
+                                        text: team.name,
+                                        'data-image': team.image_url
                                     }));
                                 });
                                 
@@ -502,6 +507,24 @@
                     });
                 });
 
+                // Função para formatar a opção do select com imagem
+                function formatTeamOption(team) {
+                    if (!team.id) {
+                        return team.text;
+                    }
+                    var $option = $(
+                        '<span><img src="' + $(team.element).data('image') + '" class="team-shield" style="width: 24px; height: 24px; margin-right: 5px; vertical-align: middle;">' + team.text + '</span>'
+                    );
+                    return $option;
+                }
+
+                // Inicializa o Select2 para os selects de times
+                $('.time-select').select2({
+                    templateResult: formatTeamOption,
+                    templateSelection: formatTeamOption,
+                    escapeMarkup: function(m) { return m; }
+                });
+
                 // Função para atualizar os selects de times nas rodadas
                 function atualizarTimesRodadas() {
                     var timesSelecionados = $('.dual_select').val();
@@ -509,13 +532,17 @@
                     
                     if (timesSelecionados) {
                         $('.dual_select option:selected').each(function() {
-                            options += '<option value="' + $(this).val() + '">' + $(this).text() + '</option>';
+                            var teamId = $(this).val();
+                            var teamName = $(this).text();
+                            var teamImage = $(this).data('image');
+                            options += `<option value="${teamId}" data-image="${teamImage}">${teamName}</option>`;
                         });
                     }
                     
                     $('.time-select').each(function() {
                         $(this).html(options);
                     });
+                    $('.time-select').trigger('change');
                 }
 
                 // Atualiza os times das rodadas quando mudar a seleção na dual listbox
@@ -534,16 +561,25 @@
                 $('#form-campeonato').on('submit', function(e) {
                     e.preventDefault();
                     
-                    var activeTab = $('.nav-tabs .active').attr('href');
                     var formData = new FormData(this);
+                    var scopeName = $('#ambito').find('option:selected').text().trim();
                     
-                    // Adiciona o passo atual
-                    if (activeTab === '#geral') {
-                        formData.append('step', '1');
-                    } else if (activeTab === '#times') {
-                        formData.append('step', '2');
-                    } else if (activeTab === '#rodadas') {
-                        formData.append('step', '3');
+                    // Validação dos campos obrigatórios básicos
+                    if (!$('#nome').val() || !$('#temporada').val() || !$('#template').val() || !$('#ambito').val()) {
+                        toastr.error('Preencha todos os campos obrigatórios');
+                        return;
+                    }
+                    
+                    // Validação baseada no âmbito
+                    if (scopeName === 'Nacional' && (!$('#continente').val() || !$('#pais').val())) {
+                        toastr.error('Selecione o continente e o país');
+                        return;
+                    } else if (scopeName === 'Estadual' && (!$('#continente').val() || !$('#pais').val() || !$('#estado').val())) {
+                        toastr.error('Selecione o continente, país e estado');
+                        return;
+                    } else if (scopeName === 'Continental' && !$('#continente').val()) {
+                        toastr.error('Selecione o continente');
+                        return;
                     }
                     
                     $.ajax({
@@ -554,13 +590,10 @@
                         contentType: false,
                         success: function(response) {
                             if (response.success) {
-                                if (response.next_step) {
-                                    // Avança para a próxima aba
-                                    $('.nav-tabs .active').parent().next('li').find('a').tab('show');
-                                } else {
-                                    toastr.success('Campeonato criado com sucesso!');
+                                toastr.success(response.message);
+                                setTimeout(function() {
                                     window.location.href = "{% url 'administrativo:campeonatos' %}";
-                                }
+                                }, 1500);
                             } else {
                                 toastr.error(response.message || 'Erro ao processar formulário');
                             }
@@ -574,20 +607,29 @@
                 // Gerencia a navegação entre abas
                 $('.nav-tabs a').on('show.bs.tab', function(e) {
                     var targetTab = $(e.target).attr('href');
+                    var scopeName = $('#ambito').find('option:selected').text().trim();
                     
-                    // Verifica se pode avançar
-                    if (targetTab === '#times') {
+                    // Verifica se pode avançar para outras abas
+                    if (targetTab === '#times' || targetTab === '#rodadas') {
                         // Valida campos da aba geral
                         if (!$('#nome').val() || !$('#temporada').val() || !$('#template').val() || !$('#ambito').val()) {
                             e.preventDefault();
-                            toastr.error('Preencha todos os campos obrigatórios da aba Geral');
+                            toastr.error('Preencha todos os campos obrigatórios da aba Geral antes de prosseguir');
                             return false;
                         }
-                    } else if (targetTab === '#rodadas') {
-                        // Valida se há times selecionados
-                        if ($('.dual_select').val() === null || $('.dual_select').val().length === 0) {
+
+                        // Validação baseada no âmbito
+                        if (scopeName === 'Nacional' && (!$('#continente').val() || !$('#pais').val())) {
                             e.preventDefault();
-                            toastr.error('Selecione pelo menos um time');
+                            toastr.error('Selecione o continente e o país');
+                            return false;
+                        } else if (scopeName === 'Estadual' && (!$('#continente').val() || !$('#pais').val() || !$('#estado').val())) {
+                            e.preventDefault();
+                            toastr.error('Selecione o continente, país e estado');
+                            return false;
+                        } else if (scopeName === 'Continental' && !$('#continente').val()) {
+                            e.preventDefault();
+                            toastr.error('Selecione o continente');
                             return false;
                         }
                     }

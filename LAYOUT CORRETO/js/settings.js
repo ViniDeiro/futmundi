@@ -68,6 +68,14 @@ $(".js-basic-single").select2({
   width: "resolve"
 });
 
+// Configuração específica para o select de âmbito
+$("#ambito").select2({
+  width: "resolve",
+  sorter: function(data) {
+    return data; // Mantém a ordem original das opções
+  }
+});
+
 $("#estado").select2({
   width: "resolve",
   ajax: {

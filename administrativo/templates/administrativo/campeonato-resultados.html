@@ -2,107 +2,164 @@
 {% load static %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'administrativo/plugins/toastr/toastr.min.css' %}">
+<link href="{% static 'administrativo/css/plugins/toastr/toastr.min.css' %}" rel="stylesheet">
+<style>
+    .match-card {
+        border: 1px solid #e7eaec;
+        border-radius: 4px;
+        margin-bottom: 15px;
+        padding: 15px;
+        background-color: #fff;
+        transition: all 0.3s ease;
+    }
+    .match-card:hover {
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .team-img {
+        max-height: 30px;
+        margin: 0 10px;
+        vertical-align: middle;
+    }
+    .score {
+        font-size: 18px;
+        font-weight: bold;
+        padding: 0 15px;
+        color: #1ab394;
+    }
+    .match-date {
+        color: #888;
+        font-size: 14px;
+    }
+    .stage-header {
+        background-color: #f3f3f4;
+        padding: 10px 15px;
+        margin-bottom: 20px;
+        border-radius: 4px;
+    }
+    .round-header {
+        background-color: #ffffff;
+        padding: 10px 15px;
+        margin-bottom: 15px;
+        border-left: 4px solid #1ab394;
+    }
+    .current-badge {
+        background-color: #1ab394;
+        color: white;
+        padding: 3px 8px;
+        border-radius: 3px;
+        font-size: 12px;
+        margin-left: 10px;
+    }
+    .team-name {
+        font-weight: 500;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
-<div class="content-wrapper">
-    <section class="content-header">
-        <div class="container-fluid">
-            <div class="row mb-2">
-                <div class="col-sm-6">
-                    <h1>{{ championship.name }} - {{ championship.season }}</h1>
-                </div>
-                <div class="col-sm-6">
-                    <ol class="breadcrumb float-sm-right">
-                        <li class="breadcrumb-item"><a href="{% url 'administrativo:index' %}">Home</a></li>
-                        <li class="breadcrumb-item"><a href="{% url 'administrativo:campeonatos' %}">Campeonatos</a></li>
-                        <li class="breadcrumb-item active">Resultados</li>
-                    </ol>
-                </div>
-            </div>
+<div class="row wrapper border-bottom white-bg page-heading">
+    <div class="col-lg-8">
+        <h2>{{ championship.name }} - {{ championship.season }}</h2>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'administrativo:index' %}">Home</a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'administrativo:campeonatos' %}">Campeonatos</a>
+            </li>
+            <li class="breadcrumb-item active">
+                <strong>Resultados</strong>
+            </li>
+        </ol>
+    </div>
+    <div class="col-lg-4">
+        <div class="title-action">
+            <a href="{% url 'administrativo:campeonatos' %}" class="btn btn-white">
+                <i class="fa fa-arrow-left"></i> Voltar para Campeonatos
+            </a>
         </div>
-    </section>
+    </div>
+</div>
 
-    <section class="content">
-        <div class="container-fluid">
-            <div class="row">
-                <div class="col-12">
-                    <div class="card">
-                        <div class="card-header">
-                            <h3 class="card-title">Resultados</h3>
+<div class="wrapper wrapper-content">
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="ibox">
+                <div class="ibox-content">
+                    {% for round_data in rounds %}
+                        <div class="stage-header">
+                            <h3>{{ round_data.stage.name }}</h3>
                         </div>
-                        <div class="card-body">
-                            {% for round_data in rounds %}
-                            <div class="card">
-                                <div class="card-header">
-                                    <h4 class="card-title">
-                                        {{ round_data.stage.name }} - Rodada {{ round_data.round.number }}
-                                        {% if round_data.round.is_current %}
-                                        <span class="badge badge-primary">Atual</span>
-                                        {% endif %}
-                                    </h4>
-                                </div>
-                                <div class="card-body">
-                                    <div class="table-responsive">
-                                        <table class="table table-bordered table-striped">
-                                            <thead>
-                                                <tr>
-                                                    <th>Data</th>
-                                                    <th>Mandante</th>
-                                                    <th>Placar</th>
-                                                    <th>Visitante</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {% for match in round_data.matches %}
-                                                <tr>
-                                                    <td>{{ match.match_date|date:"d/m/Y H:i" }}</td>
-                                                    <td>
-                                                        {% if match.home_team.image %}
-                                                        <img src="{{ match.home_team.image.url }}" alt="{{ match.home_team.name }}" class="img-fluid" style="max-height: 30px;">
-                                                        {% endif %}
-                                                        {{ match.home_team.name }}
-                                                    </td>
-                                                    <td>
-                                                        {% if match.home_score is not None and match.away_score is not None %}
+                        <div class="round-header">
+                            <h4>
+                                Rodada {{ round_data.round.number }}
+                                {% if round_data.round.is_current %}
+                                    <span class="current-badge">Atual</span>
+                                {% endif %}
+                            </h4>
+                        </div>
+                        <div class="row">
+                            {% for match in round_data.matches %}
+                                <div class="col-md-6">
+                                    <div class="match-card">
+                                        <div class="row">
+                                            <div class="col-12 text-center">
+                                                <span class="match-date">{{ match.match_date|date:"d/m/Y H:i" }}</span>
+                                            </div>
+                                            <div class="col-12 text-center mt-3">
+                                                <span class="team-name">
+                                                    {{ match.home_team.name }}
+                                                    {% if match.home_team.image %}
+                                                        <img src="{{ match.home_team.image.url }}" alt="{{ match.home_team.name }}" class="team-img">
+                                                    {% endif %}
+                                                </span>
+                                                <span class="score">
+                                                    {% if match.home_score is not None and match.away_score is not None %}
                                                         {{ match.home_score }} x {{ match.away_score }}
-                                                        {% else %}
+                                                    {% else %}
                                                         - x -
-                                                        {% endif %}
-                                                    </td>
-                                                    <td>
-                                                        {{ match.away_team.name }}
-                                                        {% if match.away_team.image %}
-                                                        <img src="{{ match.away_team.image.url }}" alt="{{ match.away_team.name }}" class="img-fluid" style="max-height: 30px;">
-                                                        {% endif %}
-                                                    </td>
-                                                </tr>
-                                                {% endfor %}
-                                            </tbody>
-                                        </table>
+                                                    {% endif %}
+                                                </span>
+                                                <span class="team-name">
+                                                    {% if match.away_team.image %}
+                                                        <img src="{{ match.away_team.image.url }}" alt="{{ match.away_team.name }}" class="team-img">
+                                                    {% endif %}
+                                                    {{ match.away_team.name }}
+                                                </span>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                            {% empty %}
-                            <div class="alert alert-info">
-                                Nenhuma rodada cadastrada para este campeonato.
-                            </div>
                             {% endfor %}
                         </div>
-                    </div>
+                    {% empty %}
+                        <div class="text-center p-4">
+                            <div class="alert alert-info">
+                                <h4 class="alert-heading">Nenhuma rodada cadastrada</h4>
+                                <p>Este campeonato ainda não possui rodadas cadastradas.</p>
+                            </div>
+                        </div>
+                    {% endfor %}
                 </div>
             </div>
         </div>
-    </section>
+    </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'administrativo/plugins/toastr/toastr.min.js' %}"></script>
+<script src="{% static 'administrativo/js/plugins/toastr/toastr.min.js' %}"></script>
 
 <script>
 $(function () {
+    // Configurações do toastr
+    toastr.options = {
+        closeButton: true,
+        progressBar: true,
+        showMethod: 'slideDown',
+        timeOut: 4000
+    };
+
     // Exibe mensagens do Django
     {% if messages %}
         {% for message in messages %}

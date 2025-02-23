@@ -175,12 +175,12 @@
                                                     <div class="row mt11">
                                                         <div class="col-lg-4">
                                                             <label class="control-label" for="ambito">Âmbito</label>
-                                                            <select class="form-control" id="ambito">
+                                                            <select class="form-control" id="ambito" data-no-select2="true">
                                                                 <option value="Estadual">Estadual</option>
                                                                 <option value="Nacional">Nacional</option>
                                                                 <option value="Continental">Continental</option>
                                                                 <option value="Mundial">Mundial</option>
-                                                            </select> 
+                                                            </select>
                                                         </div>                                                       
                                                     </div>
                                                     <div class="row mt11">
@@ -384,5 +384,11 @@
         <script src="js/plugins/moment/moment.js"></script>
         <script src="js/plugins/tempusdominus/tempusdominus-bootstrap-4.min.js"></script>
         <script src="js/settings.js"></script>
+        <script>
+            $(document).ready(function() {
+                // Não inicializa o Select2 para o select de âmbito
+                // para manter a ordem original das opções
+            });
+        </script>
     </body>
 </html>

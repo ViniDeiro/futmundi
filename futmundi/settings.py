@@ -178,3 +178,6 @@ CORS_ALLOWED_ORIGINS = [
 ]
 
 CORS_ALLOW_CREDENTIALS = True
+
+# Upload settings
+DATA_UPLOAD_MAX_NUMBER_FILES = 1000  # Aumenta o limite para 1000 arquivos

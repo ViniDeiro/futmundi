@@ -46,6 +46,9 @@
                                         </button>
                                     </div>
                                     <div class="group-options-right mr10">
+                                        <a href="{% url 'administrativo:time_exportar' %}" class="btn btn-default btn-sm" title="Exportar Times">
+                                            <i class="fa fa-download"></i>
+                                        </a>
                                         <button type="button" class="btn btn-default btn-sm" title="Excluir em Massa" onclick="excluirSelecionados()"><i class="glyphicon glyphicon-trash"></i></button>
                                     </div>
                                     <div class="table-responsive">
@@ -168,7 +171,9 @@
                                 <ul>
                                     <li><strong>Nome</strong>: Nome do time</li>
                                     <li><strong>País</strong>: Nome do país ao qual o time pertence</li>
+                                    <li><strong>Estado</strong>: Nome do estado (opcional)</li>
                                 </ul>
+                                <p class="mt10"><small>* Para seleções nacionais, deixe o campo Estado em branco</small></p>
                             </div>
                         </div>
                         <div class="modal-footer">
@@ -191,21 +196,33 @@
                     <form id="formImportarEscudo" method="POST" action="{% url 'administrativo:time_importar_imagens' %}" enctype="multipart/form-data">
                         {% csrf_token %}
                         <div class="modal-body">
-                            <div class="alert alert-info">
-                                <p><strong>Instruções:</strong></p>
-                                <ul>
-                                    <li>O nome do arquivo deve ser igual ao nome do time</li>
-                                    <li>Formatos aceitos: PNG, JPG, JPEG</li>
-                                    <li>Tamanho máximo por arquivo: 2MB</li>
-                                </ul>
-                            </div>
                             <div class="form-group">
                                 <label for="images">Selecione as Imagens</label>
-                                <input type="file" class="form-control" name="images" id="images" accept="image/*" multiple required>
+                                <div class="fileinput fileinput-new input-group" data-provides="fileinput">
+                                    <div class="form-control" data-trigger="fileinput">
+                                        <i class="fa fa-file fileinput-exists"></i>
+                                        <span class="fileinput-filename"></span>
+                                    </div>
+                                    <div class="input-group-append">
+                                        <span class="input-group-text btn btn-default btn-file">
+                                            <span class="fileinput-new">Selecionar imagens</span>
+                                            <span class="fileinput-exists">Alterar</span>
+                                            <input type="file" name="images" accept="image/*" multiple required/>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="alert alert-info mt15">
+                                <h5>Instruções:</h5>
+                                <ul>
+                                    <li><strong>Nome do arquivo:</strong> Deve ser igual ao nome do time</li>
+                                    <li><strong>Formatos aceitos:</strong> PNG, JPG, JPEG</li>
+                                    <li><strong>Tamanho máximo:</strong> 2MB por arquivo</li>
+                                </ul>
                             </div>
                         </div>
                         <div class="modal-footer">
-                            <button type="button" class="btn btn-white" data-dismiss="modal">Cancelar</button>
+                            <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
                             <button type="submit" class="btn btn-primary">Importar</button>
                         </div>
                     </form>
@@ -265,6 +282,64 @@
                 $('.delete-btn').on('click', function() {
                     var teamId = $(this).data('id');
                     excluirTime(teamId);
+                });
+
+                // Handler para o formulário de importar times
+                $('#formImportar').on('submit', function(e) {
+                    e.preventDefault();
+                    var formData = new FormData(this);
+                    
+                    $.ajax({
+                        url: $(this).attr('action'),
+                        type: 'POST',
+                        data: formData,
+                        processData: false,
+                        contentType: false,
+                        success: function(response) {
+                            $('#modalImportar').modal('hide');
+                            if (response.success) {
+                                toastr.success(response.message);
+                                setTimeout(function() {
+                                    window.location.reload();
+                                }, 1500);
+                            } else {
+                                toastr.error(response.message);
+                            }
+                        },
+                        error: function() {
+                            $('#modalImportar').modal('hide');
+                            toastr.error('Erro ao importar times');
+                        }
+                    });
+                });
+
+                // Handler para o formulário de importar escudos
+                $('#formImportarEscudo').on('submit', function(e) {
+                    e.preventDefault();
+                    var formData = new FormData(this);
+                    
+                    $.ajax({
+                        url: $(this).attr('action'),
+                        type: 'POST',
+                        data: formData,
+                        processData: false,
+                        contentType: false,
+                        success: function(response) {
+                            $('#modalImportarEscudo').modal('hide');
+                            if (response.success) {
+                                toastr.success(response.message);
+                                setTimeout(function() {
+                                    window.location.reload();
+                                }, 1500);
+                            } else {
+                                toastr.error(response.message);
+                            }
+                        },
+                        error: function() {
+                            $('#modalImportarEscudo').modal('hide');
+                            toastr.error('Erro ao importar escudos');
+                        }
+                    });
                 });
 
                 // Mensagens do Django

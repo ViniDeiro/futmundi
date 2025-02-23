@@ -229,6 +229,14 @@
         <script src="{% static 'administrativo/js/plugins/checkAll/checkAll.js' %}"></script>
         <script src="{% static 'administrativo/js/plugins/toastr/toastr.min.js' %}"></script>
         <script src="{% static 'administrativo/js/page-level.js' %}"></script>
+        
+        {% if messages %}
+        <script>
+            {% for message in messages %}
+                toastr.{{ message.tags }}("{{ message }}");
+            {% endfor %}
+        </script>
+        {% endif %}
         <script>
             // Configurações do Toastr
             toastr.options = {

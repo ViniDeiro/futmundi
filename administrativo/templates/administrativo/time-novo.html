@@ -48,8 +48,8 @@
                                                     <h5>Escudo</h5>
                                                 </div>
                                                 <div class="card-content text-center">
-                                                    <div id="image-preview" style="display: flex; align-items: center; justify-content: center; padding: 0 10px 10px 10px; margin-top: -10px;">
-                                                        <i class="fa fa-file-image-o" style="font-size: 48px; color: #ccc; cursor: pointer;" onclick="document.getElementById('image').click()"></i>
+                                                    <div id="image-preview" style="display: flex; align-items: center; justify-content: center; padding: 0 10px 10px 10px; margin-top: -7px;">
+                                                        <i class="fa fa-file-image-o" style="font-size: 32px; color: #ccc; cursor: pointer;" onclick="document.getElementById('image').click()"></i>
                                                     </div>
                                                     <input type="file" id="image" name="image" class="input-image" accept="image/*" style="display: none;">
                                                 </div>                              
@@ -116,7 +116,8 @@
                     if (file) {
                         var reader = new FileReader();
                         reader.onload = function(e) {
-                            $('#image-preview').html('<img src="' + e.target.result + '" style="max-width: 80px; max-height: 80px; object-fit: contain;">');
+                            $('#image-preview').html('<img src="' + e.target.result + '" style="max-width: 50px; max-height: 50px; object-fit: contain; cursor: pointer;" onclick="document.getElementById(\'image\').click()">');
+                            $('#image-preview').css('margin-top', '-7px');
                         }
                         reader.readAsDataURL(file);
                     }

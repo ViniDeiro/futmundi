@@ -25,6 +25,112 @@
 
         <!-- Favicon -->
         <link rel="icon" href="{% static 'administrativo/img/futmundi.ico' %}" type="image/png">
+
+        <style>
+            .team-shield {
+                width: 24px;
+                height: 24px;
+                margin-right: 5px;
+                vertical-align: middle;
+                object-fit: contain;
+            }
+            .bootstrap-duallistbox-container .list-group-item {
+                display: flex;
+                align-items: center;
+                padding: 4px 8px;
+                font-size: 13px;
+            }
+            .bootstrap-duallistbox-container .list-group-item:hover {
+                background-color: #f8f9fa;
+            }
+            .bootstrap-duallistbox-container .list-group-item.active {
+                background-color: #1ab394;
+                border-color: #1ab394;
+            }
+            .bootstrap-duallistbox-container .filter {
+                margin-bottom: 5px;
+            }
+            .bootstrap-duallistbox-container .filter input {
+                font-size: 13px;
+                padding: 4px 8px;
+                height: 30px;
+            }
+            .bootstrap-duallistbox-container .moveall,
+            .bootstrap-duallistbox-container .removeall {
+                margin-bottom: 2px;
+            }
+            .bootstrap-duallistbox-container select {
+                height: 160px !important;
+                border: 1px solid #e5e6e7;
+                font-size: 13px;
+            }
+            .bootstrap-duallistbox-container select option {
+                padding: 4px 8px;
+                display: flex;
+                align-items: center;
+            }
+            .bootstrap-duallistbox-container .btn-group {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                padding: 5px;
+            }
+            .bootstrap-duallistbox-container .btn-group .btn {
+                margin: 1px 0;
+                width: 30px;
+                height: 26px;
+                padding: 3px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background-color: #f3f3f4;
+                border-color: #e7eaec;
+                color: #676a6c;
+                font-size: 12px;
+            }
+            .bootstrap-duallistbox-container .btn-group .btn:hover {
+                background-color: #e7eaec;
+            }
+            .bootstrap-duallistbox-container .box1,
+            .bootstrap-duallistbox-container .box2 {
+                margin-bottom: 0;
+            }
+            .bootstrap-duallistbox-container .clear1,
+            .bootstrap-duallistbox-container .clear2 {
+                display: none;
+            }
+            .bootstrap-duallistbox-container .info {
+                margin-top: 3px;
+                font-size: 11px;
+                color: #666;
+            }
+            .bootstrap-duallistbox-container .box1 > .filtered,
+            .bootstrap-duallistbox-container .box2 > .filtered {
+                margin-bottom: 3px;
+                font-size: 11px;
+            }
+            .bootstrap-duallistbox-container label {
+                font-size: 12px;
+                font-weight: normal;
+                margin-bottom: 3px;
+            }
+            #filter_type {
+                height: 30px;
+                font-size: 13px;
+                padding: 4px 8px;
+            }
+            .form-group label {
+                font-size: 13px;
+                margin-bottom: 3px;
+            }
+            .select2-container--bootstrap4 .select2-selection--single {
+                height: calc(1.5em + 0.75rem + 2px) !important;
+            }
+            .select2-container--bootstrap4 .select2-selection--single .select2-selection__rendered {
+                line-height: calc(1.5em + 0.75rem) !important;
+            }
+        </style>
     </head>
     <body>
         <div id="wrapper">
@@ -124,21 +230,27 @@
                                         </div>
                                         <div id="times" class="tab-pane">
                                             <div class="panel-body">
-                                                <div class="col-lg-2">
-                                                    <label class="control-label" for="filtrar-por">Filtrar por</label>
-                                                    <select class="form-control" id="filtrar-por">
-                                                        <option value="all">Todos</option>
-                                                        <option value="teams">Times</option>
-                                                        <option value="selections">Seleções</option>
-                                                    </select>   
-                                                </div> 
-                                                <div class="col-lg-12 mt20">
-                                                    <select class="form-control dual_select" name="teams" multiple>
-                                                        {% for team in teams %}
-                                                        <option value="{{ team.id }}" {% if team in selected_teams %}selected{% endif %}>{{ team.name }}</option>
-                                                        {% endfor %}
-                                                    </select>
-                                                </div>                                            
+                                                <div class="col-md-12">
+                                                    <div class="form-group">
+                                                        <label>Filtrar por</label>
+                                                        <select class="form-control select2" id="filter_type" style="width: 200px;">
+                                                            <option value="all">Todos</option>
+                                                            <option value="team">Times</option>
+                                                            <option value="selection">Seleções</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                                <div class="row mt-4">
+                                                    <div class="col-md-12">
+                                                        <select class="duallistbox" multiple="multiple" name="teams[]">
+                                                            {% for team in teams %}
+                                                            <option value="{{ team.id }}" data-type="{{ team.is_selection|yesno:'selection,team' }}" data-image="{{ team.image.url }}" {% if team in selected_teams %}selected{% endif %}>
+                                                                {{ team.name }}
+                                                            </option>
+                                                            {% endfor %}
+                                                        </select>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                         <div id="rodadas" class="tab-pane">
@@ -146,42 +258,69 @@
                                                 <div class="row col-lg-12">
                                                     <div class="col-lg-2">
                                                         <label class="control-label" for="fase">Fase</label>
-                                                        <select class="form-control js-basic-single" id="fase">
-                                                            <option value="Brasileiro">Fase de Grupos</option>
-                                                            <option value="Ingles">Oitavas de Final</option>
+                                                        <select class="form-control js-basic-single stage-select" id="fase">
+                                                            <option value="Grupos">Fase de Grupos</option>
+                                                            <option value="Oitavas">Oitavas de Final</option>
+                                                            <option value="Quartas">Quartas de Final</option>
+                                                            <option value="Semi">Semi Final</option>
+                                                            <option value="Final">Final</option>
                                                         </select> 
                                                     </div>
                                                     <div class="col-lg-2">
                                                         <label class="control-label" for="rodada">Rodada</label>
-                                                        <select class="form-control js-basic-single" id="rodada" style="width: 60%">
+                                                        <select class="form-control js-basic-single round-select" id="rodada">
                                                             <option value="1">1</option>
                                                             <option value="2">2</option>
+                                                            <option value="3">3</option>
+                                                            <option value="4">4</option>
+                                                            <option value="5">5</option>
+                                                            <option value="6">6</option>
                                                         </select> 
                                                     </div>
                                                     <div class="col-lg-4 mb10">   
-                                                    <button type="button" class="btn btn-primary ml20" data-toggle="modal" data-target="#modalImportXLS"><i class="fa fa-upload mr5"></i> Importar</button>      
+                                                        <button type="button" class="btn btn-primary ml20" id="add-match"><i class="fa fa-plus mr5"></i> Adicionar Partida</button>      
                                                     </div>
                                                 </div>
-                                                <div class="row col-lg-12 mt10">
-                                                    <div class="col-lg-2">
-                                                        <select class="form-control js-templating time-select time-mandante" style="width: 100%">
-                                                            <option value="">Selecione o time</option>
-                                                        </select>
+                                                <div id="matches-container">
+                                                    {% for match in matches %}
+                                                    <div class="row col-lg-12 mt10 match-row">
+                                                        <input type="hidden" class="stage-select" value="{{ match.stage }}">
+                                                        <input type="hidden" class="round-select" value="{{ match.round }}">
+                                                        <div class="col-lg-2">
+                                                            <select class="form-control js-templating time-select time-mandante" style="width: 100%">
+                                                                <option value="">Selecione o time</option>
+                                                                {% for team in selected_teams %}
+                                                                <option value="{{ team.id }}" data-image="{{ team.image.url }}" {% if team.id == match.home_team.id %}selected{% endif %}>{{ team.name }}</option>
+                                                                {% endfor %}
+                                                            </select>
+                                                        </div>
+                                                        <div class="col-lg-1 ml35 mrm15">
+                                                            <input type="number" min="0" class="form-control placar placar-mandante" value="{{ match.home_score|default:'' }}">
+                                                        </div>
+                                                        <div class="col-lg-1 mlm30 mrm15">
+                                                            <input type="number" min="0" class="form-control placar placar-visitante" value="{{ match.away_score|default:'' }}">
+                                                        </div>
+                                                        <div class="col-lg-2 mlm30 mr25">
+                                                            <select class="form-control js-templating time-select time-visitante" style="width: 100%">
+                                                                <option value="">Selecione o time</option>
+                                                                {% for team in selected_teams %}
+                                                                <option value="{{ team.id }}" data-image="{{ team.image.url }}" {% if team.id == match.away_team.id %}selected{% endif %}>{{ team.name }}</option>
+                                                                {% endfor %}
+                                                            </select>
+                                                        </div>
+                                                        <div class="col-lg-2">
+                                                            <div class="input-group date" id="datetimepicker" data-target-input="nearest">
+                                                                <input type="text" class="form-control datetimepicker-input" data-target="#datetimepicker" value="{{ match.match_date|date:'d/m/Y H:i' }}"/>
+                                                                <div class="input-group-append" data-target="#datetimepicker" data-toggle="datetimepicker">
+                                                                    <div class="input-group-text"><i class="fa fa-calendar"></i></div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-lg-1">
+                                                            <button type="button" class="btn btn-danger remove-match"><i class="fa fa-trash"></i></button>
+                                                        </div>
                                                     </div>
-                                                    <div class="col-lg-1 ml35 mrm15">
-                                                        <input type="number" min="0" class="form-control placar">
-                                                    </div>
-                                                    <div class="col-lg-1 mlm30 mrm15">
-                                                        <input type="number" min="0" class="form-control placar">
-                                                    </div>
-                                                    <div class="col-lg-2 mlm30 mr25">
-                                                        <select class="form-control js-templating time-select time-visitante" style="width: 100%">
-                                                            <option value="">Selecione o time</option>
-                                                        </select>
-                                                    </div>
-                                                    <div class="col-lg-3 ml10">
-                                                        <input type="text" class="form-control datetimepicker-input" style="width: 50%" id="datetimepicker" data-toggle="datetimepicker" data-target="#datetimepicker"/>
-                                                    </div>
+                                                    {% endfor %}
                                                 </div>
                                             </div>
                                         </div>
@@ -282,144 +421,206 @@
         <script src="{% static 'administrativo/js/settings.js' %}"></script>
         <script>
             $(document).ready(function() {
+                // Função para formatar a opção do time com imagem
+                function formatTeamOption(team) {
+                    if (!team.id) {
+                        return team.text;
+                    }
+                    
+                    var $team = $(team.element);
+                    var image = $team.data('image');
+                    
+                    if (!image) {
+                        return team.text;
+                    }
+                    
+                    return $(`
+                        <span>
+                            <img src="${image}" class="team-shield" />
+                            ${team.text}
+                        </span>
+                    `);
+                }
+
                 // Inicializa o Select2 para os selects
                 $('.js-basic-single').select2();
 
-                // Inicializa o iCheck para checkboxes
-                $('.i-checks').iCheck({
-                    checkboxClass: 'icheckbox_square-green',
-                    radioClass: 'iradio_square-green'
-                });
-
-                // Inicializa o Dual Listbox para seleção de times
-                $('.dual_select').bootstrapDualListbox({
-                    selectorMinimalHeight: 160,
-                    filterTextClear: 'mostrar todos',
-                    filterPlaceHolder: 'Filtrar',
-                    moveSelectedLabel: 'Mover selecionados',
-                    moveAllLabel: 'Mover todos',
-                    removeSelectedLabel: 'Remover selecionados',
-                    removeAllLabel: 'Remover todos',
+                // Inicializa o Bootstrap Dual Listbox para o select de times
+                $('.duallistbox').bootstrapDualListbox({
+                    nonSelectedListLabel: 'Disponíveis',
+                    selectedListLabel: 'Selecionados',
+                    preserveSelectionOnMove: 'moved',
+                    moveOnSelect: true,
                     infoText: 'Mostrando {0}',
-                    infoTextFiltered: '<span class="label label-warning">Filtrado</span> {0} de {1}',
-                    infoTextEmpty: 'Lista vazia'
+                    infoTextEmpty: 'Lista vazia',
+                    filterPlaceHolder: 'Filtro',
+                    filterTextClear: 'Mostrar todos',
+                    moveSelectedLabel: '→',
+                    moveAllLabel: '⇒',
+                    removeSelectedLabel: '←',
+                    removeAllLabel: '⇐',
+                    selectorMinimalHeight: 160
                 });
 
-                // Gerencia a dependência entre âmbito e locais
-                $('#scope').on('change', function() {
-                    var scopeName = $(this).find('option:selected').text().trim();
-                    var $continent = $('#continent');
-                    var $country = $('#country');
-                    var $state = $('#state');
+                // Inicializa o Select2 para os times com template personalizado
+                $('.time-select').select2({
+                    templateResult: formatTeamOption,
+                    templateSelection: formatTeamOption,
+                    escapeMarkup: function(m) { return m; }
+                });
+
+                // Função para criar uma nova linha de partida
+                function createMatchRow() {
+                    var stage = $('#fase').val();
+                    var round = $('#rodada').val();
+                    var teams = $('.duallistbox').val();
+                    var teamOptions = '<option value="">Selecione o time</option>';
                     
-                    // Configura os campos baseado no âmbito
-                    switch(scopeName) {
-                        case 'Mundial':
-                            // Desabilita todos
-                            $continent.prop('disabled', true);
-                            $country.prop('disabled', true);
-                            $state.prop('disabled', true);
-                            break;
-                            
-                        case 'Continental':
-                            // Habilita apenas continente
-                            $continent.prop('disabled', false);
-                            $country.prop('disabled', true);
-                            $state.prop('disabled', true);
-                            break;
-                            
-                        case 'Nacional':
-                            // Habilita continente e país
-                            $continent.prop('disabled', false);
-                            $country.prop('disabled', false);
-                            $state.prop('disabled', true);
-                            break;
-                            
-                        case 'Estadual':
-                            // Habilita todos
-                            $continent.prop('disabled', false);
-                            $country.prop('disabled', false);
-                            $state.prop('disabled', false);
-                            break;
-                            
-                        default:
-                            // Caso padrão (nenhum selecionado)
-                            $continent.prop('disabled', true);
-                            $country.prop('disabled', true);
-                            $state.prop('disabled', true);
+                    if (teams) {
+                        $('.duallistbox option:selected').each(function() {
+                            var teamId = $(this).val();
+                            var teamName = $(this).text();
+                            var teamImage = $(this).data('image');
+                            teamOptions += `<option value="${teamId}" data-image="${teamImage}">${teamName}</option>`;
+                        });
                     }
-                    
-                    // Atualiza o Select2 para refletir as mudanças
-                    $continent.select2({
-                        width: '100%',
-                        placeholder: 'Selecione...',
-                        allowClear: true
-                    });
-                    $country.select2({
-                        width: '100%',
-                        placeholder: 'Selecione...',
-                        allowClear: true
-                    });
-                    $state.select2({
-                        width: '100%',
-                        placeholder: 'Selecione...',
-                        allowClear: true
-                    });
-                });
 
-                // Atualiza times baseado no filtro
-                $('#filtrar-por').on('change', function() {
-                    var filter = $(this).val();
-                    $.ajax({
-                        url: "{% url 'administrativo:times_por_tipo' %}",
-                        type: 'POST',
-                        headers: {
-                            'X-CSRFToken': '{{ csrf_token }}'
-                        },
-                        data: { 
-                            type: filter
-                        },
-                        success: function(response) {
-                            if (response.success) {
-                                var dualListbox = $('.dual_select');
-                                dualListbox.empty();
-                                
-                                response.teams.forEach(function(team) {
-                                    dualListbox.append($('<option>', {
-                                        value: team.id,
-                                        text: team.name
-                                    }));
-                                });
-                                
-                                dualListbox.bootstrapDualListbox('refresh');
-                            } else {
-                                toastr.error(response.message || 'Erro ao carregar times');
-                            }
-                        },
-                        error: function(xhr) {
-                            toastr.error(xhr.responseJSON?.message || 'Erro ao carregar times');
+                    var matchRow = `
+                        <div class="row col-lg-12 mt10 match-row">
+                            <input type="hidden" class="stage-select" value="${stage}">
+                            <input type="hidden" class="round-select" value="${round}">
+                            <div class="col-lg-2">
+                                <select class="form-control js-templating time-select time-mandante" style="width: 100%">
+                                    ${teamOptions}
+                                </select>
+                            </div>
+                            <div class="col-lg-1 ml35 mrm15">
+                                <input type="number" min="0" class="form-control placar placar-mandante">
+                            </div>
+                            <div class="col-lg-1 mlm30 mrm15">
+                                <input type="number" min="0" class="form-control placar placar-visitante">
+                            </div>
+                            <div class="col-lg-2 mlm30 mr25">
+                                <select class="form-control js-templating time-select time-visitante" style="width: 100%">
+                                    ${teamOptions}
+                                </select>
+                            </div>
+                            <div class="col-lg-2">
+                                <div class="input-group date" id="datetimepicker" data-target-input="nearest">
+                                    <input type="text" class="form-control datetimepicker-input" data-target="#datetimepicker"/>
+                                    <div class="input-group-append" data-target="#datetimepicker" data-toggle="datetimepicker">
+                                        <div class="input-group-text"><i class="fa fa-calendar"></i></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-1">
+                                <button type="button" class="btn btn-danger remove-match"><i class="fa fa-trash"></i></button>
+                            </div>
+                        </div>
+                    `;
+
+                    $('#matches-container').append(matchRow);
+                    
+                    // Inicializa os componentes da nova linha
+                    var $newRow = $('#matches-container').children().last();
+                    $newRow.find('.time-select').select2({
+                        templateResult: formatTeamOption,
+                        templateSelection: formatTeamOption,
+                        escapeMarkup: function(m) { return m; }
+                    });
+                    
+                    $newRow.find('.datetimepicker-input').datetimepicker({
+                        format: 'DD/MM/YYYY HH:mm',
+                        locale: 'pt-br',
+                        icons: {
+                            time: 'fa fa-clock-o',
+                            date: 'fa fa-calendar',
+                            up: 'fa fa-chevron-up',
+                            down: 'fa fa-chevron-down',
+                            previous: 'fa fa-chevron-left',
+                            next: 'fa fa-chevron-right',
+                            today: 'fa fa-screenshot',
+                            clear: 'fa fa-trash',
+                            close: 'fa fa-remove'
                         }
                     });
+                }
+
+                // Adicionar nova partida
+                $('#add-match').click(function() {
+                    createMatchRow();
+                });
+
+                // Remover partida
+                $(document).on('click', '.remove-match', function() {
+                    $(this).closest('.match-row').remove();
+                });
+
+                // Atualiza os times das rodadas quando mudar a seleção na dual listbox
+                $('.duallistbox').on('change', function() {
+                    var teams = $(this).val();
+                    var teamOptions = '<option value="">Selecione o time</option>';
+                    
+                    if (teams) {
+                        $('.duallistbox option:selected').each(function() {
+                            var teamId = $(this).val();
+                            var teamName = $(this).text();
+                            teamOptions += `<option value="${teamId}">${teamName}</option>`;
+                        });
+                    }
+                    
+                    $('.time-select').html(teamOptions).trigger('change');
+                });
+
+                // Comportamento do filtro de times
+                $('#filter_type').change(function() {
+                    var filterType = $(this).val();
+                    var $options = $('.duallistbox option');
+                    
+                    if (filterType === 'all') {
+                        $options.show();
+                    } else {
+                        $options.each(function() {
+                            if ($(this).data('type') === filterType) {
+                                $(this).show();
+                            } else {
+                                $(this).hide();
+                            }
+                        });
+                    }
+                    
+                    // Atualiza o duallistbox após o filtro
+                    $('.duallistbox').bootstrapDualListbox('refresh');
                 });
 
                 // Função para atualizar os selects de times nas rodadas
                 function atualizarTimesRodadas() {
-                    var timesSelecionados = $('.dual_select').val();
+                    var timesSelecionados = $('.duallistbox').val();
                     var options = '<option value="">Selecione o time</option>';
                     
                     if (timesSelecionados) {
-                        $('.dual_select option:selected').each(function() {
-                            options += '<option value="' + $(this).val() + '">' + $(this).text() + '</option>';
+                        $('.duallistbox option:selected').each(function() {
+                            var teamId = $(this).val();
+                            var teamName = $(this).text();
+                            var teamImage = $(this).data('image');
+                            options += `<option value="${teamId}" data-image="${teamImage}">${teamName}</option>`;
                         });
                     }
                     
                     $('.time-select').each(function() {
                         $(this).html(options);
                     });
+
+                    // Inicializa o select2 com template personalizado
+                    $('.time-select').select2({
+                        templateResult: formatTeamOption,
+                        templateSelection: formatTeamOption,
+                        escapeMarkup: function(m) { return m; }
+                    });
                 }
 
                 // Atualiza os times das rodadas quando mudar a seleção na dual listbox
-                $('.dual_select').on('change', function() {
+                $('.duallistbox').on('change', function() {
                     atualizarTimesRodadas();
                 });
 
@@ -430,7 +631,7 @@
                     }
                 });
 
-                // Gerencia o envio do formulário em etapas
+                // Validação e envio do formulário
                 $('#form-campeonato').on('submit', function(e) {
                     e.preventDefault();
                     
@@ -454,6 +655,30 @@
                         toastr.error('Selecione o continente');
                         return;
                     }
+
+                    // Coleta os dados das rodadas
+                    var matches = [];
+                    $('.match-row').each(function() {
+                        var $row = $(this);
+                        var homeTeam = $row.find('.time-mandante').val();
+                        var awayTeam = $row.find('.time-visitante').val();
+                        var matchDate = $row.find('.datetimepicker-input').val();
+                        
+                        if (homeTeam && awayTeam && matchDate) {
+                            matches.push({
+                                stage: $row.find('.stage-select').val(),
+                                round: $row.find('.round-select').val(),
+                                home_team: homeTeam,
+                                away_team: awayTeam,
+                                home_score: $row.find('.placar-mandante').val() || null,
+                                away_score: $row.find('.placar-visitante').val() || null,
+                                match_date: matchDate
+                            });
+                        }
+                    });
+
+                    // Adiciona as rodadas ao formData
+                    formData.append('matches', JSON.stringify(matches));
                     
                     $.ajax({
                         url: $(this).attr('action'),
@@ -507,7 +732,7 @@
                         }
                     } else if (targetTab === '#rodadas') {
                         // Valida se há times selecionados
-                        if ($('.dual_select').val() === null || $('.dual_select').val().length === 0) {
+                        if ($('.duallistbox').val() === null || $('.duallistbox').val().length === 0) {
                             e.preventDefault();
                             toastr.error('Selecione pelo menos um time');
                             return false;
@@ -595,6 +820,75 @@
                 if ($('#country').val()) {
                     $('#country').trigger('change');
                 }
+
+                // Função para controlar campos editáveis
+                function checkEditableFields() {
+                    var isActive = $('#is_active').prop('checked');
+                    var hasRounds = {{ has_rounds|yesno:"true,false" }};
+                    
+                    if (isActive && hasRounds) {
+                        // Desabilita todos os campos exceto nome, pontuação e status
+                        $('input, select').not('#nome, #pontuacao, #is_active').prop('disabled', true);
+                        
+                        // Remove classes do Select2 para evitar interação
+                        $('select').not('#nome, #pontuacao').select2('destroy');
+                        
+                        // Desabilita abas não permitidas
+                        $('.nav-tabs a[href="#times"]').addClass('disabled').css('pointer-events', 'none');
+                        
+                        // Adiciona mensagem de aviso
+                        if (!$('.alert-warning').length) {
+                            $('.panel-body').first().prepend(`
+                                <div class="alert alert-warning">
+                                    Este campeonato está ativo e possui rodadas configuradas. 
+                                    Apenas Nome, Pontuação e Status podem ser editados.
+                                </div>
+                            `);
+                        }
+                    } else {
+                        // Reabilita todos os campos
+                        $('input, select').prop('disabled', false);
+                        
+                        // Reinicializa Select2
+                        $('.js-basic-single').select2();
+                        
+                        // Reabilita abas
+                        $('.nav-tabs a').removeClass('disabled').css('pointer-events', 'auto');
+                        
+                        // Remove mensagem de aviso
+                        $('.alert-warning').remove();
+                    }
+                }
+                
+                // Verifica status inicial
+                checkEditableFields();
+                
+                // Monitora mudanças no status
+                $('#is_active').on('change', checkEditableFields);
+                
+                // Preenche o campo temporada com o ano atual se estiver vazio
+                if (!$('#temporada').val()) {
+                    var currentYear = new Date().getFullYear();
+                    $('#temporada').val(currentYear);
+                }
+
+                // Inicializa o datetimepicker
+                $('.datetimepicker-input').datetimepicker({
+                    format: 'DD/MM/YYYY HH:mm',
+                    locale: 'pt-br',
+                    sideBySide: true,
+                    icons: {
+                        time: 'fa fa-clock-o',
+                        date: 'fa fa-calendar',
+                        up: 'fa fa-chevron-up',
+                        down: 'fa fa-chevron-down',
+                        previous: 'fa fa-chevron-left',
+                        next: 'fa fa-chevron-right',
+                        today: 'fa fa-screenshot',
+                        clear: 'fa fa-trash',
+                        close: 'fa fa-remove'
+                    }
+                });
             });
         </script>
     </body>
