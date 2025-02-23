@@ -243,12 +243,16 @@
                     var isNationalTeam = $('#is_national_team').is(':checked');
                     var formData = new FormData(this);
                     
-                    // Se for seleção nacional, remove o campo state
+                    // Se a imagem foi removida, garante que o campo remove_image seja enviado
+                    if ($('#remove_image').is(':checked')) {
+                        formData.append('remove_image', 'true');
+                    }
+                    
+                    // Se for seleção nacional, não precisa de estado
                     if (isNationalTeam) {
                         formData.delete('state');
                     }
                     
-                    // Envia o formulário
                     $.ajax({
                         url: $(this).attr('action'),
                         type: 'POST',

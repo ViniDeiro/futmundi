@@ -116,8 +116,19 @@
                     if (file) {
                         var reader = new FileReader();
                         reader.onload = function(e) {
-                            $('#image-preview').html('<img src="' + e.target.result + '" style="max-width: 50px; max-height: 50px; object-fit: contain; cursor: pointer;" onclick="document.getElementById(\'image\').click()">');
+                            $('#image-preview').html(`
+                                <img src="${e.target.result}" style="max-width: 50px; max-height: 50px; object-fit: contain; cursor: pointer;" onclick="document.getElementById('image').click()">
+                                <button type="button" class="btn btn-danger btn-xs" id="remove_image_btn" style="position: absolute; bottom: -7px; right: -30px;">
+                                    <i class="fa fa-trash"></i>
+                                </button>
+                            `);
                             $('#image-preview').css('margin-top', '-7px');
+                            
+                            // Adiciona handler para o botão de remover
+                            $('#remove_image_btn').on('click', function() {
+                                $('#image').val('');
+                                $('#image-preview').html('<i class="fa fa-file-image-o" style="font-size: 32px; color: #ccc; cursor: pointer;" onclick="document.getElementById(\'image\').click()"></i>');
+                            });
                         }
                         reader.readAsDataURL(file);
                     }
@@ -137,12 +148,20 @@
                             success: function(data) {
                                 if (data.success) {
                                     var stateSelect = $('#state');
+                                    var stateContainer = $('#state-container');
                                     stateSelect.empty().append('<option value="">Selecione um estado</option>');
-                                    data.states.forEach(function(state) {
-                                        stateSelect.append(`<option value="${state.id}">${state.name}</option>`);
-                                    });
+                                    
+                                    if (data.states && data.states.length > 0) {
+                                        data.states.forEach(function(state) {
+                                            stateSelect.append(`<option value="${state.id}">${state.name}</option>`);
+                                        });
+                                        stateContainer.show();
+                                    } else {
+                                        stateContainer.hide();
+                                    }
                                 } else {
                                     toastr.error(data.message || 'Erro ao carregar estados');
+                                    $('#state-container').hide();
                                 }
                                 
                                 // Mostra/esconde o campo de estado com base no checkbox
@@ -150,11 +169,13 @@
                             },
                             error: function() {
                                 toastr.error('Erro ao carregar estados');
+                                $('#state-container').hide();
                             }
                         });
                     } else {
                         var stateSelect = $('#state');
                         stateSelect.empty().append('<option value="">Selecione um estado</option>');
+                        $('#state-container').hide();
                         toggleStateField();
                     }
                 });
@@ -207,42 +228,21 @@
                     var isNationalTeam = $('#is_national_team').is(':checked');
                     var formData = new FormData(this);
                     
-                    // Se for seleção, garante que o estado seja vazio
+                    // Se for seleção nacional, não precisa de estado
                     if (isNationalTeam) {
-                        formData.delete('state'); // Remove o campo state do FormData
-                        formData.append('state', ''); // Adiciona vazio
-                        return $.ajax({
-                            url: $(this).attr('action'),
-                            type: 'POST',
-                            data: formData,
-                            processData: false,
-                            contentType: false,
-                            success: function(response) {
-                                if (response.success) {
-                                    toastr.success(response.message);
-                                    setTimeout(function() {
-                                        window.location.href = "{% url 'administrativo:times' %}";
-                                    }, 1000);
-                                } else {
-                                    toastr.error(response.message);
-                                }
-                            },
-                            error: function(xhr, status, error) {
-                                toastr.error('Erro ao criar time: ' + error);
-                            }
-                        });
+                        formData.delete('state');
+                    } else {
+                        // Se não for seleção, só valida estado se o país tiver estados
+                        var state = $('#state').val();
+                        var hasStates = $('#state option').length > 1; // Verifica se tem estados além da opção default
+                        
+                        if (hasStates && !state) {
+                            toastr.error('O estado é obrigatório para times que não são seleções quando o país possui estados cadastrados');
+                            return false;
+                        }
                     }
                     
-                    // Se não for seleção, valida o estado
-                    var state = $('#state').val();
-                    var hasStates = $('#state option').length > 1;
-                    
-                    if (hasStates && !state) {
-                        toastr.error('O estado é obrigatório para times que não são seleções quando o país possui estados cadastrados');
-                        return false;
-                    }
-                    
-                    // Continua com o envio do formulário
+                    // Envia o formulário
                     $.ajax({
                         url: $(this).attr('action'),
                         type: 'POST',

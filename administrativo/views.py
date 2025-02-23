@@ -1226,25 +1226,58 @@ def time_exportar(request):
     """
     Exporta times para um arquivo Excel.
     """
-    teams = Team.objects.all().select_related('continent', 'country', 'state')
+    teams = Team.objects.all().select_related('continent', 'country', 'state').prefetch_related('championships')
+    
+    fields = [
+        ('name', 'Nome'),
+        ('continent__name', 'Continente'),
+        ('country__name', 'País'),
+        ('state__name', 'Estado'),
+        ('is_national_team', 'Seleção'),
+    ]
     
     data = []
     for team in teams:
-        data.append({
-            'nome': team.name,
-            'continente': team.continent.name,
-            'pais': team.country.name,
-            'estado': team.state.name if team.state else '',
-            'selecao': 'Sim' if team.is_national_team else 'Não',
-            'campeonatos': ', '.join(team.championships.values_list('name', flat=True))
-        })
+        row = {}
+        for field, _ in fields:
+            if '__' in field:
+                # Lida com campos relacionados (ex: continent__name)
+                parts = field.split('__')
+                value = team
+                for part in parts:
+                    if value is None:
+                        value = ''
+                        break
+                    value = getattr(value, part, '')
+            else:
+                value = getattr(team, field, '')
+                
+            if field == 'is_national_team':
+                value = 'Sim' if value else 'Não'
+                
+            row[field] = str(value) if value else ''
+            
+        # Adiciona os campeonatos
+        row['championships'] = ', '.join(team.championships.values_list('name', flat=True))
+        data.append(row)
     
     df = pd.DataFrame(data)
+    
+    # Renomeia as colunas
+    column_names = {
+        'name': 'Nome',
+        'continent__name': 'Continente',
+        'country__name': 'País',
+        'state__name': 'Estado',
+        'is_national_team': 'Seleção',
+        'championships': 'Campeonatos'
+    }
+    df.rename(columns=column_names, inplace=True)
     
     response = HttpResponse(content_type='application/vnd.ms-excel')
     response['Content-Disposition'] = 'attachment; filename="times.xlsx"'
     
-    df.to_excel(response, index=False)
+    df.to_excel(response, index=False, engine='openpyxl')
     return response
 
 def time_importar_imagens(request):

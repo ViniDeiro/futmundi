@@ -244,7 +244,7 @@
                                                     <div class="col-md-12">
                                                         <select class="duallistbox" multiple="multiple" name="teams[]">
                                                             {% for team in teams %}
-                                                            <option value="{{ team.id }}" data-type="{{ team.is_selection|yesno:'selection,team' }}" data-image="{{ team.image.url }}" {% if team in selected_teams %}selected{% endif %}>
+                                                            <option value="{{ team.id }}" data-type="{{ team.is_selection|yesno:'selection,team' }}" data-image="{% if team.image %}{{ team.image.url }}{% else %}{% static 'administrativo/img/Generico.png' %}{% endif %}" {% if team in selected_teams %}selected{% endif %}>
                                                                 {{ team.name }}
                                                             </option>
                                                             {% endfor %}
@@ -290,7 +290,7 @@
                                                             <select class="form-control js-templating time-select time-mandante" style="width: 100%">
                                                                 <option value="">Selecione o time</option>
                                                                 {% for team in selected_teams %}
-                                                                <option value="{{ team.id }}" data-image="{{ team.image.url }}" {% if team.id == match.home_team.id %}selected{% endif %}>{{ team.name }}</option>
+                                                                <option value="{{ team.id }}" data-image="{% if team.image %}{{ team.image.url }}{% else %}{% static 'administrativo/img/Generico.png' %}{% endif %}" {% if team.id == match.home_team.id %}selected{% endif %}>{{ team.name }}</option>
                                                                 {% endfor %}
                                                             </select>
                                                         </div>
@@ -304,7 +304,7 @@
                                                             <select class="form-control js-templating time-select time-visitante" style="width: 100%">
                                                                 <option value="">Selecione o time</option>
                                                                 {% for team in selected_teams %}
-                                                                <option value="{{ team.id }}" data-image="{{ team.image.url }}" {% if team.id == match.away_team.id %}selected{% endif %}>{{ team.name }}</option>
+                                                                <option value="{{ team.id }}" data-image="{% if team.image %}{{ team.image.url }}{% else %}{% static 'administrativo/img/Generico.png' %}{% endif %}" {% if team.id == match.away_team.id %}selected{% endif %}>{{ team.name }}</option>
                                                                 {% endfor %}
                                                             </select>
                                                         </div>
