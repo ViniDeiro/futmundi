@@ -490,3 +490,12 @@ input::-webkit-inner-spin-button {
     background-color: #fff;
     box-shadow: 0 0 10px rgba(0,0,0,0.1);
 }
+
+/* Estilo para escudos dos times na tabela */
+.team-shield {
+    width: 30px;
+    height: 30px;
+    object-fit: contain;
+    display: block;
+    margin: 0 auto;
+}

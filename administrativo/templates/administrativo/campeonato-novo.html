@@ -198,8 +198,9 @@
                                                             <div class="col-lg-4">
                                                                 <label class="control-label" for="pais">País</label>
                                                                 <select class="form-control js-basic-single" id="pais" name="country">
+                                                                    <option value="">Selecione...</option>
                                                                     {% for country in countries %}
-                                                                    <option value="{{ country.id }}">{{ country.name }}</option>
+                                                                    <option value="{{ country.id }}" data-continent="{{ country.continent_id }}">{{ country.name }}</option>
                                                                     {% endfor %}
                                                                 </select>  
                                                             </div>
@@ -401,20 +402,69 @@
 
                 // Gerencia a dependência entre âmbito e locais
                 $('#ambito').on('change', function() {
-                    var scope = $(this).val();
+                    var scopeName = $(this).find('option:selected').text().trim();
+                    var $continente = $('#continente');
+                    var $pais = $('#pais');
+                    var $estado = $('#estado');
                     
-                    // Habilita/desabilita os campos baseado no âmbito selecionado
-                    if (scope === 'mundial') {
-                        $('#continente, #pais, #estado').prop('disabled', true);
-                    } else if (scope === 'continental') {
-                        $('#continente').prop('disabled', false);
-                        $('#pais, #estado').prop('disabled', true);
-                    } else if (scope === 'nacional') {
-                        $('#continente, #pais').prop('disabled', false);
-                        $('#estado').prop('disabled', true);
-                    } else { // estadual
-                        $('#continente, #pais, #estado').prop('disabled', false);
+                    // Reseta todos os campos
+                    $continente.val(null).trigger('change');
+                    $pais.val(null).trigger('change');
+                    $estado.val(null).trigger('change');
+                    
+                    // Configura os campos baseado no âmbito
+                    switch(scopeName) {
+                        case 'Mundial':
+                            // Desabilita todos
+                            $continente.prop('disabled', true);
+                            $pais.prop('disabled', true);
+                            $estado.prop('disabled', true);
+                            break;
+                            
+                        case 'Continental':
+                            // Habilita apenas continente
+                            $continente.prop('disabled', false);
+                            $pais.prop('disabled', true);
+                            $estado.prop('disabled', true);
+                            break;
+                            
+                        case 'Nacional':
+                            // Habilita continente e país
+                            $continente.prop('disabled', false);
+                            $pais.prop('disabled', false);
+                            $estado.prop('disabled', true);
+                            break;
+                            
+                        case 'Estadual':
+                            // Habilita todos
+                            $continente.prop('disabled', false);
+                            $pais.prop('disabled', false);
+                            $estado.prop('disabled', false);
+                            break;
+                            
+                        default:
+                            // Caso padrão (nenhum selecionado)
+                            $continente.prop('disabled', true);
+                            $pais.prop('disabled', true);
+                            $estado.prop('disabled', true);
                     }
+                    
+                    // Atualiza o Select2 para refletir as mudanças
+                    $continente.select2({
+                        width: '100%',
+                        placeholder: 'Selecione...',
+                        allowClear: true
+                    });
+                    $pais.select2({
+                        width: '100%',
+                        placeholder: 'Selecione...',
+                        allowClear: true
+                    });
+                    $estado.select2({
+                        width: '100%',
+                        placeholder: 'Selecione...',
+                        allowClear: true
+                    });
                 });
 
                 // Atualiza times baseado no filtro
@@ -540,6 +590,74 @@
                             toastr.error('Selecione pelo menos um time');
                             return false;
                         }
+                    }
+                });
+
+                // Filtra países por continente
+                $('#continente').change(function() {
+                    var continentId = $(this).val();
+                    var $pais = $('#pais');
+                    
+                    // Reseta os selects dependentes
+                    $pais.val(null).trigger('change');
+                    $('#estado').val(null).trigger('change');
+                    
+                    if (continentId) {
+                        $.ajax({
+                            url: "{% url 'administrativo:get_countries_by_continent' %}",
+                            type: 'POST',
+                            data: { 
+                                continent_id: continentId,
+                                csrfmiddlewaretoken: $('[name=csrfmiddlewaretoken]').val()
+                            },
+                            success: function(data) {
+                                if (data.success) {
+                                    $pais.empty().append('<option value="">Selecione...</option>');
+                                    data.countries.forEach(function(country) {
+                                        $pais.append(`<option value="${country.id}">${country.name}</option>`);
+                                    });
+                                } else {
+                                    toastr.error(data.message || 'Erro ao carregar países');
+                                }
+                            },
+                            error: function() {
+                                toastr.error('Erro ao carregar países');
+                            }
+                        });
+                    } else {
+                        $pais.empty().append('<option value="">Selecione...</option>');
+                    }
+                });
+
+                // Filtra estados por país
+                $('#pais').change(function() {
+                    var countryId = $(this).val();
+                    if (countryId) {
+                        $.ajax({
+                            url: "{% url 'administrativo:get_states_by_country' %}",
+                            type: 'POST',
+                            data: { 
+                                country_id: countryId,
+                                csrfmiddlewaretoken: $('[name=csrfmiddlewaretoken]').val()
+                            },
+                            success: function(data) {
+                                if (data.success) {
+                                    var stateSelect = $('#estado');
+                                    stateSelect.empty().append('<option value="">Selecione um estado</option>');
+                                    data.states.forEach(function(state) {
+                                        stateSelect.append(`<option value="${state.id}">${state.name}</option>`);
+                                    });
+                                } else {
+                                    toastr.error(data.message || 'Erro ao carregar estados');
+                                }
+                            },
+                            error: function() {
+                                toastr.error('Erro ao carregar estados');
+                            }
+                        });
+                    } else {
+                        var stateSelect = $('#estado');
+                        stateSelect.empty().append('<option value="">Selecione um estado</option>');
                     }
                 });
             });

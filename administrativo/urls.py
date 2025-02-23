@@ -41,6 +41,7 @@ urlpatterns = [
     path('time/importar-imagens/', views.time_importar_imagens, name='time_importar_imagens'),
     path('time/get-states-by-country/', views.get_states_by_country, name='get_states_by_country'),
     path('time/por-tipo/', views.times_por_tipo, name='times_por_tipo'),
+    path('get-countries-by-continent/', views.get_countries_by_continent, name='get_countries_by_continent'),
     
     # Pacotes
     path('futcoins/', views.futcoins, name='futcoins'),

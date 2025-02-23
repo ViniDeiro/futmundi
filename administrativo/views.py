@@ -8,6 +8,7 @@ from django.db import transaction
 from django.core.exceptions import ValidationError
 from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
 from django.contrib.auth.decorators import login_required
+from django.db.models import Case, When, Value, IntegerField
 from .models import (
     User, Scope, Championship, Template, Team,
     FutcoinPackage, Plan, ClassicLeague, Player,
@@ -80,19 +81,20 @@ def ambitos(request):
     # Garante que os âmbitos padrão existam
     create_default_scopes()
     
-    # Obtém todos os âmbitos ordenados por tipo
-    scopes = Scope.objects.all().order_by(
-        'type'
-    ).extra(
-        select={'type_order': """CASE 
-            WHEN type = 'estadual' THEN 1
-            WHEN type = 'nacional' THEN 2
-            WHEN type = 'continental' THEN 3
-            WHEN type = 'mundial' THEN 4
-            ELSE 5
-        END"""},
-        order_by=['type_order']
+    # Define a ordem personalizada para os tipos de âmbito
+    custom_order = Case(
+        When(type='estadual', then=Value(1)),
+        When(type='nacional', then=Value(2)),
+        When(type='continental', then=Value(3)),
+        When(type='mundial', then=Value(4)),
+        default=Value(5),
+        output_field=IntegerField(),
     )
+    
+    # Obtém todos os âmbitos ordenados pela ordem personalizada
+    scopes = Scope.objects.all().annotate(
+        order=custom_order
+    ).order_by('order')
     
     return render(request, 'administrativo/ambitos.html', {
         'scopes': scopes
@@ -148,65 +150,23 @@ def ambito_editar(request, id=None):
 
 def create_default_scopes():
     """
-    Cria os 4 âmbitos padrão se eles não existirem.
+    Cria os âmbitos padrão se não existirem.
     """
     default_scopes = [
-        {
-            'name': 'Estadual',
-            'type': 'estadual',
-            'boost': 100,
-            'futcoins': 1000,
-            'is_default': True
-        },
-        {
-            'name': 'Nacional',
-            'type': 'nacional',
-            'boost': 200,
-            'futcoins': 2000,
-            'is_default': True
-        },
-        {
-            'name': 'Continental',
-            'type': 'continental',
-            'boost': 300,
-            'futcoins': 3000,
-            'is_default': True
-        },
-        {
-            'name': 'Mundial',
-            'type': 'mundial',
-            'boost': 400,
-            'futcoins': 4000,
-            'is_default': True
-        }
+        {'name': 'Estadual', 'type': 'estadual'},
+        {'name': 'Nacional', 'type': 'nacional'},
+        {'name': 'Continental', 'type': 'continental'},
+        {'name': 'Mundial', 'type': 'mundial'}
     ]
     
     for scope_data in default_scopes:
-        scope, created = Scope.objects.get_or_create(
+        Scope.objects.get_or_create(
             type=scope_data['type'],
-            defaults=scope_data
+            defaults={
+                'name': scope_data['name'],
+                'is_default': True
+            }
         )
-        
-        if created:
-            # Cria níveis de alavancagem
-            for level in range(1, 4):
-                ScopeLevel.objects.create(
-                    scope=scope,
-                    type='leverage',
-                    level=level,
-                    points=level * 100,
-                    futcoins=level * 1000
-                )
-            
-            # Cria níveis de seguro
-            for level in range(1, 4):
-                ScopeLevel.objects.create(
-                    scope=scope,
-                    type='insurance',
-                    level=level,
-                    points=level * 50,
-                    futcoins=level * 500
-                )
 
 def campeonatos(request):
     """
@@ -227,15 +187,8 @@ def campeonatos(request):
 
 def campeonato_novo(request):
     """
-    View para criar um novo campeonato em 3 etapas:
-    1. Informações gerais
-    2. Seleção de times
-    3. Configuração de rodadas
+    Cria um novo campeonato.
     """
-    # Limpa mensagens antigas
-    storage = messages.get_messages(request)
-    storage.used = True
-    
     if request.method == 'POST':
         step = request.POST.get('step')
         
@@ -384,16 +337,35 @@ def campeonato_novo(request):
                     'success': False,
                     'message': f'Erro ao configurar rodadas: {str(e)}'
                 })
-    
-    # GET: Exibe o formulário inicial
-    return render(request, 'administrativo/campeonato-novo.html', {
-        'templates': Template.objects.filter(enabled=True).order_by('name'),
-        'scopes': Scope.objects.filter(is_active=True).order_by('name'),
-        'continents': Continent.objects.all().order_by('name'),
-        'countries': Country.objects.all().order_by('name'),
-        'states': State.objects.all().order_by('name'),
-        'teams': Team.objects.all().order_by('name')
-    })
+    else:
+        # Define a ordem personalizada para os tipos de âmbito
+        custom_order = Case(
+            When(type='estadual', then=Value(1)),
+            When(type='nacional', then=Value(2)),
+            When(type='continental', then=Value(3)),
+            When(type='mundial', then=Value(4)),
+            default=Value(5),
+            output_field=IntegerField(),
+        )
+        
+        # Obtém os dados necessários para o formulário
+        templates = Template.objects.filter(enabled=True).order_by('name')
+        scopes = Scope.objects.all().annotate(
+            order=custom_order
+        ).order_by('order')
+        continents = Continent.objects.all().order_by('name')
+        countries = Country.objects.all().order_by('name')
+        states = State.objects.all().order_by('name')
+        teams = Team.objects.all().order_by('name')
+        
+        return render(request, 'administrativo/campeonato-novo.html', {
+            'templates': templates,
+            'scopes': scopes,
+            'continents': continents,
+            'countries': countries,
+            'states': states,
+            'teams': teams
+        })
 
 def campeonato_excluir(request, id):
     """
@@ -429,8 +401,7 @@ def campeonato_excluir(request, id):
 
 def campeonato_excluir_em_massa(request):
     """
-    Exclui múltiplos campeonatos selecionados.
-    Só exclui campeonatos inativos e sem palpites.
+    Exclui múltiplos campeonatos.
     """
     if request.method == 'POST':
         championship_ids = request.POST.getlist('ids[]')
@@ -441,38 +412,31 @@ def campeonato_excluir_em_massa(request):
                 'message': 'Nenhum campeonato selecionado'
             })
             
+        championships = Championship.objects.filter(id__in=championship_ids)
         deleted_count = 0
         errors = []
         
-        for championship_id in championship_ids:
-            try:
-                championship = Championship.objects.get(id=championship_id)
-                if championship.can_delete():
+        for championship in championships:
+            if not championship.is_active:
+                try:
                     championship.delete()
                     deleted_count += 1
-                else:
-                    errors.append(f'Campeonato "{championship.name}" não pode ser excluído pois está ativo ou tem palpites vinculados')
-            except Championship.DoesNotExist:
-                errors.append(f'Campeonato {championship_id} não encontrado')
+                except Exception as e:
+                    errors.append(f'Erro ao excluir campeonato "{championship.name}": {str(e)}')
+            else:
+                errors.append(f'Campeonato "{championship.name}" não pode ser excluído pois está ativo')
         
-        if deleted_count > 0:
-            message = f'{deleted_count} campeonato(s) excluído(s) com sucesso!'
-            if errors:
-                message += f' Erros: {", ".join(errors)}'
-            return JsonResponse({
-                'success': True,
-                'message': message
-            })
-        else:
-            return JsonResponse({
-                'success': False,
-                'message': 'Nenhum campeonato pôde ser excluído. ' + ', '.join(errors)
-            })
-    
+        return JsonResponse({
+            'success': True,
+            'deleted': deleted_count,
+            'errors': errors,
+            'message': f'{deleted_count} campeonato(s) excluído(s) com sucesso!'
+        })
+        
     return JsonResponse({
         'success': False,
         'message': 'Método não permitido'
-    }, status=405)
+    })
 
 def campeonato_resultados(request, id):
     """
@@ -2345,13 +2309,17 @@ def campeonato_editar(request, id):
                     
                     # Valida campos obrigatórios
                     if not all([name, season, template_id, scope_id, country_id]):
-                        messages.error(request, 'Todos os campos obrigatórios devem ser preenchidos')
-                        return redirect('administrativo:campeonato_editar', id=id)
+                        return JsonResponse({
+                            'success': False,
+                            'message': 'Todos os campos obrigatórios devem ser preenchidos'
+                        })
                     
                     # Verifica se já existe um campeonato com o mesmo nome e temporada
                     if Championship.objects.filter(name=name, season=season).exclude(id=id).exists():
-                        messages.error(request, 'Já existe um campeonato com este nome e temporada')
-                        return redirect('administrativo:campeonato_editar', id=id)
+                        return JsonResponse({
+                            'success': False,
+                            'message': 'Já existe um campeonato com este nome e temporada'
+                        })
                     
                     # Atualiza os dados do campeonato
                     championship.name = name
@@ -2370,12 +2338,17 @@ def campeonato_editar(request, id):
                         championship.teams.clear()
                         championship.teams.add(*teams)
                     
-                    messages.success(request, 'Campeonato atualizado com sucesso')
-                    return redirect('administrativo:campeonatos')
+                    return JsonResponse({
+                        'success': True,
+                        'message': 'Campeonato atualizado com sucesso',
+                        'redirect_url': reverse('administrativo:campeonatos')
+                    })
                     
             except Exception as e:
-                messages.error(request, f'Erro ao atualizar campeonato: {str(e)}')
-                return redirect('administrativo:campeonato_editar', id=id)
+                return JsonResponse({
+                    'success': False,
+                    'message': f'Erro ao atualizar campeonato: {str(e)}'
+                })
         
         # Obtém dados para o formulário
         templates = Template.objects.filter(enabled=True)
@@ -2449,10 +2422,22 @@ def get_states_by_country(request):
 
 @login_required
 def campeonato_toggle_status(request):
+    """
+    Ativa/desativa um campeonato via AJAX.
+    Permite desativar mesmo com templates ou locais vinculados.
+    """
     if request.method == 'POST':
         championship_id = request.POST.get('id')
         try:
             championship = Championship.objects.get(id=championship_id)
+            
+            # Se estiver tentando ativar, verifica se o template está ativo
+            if not championship.is_active and championship.template and not championship.template.enabled:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Não é possível ativar um campeonato com template inativo.'
+                })
+            
             championship.is_active = not championship.is_active
             championship.save()
             
@@ -2646,6 +2631,29 @@ def template_edit_stage(request, template_id, stage_id):
                 'message': str(e)
             })
     
+    return JsonResponse({
+        'success': False,
+        'message': 'Método não permitido'
+    })
+
+@login_required
+def get_countries_by_continent(request):
+    """
+    Retorna os países de um determinado continente via AJAX
+    """
+    if request.method == 'POST':
+        continent_id = request.POST.get('continent_id')
+        try:
+            countries = Country.objects.filter(continent_id=continent_id).values('id', 'name')
+            return JsonResponse({
+                'success': True,
+                'countries': list(countries)
+            })
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': str(e)
+            })
     return JsonResponse({
         'success': False,
         'message': 'Método não permitido'
