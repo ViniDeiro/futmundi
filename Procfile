@@ -1,0 +1,1 @@
+web: gunicorn futmundi.wsgi:application --log-file - 
