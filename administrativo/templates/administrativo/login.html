@@ -1,53 +1,52 @@
 {% load static %}
 <!DOCTYPE html>
-<html>
+<html lang="en">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <meta name="csrf-token" content="{{ csrf_token }}">
 
         <title>Login</title>
 
         <link href="{% static 'administrativo/css/bootstrap.min.css' %}" rel="stylesheet">
         <link href="{% static 'administrativo/font-awesome/css/font-awesome.css' %}" rel="stylesheet">
-        <link href="{% static 'administrativo/css/plugins/toastr/toastr.min.css' %}" rel="stylesheet">
         <link href="{% static 'administrativo/css/animate.css' %}" rel="stylesheet">
         <link href="{% static 'administrativo/css/style.css' %}" rel="stylesheet">
-        <!-- Custom -->
-        <link href="{% static 'administrativo/css/custom.css' %}" rel="stylesheet">
         <!-- Favicon -->
         <link rel="icon" href="{% static 'administrativo/img/futmundi.ico' %}" type="image/png">
     </head>
     <body class="gray-bg">
-        <div class="middle-box text-center loginscreen animated fadeInDown">
-            <div>
+        <div class="middle-box text-center loginscreen animated bounceIn">
+            <div class="ibox-content">
                 <div>
-                    <img src="{% static 'administrativo/img/futmundi.png' %}" alt="Logo" class="logo-name">
-                </div>
-                <h3>Bem-vindo ao Futmundi</h3>
-                <p>Faça login para continuar.</p>
-                <form class="m-t" role="form" method="post">
+                    <img id="logo" src="{% static 'administrativo/img/logo-verde.svg' %}" alt="Futmundi logo"> 
+                </div>           
+                <form class="mt15" action="{% url 'administrativo:login' %}" method="post">
                     {% csrf_token %}
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-danger">
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
                     <div class="form-group">
-                        <input type="email" name="email" class="form-control" placeholder="E-mail" required>
+                        <input type="email" name="email" class="form-control" placeholder="Email" required="">
                     </div>
                     <div class="form-group">
-                        <input type="password" name="password" class="form-control" placeholder="Senha" required>
+                        <input type="password" name="password" class="form-control" placeholder="Senha" required="">
+                    </div>
+                    <div class="form-group">
+                        <div class="i-checks">
+                            <label><input type="checkbox" name="remember_me"> Lembrar-me</label>
+                        </div>
                     </div>
                     <button type="submit" class="btn btn-success block full-width m-b">Login</button>
                 </form>
-                {% if error %}
-                <div class="alert alert-danger">
-                    {{ error }}
-                </div>
-                {% endif %}
             </div>
         </div>
-
         <!-- Mainly scripts -->
         <script src="{% static 'administrativo/js/jquery-3.4.1.min.js' %}"></script>
         <script src="{% static 'administrativo/js/popper.min.js' %}"></script>
         <script src="{% static 'administrativo/js/bootstrap.js' %}"></script>
-        <script src="{% static 'administrativo/js/plugins/toastr/toastr.min.js' %}"></script>
     </body>
 </html>
