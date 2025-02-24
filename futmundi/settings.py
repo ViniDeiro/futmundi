@@ -53,6 +53,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -60,7 +61,6 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "whitenoise.middleware.WhiteNoiseMiddleware",
 ]
 
 ROOT_URLCONF = "futmundi.urls"
@@ -87,12 +87,29 @@ WSGI_APPLICATION = "futmundi.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
-DATABASES = {
-    'default': dj_database_url.config(
-        default='postgresql://futmundi_db_user:egdkq6FZLPFx3d8SzZpsyMUXqsE0XJAy@dpg-cutvk1dds78s73940tug-a.oregon-postgres.render.com/futmundi_db',
-        conn_max_age=600
-    )
-}
+# Verifica se está no Render
+IS_RENDER = os.environ.get('IS_RENDER', False)
+
+if IS_RENDER:
+    # Configuração do banco para o Render
+    DATABASES = {
+        'default': dj_database_url.config(
+            default='postgresql://futmundi_db_user:egdkq6FZLPFx3d8SzZpsyMUXqsE0XJAy@dpg-cutvk1dds78s73940tug-a.oregon-postgres.render.com/futmundi_db',
+            conn_max_age=600
+        )
+    }
+else:
+    # Configuração do banco local
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': 'futmundi_db',
+            'USER': 'futmundi_user',
+            'PASSWORD': 'Vdl@2209',
+            'HOST': 'localhost',
+            'PORT': '3306',
+        }
+    }
 
 
 # Password validation
@@ -173,10 +190,16 @@ LOGIN_URL = 'administrativo:login'
 LOGIN_REDIRECT_URL = 'administrativo:index'
 
 # CORS settings
-CORS_ALLOWED_ORIGINS = [
-    "https://futmundi.onrender.com",
-    "http://localhost:3000",
-]
+if IS_RENDER:
+    CORS_ALLOWED_ORIGINS = [
+        "https://futmundi.onrender.com",
+        "http://localhost:3000",
+    ]
+else:
+    CORS_ALLOWED_ORIGINS = [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    ]
 
 CORS_ALLOW_CREDENTIALS = True
 
@@ -195,4 +218,8 @@ SECURE_HSTS_INCLUDE_SUBDOMAINS = False
 SECURE_HSTS_PRELOAD = False
 
 # Configuração do Whitenoise para servir arquivos estáticos
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
+
+# Configuração adicional do Whitenoise
+WHITENOISE_MANIFEST_STRICT = False
+WHITENOISE_USE_FINDERS = True
