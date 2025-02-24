@@ -568,12 +568,42 @@ class FutcoinPackage(models.Model):
 
 class Plan(models.Model):
     name = models.CharField(max_length=255)
-    price = models.DecimalField(max_digits=10, decimal_places=2)
-    duration_days = models.IntegerField()
-    is_active = models.BooleanField(default=True)
+    plan = models.CharField(max_length=50)
+    billing_cycle = models.CharField(
+        max_length=20,
+        choices=[('Mensal', 'Mensal'), ('Semestral', 'Semestral'), ('Anual', 'Anual')]
+    )
+    image = models.ImageField(upload_to='plans/', null=True, blank=True)
+    enabled = models.BooleanField(default=True)
+    package_type = models.CharField(
+        max_length=20,
+        choices=[('Padrão', 'Padrão'), ('Promocional', 'Promocional')]
+    )
+    label = models.CharField(max_length=50, null=True, blank=True)
+    color_text_label = models.CharField(max_length=7, default='#000000')
+    color_background_label = models.CharField(max_length=7, default='#FFFFFF')
+    full_price = models.DecimalField(max_digits=10, decimal_places=2)
+    promotional_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    color_text_billing_cycle = models.CharField(max_length=7, default='#192639')
+    show_to = models.CharField(
+        max_length=20,
+        choices=[('Todos', 'Todos'), ('Comum', 'Comum'), ('Craque', 'Craque')]
+    )
+    start_date = models.DateTimeField(null=True, blank=True)
+    end_date = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True, null=True, blank=True)
+    android_product_code = models.CharField(max_length=100, null=True, blank=True)
+    apple_product_code = models.CharField(max_length=100, null=True, blank=True)
+    promotional_price_validity = models.IntegerField(null=True, blank=True)
 
     class Meta:
         db_table = 'plans'
+        verbose_name = 'Plan'
+        verbose_name_plural = 'Plans'
+
+    def __str__(self):
+        return self.name
 
 # Futligas
 class ClassicLeague(models.Model):

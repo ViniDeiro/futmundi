@@ -259,11 +259,9 @@
                                                     <div class="col-lg-2">
                                                         <label class="control-label" for="fase">Fase</label>
                                                         <select class="form-control js-basic-single stage-select" id="fase">
-                                                            <option value="Grupos">Fase de Grupos</option>
-                                                            <option value="Oitavas">Oitavas de Final</option>
-                                                            <option value="Quartas">Quartas de Final</option>
-                                                            <option value="Semi">Semi Final</option>
-                                                            <option value="Final">Final</option>
+                                                            {% for stage in championship.template.stages.all %}
+                                                            <option value="{{ stage.name }}" data-template-stage-id="{{ stage.id }}">{{ stage.name }}</option>
+                                                            {% endfor %}
                                                         </select> 
                                                     </div>
                                                     <div class="col-lg-2">
@@ -284,8 +282,6 @@
                                                 <div id="matches-container">
                                                     {% for match in matches %}
                                                     <div class="row col-lg-12 mt10 match-row">
-                                                        <input type="hidden" class="stage-select" value="{{ match.stage }}">
-                                                        <input type="hidden" class="round-select" value="{{ match.round }}">
                                                         <div class="col-lg-2">
                                                             <select class="form-control js-templating time-select time-mandante" style="width: 100%">
                                                                 <option value="">Selecione o time</option>
@@ -417,10 +413,55 @@
         <script src="{% static 'administrativo/js/plugins/iCheck/icheck.min.js' %}"></script>
         <script src="{% static 'administrativo/js/plugins/dualListbox/jquery.bootstrap-duallistbox.js' %}"></script>
         <script src="{% static 'administrativo/js/plugins/moment/moment.js' %}"></script>
+        <script src="{% static 'administrativo/js/plugins/moment/pt-br.js' %}"></script>
         <script src="{% static 'administrativo/js/plugins/tempusdominus/tempusdominus-bootstrap-4.min.js' %}"></script>
         <script src="{% static 'administrativo/js/settings.js' %}"></script>
         <script>
             $(document).ready(function() {
+                // Configura o moment.js para usar pt-BR como padrão
+                moment.locale('pt-br');
+                
+                // Configuração base do datetimepicker
+                var datetimepickerConfig = {
+                    format: 'DD/MM/YYYY HH:mm',
+                    locale: moment.locale(),
+                    sideBySide: true,
+                    buttons: {
+                        showToday: true,
+                        showClear: true,
+                        showClose: true
+                    },
+                    tooltips: {
+                        today: 'Ir para hoje',
+                        clear: 'Limpar seleção',
+                        close: 'Fechar',
+                        selectMonth: 'Selecionar mês',
+                        prevMonth: 'Mês anterior',
+                        nextMonth: 'Próximo mês',
+                        selectYear: 'Selecionar ano',
+                        prevYear: 'Ano anterior',
+                        nextYear: 'Próximo ano',
+                        selectDecade: 'Selecionar década',
+                        prevDecade: 'Década anterior',
+                        nextDecade: 'Próxima década',
+                        selectTime: 'Selecionar hora'
+                    },
+                    icons: {
+                        time: 'fa fa-clock-o',
+                        date: 'fa fa-calendar',
+                        up: 'fa fa-chevron-up',
+                        down: 'fa fa-chevron-down',
+                        previous: 'fa fa-chevron-left',
+                        next: 'fa fa-chevron-right',
+                        today: 'fa fa-screenshot',
+                        clear: 'fa fa-trash',
+                        close: 'fa fa-remove'
+                    }
+                };
+
+                // Inicializa o datetimepicker com as configurações
+                $('.date').datetimepicker(datetimepickerConfig);
+
                 // Função para formatar a opção do time com imagem
                 function formatTeamOption(team) {
                     if (!team.id) {
@@ -471,8 +512,6 @@
 
                 // Função para criar uma nova linha de partida
                 function createMatchRow() {
-                    var stage = $('#fase').val();
-                    var round = $('#rodada').val();
                     var teams = $('.duallistbox').val();
                     var teamOptions = '<option value="">Selecione o time</option>';
                     
@@ -487,8 +526,6 @@
 
                     var matchRow = `
                         <div class="row col-lg-12 mt10 match-row">
-                            <input type="hidden" class="stage-select" value="${stage}">
-                            <input type="hidden" class="round-select" value="${round}">
                             <div class="col-lg-2">
                                 <select class="form-control js-templating time-select time-mandante" style="width: 100%">
                                     ${teamOptions}
@@ -529,21 +566,7 @@
                         escapeMarkup: function(m) { return m; }
                     });
                     
-                    $newRow.find('.datetimepicker-input').datetimepicker({
-                        format: 'DD/MM/YYYY HH:mm',
-                        locale: 'pt-br',
-                        icons: {
-                            time: 'fa fa-clock-o',
-                            date: 'fa fa-calendar',
-                            up: 'fa fa-chevron-up',
-                            down: 'fa fa-chevron-down',
-                            previous: 'fa fa-chevron-left',
-                            next: 'fa fa-chevron-right',
-                            today: 'fa fa-screenshot',
-                            clear: 'fa fa-trash',
-                            close: 'fa fa-remove'
-                        }
-                    });
+                    $newRow.find('.datetimepicker-input').datetimepicker(datetimepickerConfig);
                 }
 
                 // Adicionar nova partida
@@ -637,6 +660,7 @@
                     
                     var formData = new FormData(this);
                     var scopeName = $('#scope').find('option:selected').text().trim();
+                    var activeTab = $('.nav-tabs .active').attr('href');
                     
                     // Validação dos campos obrigatórios básicos
                     if (!$('#nome').val() || !$('#temporada').val() || !$('#template').val() || !$('#scope').val()) {
@@ -656,29 +680,32 @@
                         return;
                     }
 
-                    // Coleta os dados das rodadas
-                    var matches = [];
-                    $('.match-row').each(function() {
-                        var $row = $(this);
-                        var homeTeam = $row.find('.time-mandante').val();
-                        var awayTeam = $row.find('.time-visitante').val();
-                        var matchDate = $row.find('.datetimepicker-input').val();
+                    // Coleta os dados das rodadas se estiver na aba de rodadas
+                    if (activeTab === '#rodadas') {
+                        var matches = [];
+                        var stageId = $('#fase option:selected').data('template-stage-id');
+                        var roundNumber = $('#rodada').val();
                         
-                        if (homeTeam && awayTeam && matchDate) {
-                            matches.push({
-                                stage: $row.find('.stage-select').val(),
-                                round: $row.find('.round-select').val(),
-                                home_team: homeTeam,
-                                away_team: awayTeam,
-                                home_score: $row.find('.placar-mandante').val() || null,
-                                away_score: $row.find('.placar-visitante').val() || null,
-                                match_date: matchDate
-                            });
-                        }
-                    });
-
-                    // Adiciona as rodadas ao formData
-                    formData.append('matches', JSON.stringify(matches));
+                        $('.match-row').each(function() {
+                            var $row = $(this);
+                            var homeTeam = $row.find('.time-mandante').val();
+                            var awayTeam = $row.find('.time-visitante').val();
+                            var matchDate = $row.find('.datetimepicker-input').val();
+                            
+                            if (homeTeam && awayTeam && matchDate) {
+                                matches.push({
+                                    stage_id: stageId,
+                                    round: roundNumber,
+                                    home_team: homeTeam,
+                                    away_team: awayTeam,
+                                    home_score: $row.find('.placar-mandante').val() || null,
+                                    away_score: $row.find('.placar-visitante').val() || null,
+                                    match_date: matchDate
+                                });
+                            }
+                        });
+                        formData.append('matches', JSON.stringify(matches));
+                    }
                     
                     $.ajax({
                         url: $(this).attr('action'),
@@ -689,7 +716,39 @@
                         success: function(response) {
                             if (response.success) {
                                 toastr.success(response.message);
-                                if (response.redirect_url) {
+                                
+                                // Se estiver na aba Geral, permanece na mesma página
+                                if (activeTab === '#geral') {
+                                    // Atualiza os times baseado no âmbito selecionado
+                                    $.ajax({
+                                        url: "{% url 'administrativo:times_por_tipo' %}",
+                                        type: 'POST',
+                                        data: {
+                                            scope: $('#scope').val(),
+                                            continent: $('#continent').val(),
+                                            country: $('#country').val(),
+                                            state: $('#state').val(),
+                                            csrfmiddlewaretoken: $('[name=csrfmiddlewaretoken]').val()
+                                        },
+                                        success: function(data) {
+                                            if (data.success) {
+                                                // Atualiza as opções da duallistbox
+                                                var $duallistbox = $('.duallistbox');
+                                                $duallistbox.empty();
+                                                
+                                                data.teams.forEach(function(team) {
+                                                    var option = new Option(team.name, team.id);
+                                                    $(option).attr('data-type', team.is_national_team ? 'selection' : 'team');
+                                                    $(option).attr('data-image', team.image || "{% static 'administrativo/img/Generico.png' %}");
+                                                    $duallistbox.append(option);
+                                                });
+                                                
+                                                $duallistbox.bootstrapDualListbox('refresh');
+                                            }
+                                        }
+                                    });
+                                } else if (response.redirect_url) {
+                                    // Se estiver em outra aba, redireciona
                                     window.location.href = response.redirect_url;
                                 }
                             } else {
@@ -871,24 +930,6 @@
                     var currentYear = new Date().getFullYear();
                     $('#temporada').val(currentYear);
                 }
-
-                // Inicializa o datetimepicker
-                $('.datetimepicker-input').datetimepicker({
-                    format: 'DD/MM/YYYY HH:mm',
-                    locale: 'pt-br',
-                    sideBySide: true,
-                    icons: {
-                        time: 'fa fa-clock-o',
-                        date: 'fa fa-calendar',
-                        up: 'fa fa-chevron-up',
-                        down: 'fa fa-chevron-down',
-                        previous: 'fa fa-chevron-left',
-                        next: 'fa fa-chevron-right',
-                        today: 'fa fa-screenshot',
-                        clear: 'fa fa-trash',
-                        close: 'fa fa-remove'
-                    }
-                });
             });
         </script>
     </body>

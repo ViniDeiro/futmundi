@@ -1226,7 +1226,7 @@ def time_exportar(request):
     """
     Exporta times para um arquivo Excel.
     """
-    teams = Team.objects.all().select_related('continent', 'country', 'state').prefetch_related('championships')
+    teams = Team.objects.all().select_related('continent', 'country', 'state').prefetch_related('team_championships')
     
     fields = [
         ('name', 'Nome'),
@@ -1258,7 +1258,7 @@ def time_exportar(request):
             row[field] = str(value) if value else ''
             
         # Adiciona os campeonatos
-        row['championships'] = ', '.join(team.championships.values_list('name', flat=True))
+        row['championships'] = ', '.join(team.team_championships.values_list('name', flat=True))
         data.append(row)
     
     df = pd.DataFrame(data)
@@ -1371,9 +1371,63 @@ def pacote_futcoin_novo(request):
     return render(request, 'administrativo/pacote-futcoin-novo.html')
 
 def planos(request):
-    return render(request, 'administrativo/planos.html')
+    plans = Plan.objects.all().order_by('-created_at')
+    return render(request, 'administrativo/planos.html', {'plans': plans})
 
 def pacote_plano_novo(request):
+    if request.method == 'POST':
+        try:
+            data = request.POST
+            files = request.FILES
+            
+            # Validação dos campos obrigatórios
+            required_fields = ['name', 'full_price', 'promotional_price']
+            for field in required_fields:
+                if not data.get(field):
+                    return JsonResponse({
+                        'success': False,
+                        'message': f'O campo {field} é obrigatório.'
+                    })
+            
+            # Criação do plano
+            plan = Plan(
+                name=data.get('name'),
+                plan=data.get('plan'),
+                billing_cycle=data.get('billing_cycle'),
+                enabled=data.get('enabled', 'true') == 'true',
+                package_type=data.get('package_type'),
+                label=data.get('label'),
+                color_text_label=data.get('color_text_label', '#000000'),
+                color_background_label=data.get('color_background_label', '#FFFFFF'),
+                full_price=data.get('full_price'),
+                promotional_price=data.get('promotional_price'),
+                promotional_price_validity=data.get('promotional_price_validity'),
+                android_product_code=data.get('android_product_code'),
+                apple_product_code=data.get('apple_product_code'),
+                color_text_billing_cycle=data.get('color_text_billing_cycle', '#192639'),
+                show_to=data.get('show_to'),
+                start_date=data.get('start_date') if data.get('start_date') else None,
+                end_date=data.get('end_date') if data.get('end_date') else None
+            )
+            
+            # Tratamento da imagem
+            if 'image' in files:
+                plan.image = files['image']
+            
+            plan.save()
+            
+            return JsonResponse({
+                'success': True,
+                'message': 'Plano criado com sucesso!'
+            })
+            
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': f'Erro ao criar plano: {str(e)}'
+            })
+    
+    # GET - renderiza o formulário
     return render(request, 'administrativo/pacote-plano-novo.html')
 
 def futligas_classicas(request):
@@ -2388,23 +2442,32 @@ def campeonato_editar(request, id):
                         for match in matches_data:
                             stage_name = match['stage']
                             round_number = match['round']
+                            template_stage_id = match.get('template_stage_id')
                             
                             if stage_name not in stages:
-                                stages[stage_name] = {}
+                                stages[stage_name] = {
+                                    'template_stage_id': template_stage_id,
+                                    'rounds': {}
+                                }
                             
-                            if round_number not in stages[stage_name]:
-                                stages[stage_name][round_number] = []
+                            if round_number not in stages[stage_name]['rounds']:
+                                stages[stage_name]['rounds'][round_number] = []
                                 
-                            stages[stage_name][round_number].append(match)
+                            stages[stage_name]['rounds'][round_number].append(match)
                         
                         # Cria as fases, rodadas e partidas
-                        for stage_name, rounds in stages.items():
+                        for stage_name, stage_data in stages.items():
+                            # Obtém o template_stage correspondente
+                            template_stage = TemplateStage.objects.get(id=stage_data['template_stage_id'])
+                                
                             stage = ChampionshipStage.objects.create(
                                 championship=championship,
-                                name=stage_name
+                                name=stage_name,
+                                template_stage=template_stage,
+                                order=template_stage.order
                             )
                             
-                            for round_number, matches in rounds.items():
+                            for round_number, matches in stage_data['rounds'].items():
                                 round_obj = ChampionshipRound.objects.create(
                                     championship=championship,
                                     stage=stage,
@@ -2865,3 +2928,118 @@ def calcular_pontos_palpite(pred_home, pred_away, real_home, real_away, points_v
         return int(points_value * 0.50)
         
     return 0
+
+def plano_editar(request, id):
+    plan = get_object_or_404(Plan, id=id)
+    
+    if request.method == 'POST':
+        try:
+            data = request.POST
+            files = request.FILES
+            
+            # Validação dos campos obrigatórios
+            required_fields = ['name', 'full_price', 'promotional_price']
+            for field in required_fields:
+                if not data.get(field):
+                    return JsonResponse({
+                        'success': False,
+                        'message': f'O campo {field} é obrigatório.'
+                    })
+            
+            # Atualização do plano
+            plan.name = data.get('name')
+            plan.plan = data.get('plan')
+            plan.billing_cycle = data.get('billing_cycle')
+            plan.enabled = data.get('enabled').lower() == 'true'
+            plan.package_type = data.get('package_type')
+            plan.label = data.get('label')
+            plan.color_text_label = data.get('color_text_label', '#000000')
+            plan.color_background_label = data.get('color_background_label', '#FFFFFF')
+            plan.full_price = data.get('full_price')
+            plan.promotional_price = data.get('promotional_price')
+            plan.color_text_billing_cycle = data.get('color_text_billing_cycle', '#192639')
+            plan.show_to = data.get('show_to')
+            plan.start_date = data.get('start_date') if data.get('start_date') else None
+            plan.end_date = data.get('end_date') if data.get('end_date') else None
+            
+            # Tratamento da imagem
+            if 'image' in files:
+                if plan.image:
+                    plan.image.delete()
+                plan.image = files['image']
+            
+            plan.save()
+            
+            return JsonResponse({
+                'success': True,
+                'message': 'Plano atualizado com sucesso!'
+            })
+            
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': f'Erro ao atualizar plano: {str(e)}'
+            })
+    
+    # GET - renderiza o formulário com os dados do plano
+    return render(request, 'administrativo/pacote-plano-editar.html', {'plan': plan})
+
+def plano_excluir(request, id):
+    try:
+        plan = Plan.objects.get(id=id)
+        plan.delete()
+        return JsonResponse({
+            'success': True,
+            'message': 'Plano excluído com sucesso!'
+        })
+    except Plan.DoesNotExist:
+        return JsonResponse({
+            'success': False,
+            'message': 'Plano não encontrado.'
+        })
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Erro ao excluir plano: {str(e)}'
+        })
+
+def plano_excluir_em_massa(request):
+    try:
+        ids = request.POST.getlist('ids[]')
+        Plan.objects.filter(id__in=ids).delete()
+        return JsonResponse({
+            'success': True,
+            'message': 'Planos excluídos com sucesso!'
+        })
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Erro ao excluir planos: {str(e)}'
+        })
+
+def plano_toggle_status(request):
+    """
+    Ativa/desativa um plano via AJAX.
+    """
+    if request.method == 'POST':
+        plan_id = request.POST.get('id')
+        try:
+            plan = Plan.objects.get(id=plan_id)
+            plan.enabled = not plan.enabled
+            plan.save()
+            
+            status = 'ativado' if plan.enabled else 'desativado'
+            return JsonResponse({
+                'success': True,
+                'message': f'Plano {status} com sucesso!',
+                'is_active': plan.enabled
+            })
+        except Plan.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'message': 'Plano não encontrado.'
+            })
+    return JsonResponse({
+        'success': False,
+        'message': 'Método não permitido.'
+    })

@@ -4,8 +4,9 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="csrf-token" content="{{ csrf_token }}">
 
-        <title>Novo Pacote</title>
+        <title>{% block title %}Novo Pacote{% endblock %}</title>
 
         <link href="{% static 'administrativo/css/bootstrap.min.css' %}" rel="stylesheet">
         <link href="{% static 'administrativo/font-awesome/css/font-awesome.css' %}" rel="stylesheet">
@@ -19,111 +20,16 @@
         <!-- Custom -->      
         <link href="{% static 'administrativo/css/custom.css' %}" rel="stylesheet">
         <!-- Favicon -->
-        <link rel="icon" href="img/futmundi.ico" type="image/png">
+        <link rel="icon" href="{% static 'administrativo/img/futmundi.ico' %}" type="image/png">
     </head>
     <body>
         <div id="wrapper">
-            <nav class="navbar-default navbar-static-side">
-                <div class="sidebar-collapse">
-                    <ul class="nav metismenu" id="side-menu">
-                        <li class="nav-header">
-                            <div class="dropdown profile-element">
-                                <a href="{% url "administrativo:usuarios" %}">
-                                    <img src="{% static 'administrativo/img/logo.svg' %}" alt="Futmundi logo">
-                                </a>
-                            </div>
-                            <div class="logo-element">
-                                <a href="{% url "administrativo:usuarios" %}">
-                                    <img src="{% static 'administrativo/img/logosm.svg' %}" alt="Futmundi logo">
-                                </a>                            
-                            </div>
-                        </li>
-                        <li class="active">
-                            <a href="{% url "administrativo:usuarios" %}"><i class="fa fa-user"></i> <span class="nav-label">Usuários</span></a>
-                        </li>
-                        <li>
-                            <a href="#"><i class="fa fa-trophy"></i> <span class="nav-label">Campeonatos</span><span class="fa arrow"></span></a>
-                            <ul class="nav nav-second-level collapse">
-                                <li><a href="{% url "administrativo:ambitos" %}">Âmbitos</a></li>
-                                <li><a href="{% url "administrativo:campeonatos" %}">Campeonatos</a></li>
-                                <li><a href="{% url "administrativo:templates" %}">Templates</a></li>
-                                <li><a href="{% url "administrativo:times" %}">Times</a></li>
-                            </ul>
-                        </li>
-                        <li>
-                            <a href="#"><i class="fa fa-shopping-cart"></i> <span class="nav-label">Pacotes</span><span class="fa arrow"></span></a>
-                            <ul class="nav nav-second-level collapse">
-                                <li><a href="{% url "administrativo:futcoins" %}">Futcoins</a></li>
-                                <li><a href="{% url "administrativo:planos" %}">Planos</a></li>
-                            </ul>
-                        </li>
-                        <li>
-                            <a href="#"><i class="fa fa-diamond"></i> <span class="nav-label">Futligas</span><span class="fa arrow"></span></a>
-                            <ul class="nav nav-second-level collapse">
-                                <li><a href="{% url "administrativo:futligas_classicas" %}">Clássicas</a></li>
-                                <li><a href="{% url "administrativo:futligas_jogadores" %}">Jogadores</a></li>
-                            </ul>
-                        </li>
-                        <li>
-                            <a href="#"><i class="fa fa-globe"></i> <span class="nav-label">Locais</span><span class="fa arrow"></span></a>
-                            <ul class="nav nav-second-level collapse">
-                                <li><a href="{% url "administrativo:continentes" %}">Continentes</a></li>
-                                <li><a href="{% url "administrativo:paises" %}">Países</a></li>
-                                <li><a href="{% url "administrativo:estados" %}">Estados</a></li>
-                            </ul>
-                        </li>
-                        <li>
-                            <a href="#"><i class="fa fa-gear"></i> <span class="nav-label">Configurações</span><span class="fa arrow"></span></a>
-                            <ul class="nav nav-second-level collapse">
-                                <li><a href="{% url "administrativo:parametros" %}">Parâmetros</a></li>
-                                <li><a href="{% url "administrativo:termo" %}">Termo</a></li>
-                                <li><a href="{% url "administrativo:notificacoes" %}">Notificações</a></li>
-                            </ul>
-                        </li>
-                        <li>
-                            <a href="{% url "administrativo:relatorios" %}"><i class="fa fa-pie-chart"></i> <span class="nav-label">Relatórios</span></a>
-                        </li>
-                    </ul>
-                </div>
-            </nav>
+            {% include 'administrativo/menu.html' %}
             <div id="page-wrapper" class="gray-bg">
-                <div class="row border-bottom">
-                    <nav class="navbar navbar-static-top" style="margin-bottom: 0">
-                        <div class="navbar-header">
-                            <a class="navbar-minimalize minimalize-styl-2 btn btn-success " href="#"><i class="fa fa-bars"></i> </a>
-                        </div>
-                        <ul class="nav navbar-top-links navbar-right">
-                            <li>
-                                <span class="m-r-sm text-muted welcome-message">Andrews Cristhian</span>
-                            </li>
-                            <li class="dropdown">
-                                <a class="dropdown-toggle count-info" data-toggle="dropdown" href="#">
-                                    <i class="fa fa-gear"></i>
-                                </a>
-                                <ul class="dropdown-menu dropdown-alerts">
-                                    <li>
-                                        <a href="{% url "administrativo:administradores" %}" class="dropdown-item">
-                                            <div>
-                                                <i class="fa fa-users"></i> Administradores
-                                            </div>
-                                        </a>
-                                    </li>
-                                    <li class="dropdown-divider"></li>
-                                    <li>
-                                        <a href="{% url "administrativo:login" %}" class="dropdown-item">
-                                            <div>
-                                                <i class="fa fa-sign-out"></i> Sair
-                                            </div>
-                                        </a>
-                                    </li>
-                                </ul>
-                            </li>
-                        </ul>
-                    </nav>
-                </div>
+                {% include 'administrativo/header.html' %}
                 <div class="row wrapper border-bottom white-bg page-heading">
                     <div class="col-lg-10">
-                        <h2>Novo Pacote</h2>
+                        {% block heading %}<h2>Novo Pacote</h2>{% endblock %}
                     </div>
                 </div>
                 <div class="wrapper wrapper-content">
@@ -154,8 +60,6 @@
                                                                     <label class="control-label" for="plano">Plano</label>
                                                                     <select class="form-control js-example-basic-single" id="plano" style="width: 80%">
                                                                         <option value="Craque">Craque</option>
-                                                                        <option value="Craque 2">Craque 2</option>
-                                                                        <option value="Craque 3">Craque 3</option>
                                                                     </select>
                                                                 </div>
                                                                 <div class="col-lg-4 mtm10">
@@ -175,16 +79,21 @@
                                                                         <div class="card-heading">
                                                                             <h5>Imagem</h5>
                                                                         </div>
-                                                                        <div class="card-content">
-                                                                            <label class="label-card label-card-small">
-                                                                                <i class="fa fa-file-image-o label-content" style="cursor:pointer;"></i>
-                                                                                <input accept="image/*" type="file" class="input-image">
-                                                                            </label>
+                                                                        <div class="card-content" style="position: relative; padding: 0;">
+                                                                            <div id="image-preview" style="display: flex; justify-content: center; padding: 0; margin-top: -7px;">
+                                                                                <i class="fa fa-file-image-o" style="font-size: 48px; color: #ccc; cursor: pointer;" onclick="document.getElementById('image').click()"></i>
+                                                                            </div>
+                                                                            <input type="file" id="image" name="image" class="input-image" accept="image/*" style="display: none;">
                                                                         </div>                              
                                                                     </div>
                                                                 </div>
                                                                 <div class="col-lg-3 mt35">
-                                                                    <div class="i-checks"><label> <input type="checkbox"> Ativo</label></div>
+                                                                    <div class="i-checks">
+                                                                        <label>
+                                                                            <input type="checkbox" name="enabled" checked>
+                                                                            <i></i> Ativo
+                                                                        </label>
+                                                                    </div>
                                                                 </div>
                                                             </div>
                                                         </div>                                    
@@ -196,17 +105,18 @@
                                                             <div class="row">
                                                                 <div class="col-lg-4 mtm20">
                                                                     <label class="control-label" for="tipo">Tipo</label>
-                                                                    <select class="form-control js-example-basic-single" id="tipo" style="width: 80%">
+                                                                    <select class="form-control" id="tipo" style="width: 80%">
+                                                                        <option value="">Selecione</option>
                                                                         <option value="Padrão">Padrão</option>
                                                                         <option value="Promocional">Promocional</option>
                                                                     </select>
                                                                 </div>
                                                             </div>
                                                         </div>                                                            
-                                                        <div class="form-group col-lg-12">
+                                                        <div class="form-group col-lg-12" style="display: none;">
                                                             <div class="row">
                                                                 <div class="col-lg-4">
-                                                                    <input type="text" id="etiqueta" class="form-control" required>
+                                                                    <input type="text" id="etiqueta" class="form-control">
                                                                     <label class="form-control-placeholder" for="etiqueta">Etiqueta</label>
                                                                 </div>
                                                             </div>
@@ -214,7 +124,7 @@
                                                                 <div class="col-lg-4 mt10">                                                                        
                                                                     <label class="control-label">Cor Texto Etiqueta</label>
                                                                     <div id="id3" class="input-group colorpicker-component formcolorpicker">
-                                                                        <input type="text" value="#192639" class="form-control"/>
+                                                                        <input type="text" value="#FFFFFF" class="form-control"/>
                                                                         <div class="input-group-append">
                                                                             <span class="input-group-text input-group-addon"><i></i></span>
                                                                         </div>
@@ -223,13 +133,13 @@
                                                                 <div class="col-lg-4 mt10">                                                                        
                                                                     <label class="control-label">Cor Fundo Etiqueta</label>
                                                                     <div id="id4" class="input-group colorpicker-component formcolorpicker">
-                                                                        <input type="text" value="#ffffff" class="form-control"/>
+                                                                        <input type="text" value="#FF0000" class="form-control"/>
                                                                         <div class="input-group-append">
                                                                             <span class="input-group-text input-group-addon"><i></i></span>
                                                                         </div>
                                                                     </div>
                                                                 </div>
-                                                            </div>                                                            
+                                                            </div>
                                                         </div>                                    
                                                     </form>
                                                 </div>
@@ -256,18 +166,18 @@
                                                         <div class="form-group col-lg-12">
                                                             <div class="row">
                                                                <div class="col-lg-4 mt5">
-                                                                <input type="number" id="validade-promocional" class="form-control input-medium" required>
-                                                                <label class="form-control-placeholder" for="validade-promocional">Val. Preço Prom. (dias)</label>
-                                                            </div>
-                                                            <div class="col-lg-4 mtm15">
-                                                                <label class="control-label">Cor Texto Vigência</label>
+                                                                    <input type="number" id="val-preco-prom" class="form-control input-medium" required>
+                                                                    <label class="form-control-placeholder" for="val-preco-prom">Val. Preço Prom. (dias)</label>
+                                                                </div>
+                                                                <div class="col-lg-4 mtm15">
+                                                                    <label class="control-label">Cor Texto Vigência</label>
                                                                     <div id="id5" class="input-group colorpicker-component formcolorpicker">
                                                                         <input type="text" value="#192639" class="form-control"/>
                                                                         <div class="input-group-append">
                                                                             <span class="input-group-text input-group-addon"><i></i></span>
                                                                         </div>
                                                                     </div>
-                                                            </div> 
+                                                                </div>
                                                             </div>
                                                         </div>   
                                                         <div class="form-group col-lg-12">
@@ -278,20 +188,20 @@
                                                                         <option value="Todos">Todos</option>
                                                                         <option value="Comum">Comum</option>
                                                                         <option value="Craque">Craque</option>
-                                                                    </select> 
+                                                                    </select>
                                                                 </div>
                                                             </div>
-                                                        </div>  
-														<div class="form-group col-lg-12">
+                                                        </div>
+                                                        <div class="form-group col-lg-12">
                                                             <div class="row">
-                                                               <div class="col-lg-4">
-                                                                <input type="number" id="codigo1" class="form-control input-medium" required>
-                                                                <label class="form-control-placeholder" for="codigo1">Código do produto (Android)</label>
-                                                            </div>
-                                                            <div class="col-lg-4">
-                                                                <input type="number" id="codigo2" class="form-control input-medium" required>
-                                                                <label class="form-control-placeholder" for="codigo2">Código do produto (Apple)</label>
-                                                            </div> 
+                                                                <div class="col-lg-4">
+                                                                    <input type="text" id="codigo-android" class="form-control input-medium">
+                                                                    <label class="form-control-placeholder" for="codigo-android">Código do produto (Android)</label>
+                                                                </div>
+                                                                <div class="col-lg-4">
+                                                                    <input type="text" id="codigo-apple" class="form-control input-medium">
+                                                                    <label class="form-control-placeholder" for="codigo-apple">Código do produto (Apple)</label>
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </form>
@@ -330,6 +240,7 @@
                             <div class="panel panel-default col-lg-12 mtm25 p15">
                                 <button type="button" class="btn btn-success ml20" id="successToast"><i class="glyphicon glyphicon-save mr5"></i> Salvar</button>
                                 <button type="button" class="btn btn-danger ml15"><i class="fa fa-ban mr5"></i> Cancelar</button>  
+                                <div id="cancel-url" data-url="{% url 'administrativo:planos' %}" style="display: none;"></div>
                             </div>
                         </div>
                     </div>
@@ -345,8 +256,6 @@
         <!-- Custom and plugin javascript -->
         <script src="{% static 'administrativo/js/inspinia.js' %}"></script>
         <script src="{% static 'administrativo/js/plugins/pace/pace.min.js' %}"></script>
-        <script src="{% static 'administrativo/js/inspinia.js' %}"></script>
-        <script src="{% static 'administrativo/js/plugins/pace/pace.min.js' %}"></script>
         <script src="{% static 'administrativo/js/plugins/toastr/toastr.min.js' %}"></script>
         <script src="{% static 'administrativo/js/plugins/jasny/jasny-bootstrap.min.js' %}"></script>        
         <script src="{% static 'administrativo/js/plugins/iCheck/icheck.min.js' %}"></script>
@@ -354,5 +263,20 @@
         <script src="{% static 'administrativo/js/plugins/moment/moment.js' %}"></script>
         <script src="{% static 'administrativo/js/plugins/tempusdominus/tempusdominus-bootstrap-4.min.js' %}"></script>
         <script src="{% static 'administrativo/js/settings.js' %}"></script>
+        <script src="{% static 'administrativo/js/pacote-plano.js' %}"></script>
+        
+        {% block form_data %}{% endblock %}
+
+        <script>
+            // Setup CSRF token for AJAX requests
+            $.ajaxSetup({
+                headers: {
+                    'X-CSRFToken': $('meta[name="csrf-token"]').attr('content')
+                }
+            });
+            
+            // Dispara o evento change do tipo para ajustar a visibilidade inicial dos campos
+            $('#tipo').trigger('change');
+        </script>
     </body>
 </html>

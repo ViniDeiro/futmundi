@@ -48,6 +48,10 @@ urlpatterns = [
     path('pacote-futcoin-novo/', views.pacote_futcoin_novo, name='pacote_futcoin_novo'),
     path('planos/', views.planos, name='planos'),
     path('pacote-plano-novo/', views.pacote_plano_novo, name='pacote_plano_novo'),
+    path('pacote-plano-editar/<int:id>/', views.plano_editar, name='plano_editar'),
+    path('pacote-plano-excluir/<int:id>/', views.plano_excluir, name='plano_excluir'),
+    path('pacote-plano-excluir-em-massa/', views.plano_excluir_em_massa, name='plano_excluir_em_massa'),
+    path('plano-toggle-status/', views.plano_toggle_status, name='plano_toggle_status'),
     
     # Futligas
     path('futligas-classicas/', views.futligas_classicas, name='futligas_classicas'),
