@@ -217,6 +217,12 @@ SECURE_HSTS_SECONDS = 0
 SECURE_HSTS_INCLUDE_SUBDOMAINS = False
 SECURE_HSTS_PRELOAD = False
 
+# Configuração para servir arquivos de mídia em produção
+if not DEBUG:
+    MIDDLEWARE.append('whitenoise.middleware.WhiteNoiseMiddleware')
+    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+    DEFAULT_FILE_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
 # Configuração do Whitenoise para servir arquivos estáticos
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
 
