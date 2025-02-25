@@ -1,0 +1,195 @@
+{% extends 'administrativo/base.html' %}
+{% load static %}
+
+{% block title %}Editar Notificação{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'administrativo/css/plugins/datapicker/datepicker3.css' %}" rel="stylesheet">
+<link href="{% static 'administrativo/css/plugins/clockpicker/clockpicker.css' %}" rel="stylesheet">
+<link href="{% static 'administrativo/css/plugins/toastr/toastr.min.css' %}" rel="stylesheet">
+<style>
+    .radio-primary input[type="radio"]:checked + label::before {
+        border-color: #1ab394;
+    }
+    .radio-primary input[type="radio"]:checked + label::after {
+        background-color: #1ab394;
+    }
+    .input-group {
+        width: 100%;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row wrapper border-bottom white-bg page-heading">
+    <div class="col-lg-10">
+        <h2>Editar Notificação</h2>
+    </div>
+</div>
+
+<div class="wrapper wrapper-content">
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="ibox">
+                <div class="ibox-content">
+                    <form id="notificationForm" method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="id" value="{{ notification.id }}">
+                        
+                        <div class="form-group">
+                            <label>Tipo de Notificação</label>
+                            <select class="form-control" name="notification_type" id="notification_type" required>
+                                <option value="generic" {% if notification.notification_type == 'generic' %}selected{% endif %}>Genérica</option>
+                                <option value="package" {% if notification.notification_type == 'package' %}selected{% endif %}>Pacote</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group" id="packageField" {% if notification.notification_type != 'package' %}style="display: none;"{% endif %}>
+                            <label>Pacote</label>
+                            <select class="form-control" name="package" id="package">
+                                <option value="">Selecione um pacote</option>
+                                {% for package in packages %}
+                                <option value="{{ package.id }}" {% if notification.package_id == package.id %}selected{% endif %}>{{ package.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Título</label>
+                            <input type="text" class="form-control" name="title" value="{{ notification.title }}" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Mensagem</label>
+                            <textarea class="form-control" name="message" rows="4" required>{{ notification.message }}</textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Envio</label>
+                            <div>
+                                <div class="radio radio-primary">
+                                    <input type="radio" id="sendNow" name="send_type" value="now" {% if not notification.send_at %}checked{% endif %}>
+                                    <label for="sendNow">Enviar agora</label>
+                                </div>
+                                <div class="radio radio-primary">
+                                    <input type="radio" id="sendLater" name="send_type" value="schedule" {% if notification.send_at %}checked{% endif %}>
+                                    <label for="sendLater">Agendar envio</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="sendDateField" {% if not notification.send_at %}style="display: none;"{% endif %}>
+                            <div class="form-group">
+                                <label>Data de Envio</label>
+                                <div class="input-group date">
+                                    <input type="text" class="form-control" name="send_date" id="send_date" value="{% if notification.send_at %}{{ notification.send_at|date:'d/m/Y' }}{% endif %}">
+                                    <span class="input-group-addon"><i class="fa fa-calendar"></i></span>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Hora de Envio</label>
+                                <div class="input-group clockpicker">
+                                    <input type="text" class="form-control" name="send_time" id="send_time" value="{% if notification.send_at %}{{ notification.send_at|date:'H:i' }}{% endif %}">
+                                    <span class="input-group-addon"><i class="fa fa-clock-o"></i></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <button type="submit" class="btn btn-primary">Salvar</button>
+                            <a href="{% url 'administrativo:notificacoes' %}" class="btn btn-white">Cancelar</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'administrativo/js/plugins/datapicker/bootstrap-datepicker.js' %}"></script>
+<script src="{% static 'administrativo/js/plugins/datapicker/locales/bootstrap-datepicker.pt-BR.js' %}"></script>
+<script src="{% static 'administrativo/js/plugins/clockpicker/clockpicker.js' %}"></script>
+<script src="{% static 'administrativo/js/plugins/toastr/toastr.min.js' %}"></script>
+<script>
+$(document).ready(function() {
+    // Configuração do datepicker
+    $('.input-group.date').datepicker({
+        format: 'dd/mm/yyyy',
+        todayBtn: "linked",
+        keyboardNavigation: false,
+        forceParse: false,
+        calendarWeeks: true,
+        autoclose: true,
+        language: 'pt-BR',
+        startDate: new Date()
+    });
+
+    // Configuração do clockpicker
+    $('.clockpicker').clockpicker({
+        autoclose: true,
+        'default': 'now'
+    });
+
+    // Controle do campo de pacote
+    $('#notification_type').change(function() {
+        if ($(this).val() === 'package') {
+            $('#packageField').show();
+            $('#package').prop('required', true);
+        } else {
+            $('#packageField').hide();
+            $('#package').prop('required', false);
+        }
+    });
+
+    // Controle do campo de data de envio
+    $('input[name="send_type"]').change(function() {
+        if ($(this).val() === 'schedule') {
+            $('#sendDateField').show();
+            $('#send_date, #send_time').prop('required', true);
+        } else {
+            $('#sendDateField').hide();
+            $('#send_date, #send_time').prop('required', false);
+        }
+    });
+
+    // Submissão do formulário
+    $('#notificationForm').on('submit', function(e) {
+        e.preventDefault();
+        
+        var formData = new FormData(this);
+        
+        // Combinar data e hora se necessário
+        if ($('input[name="send_type"]:checked').val() === 'schedule') {
+            var date = $('#send_date').val();
+            var time = $('#send_time').val();
+            if (date && time) {
+                formData.set('send_at', date + ' ' + time);
+            }
+        }
+        
+        $.ajax({
+            url: window.location.href,
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(response) {
+                if (response.success) {
+                    toastr.success(response.message);
+                    setTimeout(function() {
+                        window.location.href = "{% url 'administrativo:notificacoes' %}";
+                    }, 1000);
+                } else {
+                    toastr.error(response.message);
+                }
+            },
+            error: function() {
+                toastr.error('Erro ao salvar a notificação');
+            }
+        });
+    });
+});
+</script>
+{% endblock %} 

@@ -132,10 +132,12 @@
                                         <a href="{% url "administrativo:futliga_classica_novo" %}" class="btn btn-success btn-sm" title="Novo"><i class="fa fa-plus"></i></a>
                                     </div>
                                     <div class="group-options-right mr10">
-                                        <a class="btn btn-default btn-sm" title="Excluir"><i class="glyphicon glyphicon-trash" data-toggle="modal" data-target="#modalAlert"></i></a>
+                                        <button type="button" class="btn btn-default btn-sm" id="delete-selected" title="Excluir em Massa">
+                                            <i class="glyphicon glyphicon-trash"></i>
+                                        </button>
                                     </div>
                                     <div class="table-responsive">
-                                        <table class="table table-striped table-bordered table-hover dataTables-futligas-padrao" >
+                                        <table class="table table-striped table-bordered table-hover dataTables-futligas-padrao">
                                             <thead>
                                                 <tr>
                                                     <th class="per10 center-middle">
@@ -152,38 +154,34 @@
                                                 </tr>
                                             </thead>
                                             <tbody>
+                                                {% for futliga in futligas %}
                                                 <tr>
                                                     <td class="center-middle">
                                                         <div class="checkbox checkbox-success">
-                                                            <input id="checkbox2" type="checkbox">
-                                                            <label for="checkbox2"></label>
+                                                            <input id="checkbox{{ futliga.id }}" type="checkbox" class="check-item" value="{{ futliga.id }}">
+                                                            <label for="checkbox{{ futliga.id }}"></label>
                                                         </div>
                                                     </td>
-                                                    <td>Semanal</td>
-                                                    <td class="center-middle"><img src="{% static 'administrativo/img/Corinthians.png' %}" class="img-sm" alt="imagem"></td>
-                                                    <td>Todos</td>                                                   
-                                                    <td>01/01/2000</td>
-                                                    <td>
-                                                        <button type="button" class="btn btn-info btn-xs" title="Editar"><i class="glyphicon glyphicon-pencil"></i></button>
-                                                        <button type="button" class="btn btn-danger btn-xs" title="Excluir"><i class="glyphicon glyphicon-trash" data-toggle="modal" data-target="#modalAlert2"></i></button>
-                                                    </td>
-                                                </tr>
-                                                <tr>
+                                                    <td>{{ futliga.name }}</td>
                                                     <td class="center-middle">
-                                                        <div class="checkbox checkbox-success">
-                                                            <input id="checkbox3" type="checkbox">
-                                                            <label for="checkbox3"></label>
-                                                        </div>
+                                                        {% if futliga.image %}
+                                                            <img src="{{ futliga.image.url }}" class="img-sm" alt="imagem">
+                                                        {% else %}
+                                                            <i class="fa fa-image"></i>
+                                                        {% endif %}
                                                     </td>
-                                                    <td>Semanal</td>
-                                                    <td class="center-middle"><img src="{% static 'administrativo/img/Corinthians.png' %}" class="img-sm" alt="imagem"></td>
-                                                    <td>Todos</td>                                                   
-                                                    <td>01/01/2000</td>
+                                                    <td>{{ futliga.participants }}</td>
+                                                    <td>{{ futliga.created_at|date:"d/m/Y" }}</td>
                                                     <td>
-                                                        <button type="button" class="btn btn-info btn-xs" title="Editar"><i class="glyphicon glyphicon-pencil"></i></button>
-                                                        <button type="button" class="btn btn-danger btn-xs" title="Excluir"><i class="glyphicon glyphicon-trash" data-toggle="modal" data-target="#modalAlert2"></i></button>
+                                                        <a href="{% url 'administrativo:futliga_classica_editar' futliga.id %}" class="btn btn-info btn-xs" title="Editar">
+                                                            <i class="glyphicon glyphicon-pencil"></i>
+                                                        </a>
+                                                        <button type="button" class="btn btn-danger btn-xs delete-btn" title="Excluir" data-id="{{ futliga.id }}">
+                                                            <i class="glyphicon glyphicon-trash"></i>
+                                                        </button>
                                                     </td>
                                                 </tr>
+                                                {% endfor %}
                                             </tbody>
                                         </table>
                                     </div>
@@ -194,8 +192,8 @@
                 </div>
             </div>
         </div>
-        <!-- Modals -->
-        <div class="modal inmodal" id="modalAlert" tabindex="-1" role="dialog"  aria-hidden="true">
+        <!-- Modal de exclusão em massa -->
+        <div class="modal inmodal" id="modalAlert" tabindex="-1" role="dialog" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered modal-sm">
                 <div class="modal-content animated fadeIn">
                     <div class="modal-header">
@@ -203,16 +201,17 @@
                         <h4 class="modal-title">Tem certeza?</h4>
                     </div>
                     <div class="modal-body">
-                        <p>Tem certeza que deseja excluir os registros selecionados?</p>
+                        <p>Tem certeza que deseja excluir as Futligas Clássicas selecionadas?</p>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
-                        <button type="button" class="btn btn-danger">Deletar</button>
+                        <button type="button" class="btn btn-danger" id="confirm-mass-delete">Deletar</button>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="modal inmodal" id="modalAlert2" tabindex="-1" role="dialog"  aria-hidden="true">
+        <!-- Modal de exclusão individual -->
+        <div class="modal inmodal" id="modalAlert2" tabindex="-1" role="dialog" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered modal-sm">
                 <div class="modal-content animated fadeIn">
                     <div class="modal-header">
@@ -220,11 +219,11 @@
                         <h4 class="modal-title">Tem certeza?</h4>
                     </div>
                     <div class="modal-body">
-                        <p>Tem certeza que deseja excluir o registro selecionado?</p>
+                        <p>Tem certeza que deseja excluir esta Futliga Clássica?</p>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
-                        <button type="button" class="btn btn-danger">Deletar</button>
+                        <button type="button" class="btn btn-danger" id="confirm-delete">Deletar</button>
                     </div>
                 </div>
             </div>
@@ -237,10 +236,11 @@
         <script src="{% static 'administrativo/js/plugins/slimscroll/jquery.slimscroll.min.js' %}"></script>
         <script src="{% static 'administrativo/js/plugins/dataTables/datatables.min.js' %}"></script>
         <script src="{% static 'administrativo/js/plugins/dataTables/dataTables.bootstrap4.min.js' %}"></script>
+        <script src="{% static 'administrativo/js/plugins/toastr/toastr.min.js' %}"></script>
+        <script src="{% static 'administrativo/js/plugins/checkAll/checkAll.js' %}"></script>
         <!-- Custom and plugin javascript -->
         <script src="{% static 'administrativo/js/inspinia.js' %}"></script>
         <script src="{% static 'administrativo/js/plugins/pace/pace.min.js' %}"></script>
-        <script src="{% static 'administrativo/js/plugins/checkAll/checkAll.js' %}"></script>
-        <script src="{% static 'administrativo/js/page-level.js' %}"></script>
+        <script src="{% static 'administrativo/js/futligas-classicas.js' %}"></script>
     </body>
 </html>

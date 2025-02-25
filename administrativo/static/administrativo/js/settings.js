@@ -73,14 +73,17 @@ $(".formcolorpicker").each(function() {
 //DateTimePicker
 $(function() {
   $("#datetimepicker").datetimepicker({
-    format: "DD/MM/YYYY, HH:mm"
+    format: "DD/MM/YYYY HH:mm",
+    locale: 'pt-br'
   });
   $("#datetimepicker2").datetimepicker({
-    format: "DD/MM/YYYY, HH:mm",
+    format: "DD/MM/YYYY HH:mm",
+    locale: 'pt-br',
     useCurrent: false // Precisa para ajudar na lógica abaixo.
   });
   $("#datetimepicker3").datetimepicker({
-    format: "DD/MM/YYYY, HH:mm"
+    format: "DD/MM/YYYY HH:mm",
+    locale: 'pt-br'
   });
 
   // Lógica Datetimepicker linkado para não permitir que a segunda data seja maior que a primeira

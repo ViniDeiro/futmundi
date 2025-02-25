@@ -9,13 +9,15 @@ from django.core.exceptions import ValidationError
 from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
 from django.contrib.auth.decorators import login_required
 from django.db.models import Case, When, Value, IntegerField
+from django.core.files.storage import default_storage
 from .models import (
     User, Scope, Championship, Template, Team,
     FutcoinPackage, Plan, ClassicLeague, Player,
-    Continent, Country, State, Parameter, Term, 
-    Notification, Administrator, ScopeLevel, TemplateStage,
+    Continent, Country, State, Parameters, Terms, 
+    Notifications, Administrator, ScopeLevel, TemplateStage,
     ChampionshipStage, ChampionshipRound, ChampionshipMatch,
-    Prediction
+    Prediction, StandardLeague, StandardLeaguePrize,
+    CustomLeague, CustomLeagueLevel, CustomLeaguePrize
 )
 from .utils import export_to_excel, import_from_excel
 import pandas as pd
@@ -1365,9 +1367,53 @@ def time_importar_imagens(request):
     })
 
 def futcoins(request):
-    return render(request, 'administrativo/futcoins.html')
+    packages = FutcoinPackage.objects.all().order_by('-created_at')
+    return render(request, 'administrativo/futcoins.html', {'packages': packages})
 
 def pacote_futcoin_novo(request):
+    if request.method == 'POST':
+        try:
+            data = request.POST
+            files = request.FILES
+            
+            # Criação do pacote
+            package = FutcoinPackage(
+                name=data.get('name'),
+                enabled=data.get('enabled', 'true') == 'true',
+                package_type=data.get('package_type'),
+                label=data.get('label'),
+                color_text_label=data.get('color_text_label', '#000000'),
+                color_background_label=data.get('color_background_label', '#FFFFFF'),
+                full_price=data.get('full_price'),
+                promotional_price=data.get('promotional_price') if data.get('promotional_price') else None,
+                content=data.get('content'),
+                bonus=data.get('bonus', 0),
+                show_to=data.get('show_to'),
+                start_date=data.get('start_date') if data.get('start_date') else None,
+                end_date=data.get('end_date') if data.get('end_date') else None,
+                android_product_code=data.get('android_product_code'),
+                ios_product_code=data.get('ios_product_code'),
+                gateway_product_code=data.get('gateway_product_code')
+            )
+            
+            # Tratamento da imagem
+            if 'image' in files:
+                package.image = files['image']
+            
+            package.save()
+            
+            return JsonResponse({
+                'success': True,
+                'message': 'Pacote criado com sucesso!'
+            })
+            
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': f'Erro ao criar pacote: {str(e)}'
+            })
+    
+    # GET - renderiza o formulário
     return render(request, 'administrativo/pacote-futcoin-novo.html')
 
 def planos(request):
@@ -1430,11 +1476,241 @@ def pacote_plano_novo(request):
     # GET - renderiza o formulário
     return render(request, 'administrativo/pacote-plano-novo.html')
 
+@login_required
 def futligas_classicas(request):
-    return render(request, 'administrativo/futligas-classicas.html')
+    """
+    View para listar todas as Futligas Clássicas
+    """
+    futligas = StandardLeague.objects.all().order_by('-created_at')
+    return render(request, 'administrativo/futligas-classicas.html', {
+        'futligas': futligas
+    })
 
+@login_required
 def futliga_classica_novo(request):
+    """
+    View para criar uma nova Futliga Clássica
+    """
+    if request.method == 'POST':
+        try:
+            # Dados básicos
+            name = request.POST.get('name')
+            players = request.POST.get('players')
+            award_frequency = request.POST.get('award_frequency')
+            
+            # Validações
+            if not name:
+                return JsonResponse({'success': False, 'message': 'O nome é obrigatório'})
+            
+            if not award_frequency:
+                return JsonResponse({'success': False, 'message': 'A frequência de premiação é obrigatória'})
+            
+            # Cria a Futliga
+            futliga = StandardLeague(
+                name=name,
+                players=players,
+                award_frequency=award_frequency
+            )
+            
+            # Imagem principal
+            if request.FILES.get('image'):
+                futliga.image = request.FILES['image']
+            
+            # Dia/horário de premiação
+            if award_frequency == 'Semanal':
+                weekday = request.POST.get('weekday')
+                if not weekday:
+                    return JsonResponse({'success': False, 'message': 'O dia da semana é obrigatório para premiação semanal'})
+                futliga.weekday = weekday
+            elif award_frequency == 'Mensal':
+                monthday = request.POST.get('monthday')
+                if not monthday:
+                    return JsonResponse({'success': False, 'message': 'O dia do mês é obrigatório para premiação mensal'})
+                futliga.monthday = monthday
+            
+            award_time = request.POST.get('award_time')
+            if award_time:
+                futliga.award_time = award_time
+            
+            futliga.save()
+            
+            # Processa os prêmios
+            positions = request.POST.getlist('prize_positions[]')
+            descriptions = request.POST.getlist('prize_descriptions[]')
+            images = request.FILES.getlist('prize_images[]')
+            
+            for i in range(len(positions)):
+                prize = StandardLeaguePrize(
+                    league=futliga,
+                    position=positions[i],
+                    prize=descriptions[i]
+                )
+                if i < len(images):
+                    prize.image = images[i]
+                prize.save()
+            
+            return JsonResponse({'success': True})
+            
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': str(e)})
+    
     return render(request, 'administrativo/futliga-classica-novo.html')
+
+@login_required
+def futliga_classica_editar(request, id):
+    """
+    View para editar uma Futliga Clássica existente
+    """
+    try:
+        futliga = StandardLeague.objects.get(id=id)
+    except StandardLeague.DoesNotExist:
+        messages.error(request, 'Futliga Clássica não encontrada')
+        return redirect('administrativo:futligas_classicas')
+    
+    if request.method == 'POST':
+        try:
+            # Dados básicos
+            name = request.POST.get('name')
+            players = request.POST.get('players')
+            award_frequency = request.POST.get('award_frequency')
+            
+            # Validações
+            if not name:
+                return JsonResponse({'success': False, 'message': 'O nome é obrigatório'})
+            
+            if not award_frequency:
+                return JsonResponse({'success': False, 'message': 'A frequência de premiação é obrigatória'})
+            
+            # Atualiza a Futliga
+            futliga.name = name
+            futliga.players = players
+            futliga.award_frequency = award_frequency
+            
+            # Imagem principal
+            if request.FILES.get('image'):
+                if futliga.image:
+                    futliga.image.delete()
+                futliga.image = request.FILES['image']
+            
+            # Dia/horário de premiação
+            if award_frequency == 'weekly':
+                weekday = request.POST.get('weekday')
+                if not weekday:
+                    return JsonResponse({'success': False, 'message': 'O dia da semana é obrigatório para premiação semanal'})
+                try:
+                    weekday = int(weekday)
+                    if weekday < 0 or weekday > 6:
+                        return JsonResponse({'success': False, 'message': 'Dia da semana inválido'})
+                    futliga.weekday = weekday
+                except ValueError:
+                    return JsonResponse({'success': False, 'message': 'Dia da semana inválido'})
+            elif award_frequency == 'monthly':
+                monthday = request.POST.get('monthday')
+                if not monthday:
+                    return JsonResponse({'success': False, 'message': 'O dia do mês é obrigatório para premiação mensal'})
+                try:
+                    monthday = int(monthday)
+                    if monthday < 1 or monthday > 31:
+                        return JsonResponse({'success': False, 'message': 'Dia do mês inválido'})
+                    futliga.monthday = monthday
+                except ValueError:
+                    return JsonResponse({'success': False, 'message': 'Dia do mês inválido'})
+            
+            award_time = request.POST.get('award_time')
+            if award_time:
+                futliga.award_time = award_time
+            
+            futliga.save()
+            
+            # Remove prêmios existentes
+            futliga.prizes.all().delete()
+            
+            # Processa os novos prêmios
+            positions = request.POST.getlist('prize_positions[]')
+            descriptions = request.POST.getlist('prize_descriptions[]')
+            images = request.FILES.getlist('prize_images[]')
+            
+            for i in range(len(positions)):
+                try:
+                    position = int(positions[i])
+                    if position < 1:
+                        return JsonResponse({'success': False, 'message': f'Posição {position} inválida'})
+                        
+                    prize = StandardLeaguePrize(
+                        league=futliga,
+                        position=position,
+                        prize=descriptions[i]
+                    )
+                    if i < len(images):
+                        prize.image = images[i]
+                    prize.save()
+                except ValueError:
+                    return JsonResponse({'success': False, 'message': f'Posição {positions[i]} inválida'})
+            
+            return JsonResponse({'success': True})
+            
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': str(e)})
+    
+    return render(request, 'administrativo/futliga-classica-editar.html', {
+        'futliga': futliga
+    })
+
+@login_required
+def futliga_classica_excluir(request, id):
+    """
+    View para excluir uma Futliga Clássica
+    """
+    if request.method == 'POST':
+        try:
+            futliga = StandardLeague.objects.get(id=id)
+            
+            # Remove a imagem principal
+            if futliga.image:
+                futliga.image.delete()
+            
+            # Remove as imagens dos prêmios
+            for prize in futliga.prizes.all():
+                if prize.image:
+                    prize.image.delete()
+            
+            futliga.delete()
+            return JsonResponse({'success': True})
+            
+        except StandardLeague.DoesNotExist:
+            return JsonResponse({'success': False, 'message': 'Futliga Clássica não encontrada'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': str(e)})
+    
+    return JsonResponse({'success': False, 'message': 'Método não permitido'})
+
+@login_required
+def futliga_classica_excluir_em_massa(request):
+    """
+    View para excluir múltiplas Futligas Clássicas
+    """
+    if request.method == 'POST':
+        try:
+            ids = request.POST.getlist('ids[]')
+            futligas = StandardLeague.objects.filter(id__in=ids)
+            
+            for futliga in futligas:
+                # Remove a imagem principal
+                if futliga.image:
+                    futliga.image.delete()
+                
+                # Remove as imagens dos prêmios
+                for prize in futliga.prizes.all():
+                    if prize.image:
+                        prize.image.delete()
+            
+            futligas.delete()
+            return JsonResponse({'success': True})
+            
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': str(e)})
+    
+    return JsonResponse({'success': False, 'message': 'Método não permitido'})
 
 def futligas_jogadores(request):
     return render(request, 'administrativo/futligas-jogadores.html')
@@ -2134,16 +2410,247 @@ def estado_editar(request, id):
     return redirect('administrativo:estado_editar', id=id)
 
 def parametros(request):
-    return render(request, 'administrativo/parametros.html')
+    """
+    View para gerenciar os parâmetros do sistema.
+    """
+    try:
+        params = Parameters.objects.first()
+        if not params:
+            params = Parameters.objects.create()
+            
+        if request.method == 'POST':
+            # Login - 7 dias
+            params.day1_coins = int(request.POST.get('day1_coins', 0))
+            params.day2_coins = int(request.POST.get('day2_coins', 0))
+            params.day3_coins = int(request.POST.get('day3_coins', 0))
+            params.day4_coins = int(request.POST.get('day4_coins', 0))
+            params.day5_coins = int(request.POST.get('day5_coins', 0))
+            params.day6_coins = int(request.POST.get('day6_coins', 0))
+            params.day7_coins = int(request.POST.get('day7_coins', 0))
+            
+            # Premiação
+            reward_time = request.POST.get('reward_time')
+            if reward_time:
+                try:
+                    from datetime import datetime
+                    params.reward_time = datetime.strptime(reward_time, '%H:%M').time()
+                except ValueError:
+                    params.reward_time = None
+            
+            # Recompensas
+            params.watch_video_coins = int(request.POST.get('watch_video_coins', 0))
+            params.hit_prediction_coins = int(request.POST.get('hit_prediction_coins', 0))
+            params.following_tiktok_coins = int(request.POST.get('following_tiktok_coins', 0))
+            params.premium_upgrade_coins = int(request.POST.get('premium_upgrade_coins', 0))
+            params.consecutive_days_coins = int(request.POST.get('consecutive_days_coins', 0))
+            
+            # Limites
+            params.daily_videos_limit = int(request.POST.get('daily_videos_limit', 0))
+            params.standard_leagues_participation = int(request.POST.get('standard_leagues_participation', 0))
+            params.ace_leagues_participation = int(request.POST.get('ace_leagues_participation', 0))
+            
+            # Outros
+            params.contact_email = request.POST.get('contact_email')
+            params.api_key = request.POST.get('api_key')
+            
+            # Redes Sociais
+            params.facebook = request.POST.get('facebook')
+            params.kwai = request.POST.get('kwai')
+            params.instagram = request.POST.get('instagram')
+            params.tiktok = request.POST.get('tiktok')
+            
+            # Salva as alterações
+            params.save()
+            
+            return JsonResponse({
+                'success': True,
+                'message': 'Parâmetros atualizados com sucesso!'
+            })
+            
+        return render(request, 'administrativo/parametros.html', {'params': params})
+        
+    except Exception as e:
+        if request.method == 'POST':
+            return JsonResponse({
+                'success': False,
+                'message': f'Erro ao atualizar parâmetros: {str(e)}'
+            })
+        return render(request, 'administrativo/parametros.html', {'error': str(e)})
 
 def termo(request):
-    return render(request, 'administrativo/termo.html')
+    """
+    View para gerenciar os termos de uso do sistema.
+    """
+    if request.method == 'POST':
+        description = request.POST.get('description')
+        notify_changes = request.POST.get('notify_changes') == 'true'
+        
+        # Pega o termo atual ou cria um novo
+        termo = Terms.objects.first()
+        if not termo:
+            termo = Terms()
+        
+        termo.description = description
+        termo.notify_changes = notify_changes
+        termo.save()
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Termo atualizado com sucesso!'
+        })
+    
+    # GET - Carrega o termo atual
+    termo = Terms.objects.first()
+    return render(request, 'administrativo/termo.html', {'termo': termo})
 
 def notificacoes(request):
-    return render(request, 'administrativo/notificacoes.html')
+    if request.method == 'GET' and request.GET.get('action') == 'get_info':
+        notification_id = request.GET.get('id')
+        try:
+            notification = Notifications.objects.get(id=notification_id)
+            response_data = {
+                'success': True,
+                'status': notification.status,
+                'send_at': notification.send_at.strftime('%d/%m/%Y %H:%M') if notification.send_at else None,
+                'error_message': notification.error_message
+            }
+            return JsonResponse(response_data)
+        except Notifications.DoesNotExist:
+            return JsonResponse({'success': False})
+
+    notifications = Notifications.objects.all().order_by('-created_at')
+    return render(request, 'administrativo/notificacoes.html', {'notifications': notifications})
 
 def notificacao_novo(request):
-    return render(request, 'administrativo/notificacao-novo.html')
+    if request.method == 'POST':
+        try:
+            title = request.POST.get('title')
+            message = request.POST.get('message')
+            notification_type = request.POST.get('notification_type')
+            package_id = request.POST.get('package')
+            send_at = request.POST.get('send_at')
+
+            if not all([title, message, notification_type]):
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Campos obrigatórios não preenchidos'
+                })
+
+            notification = Notifications(
+                title=title,
+                message=message,
+                notification_type=notification_type,
+                status='pending'  # Status inicial como pendente
+            )
+
+            if notification_type != 'generic' and package_id:
+                try:
+                    package = FutcoinPackage.objects.get(id=package_id)
+                    notification.package = package
+                except FutcoinPackage.DoesNotExist:
+                    return JsonResponse({
+                        'success': False,
+                        'message': 'Pacote não encontrado'
+                    })
+
+            if send_at:
+                try:
+                    notification.send_at = datetime.strptime(send_at, '%d/%m/%Y %H:%M')
+                except ValueError:
+                    return JsonResponse({
+                        'success': False,
+                        'message': 'Data de envio inválida'
+                    })
+
+            notification.save()
+
+            # Se não houver data de envio agendada, tenta enviar imediatamente
+            if not send_at:
+                try:
+                    # Aqui você implementaria a lógica de envio da notificação
+                    # Por exemplo: notification.send()
+                    notification.status = 'sent'
+                    notification.save()
+                except Exception as e:
+                    notification.status = 'not_sent'
+                    notification.error_message = str(e)
+                    notification.save()
+
+            return JsonResponse({
+                'success': True,
+                'message': 'Notificação salva com sucesso'
+            })
+
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': f'Erro ao salvar notificação: {str(e)}'
+            })
+
+    packages = FutcoinPackage.objects.filter(enabled=True)
+    return render(request, 'administrativo/notificacao-novo.html', {'packages': packages})
+
+@login_required
+def notificacao_editar(request, id):
+    try:
+        notification = Notifications.objects.get(id=id)
+        
+        if request.method == 'POST':
+            title = request.POST.get('title')
+            message = request.POST.get('message')
+            notification_type = request.POST.get('notification_type')
+            package_id = request.POST.get('package')
+            send_type = request.POST.get('send_type')
+            send_at = request.POST.get('send_at')
+
+            if not all([title, message, notification_type]):
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Campos obrigatórios não preenchidos'
+                })
+
+            notification.title = title
+            notification.message = message
+            notification.notification_type = notification_type
+
+            if notification_type == 'package' and package_id:
+                try:
+                    package = FutcoinPackage.objects.get(id=package_id)
+                    notification.package = package
+                except FutcoinPackage.DoesNotExist:
+                    return JsonResponse({
+                        'success': False,
+                        'message': 'Pacote não encontrado'
+                    })
+            else:
+                notification.package = None
+
+            if send_type == 'schedule' and send_at:
+                try:
+                    notification.send_at = datetime.strptime(send_at, '%d/%m/%Y %H:%M')
+                except ValueError:
+                    return JsonResponse({
+                        'success': False,
+                        'message': 'Data de envio inválida'
+                    })
+            else:
+                notification.send_at = None
+
+            notification.save()
+            return JsonResponse({
+                'success': True,
+                'message': 'Notificação atualizada com sucesso'
+            })
+
+        packages = FutcoinPackage.objects.filter(enabled=True)
+        return render(request, 'administrativo/notificacao-editar.html', {
+            'notification': notification,
+            'packages': packages
+        })
+
+    except Notifications.DoesNotExist:
+        messages.error(request, 'Notificação não encontrada')
+        return redirect('administrativo:notificacoes')
 
 def relatorios(request):
     return render(request, 'administrativo/relatorios.html')
@@ -3043,3 +3550,457 @@ def plano_toggle_status(request):
         'success': False,
         'message': 'Método não permitido.'
     })
+
+def futcoin_excluir(request, id):
+    """
+    Exclui um pacote Futcoin específico.
+    """
+    try:
+        package = FutcoinPackage.objects.get(id=id)
+        package.delete()
+        return JsonResponse({
+            'success': True,
+            'message': 'Pacote excluído com sucesso!'
+        })
+    except FutcoinPackage.DoesNotExist:
+        return JsonResponse({
+            'success': False,
+            'message': 'Pacote não encontrado.'
+        })
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Erro ao excluir pacote: {str(e)}'
+        })
+
+def futcoin_excluir_em_massa(request):
+    """
+    Exclui múltiplos pacotes Futcoin.
+    """
+    try:
+        ids = request.POST.getlist('ids[]')
+        FutcoinPackage.objects.filter(id__in=ids).delete()
+        return JsonResponse({
+            'success': True,
+            'message': 'Pacotes excluídos com sucesso!'
+        })
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Erro ao excluir pacotes: {str(e)}'
+        })
+
+def futcoin_toggle_status(request):
+    """
+    Alterna o status de ativação de um pacote Futcoin.
+    """
+    if request.method == 'POST':
+        package_id = request.POST.get('id')
+        try:
+            package = get_object_or_404(FutcoinPackage, id=package_id)
+            package.enabled = not package.enabled
+            package.save()
+            
+            return JsonResponse({
+                'success': True,
+                'message': 'Status alterado com sucesso!',
+                'enabled': package.enabled
+            })
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': f'Erro ao alterar status: {str(e)}'
+            })
+            
+    return JsonResponse({
+        'success': False,
+        'message': 'Método não permitido'
+    })
+
+@login_required
+def futcoin_editar(request, id):
+    try:
+        package = FutcoinPackage.objects.get(id=id)
+        
+        if request.method == 'POST':
+            # Atualiza os dados do pacote
+            package.name = request.POST.get('name')
+            package.enabled = request.POST.get('enabled') == 'true'
+            package.package_type = request.POST.get('package_type')
+            package.label = request.POST.get('label')
+            package.color_text_label = request.POST.get('color_text_label')
+            package.color_background_label = request.POST.get('color_background_label')
+            package.full_price = request.POST.get('full_price')
+            package.promotional_price = request.POST.get('promotional_price')
+            package.content = request.POST.get('content')
+            package.bonus = request.POST.get('bonus')
+            package.show_to = request.POST.get('show_to')
+            package.android_product_code = request.POST.get('android_product_code')
+            package.ios_product_code = request.POST.get('ios_product_code')
+            package.gateway_product_code = request.POST.get('gateway_product_code')
+            
+            # Converte as datas
+            start_date = request.POST.get('start_date')
+            end_date = request.POST.get('end_date')
+            
+            if start_date:
+                try:
+                    # Converte de DD/MM/YYYY HH:mm para YYYY-MM-DD HH:mm
+                    date_parts = start_date.split(' ')
+                    if len(date_parts) == 2:
+                        day, month, year = date_parts[0].split('/')
+                        time = date_parts[1]
+                        formatted_date = f"{year}-{month}-{day} {time}"
+                        package.start_date = datetime.strptime(formatted_date, '%Y-%m-%d %H:%M')
+                    else:
+                        return JsonResponse({
+                            'success': False,
+                            'message': 'Data de início inválida. Use o formato DD/MM/YYYY HH:mm'
+                        })
+                except (ValueError, IndexError):
+                    return JsonResponse({
+                        'success': False,
+                        'message': 'Data de início inválida. Use o formato DD/MM/YYYY HH:mm'
+                    })
+            else:
+                package.start_date = None
+                
+            if end_date:
+                try:
+                    # Converte de DD/MM/YYYY HH:mm para YYYY-MM-DD HH:mm
+                    date_parts = end_date.split(' ')
+                    if len(date_parts) == 2:
+                        day, month, year = date_parts[0].split('/')
+                        time = date_parts[1]
+                        formatted_date = f"{year}-{month}-{day} {time}"
+                        package.end_date = datetime.strptime(formatted_date, '%Y-%m-%d %H:%M')
+                    else:
+                        return JsonResponse({
+                            'success': False,
+                            'message': 'Data de término inválida. Use o formato DD/MM/YYYY HH:mm'
+                        })
+                except (ValueError, IndexError):
+                    return JsonResponse({
+                        'success': False,
+                        'message': 'Data de término inválida. Use o formato DD/MM/YYYY HH:mm'
+                    })
+            else:
+                package.end_date = None
+            
+            # Processa a imagem se fornecida
+            if 'image' in request.FILES:
+                # Remove a imagem antiga se existir
+                if package.image:
+                    package.image.delete()
+                package.image = request.FILES['image']
+            
+            package.save()
+            
+            return JsonResponse({
+                'success': True,
+                'message': 'Pacote atualizado com sucesso!'
+            })
+        
+        # Se não for POST, renderiza o template com os dados do pacote
+        package_data = {
+            'id': package.id,
+            'name': package.name,
+            'enabled': package.enabled,
+            'package_type': package.package_type,
+            'label': package.label,
+            'color_text_label': package.color_text_label,
+            'color_background_label': package.color_background_label,
+            'full_price': str(package.full_price) if package.full_price else None,
+            'promotional_price': str(package.promotional_price) if package.promotional_price else None,
+            'content': str(package.content) if package.content else None,
+            'bonus': str(package.bonus) if package.bonus else None,
+            'show_to': package.show_to,
+            'android_product_code': package.android_product_code,
+            'ios_product_code': package.ios_product_code,
+            'gateway_product_code': package.gateway_product_code,
+            'start_date': package.start_date.strftime('%Y-%m-%d %H:%M') if package.start_date else None,
+            'end_date': package.end_date.strftime('%Y-%m-%d %H:%M') if package.end_date else None,
+            'image': package.image.url if package.image else None
+        }
+        
+        return render(request, 'administrativo/pacote-futcoin-editar.html', {
+            'package': package,
+            'package_data': json.dumps(package_data)
+        })
+        
+    except FutcoinPackage.DoesNotExist:
+        messages.error(request, 'Pacote não encontrado')
+        return redirect('administrativo:futcoins')
+
+@login_required
+def futligas_niveis(request):
+    """
+    Exibe a página de gerenciamento de níveis das Futligas.
+    """
+    levels = CustomLeagueLevel.objects.all().order_by('order')
+    return render(request, 'administrativo/futligas/niveis.html', {'levels': levels})
+
+@login_required
+def futliga_nivel_novo(request):
+    """
+    Cria um novo nível de Futliga.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'Método não permitido'})
+
+    try:
+        name = request.POST.get('name')
+        players = request.POST.get('players')
+        premium_players = request.POST.get('premium_players')
+        owner_premium = request.POST.get('owner_premium') == 'true'
+        image = request.FILES.get('image')
+
+        # Validação dos campos obrigatórios
+        if not all([name, players, premium_players]):
+            return JsonResponse({'success': False, 'message': 'Campos obrigatórios não preenchidos'})
+
+        # Verifica se já existe um nível com o mesmo nome
+        if CustomLeagueLevel.objects.filter(name=name).exists():
+            return JsonResponse({'success': False, 'message': 'Já existe um nível com este nome'})
+
+        # Cria o novo nível
+        level = CustomLeagueLevel.objects.create(
+            name=name,
+            players=players,
+            premium_players=premium_players,
+            owner_premium=owner_premium,
+            order=CustomLeagueLevel.objects.count() + 1
+        )
+
+        # Salva a imagem se fornecida
+        if image:
+            level.image = image
+            level.save()
+
+        return JsonResponse({
+            'success': True,
+            'level': {
+                'id': level.id,
+                'name': level.name,
+                'players': level.players,
+                'premium_players': level.premium_players,
+                'owner_premium': level.owner_premium,
+                'image': level.image.url if level.image else None,
+                'order': level.order
+            }
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)})
+
+@login_required
+def futliga_nivel_editar(request, id):
+    """
+    Edita um nível de Futliga existente.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'Método não permitido'})
+
+    try:
+        level = get_object_or_404(CustomLeagueLevel, id=id)
+        name = request.POST.get('name')
+        players = request.POST.get('players')
+        premium_players = request.POST.get('premium_players')
+        owner_premium = request.POST.get('owner_premium') == 'true'
+        image = request.FILES.get('image')
+
+        # Validação dos campos obrigatórios
+        if not all([name, players, premium_players]):
+            return JsonResponse({'success': False, 'message': 'Campos obrigatórios não preenchidos'})
+
+        # Verifica se já existe outro nível com o mesmo nome
+        if CustomLeagueLevel.objects.filter(name=name).exclude(id=id).exists():
+            return JsonResponse({'success': False, 'message': 'Já existe um nível com este nome'})
+
+        # Atualiza os dados do nível
+        level.name = name
+        level.players = players
+        level.premium_players = premium_players
+        level.owner_premium = owner_premium
+
+        # Atualiza a imagem se fornecida
+        if image:
+            if level.image:
+                default_storage.delete(level.image.path)
+            level.image = image
+
+        level.save()
+
+        return JsonResponse({
+            'success': True,
+            'level': {
+                'id': level.id,
+                'name': level.name,
+                'players': level.players,
+                'premium_players': level.premium_players,
+                'owner_premium': level.owner_premium,
+                'image': level.image.url if level.image else None,
+                'order': level.order
+            }
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)})
+
+@login_required
+def futliga_nivel_excluir(request, id):
+    """
+    Exclui um nível de Futliga.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'Método não permitido'})
+
+    try:
+        level = get_object_or_404(CustomLeagueLevel, id=id)
+        
+        # Remove a imagem se existir
+        if level.image:
+            default_storage.delete(level.image.path)
+        
+        level.delete()
+        
+        # Reordena os níveis restantes
+        for i, level in enumerate(CustomLeagueLevel.objects.all().order_by('order'), 1):
+            level.order = i
+            level.save()
+
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)})
+
+@login_required
+def futliga_nivel_salvar(request):
+    """
+    Salva a ordem dos níveis.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'Método não permitido'})
+
+    try:
+        data = json.loads(request.body)
+        levels = data.get('levels', [])
+
+        with transaction.atomic():
+            for level_data in levels:
+                level = get_object_or_404(CustomLeagueLevel, id=level_data['id'])
+                level.order = level_data['order']
+                level.save()
+
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)})
+
+@login_required
+def futliga_nivel_importar(request):
+    """
+    Importa níveis de um arquivo Excel.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'Método não permitido'})
+
+    try:
+        file = request.FILES.get('file')
+        if not file:
+            return JsonResponse({'success': False, 'message': 'Nenhum arquivo fornecido'})
+
+        # Lê o arquivo Excel
+        df = pd.read_excel(file)
+        required_columns = ['Nome', 'Participantes', 'Craques', 'Dono Premium']
+        
+        if not all(col in df.columns for col in required_columns):
+            return JsonResponse({'success': False, 'message': 'Formato do arquivo inválido'})
+
+        levels = []
+        with transaction.atomic():
+            # Remove todos os níveis existentes
+            CustomLeagueLevel.objects.all().delete()
+            
+            # Cria os novos níveis
+            for index, row in df.iterrows():
+                level = CustomLeagueLevel.objects.create(
+                    name=row['Nome'],
+                    players=row['Participantes'],
+                    premium_players=row['Craques'],
+                    owner_premium=row['Dono Premium'],
+                    order=index + 1
+                )
+                levels.append({
+                    'id': level.id,
+                    'name': level.name,
+                    'players': level.players,
+                    'premium_players': level.premium_players,
+                    'owner_premium': level.owner_premium,
+                    'image': level.image.url if level.image else None,
+                    'order': level.order
+                })
+
+        return JsonResponse({'success': True, 'levels': levels})
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)})
+
+@login_required
+def futliga_nivel_exportar(request):
+    """
+    Exporta os níveis para um arquivo Excel.
+    """
+    try:
+        levels = CustomLeagueLevel.objects.all().order_by('order')
+        data = []
+        
+        for level in levels:
+            data.append({
+                'Nome': level.name,
+                'Participantes': level.players,
+                'Craques': level.premium_players,
+                'Dono Premium': level.owner_premium
+            })
+
+        df = pd.DataFrame(data)
+        
+        # Cria o arquivo Excel
+        filename = 'niveis_futliga.xlsx'
+        filepath = os.path.join('temp', filename)
+        df.to_excel(filepath, index=False)
+        
+        # Retorna o arquivo para download
+        with open(filepath, 'rb') as f:
+            response = HttpResponse(f.read(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        
+        # Remove o arquivo temporário
+        os.remove(filepath)
+        
+        return response
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)})
+
+@login_required
+def notificacao_excluir(request, id):
+    """
+    Exclui uma notificação específica.
+    """
+    try:
+        notification = Notifications.objects.get(id=id)
+        notification.delete()
+        return JsonResponse({'success': True, 'message': 'Notificação excluída com sucesso!'})
+    except Notifications.DoesNotExist:
+        return JsonResponse({'success': False, 'message': 'Notificação não encontrada.'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)})
+
+@login_required
+def notificacao_excluir_em_massa(request):
+    """
+    Exclui múltiplas notificações selecionadas.
+    """
+    if request.method == 'POST':
+        try:
+            ids = request.POST.getlist('ids[]')
+            Notifications.objects.filter(id__in=ids).delete()
+            return JsonResponse({'success': True, 'message': 'Notificações excluídas com sucesso!'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': str(e)})
+    return JsonResponse({'success': False, 'message': 'Método não permitido.'})

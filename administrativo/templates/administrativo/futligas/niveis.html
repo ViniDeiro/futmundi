@@ -1,0 +1,159 @@
+{% extends 'administrativo/base.html' %}
+{% load static %}
+
+{% block title %}Níveis de Futligas{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+    <section class="content-header">
+        <h1>
+            Níveis de Futligas
+            <small>Gerenciamento dos níveis das Futligas</small>
+        </h1>
+        <ol class="breadcrumb">
+            <li><a href="{% url 'administrativo:index' %}"><i class="fa fa-dashboard"></i> Home</a></li>
+            <li class="active">Níveis de Futligas</li>
+        </ol>
+    </section>
+
+    <section class="content">
+        <div class="row">
+            <div class="col-xs-12">
+                <div class="box">
+                    <div class="box-header">
+                        <h3 class="box-title">Adicionar/Editar Nível</h3>
+                    </div>
+                    <div class="box-body">
+                        <form id="level-form" class="form-horizontal">
+                            <div class="form-group">
+                                <label for="level-name" class="col-sm-2 control-label">Nome</label>
+                                <div class="col-sm-10">
+                                    <input type="text" class="form-control" id="level-name" placeholder="Nome do nível" required>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="players" class="col-sm-2 control-label">Participantes</label>
+                                <div class="col-sm-10">
+                                    <input type="number" class="form-control" id="players" placeholder="Número de participantes" required>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="premium-players" class="col-sm-2 control-label">Craques</label>
+                                <div class="col-sm-10">
+                                    <input type="number" class="form-control" id="premium-players" placeholder="Número de craques" required>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="owner-premium" class="col-sm-2 control-label">Dono Premium</label>
+                                <div class="col-sm-10">
+                                    <div class="checkbox">
+                                        <label>
+                                            <input type="checkbox" id="owner-premium"> Requer dono premium
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="level-image" class="col-sm-2 control-label">Imagem</label>
+                                <div class="col-sm-10">
+                                    <input type="file" id="level-image" accept="image/*">
+                                    <div id="image-preview" class="mt-2" style="cursor: pointer;">
+                                        <i class="fa fa-image"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <div class="col-sm-offset-2 col-sm-10">
+                                    <button type="button" id="add-level" class="btn btn-primary">Adicionar</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="box">
+                    <div class="box-header">
+                        <h3 class="box-title">Níveis</h3>
+                        <div class="box-tools">
+                            <button type="button" id="import-levels" class="btn btn-default btn-sm" title="Importar níveis">
+                                <i class="fa fa-upload"></i> Importar
+                            </button>
+                            <button type="button" id="export-levels" class="btn btn-default btn-sm" title="Exportar níveis">
+                                <i class="fa fa-download"></i> Exportar
+                            </button>
+                            <button type="button" id="save-all" class="btn btn-success btn-sm" title="Salvar todas as alterações">
+                                <i class="fa fa-save"></i> Salvar Alterações
+                            </button>
+                        </div>
+                    </div>
+                    <div class="box-body table-responsive">
+                        <table id="levels-table" class="table table-bordered table-striped">
+                            <thead>
+                                <tr>
+                                    <th width="30"></th>
+                                    <th>Nome</th>
+                                    <th>Participantes</th>
+                                    <th>Craques</th>
+                                    <th>Dono Premium</th>
+                                    <th>Imagem</th>
+                                    <th width="100">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for level in levels %}
+                                <tr data-id="{{ level.id }}" data-order="{{ level.order }}">
+                                    <td><i class="fa fa-bars drag-handle"></i></td>
+                                    <td>{{ level.name }}</td>
+                                    <td>{{ level.players }}</td>
+                                    <td>{{ level.premium_players }}</td>
+                                    <td>{{ level.owner_premium|yesno:"Sim,Não" }}</td>
+                                    <td class="center-middle">
+                                        {% if level.image %}
+                                            <img src="{{ level.image.url }}" class="img-sm">
+                                        {% else %}
+                                            <i class="fa fa-image"></i>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <button type="button" class="btn btn-info btn-xs edit-level" title="Editar">
+                                            <i class="fa fa-pencil"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-danger btn-xs delete-level" title="Excluir">
+                                            <i class="fa fa-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'administrativo/plugins/datatables/dataTables.bootstrap.css' %}">
+<style>
+    .drag-handle {
+        cursor: move;
+    }
+    .img-sm {
+        max-width: 32px;
+        max-height: 32px;
+    }
+    .center-middle {
+        text-align: center;
+        vertical-align: middle !important;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'administrativo/plugins/datatables/jquery.dataTables.min.js' %}"></script>
+<script src="{% static 'administrativo/plugins/datatables/dataTables.bootstrap.min.js' %}"></script>
+<script src="{% static 'administrativo/plugins/jquery-ui/jquery-ui.min.js' %}"></script>
+<script src="{% static 'administrativo/js/futligas-niveis.js' %}"></script>
+{% endblock %} 

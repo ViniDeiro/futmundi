@@ -558,13 +558,104 @@ class Team(models.Model):
 
 # Pacotes
 class FutcoinPackage(models.Model):
-    name = models.CharField(max_length=255)
-    amount = models.IntegerField()
-    price = models.DecimalField(max_digits=10, decimal_places=2)
-    is_active = models.BooleanField(default=True)
+    """
+    Entidade que representa um pacote de Futcoins no sistema.
+    
+    Propriedades:
+    - name: Nome do pacote
+    - image: Imagem do pacote
+    - enabled: Se o pacote está ativo
+    - package_type: Tipo do pacote (Padrão ou Promocional)
+    - label: Etiqueta do pacote
+    - color_text_label: Cor do texto da etiqueta
+    - color_background_label: Cor de fundo da etiqueta
+    - full_price: Preço padrão
+    - promotional_price: Preço promocional
+    - content: Conteúdo do pacote (quantidade de Futcoins)
+    - bonus: Bônus adicional
+    - show_to: Para quem mostrar (Todos, Comum ou Craque)
+    - start_date: Data de início
+    - end_date: Data de término
+    """
+    
+    PACKAGE_TYPE_CHOICES = [
+        ('padrao', 'Padrão'),
+        ('promocional', 'Promocional'),
+    ]
+    
+    SHOW_TO_CHOICES = [
+        ('todos', 'Todos'),
+        ('comum', 'Comum'),
+        ('craque', 'Craque'),
+    ]
+    
+    name = models.CharField(max_length=255, verbose_name='Nome')
+    image = models.ImageField(upload_to='futcoins/packages/', null=True, blank=True, verbose_name='Imagem')
+    enabled = models.BooleanField(default=True, verbose_name='Ativo')
+    package_type = models.CharField(max_length=20, choices=PACKAGE_TYPE_CHOICES, default='padrao', verbose_name='Tipo')
+    label = models.CharField(max_length=50, null=True, blank=True, verbose_name='Etiqueta')
+    color_text_label = models.CharField(max_length=7, default='#000000', verbose_name='Cor do Texto da Etiqueta')
+    color_background_label = models.CharField(max_length=7, default='#FFFFFF', verbose_name='Cor de Fundo da Etiqueta')
+    full_price = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name='Preço Padrão')
+    promotional_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, verbose_name='Preço Promocional')
+    content = models.IntegerField(default=0, verbose_name='Conteúdo')
+    bonus = models.IntegerField(default=0, verbose_name='Bônus')
+    show_to = models.CharField(max_length=20, choices=SHOW_TO_CHOICES, default='todos', verbose_name='Exibir Para')
+    start_date = models.DateTimeField(null=True, blank=True, verbose_name='Data de Início')
+    end_date = models.DateTimeField(null=True, blank=True, verbose_name='Data de Término')
+    android_product_code = models.CharField(max_length=100, null=True, blank=True, verbose_name='Código do Produto (Android)')
+    ios_product_code = models.CharField(max_length=100, null=True, blank=True, verbose_name='Código do Produto (iOS)')
+    gateway_product_code = models.CharField(max_length=100, null=True, blank=True, verbose_name='Código do Produto (Gateway)')
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         db_table = 'futcoin_packages'
+        verbose_name = 'Pacote Futcoin'
+        verbose_name_plural = 'Pacotes Futcoins'
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+
+    def clean(self):
+        # Validações personalizadas
+        if self.promotional_price and self.promotional_price > self.full_price:
+            raise ValidationError('O preço promocional não pode ser maior que o preço padrão.')
+        
+        if self.start_date and self.end_date and self.start_date > self.end_date:
+            raise ValidationError('A data de início não pode ser posterior à data de término.')
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
+
+    def is_valid_period(self):
+        """
+        Verifica se o pacote está dentro do período válido de exibição
+        """
+        now = timezone.now()
+        if self.start_date and self.end_date:
+            return self.start_date <= now <= self.end_date
+        elif self.start_date:
+            return self.start_date <= now
+        elif self.end_date:
+            return now <= self.end_date
+        return True
+
+    def get_final_price(self):
+        """
+        Retorna o preço final do pacote (promocional se disponível, senão o preço padrão)
+        """
+        if self.promotional_price and self.is_valid_period():
+            return self.promotional_price
+        return self.full_price
+
+    def get_total_coins(self):
+        """
+        Retorna o total de moedas (conteúdo + bônus)
+        """
+        return self.content + self.bonus
 
 class Plan(models.Model):
     name = models.CharField(max_length=255)
@@ -591,8 +682,8 @@ class Plan(models.Model):
     )
     start_date = models.DateTimeField(null=True, blank=True)
     end_date = models.DateTimeField(null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
-    updated_at = models.DateTimeField(auto_now=True, null=True, blank=True)
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(default=timezone.now)
     android_product_code = models.CharField(max_length=100, null=True, blank=True)
     apple_product_code = models.CharField(max_length=100, null=True, blank=True)
     promotional_price_validity = models.IntegerField(null=True, blank=True)
@@ -697,34 +788,6 @@ class State(models.Model):
         return f"{self.name} - {self.country.name}"
 
 # Configurações
-class Parameter(models.Model):
-    key = models.CharField(max_length=255, unique=True)
-    value = models.TextField()
-    description = models.TextField(blank=True)
-
-    class Meta:
-        db_table = 'parameters'
-
-class Term(models.Model):
-    title = models.CharField(max_length=255)
-    content = models.TextField()
-    version = models.CharField(max_length=10)
-    active_from = models.DateTimeField()
-    is_active = models.BooleanField(default=True)
-
-    class Meta:
-        db_table = 'terms'
-
-class Notification(models.Model):
-    title = models.CharField(max_length=255)
-    content = models.TextField()
-    created_at = models.DateTimeField(auto_now_add=True)
-    is_read = models.BooleanField(default=False)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-
-    class Meta:
-        db_table = 'notifications'
-
 class Administrator(models.Model):
     name = models.CharField(max_length=255)
     email = models.EmailField(unique=True)
@@ -740,3 +803,268 @@ class Administrator(models.Model):
 
     def __str__(self):
         return self.name
+
+class StandardLeague(models.Model):
+    """
+    Entidade que representa uma Futliga Clássica (Padrão).
+    """
+    name = models.CharField(max_length=255, verbose_name='Nome')
+    image = models.ImageField(upload_to='futligas/standard/', null=True, blank=True, verbose_name='Imagem')
+    award_frequency = models.CharField(
+        max_length=20,
+        choices=[
+            ('daily', 'Diária'),
+            ('weekly', 'Semanal'),
+            ('monthly', 'Mensal')
+        ],
+        verbose_name='Frequência de Premiação'
+    )
+    weekday = models.IntegerField(
+        choices=[
+            (0, 'Segunda'),
+            (1, 'Terça'),
+            (2, 'Quarta'),
+            (3, 'Quinta'),
+            (4, 'Sexta'),
+            (5, 'Sábado'),
+            (6, 'Domingo')
+        ],
+        verbose_name='Dia da Semana'
+    )
+    plans = models.ManyToManyField('Plan', verbose_name='Planos')
+    players = models.IntegerField(verbose_name='Quantidade de Participantes')
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+    is_active = models.BooleanField(default=True, verbose_name='Ativo')
+
+    class Meta:
+        db_table = 'standard_leagues'
+        verbose_name = 'Futliga Padrão'
+        verbose_name_plural = 'Futligas Padrão'
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+
+class StandardLeaguePrize(models.Model):
+    """
+    Entidade que representa os prêmios de uma Futliga Padrão.
+    """
+    league = models.ForeignKey(StandardLeague, on_delete=models.CASCADE, related_name='prizes', verbose_name='Futliga')
+    position = models.IntegerField(verbose_name='Posição')
+    image = models.ImageField(upload_to='futligas/prizes/', null=True, blank=True, verbose_name='Imagem')
+    prize = models.CharField(max_length=255, verbose_name='Prêmio')
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'standard_league_prizes'
+        verbose_name = 'Prêmio de Futliga Padrão'
+        verbose_name_plural = 'Prêmios de Futliga Padrão'
+        ordering = ['position']
+        unique_together = ['league', 'position']
+
+    def __str__(self):
+        return f"{self.league.name} - {self.position}º Lugar"
+
+class CustomLeague(models.Model):
+    """
+    Entidade que representa uma Futliga de Jogadores (Personalizada).
+    """
+    name = models.CharField(max_length=255, verbose_name='Nome')
+    image = models.ImageField(upload_to='futligas/custom/', null=True, blank=True, verbose_name='Imagem')
+    privacy = models.CharField(
+        max_length=20,
+        choices=[
+            ('public', 'Pública'),
+            ('private', 'Privada')
+        ],
+        default='public',
+        verbose_name='Privacidade'
+    )
+    players = models.IntegerField(verbose_name='Quantidade de Participantes')
+    premium_players = models.IntegerField(verbose_name='Quantidade de Craques')
+    owner_premium = models.BooleanField(default=False, verbose_name='Dono Craque')
+    league_link = models.URLField(null=True, blank=True, verbose_name='Link do Grupo')
+    level = models.IntegerField(
+        choices=[
+            (1, 'Nível 1'),
+            (2, 'Nível 2'),
+            (3, 'Nível 3')
+        ],
+        default=1,
+        verbose_name='Nível'
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+    is_active = models.BooleanField(default=True, verbose_name='Ativo')
+
+    class Meta:
+        db_table = 'custom_leagues'
+        verbose_name = 'Futliga Personalizada'
+        verbose_name_plural = 'Futligas Personalizadas'
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+
+class CustomLeagueLevel(models.Model):
+    """
+    Entidade que representa um nível de configuração para Futligas Personalizadas.
+    """
+    name = models.CharField(max_length=255, verbose_name='Nome')
+    image = models.ImageField(upload_to='futligas/levels/', null=True, blank=True, verbose_name='Imagem')
+    players = models.IntegerField(verbose_name='Quantidade de Participantes')
+    premium_players = models.IntegerField(verbose_name='Quantidade de Craques')
+    owner_premium = models.BooleanField(default=False, verbose_name='Dono Craque')
+    order = models.IntegerField(default=0, verbose_name='Ordem')
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+    is_active = models.BooleanField(default=True, verbose_name='Ativo')
+
+    class Meta:
+        db_table = 'custom_league_levels'
+        verbose_name = 'Nível de Futliga'
+        verbose_name_plural = 'Níveis de Futliga'
+        ordering = ['order']
+
+    def __str__(self):
+        return self.name
+
+    def save(self, *args, **kwargs):
+        # Se não houver ordem definida, coloca como último
+        if not self.order:
+            last_order = CustomLeagueLevel.objects.aggregate(models.Max('order'))['order__max']
+            self.order = (last_order or 0) + 1
+        super().save(*args, **kwargs)
+
+class CustomLeaguePrize(models.Model):
+    """
+    Entidade que representa os prêmios de uma Futliga Personalizada.
+    """
+    league = models.ForeignKey(CustomLeague, on_delete=models.CASCADE, related_name='prizes', verbose_name='Futliga')
+    position = models.IntegerField(verbose_name='Posição')
+    image = models.ImageField(upload_to='futligas/prizes/', null=True, blank=True, verbose_name='Imagem')
+    prize = models.CharField(max_length=255, verbose_name='Prêmio')
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'custom_league_prizes'
+        verbose_name = 'Prêmio de Futliga Personalizada'
+        verbose_name_plural = 'Prêmios de Futliga Personalizada'
+        ordering = ['position']
+        unique_together = ['league', 'position']
+
+    def __str__(self):
+        return f'{self.league.name} - {self.position}º Lugar'
+
+class LeagueInvitation(models.Model):
+    """
+    Entidade que representa os convites para Futligas.
+    """
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='league_invitations', verbose_name='Usuário')
+    invitations = models.IntegerField(default=0, verbose_name='Quantidade de Convites')
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'league_invitations'
+        verbose_name = 'Convite de Futliga'
+        verbose_name_plural = 'Convites de Futliga'
+
+    def __str__(self):
+        return f'{self.user.name} - {self.invitations} convites'
+
+class Parameters(models.Model):
+    """
+    Entidade que representa os parâmetros do sistema.
+    """
+    # Login - 7 dias
+    day1_coins = models.IntegerField(verbose_name='Dia 1', default=0)
+    day2_coins = models.IntegerField(verbose_name='Dia 2', default=0)
+    day3_coins = models.IntegerField(verbose_name='Dia 3', default=0)
+    day4_coins = models.IntegerField(verbose_name='Dia 4', default=0)
+    day5_coins = models.IntegerField(verbose_name='Dia 5', default=0)
+    day6_coins = models.IntegerField(verbose_name='Dia 6', default=0)
+    day7_coins = models.IntegerField(verbose_name='Dia 7', default=0)
+    
+    # Premiação
+    reward_time = models.TimeField(verbose_name='Horário Premiação', null=True, blank=True)
+    
+    # Recompensas
+    watch_video_coins = models.IntegerField(verbose_name='Futcoins por Vídeo', default=0)
+    hit_prediction_coins = models.IntegerField(verbose_name='Futcoins por Acerto', default=0)
+    following_tiktok_coins = models.IntegerField(verbose_name='Futcoins por Seguir TikTok', default=0)
+    premium_upgrade_coins = models.IntegerField(verbose_name='Futcoins por Upgrade Premium', default=0)
+    consecutive_days_coins = models.IntegerField(verbose_name='Futcoins por Dias Seguidos', default=0)
+    
+    # Limites
+    daily_videos_limit = models.IntegerField(verbose_name='Limite de Vídeos Diários', default=0)
+    standard_leagues_participation = models.IntegerField(verbose_name='Participação em Futligas (Comum)', default=0)
+    ace_leagues_participation = models.IntegerField(verbose_name='Participação em Futligas (Craque)', default=0)
+    
+    # Outros
+    contact_email = models.EmailField(verbose_name='Email de Contato', null=True, blank=True)
+    api_key = models.CharField(verbose_name='Chave de API (Tiny)', max_length=255, null=True, blank=True)
+    
+    # Redes Sociais
+    facebook = models.URLField(verbose_name='Facebook', null=True, blank=True)
+    kwai = models.URLField(verbose_name='Kwai', null=True, blank=True)
+    instagram = models.URLField(verbose_name='Instagram', null=True, blank=True)
+    tiktok = models.URLField(verbose_name='TikTok', null=True, blank=True)
+    
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'parameters'
+        verbose_name = 'Parâmetro'
+        verbose_name_plural = 'Parâmetros'
+
+    def __str__(self):
+        return 'Parâmetros do Sistema'
+
+class Terms(models.Model):
+    """
+    Entidade que representa os termos de uso do sistema.
+    """
+    description = models.TextField(verbose_name='Descrição')
+    notify_changes = models.BooleanField(default=False, verbose_name='Notificar Mudanças')
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'terms'
+        verbose_name = 'Termo'
+        verbose_name_plural = 'Termos'
+
+    def __str__(self):
+        return f'Termos de Uso - {self.created_at.strftime("%d/%m/%Y")}'
+
+class Notifications(models.Model):
+    """
+    Entidade que representa as notificações do sistema.
+    """
+    STATUS_CHOICES = (
+        ('pending', 'Pendente'),
+        ('sent', 'Enviado'),
+        ('not_sent', 'Não Enviado'),
+    )
+
+    title = models.CharField(max_length=100)
+    message = models.TextField()
+    notification_type = models.CharField(max_length=20)
+    package = models.ForeignKey(FutcoinPackage, on_delete=models.CASCADE, null=True, blank=True)
+    send_at = models.DateTimeField(null=True, blank=True)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
+    error_message = models.TextField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.title
+
+    class Meta:
+        verbose_name = 'Notificação'
+        verbose_name_plural = 'Notificações'

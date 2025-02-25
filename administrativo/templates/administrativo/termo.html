@@ -91,7 +91,7 @@
                         </div>
                         <ul class="nav navbar-top-links navbar-right">
                             <li>
-                                <span class="m-r-sm text-muted welcome-message">Andrews Cristhian</span>
+                                <span class="m-r-sm text-muted welcome-message">{{ request.session.admin_name }}</span>
                             </li>
                             <li class="dropdown">
                                 <a class="dropdown-toggle count-info" data-toggle="dropdown" href="#">
@@ -127,18 +127,19 @@
                     <div class="row">
                         <div class="col-lg-12">
                             <div class="ibox-content">
-                                <form class="mt10">
+                                <form id="termoForm" class="mt10">
+                                    {% csrf_token %}
                                     <div class="form-group mtm10">
                                         <div class="col-lg-12">
                                             <label class="control-label">Termo</label>
-                                            <textarea class="form-control" name="textarea" id="textarea" rows="12"></textarea>
+                                            <textarea class="form-control" name="description" id="description" rows="12">{{ termo.description }}</textarea>
                                         </div>
                                         <div class="col-lg-12 mt15">
-                                            <div class="i-checks"><label> <input type="checkbox"> Notificar Mudanças</label></div>
+                                            <div class="i-checks"><label> <input type="checkbox" name="notify_changes" id="notify_changes" {% if termo.notify_changes %}checked{% endif %}> Notificar Mudanças</label></div>
                                         </div>
                                     </div>
                                     <div>
-                                        <button type="button" class="btn btn-success ml15" id="successToast"><i class="glyphicon glyphicon-save mr5"></i> Salvar</button> 
+                                        <button type="submit" class="btn btn-success ml15"><i class="glyphicon glyphicon-save mr5"></i> Salvar</button> 
                                     </div>
                                 </form>
                             </div>
@@ -160,5 +161,39 @@
         <script src="{% static 'administrativo/js/plugins/toastr/toastr.min.js' %}"></script>
         <script src="{% static 'administrativo/js/plugins/iCheck/icheck.min.js' %}"></script>
         <script src="{% static 'administrativo/js/settings.js' %}"></script>
+        <script>
+        $(document).ready(function() {
+            $('.i-checks').iCheck({
+                checkboxClass: 'icheckbox_square-green',
+                radioClass: 'iradio_square-green',
+            });
+
+            $('#termoForm').on('submit', function(e) {
+                e.preventDefault();
+                
+                var formData = {
+                    description: $('#description').val(),
+                    notify_changes: $('#notify_changes').is(':checked'),
+                    csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]').val()
+                };
+
+                $.ajax({
+                    url: '{% url "administrativo:termo" %}',
+                    type: 'POST',
+                    data: formData,
+                    success: function(response) {
+                        if (response.success) {
+                            toastr.success(response.message);
+                        } else {
+                            toastr.error(response.message);
+                        }
+                    },
+                    error: function() {
+                        toastr.error('Erro ao salvar o termo');
+                    }
+                });
+            });
+        });
+        </script>
     </body>
 </html>

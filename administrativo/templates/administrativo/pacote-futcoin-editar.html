@@ -138,7 +138,7 @@
                 </div>
                 <div class="row wrapper border-bottom white-bg page-heading">
                     <div class="col-lg-10">
-                        <h2>Novo Pacote</h2>
+                        <h2>Editar Pacote</h2>
                     </div>
                 </div>
                 <div class="wrapper wrapper-content">
@@ -154,7 +154,8 @@
                                         <div class="panel-body">
                                             <div class="row">
                                                 <div class="col-lg-6">
-                                                    <form class="mt10">
+                                                    <form class="mt10" id="package-form">
+                                                        {% csrf_token %}
                                                         <div class="form-group col-lg-12">
                                                             <div class="row">
                                                                 <div class="col-lg-4">
@@ -179,7 +180,7 @@
                                                                     </div>
                                                                 </div>
                                                                 <div class="col-lg-3 mt35">
-                                                                    <div class="i-checks"><label> <input type="checkbox"> Ativo</label></div>
+                                                                    <div class="i-checks"><label> <input type="checkbox" id="enabled"> Ativo</label></div>
                                                                 </div>
                                                             </div>
                                                         </div>                                    
@@ -321,8 +322,8 @@
                                 </div>
                             </div>
                             <div class="panel panel-default col-lg-12 mtm25 p15">
-                                <button type="button" class="btn btn-success ml20" id="successToast"><i class="glyphicon glyphicon-save mr5"></i> Salvar</button>
-                                <button type="button" class="btn btn-danger ml15"><i class="fa fa-ban mr5"></i> Cancelar</button>                                  
+                                <button type="submit" form="package-form" class="btn btn-success ml20"><i class="fa fa-save mr5"></i> Salvar</button>
+                                <a href="{% url 'administrativo:futcoins' %}" class="btn btn-danger ml15"><i class="fa fa-ban mr5"></i> Cancelar</a>
                             </div>
                         </div>
                     </div>
@@ -386,7 +387,28 @@
                 // Inicializa o datetimepicker
                 $('#datetimepicker, #datetimepicker2').datetimepicker({
                     format: 'DD/MM/YYYY HH:mm',
-                    locale: 'pt-br'
+                    locale: 'pt-br',
+                    icons: {
+                        time: 'fa fa-clock-o',
+                        date: 'fa fa-calendar',
+                        up: 'fa fa-chevron-up',
+                        down: 'fa fa-chevron-down',
+                        previous: 'fa fa-chevron-left',
+                        next: 'fa fa-chevron-right',
+                        today: 'fa fa-screenshot',
+                        clear: 'fa fa-trash',
+                        close: 'fa fa-remove'
+                    },
+                    sideBySide: true,
+                    useCurrent: false
+                });
+
+                // Lógica para garantir que a data final não seja menor que a inicial
+                $("#datetimepicker").on("change.datetimepicker", function (e) {
+                    $('#datetimepicker2').datetimepicker('minDate', e.date);
+                });
+                $("#datetimepicker2").on("change.datetimepicker", function (e) {
+                    $('#datetimepicker').datetimepicker('maxDate', e.date);
                 });
 
                 // Controle de visibilidade baseado no tipo
@@ -443,8 +465,37 @@
                     }
                 });
 
-                // Salvar pacote
-                $('#successToast').click(function() {
+                // Carrega os dados do pacote
+                var packageData = JSON.parse('{{ package_data|safe }}');
+                
+                // Preenche os campos do formulário com os dados
+                $('#nome').val(packageData.name);
+                $('#enabled').prop('checked', packageData.enabled).iCheck('update');
+                $('#tipo').val(packageData.package_type);
+                $('#etiqueta').val(packageData.label);
+                $('#id3 input').val(packageData.color_text_label).trigger('change');
+                $('#id4 input').val(packageData.color_background_label).trigger('change');
+                $('#preco-padrao').val(packageData.full_price);
+                $('#preco-promocional').val(packageData.promotional_price);
+                $('#conteudo').val(packageData.content);
+                $('#bonus').val(packageData.bonus);
+                $('#exibir-para').val(packageData.show_to);
+                $('#android-product-code').val(packageData.android_product_code);
+                $('#ios-product-code').val(packageData.ios_product_code);
+                $('#gateway-product-code').val(packageData.gateway_product_code);
+                
+                if (packageData.start_date) {
+                    $('#datetimepicker').datetimepicker('date', moment(packageData.start_date));
+                }
+                
+                if (packageData.end_date) {
+                    $('#datetimepicker2').datetimepicker('date', moment(packageData.end_date));
+                }
+
+                // Submit do formulário
+                $('#package-form').submit(function(e) {
+                    e.preventDefault();
+                    
                     // Validação dos campos obrigatórios
                     var nome = $('#nome').val();
                     var precoPadrao = $('#preco-padrao').val();
@@ -473,41 +524,35 @@
                         return;
                     }
 
-                    // Se passou pela validação, cria o FormData
                     var formData = new FormData();
                     
-                    // Dados gerais
-                    formData.append('csrfmiddlewaretoken', $('meta[name="csrf-token"]').attr('content'));
+                    // Adiciona os campos ao formData
                     formData.append('name', nome);
-                    formData.append('enabled', $('.i-checks input[type="checkbox"]').is(':checked'));
+                    formData.append('enabled', $('#enabled').is(':checked'));
                     formData.append('package_type', $('#tipo').val());
                     formData.append('label', $('#etiqueta').val());
                     formData.append('color_text_label', $('#id3 input').val());
                     formData.append('color_background_label', $('#id4 input').val());
-                    
-                    // Configurações
                     formData.append('full_price', precoPadrao);
                     formData.append('promotional_price', precoPromocional);
                     formData.append('content', conteudo);
                     formData.append('bonus', $('#bonus').val());
                     formData.append('show_to', $('#exibir-para').val());
-                    formData.append('start_date', $('#datetimepicker').val());
-                    formData.append('end_date', $('#datetimepicker2').val());
-                    
-                    // Códigos do produto
+                    formData.append('start_date', $('#datetimepicker input').val());
+                    formData.append('end_date', $('#datetimepicker2 input').val());
                     formData.append('android_product_code', $('#android-product-code').val());
                     formData.append('ios_product_code', $('#ios-product-code').val());
                     formData.append('gateway_product_code', $('#gateway-product-code').val());
-
+                    
                     // Imagem
-                    var imageFile = $('.input-image')[0].files[0];
+                    var imageFile = $('#image')[0].files[0];
                     if (imageFile) {
                         formData.append('image', imageFile);
                     }
 
                     // Envia os dados
                     $.ajax({
-                        url: "{% url 'administrativo:pacote_futcoin_novo' %}",
+                        url: "{% url 'administrativo:futcoin_editar' package.id %}",
                         type: 'POST',
                         data: formData,
                         processData: false,
@@ -523,14 +568,9 @@
                             }
                         },
                         error: function() {
-                            toastr.error('Erro ao criar pacote');
+                            toastr.error('Erro ao atualizar pacote');
                         }
                     });
-                });
-
-                // Botão cancelar
-                $('.btn-danger').click(function() {
-                    window.location.href = "{% url 'administrativo:futcoins' %}";
                 });
             });
         </script>

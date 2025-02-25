@@ -23,7 +23,67 @@
         <link href="{% static 'administrativo/css/custom.css' %}" rel="stylesheet">
 
         <!-- Favicon -->
-        <link rel="icon" href="img/futmundi.ico" type="image/png">
+        <link rel="icon" href="{% static 'administrativo/img/futmundi.ico' %}" type="image/png">
+
+        <style>
+            .form-group {
+                margin-bottom: 15px;
+            }
+            .form-control {
+                border-radius: 0;
+                box-shadow: none;
+                border: 1px solid #e5e6e7;
+            }
+            .select2-container {
+                width: 200px !important;
+            }
+            .select2-container .select2-selection--single {
+                height: 34px;
+                border-radius: 0;
+            }
+            .select2-container--default .select2-selection--single {
+                border: 1px solid #e5e6e7;
+            }
+            .select2-container--default .select2-selection--single .select2-selection__rendered {
+                line-height: 32px;
+            }
+            .select2-container--default .select2-selection--single .select2-selection__arrow {
+                height: 32px;
+            }
+            .input-group-text {
+                border-radius: 0;
+            }
+            .btn {
+                border-radius: 3px;
+                padding: 6px 12px;
+            }
+            .btn-success {
+                background-color: #1ab394;
+                border-color: #1ab394;
+            }
+            .btn-danger {
+                background-color: #ed5565;
+                border-color: #ed5565;
+            }
+            .form-row {
+                display: flex;
+                margin-bottom: 15px;
+            }
+            .form-row > div {
+                margin-right: 15px;
+            }
+            .form-row > div:last-child {
+                margin-right: 0;
+            }
+            .radio-row {
+                display: flex;
+                align-items: center;
+                margin-bottom: 15px;
+            }
+            .radio-row label {
+                margin-right: 20px;
+            }
+        </style>
     </head>
     <body>
         <div id="wrapper">
@@ -32,60 +92,60 @@
                     <ul class="nav metismenu" id="side-menu">
                         <li class="nav-header">
                             <div class="dropdown profile-element">
-                                <a href="{% url "administrativo:usuarios" %}">
+                                <a href="{% url 'administrativo:usuarios' %}">
                                     <img src="{% static 'administrativo/img/logo.svg' %}" alt="Futmundi logo">
                                 </a>
                             </div>
                             <div class="logo-element">
-                                <a href="{% url "administrativo:usuarios" %}">
+                                <a href="{% url 'administrativo:usuarios' %}">
                                     <img src="{% static 'administrativo/img/logosm.svg' %}" alt="Futmundi logo">
                                 </a>                            
                             </div>
                         </li>
                         <li class="active">
-                            <a href="{% url "administrativo:usuarios" %}"><i class="fa fa-user"></i> <span class="nav-label">Usuários</span></a>
+                            <a href="{% url 'administrativo:usuarios' %}"><i class="fa fa-user"></i> <span class="nav-label">Usuários</span></a>
                         </li>
                         <li>
                             <a href="#"><i class="fa fa-trophy"></i> <span class="nav-label">Campeonatos</span><span class="fa arrow"></span></a>
                             <ul class="nav nav-second-level collapse">
-                                <li><a href="{% url "administrativo:ambitos" %}">Âmbitos</a></li>
-                                <li><a href="{% url "administrativo:campeonatos" %}">Campeonatos</a></li>
-                                <li><a href="{% url "administrativo:templates" %}">Templates</a></li>
-                                <li><a href="{% url "administrativo:times" %}">Times</a></li>
+                                <li><a href="{% url 'administrativo:ambitos' %}">Âmbitos</a></li>
+                                <li><a href="{% url 'administrativo:campeonatos' %}">Campeonatos</a></li>
+                                <li><a href="{% url 'administrativo:templates' %}">Templates</a></li>
+                                <li><a href="{% url 'administrativo:times' %}">Times</a></li>
                             </ul>
                         </li>
                         <li>
                             <a href="#"><i class="fa fa-shopping-cart"></i> <span class="nav-label">Pacotes</span><span class="fa arrow"></span></a>
                             <ul class="nav nav-second-level collapse">
-                                <li><a href="{% url "administrativo:futcoins" %}">Futcoins</a></li>
-                                <li><a href="{% url "administrativo:planos" %}">Planos</a></li>
+                                <li><a href="{% url 'administrativo:futcoins' %}">Futcoins</a></li>
+                                <li><a href="{% url 'administrativo:planos' %}">Planos</a></li>
                             </ul>
                         </li>
                         <li>
                             <a href="#"><i class="fa fa-diamond"></i> <span class="nav-label">Futligas</span><span class="fa arrow"></span></a>
                             <ul class="nav nav-second-level collapse">
-                                <li><a href="{% url "administrativo:futligas_classicas" %}">Clássicas</a></li>
-                                <li><a href="{% url "administrativo:futligas_jogadores" %}">Jogadores</a></li>
+                                <li><a href="{% url 'administrativo:futligas_classicas' %}">Clássicas</a></li>
+                                <li><a href="{% url 'administrativo:futligas_jogadores' %}">Jogadores</a></li>
                             </ul>
                         </li>
                         <li>
                             <a href="#"><i class="fa fa-globe"></i> <span class="nav-label">Locais</span><span class="fa arrow"></span></a>
                             <ul class="nav nav-second-level collapse">
-                                <li><a href="{% url "administrativo:continentes" %}">Continentes</a></li>
-                                <li><a href="{% url "administrativo:paises" %}">Países</a></li>
-                                <li><a href="{% url "administrativo:estados" %}">Estados</a></li>
+                                <li><a href="{% url 'administrativo:continentes' %}">Continentes</a></li>
+                                <li><a href="{% url 'administrativo:paises' %}">Países</a></li>
+                                <li><a href="{% url 'administrativo:estados' %}">Estados</a></li>
                             </ul>
                         </li>
                         <li>
                             <a href="#"><i class="fa fa-gear"></i> <span class="nav-label">Configurações</span><span class="fa arrow"></span></a>
                             <ul class="nav nav-second-level collapse">
-                                <li><a href="{% url "administrativo:parametros" %}">Parâmetros</a></li>
-                                <li><a href="{% url "administrativo:termo" %}">Termo</a></li>
-                                <li><a href="{% url "administrativo:notificacoes" %}">Notificações</a></li>
+                                <li><a href="{% url 'administrativo:parametros' %}">Parâmetros</a></li>
+                                <li><a href="{% url 'administrativo:termo' %}">Termo</a></li>
+                                <li><a href="{% url 'administrativo:notificacoes' %}">Notificações</a></li>
                             </ul>
                         </li>
                         <li>
-                            <a href="{% url "administrativo:relatorios" %}"><i class="fa fa-pie-chart"></i> <span class="nav-label">Relatórios</span></a>
+                            <a href="{% url 'administrativo:relatorios' %}"><i class="fa fa-pie-chart"></i> <span class="nav-label">Relatórios</span></a>
                         </li>
                     </ul>
                 </div>
@@ -98,7 +158,7 @@
                         </div>
                         <ul class="nav navbar-top-links navbar-right">
                             <li>
-                                <span class="m-r-sm text-muted welcome-message">Andrews Cristhian</span>
+                                <span class="m-r-sm text-muted welcome-message">{{ request.session.admin_name }}</span>
                             </li>
                             <li class="dropdown">
                                 <a class="dropdown-toggle count-info" data-toggle="dropdown" href="#">
@@ -106,7 +166,7 @@
                                 </a>
                                 <ul class="dropdown-menu dropdown-alerts">
                                     <li>
-                                        <a href="{% url "administrativo:administradores" %}" class="dropdown-item">
+                                        <a href="{% url 'administrativo:administradores' %}" class="dropdown-item">
                                             <div>
                                                 <i class="fa fa-users"></i> Administradores
                                             </div>
@@ -114,7 +174,7 @@
                                     </li>
                                     <li class="dropdown-divider"></li>
                                     <li>
-                                        <a href="{% url "administrativo:login" %}" class="dropdown-item">
+                                        <a href="{% url 'administrativo:login' %}" class="dropdown-item">
                                             <div>
                                                 <i class="fa fa-sign-out"></i> Sair
                                             </div>
@@ -137,22 +197,23 @@
                                 <div class="row mt10">
                                     <div class="col-lg-4">
                                         <form class="mt10">
+                                            {% csrf_token %}
                                             <div class="form-group col-lg-12">
                                                 <div class="row">
                                                     <div class="col-lg-6 mtm20">
                                                         <label class="control-label" for="tipo">Tipo</label>
                                                         <select class="form-control js-example-basic-single" id="tipo" style="width: 80%">
-                                                            <option value="Geral">Geral</option>
-                                                            <option value="PacoteFutcoins">Pacote Futcoins</option>
-                                                            <option value="PacotePlano">Pacote Plano</option>
+                                                            <option value="generic">Geral</option>
+                                                            <option value="package_coins">Pacote Futcoins</option>
+                                                            <option value="package_plan">Pacote Plano</option>
                                                         </select>
                                                     </div>
                                                     <div class="col-lg-6 mtm20">
                                                         <label class="control-label" for="pacote">Pacote</label>
                                                         <select class="form-control js-example-basic-single" id="pacote" style="width: 80%">
-                                                            <option value="PacoteAtivo1">Pacote Ativo 1</option>
-                                                            <option value="PacoteAtivo2">Pacote Ativo 2</option>
-                                                            <option value="PacoteAtivo3">Pacote Ativo 3</option>
+                                                            {% for package in packages %}
+                                                                <option value="{{ package.id }}">{{ package.name }}</option>
+                                                            {% endfor %}
                                                         </select>
                                                     </div>
                                                 </div>
@@ -212,5 +273,84 @@
         <script src="{% static 'administrativo/js/plugins/tempusdominus/tempusdominus-bootstrap-4.min.js' %}"></script>   
         <script src="{% static 'administrativo/js/plugins/iCheck/icheck.min.js' %}"></script>
         <script src="{% static 'administrativo/js/settings.js' %}"></script>
+
+        <script>
+        $(document).ready(function() {
+            // Inicializa o Select2
+            $('.js-example-basic-single').select2();
+
+            // Inicializa o Datetime picker
+            $('#datetimepicker').datetimepicker({
+                format: 'DD/MM/YYYY HH:mm',
+                locale: 'pt-br'
+            });
+
+            // Inicializa o iCheck
+            $('.i-checks').iCheck({
+                checkboxClass: 'icheckbox_square-green',
+                radioClass: 'iradio_square-green',
+            });
+
+            // Controla a visibilidade do campo pacote
+            $('#tipo').on('change', function() {
+                var type = $(this).val();
+                if (type === 'generic') {
+                    $('#pacote').prop('disabled', true);
+                } else {
+                    $('#pacote').prop('disabled', false);
+                }
+            });
+
+            // Botão Salvar
+            $('#successToast').on('click', function() {
+                var titulo = $('#nome').val();
+                var mensagem = $('#mensagem').val();
+                var tipo = $('#tipo').val();
+                var pacote = $('#pacote').val();
+                var envioImediato = $('input[name="a"][value="option1"]').is(':checked');
+                var dataEnvio = $('#datetimepicker').val();
+
+                if (!titulo || !mensagem) {
+                    toastr.error('Por favor, preencha todos os campos obrigatórios');
+                    return;
+                }
+
+                // Prepara os dados para envio
+                var formData = {
+                    title: titulo,
+                    message: mensagem,
+                    notification_type: tipo,
+                    package: tipo !== 'generic' ? pacote : null,
+                    send_at: !envioImediato ? dataEnvio : null,
+                    csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val()
+                };
+
+                // Envia os dados via AJAX
+                $.ajax({
+                    url: '{% url "administrativo:notificacao_novo" %}',
+                    type: 'POST',
+                    data: formData,
+                    success: function(response) {
+                        if (response.success) {
+                            toastr.success(response.message);
+                            setTimeout(function() {
+                                window.location.href = '{% url "administrativo:notificacoes" %}';
+                            }, 1000);
+                        } else {
+                            toastr.error(response.message || 'Erro ao salvar a notificação');
+                        }
+                    },
+                    error: function() {
+                        toastr.error('Erro ao salvar a notificação');
+                    }
+                });
+            });
+
+            // Botão Cancelar
+            $('.btn-danger').on('click', function() {
+                window.location.href = '{% url "administrativo:notificacoes" %}';
+            });
+        });
+        </script>
     </body>
 </html>

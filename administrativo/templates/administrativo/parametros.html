@@ -17,7 +17,7 @@
         <!-- Custom -->      
         <link href="{% static 'administrativo/css/custom.css' %}" rel="stylesheet">
         <!-- Favicon -->
-        <link rel="icon" href="img/futmundi.ico" type="image/png">
+        <link rel="icon" href="{% static 'administrativo/img/futmundi.ico' %}" type="image/png">
     </head>
     <body>
         <div id="wrapper">
@@ -26,60 +26,60 @@
                     <ul class="nav metismenu" id="side-menu">
                         <li class="nav-header">
                             <div class="dropdown profile-element">
-                                <a href="{% url "administrativo:usuarios" %}">
+                                <a href="{% url 'administrativo:usuarios' %}">
                                     <img src="{% static 'administrativo/img/logo.svg' %}" alt="Futmundi logo">
                                 </a>
                             </div>
                             <div class="logo-element">
-                                <a href="{% url "administrativo:usuarios" %}">
+                                <a href="{% url 'administrativo:usuarios' %}">
                                     <img src="{% static 'administrativo/img/logosm.svg' %}" alt="Futmundi logo">
                                 </a>                            
                             </div>
                         </li>
                         <li class="active">
-                            <a href="{% url "administrativo:usuarios" %}"><i class="fa fa-user"></i> <span class="nav-label">Usuários</span></a>
+                            <a href="{% url 'administrativo:usuarios' %}"><i class="fa fa-user"></i> <span class="nav-label">Usuários</span></a>
                         </li>
                         <li>
                             <a href="#"><i class="fa fa-trophy"></i> <span class="nav-label">Campeonatos</span><span class="fa arrow"></span></a>
                             <ul class="nav nav-second-level collapse">
-                                <li><a href="{% url "administrativo:ambitos" %}">Âmbitos</a></li>
-                                <li><a href="{% url "administrativo:campeonatos" %}">Campeonatos</a></li>
-                                <li><a href="{% url "administrativo:templates" %}">Templates</a></li>
-                                <li><a href="{% url "administrativo:times" %}">Times</a></li>
+                                <li><a href="{% url 'administrativo:ambitos' %}">Âmbitos</a></li>
+                                <li><a href="{% url 'administrativo:campeonatos' %}">Campeonatos</a></li>
+                                <li><a href="{% url 'administrativo:templates' %}">Templates</a></li>
+                                <li><a href="{% url 'administrativo:times' %}">Times</a></li>
                             </ul>
                         </li>
                         <li>
                             <a href="#"><i class="fa fa-shopping-cart"></i> <span class="nav-label">Pacotes</span><span class="fa arrow"></span></a>
                             <ul class="nav nav-second-level collapse">
-                                <li><a href="{% url "administrativo:futcoins" %}">Futcoins</a></li>
-                                <li><a href="{% url "administrativo:planos" %}">Planos</a></li>
+                                <li><a href="{% url 'administrativo:futcoins' %}">Futcoins</a></li>
+                                <li><a href="{% url 'administrativo:planos' %}">Planos</a></li>
                             </ul>
                         </li>
                         <li>
                             <a href="#"><i class="fa fa-diamond"></i> <span class="nav-label">Futligas</span><span class="fa arrow"></span></a>
                             <ul class="nav nav-second-level collapse">
-                                <li><a href="{% url "administrativo:futligas_classicas" %}">Clássicas</a></li>
-                                <li><a href="{% url "administrativo:futligas_jogadores" %}">Jogadores</a></li>
+                                <li><a href="{% url 'administrativo:futligas_classicas' %}">Clássicas</a></li>
+                                <li><a href="{% url 'administrativo:futligas_jogadores' %}">Jogadores</a></li>
                             </ul>
                         </li>
                         <li>
                             <a href="#"><i class="fa fa-globe"></i> <span class="nav-label">Locais</span><span class="fa arrow"></span></a>
                             <ul class="nav nav-second-level collapse">
-                                <li><a href="{% url "administrativo:continentes" %}">Continentes</a></li>
-                                <li><a href="{% url "administrativo:paises" %}">Países</a></li>
-                                <li><a href="{% url "administrativo:estados" %}">Estados</a></li>
+                                <li><a href="{% url 'administrativo:continentes' %}">Continentes</a></li>
+                                <li><a href="{% url 'administrativo:paises' %}">Países</a></li>
+                                <li><a href="{% url 'administrativo:estados' %}">Estados</a></li>
                             </ul>
                         </li>
                         <li>
                             <a href="#"><i class="fa fa-gear"></i> <span class="nav-label">Configurações</span><span class="fa arrow"></span></a>
                             <ul class="nav nav-second-level collapse">
-                                <li><a href="{% url "administrativo:parametros" %}">Parâmetros</a></li>
-                                <li><a href="{% url "administrativo:termo" %}">Termo</a></li>
-                                <li><a href="{% url "administrativo:notificacoes" %}">Notificações</a></li>
+                                <li><a href="{% url 'administrativo:parametros' %}">Parâmetros</a></li>
+                                <li><a href="{% url 'administrativo:termo' %}">Termo</a></li>
+                                <li><a href="{% url 'administrativo:notificacoes' %}">Notificações</a></li>
                             </ul>
                         </li>
                         <li>
-                            <a href="{% url "administrativo:relatorios" %}"><i class="fa fa-pie-chart"></i> <span class="nav-label">Relatórios</span></a>
+                            <a href="{% url 'administrativo:relatorios' %}"><i class="fa fa-pie-chart"></i> <span class="nav-label">Relatórios</span></a>
                         </li>
                     </ul>
                 </div>
@@ -92,7 +92,7 @@
                         </div>
                         <ul class="nav navbar-top-links navbar-right">
                             <li>
-                                <span class="m-r-sm text-muted welcome-message">Andrews Cristhian</span>
+                                <span class="m-r-sm text-muted welcome-message">{{ request.session.admin_name }}</span>
                             </li>
                             <li class="dropdown">
                                 <a class="dropdown-toggle count-info" data-toggle="dropdown" href="#">
@@ -100,7 +100,7 @@
                                 </a>
                                 <ul class="dropdown-menu dropdown-alerts">
                                     <li>
-                                        <a href="{% url "administrativo:administradores" %}" class="dropdown-item">
+                                        <a href="{% url 'administrativo:administradores' %}" class="dropdown-item">
                                             <div>
                                                 <i class="fa fa-users"></i> Administradores
                                             </div>
@@ -108,7 +108,7 @@
                                     </li>
                                     <li class="dropdown-divider"></li>
                                     <li>
-                                        <a href="{% url "administrativo:login" %}" class="dropdown-item">
+                                        <a href="{% url 'administrativo:login' %}" class="dropdown-item">
                                             <div>
                                                 <i class="fa fa-sign-out"></i> Sair
                                             </div>
@@ -127,206 +127,213 @@
                 <div class="wrapper wrapper-content">
                     <div class="row">
                         <div class="col-lg-12">
-                            <div class="tabs-container">
-                                <ul class="nav nav-tabs" role="tablist">
-                                    <li><a class="nav-link active" data-toggle="tab" href="#login">Login</a></li>
-                                    <li><a class="nav-link" data-toggle="tab" href="#recompensas">Recompensas</a></li>
-                                    <li><a class="nav-link" data-toggle="tab" href="#limites">Limites</a></li>
-                                    <li><a class="nav-link" data-toggle="tab" href="#outros">Outros</a></li>
-									<li><a class="nav-link" data-toggle="tab" href="#redes">Redes Sociais</a></li>
-                                </ul>
-                                <div class="tab-content">
-                                    <div id="login" class="tab-pane active">
-                                        <div class="panel-body">
-                                            <div class="row">
-                                                <div class="col-lg-6">
-                                                    <div class="ibox-title">
-                                                        <h5>Recompensas </h5>
-                                                        <form class="mt10">
-                                                            <div class="form-group col-lg-12">
-                                                                <div class="row">
-                                                                    <div class="col-lg-4">
-                                                                        <input type="number" id="dia1" class="form-control" required>
-                                                                        <label class="form-control-placeholder" for="dia1">Dia 1 (f$)</label>
-                                                                    </div>
-                                                                    <div class="col-lg-4">
-                                                                        <input type="number" id="dia2" class="form-control" required>
-                                                                        <label class="form-control-placeholder" for="dia2">Dia 2 (f$)</label>
-                                                                    </div>
-                                                                </div>
-                                                            </div>   
-                                                            <div class="form-group col-lg-12">
-                                                                <div class="row">
-                                                                    <div class="col-lg-4">
-                                                                        <input type="number" id="dia1" class="form-control" required>
-                                                                        <label class="form-control-placeholder" for="dia3">Dia 3 (f$)</label>
-                                                                    </div>
-                                                                    <div class="col-lg-4">
-                                                                        <input type="number" id="dia2" class="form-control" required>
-                                                                        <label class="form-control-placeholder" for="dia4">Dia 4 (f$)</label>
-                                                                    </div>
-                                                                </div>
-                                                            </div> 
-                                                            <div class="form-group col-lg-12">
-                                                                <div class="row">
-                                                                    <div class="col-lg-4">
-                                                                        <input type="number" id="dia1" class="form-control" required>
-                                                                        <label class="form-control-placeholder" for="dia5">Dia 5 (f$)</label>
-                                                                    </div>
-                                                                    <div class="col-lg-4">
-                                                                        <input type="number" id="dia2" class="form-control" required>
-                                                                        <label class="form-control-placeholder" for="dia6">Dia 6 (f$)</label>
-                                                                    </div>
-                                                                </div>
-                                                            </div> 
-                                                            <div class="form-group col-lg-12">
-                                                                <div class="row">
-                                                                    <div class="col-lg-4">
-                                                                        <input type="number" id="dia1" class="form-control" required>
-                                                                        <label class="form-control-placeholder" for="dia7">Dia 7 (f$)</label>
-                                                                    </div>                                                                
-                                                                </div>
-                                                            </div>                                                                               
-                                                        </form>
-                                                    </div>
-                                                </div>
-                                                <div class="col-lg-6">
-                                                    <div class="ibox-title">
-                                                        <h5>Premiação </h5>
-                                                        <form class="mt10">                                                            
-                                                            <div class="form-group col-lg-12">
-                                                                <div class="row">                                                                    
-                                                                    <div class="form-group col-lg-4">
-                                                                        <label class="control-label" for="hora-premiacao">Horário Premiação </label>
-                                                                        <div class="input-group clockpicker" data-autoclose="true" style="width: 80%">
-                                                                            <input type="text" class="form-control">
-                                                                            <span class="input-group-addon">
-                                                                                <span class="fa fa-clock-o"></span>
-                                                                            </span>
+                            <form id="parametrosForm" method="POST">
+                                {% csrf_token %}
+                                <div class="tabs-container">
+                                    <ul class="nav nav-tabs" role="tablist">
+                                        <li><a class="nav-link active" data-toggle="tab" href="#login">Login</a></li>
+                                        <li><a class="nav-link" data-toggle="tab" href="#recompensas">Recompensas</a></li>
+                                        <li><a class="nav-link" data-toggle="tab" href="#limites">Limites</a></li>
+                                        <li><a class="nav-link" data-toggle="tab" href="#outros">Outros</a></li>
+                                        <li><a class="nav-link" data-toggle="tab" href="#redes">Redes Sociais</a></li>
+                                    </ul>
+                                    <div class="tab-content">
+                                        <div id="login" class="tab-pane active">
+                                            <div class="panel-body">
+                                                <div class="row">
+                                                    <div class="col-lg-6">
+                                                        <div class="ibox-title">
+                                                            <h5>Recompensas </h5>
+                                                            <div class="mt10">
+                                                                <div class="form-group col-lg-12">
+                                                                    <div class="row">
+                                                                        <div class="col-lg-4">
+                                                                            <input type="number" name="day1_coins" id="dia1" class="form-control" value="{{ params.day1_coins }}" required>
+                                                                            <label class="form-control-placeholder" for="dia1">Dia 1 (f$)</label>
+                                                                        </div>
+                                                                        <div class="col-lg-4">
+                                                                            <input type="number" name="day2_coins" id="dia2" class="form-control" value="{{ params.day2_coins }}" required>
+                                                                            <label class="form-control-placeholder" for="dia2">Dia 2 (f$)</label>
                                                                         </div>
                                                                     </div>
+                                                                </div>   
+                                                                <div class="form-group col-lg-12">
+                                                                    <div class="row">
+                                                                        <div class="col-lg-4">
+                                                                            <input type="number" name="day3_coins" id="dia3" class="form-control" value="{{ params.day3_coins }}" required>
+                                                                            <label class="form-control-placeholder" for="dia3">Dia 3 (f$)</label>
+                                                                        </div>
+                                                                        <div class="col-lg-4">
+                                                                            <input type="number" name="day4_coins" id="dia4" class="form-control" value="{{ params.day4_coins }}" required>
+                                                                            <label class="form-control-placeholder" for="dia4">Dia 4 (f$)</label>
+                                                                        </div>
+                                                                    </div>
+                                                                </div> 
+                                                                <div class="form-group col-lg-12">
+                                                                    <div class="row">
+                                                                        <div class="col-lg-4">
+                                                                            <input type="number" name="day5_coins" id="dia5" class="form-control" value="{{ params.day5_coins }}" required>
+                                                                            <label class="form-control-placeholder" for="dia5">Dia 5 (f$)</label>
+                                                                        </div>
+                                                                        <div class="col-lg-4">
+                                                                            <input type="number" name="day6_coins" id="dia6" class="form-control" value="{{ params.day6_coins }}" required>
+                                                                            <label class="form-control-placeholder" for="dia6">Dia 6 (f$)</label>
+                                                                        </div>
+                                                                    </div>
+                                                                </div> 
+                                                                <div class="form-group col-lg-12">
+                                                                    <div class="row">
+                                                                        <div class="col-lg-4">
+                                                                            <input type="number" name="day7_coins" id="dia7" class="form-control" value="{{ params.day7_coins }}" required>
+                                                                            <label class="form-control-placeholder" for="dia7">Dia 7 (f$)</label>
+                                                                        </div>                                                                    
+                                                                    </div>
+                                                                </div>                                                                               
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-lg-6">
+                                                        <div class="ibox-title">
+                                                            <h5>Premiação </h5>
+                                                            <div class="mt10">
+                                                                <div class="form-group col-lg-12">
+                                                                    <div class="row">                                                                    
+                                                                        <div class="form-group col-lg-4">
+                                                                            <label class="control-label" for="hora-premiacao">Horário Premiação </label>
+                                                                            <div class="input-group clockpicker" data-autoclose="true" style="width: 80%">
+                                                                                <input type="text" name="reward_time" class="form-control">
+                                                                                <span class="input-group-addon">
+                                                                                    <span class="fa fa-clock-o"></span>
+                                                                                </span>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>                                                                               
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div id="recompensas" class="tab-pane">
+                                            <div class="panel-body">
+                                                <div class="row">
+                                                    <div class="col-lg-6">
+                                                        <div class="ibox-title">
+                                                            <h5>Gratuítas </h5>
+                                                            <div class="mt15">
+                                                                <div class="form-group col-lg-6">
+                                                                    <input type="number" min="0" name="watch_video_coins" id="video" class="form-control input-medium" value="{{ params.watch_video_coins }}" required>
+                                                                    <label class="form-control-placeholder" for="video">Assistir vídeo</label>
                                                                 </div>
-                                                            </div>                                                                               
-                                                        </form>
+                                                                <div class="form-group col-lg-6">
+                                                                    <input type="number" min="0" name="hit_prediction_coins" id="acerto" class="form-control input-medium" value="{{ params.hit_prediction_coins }}" required>
+                                                                    <label class="form-control-placeholder" for="acerto">Acerto palpites</label>
+                                                                </div>
+                                                                <div class="form-group col-lg-6">
+                                                                    <input type="number" min="0" name="following_tiktok_coins" id="curtida" class="form-control input-medium" value="{{ params.following_tiktok_coins }}" required>
+                                                                    <label class="form-control-placeholder" for="curtida">Curtida fanpage</label>
+                                                                </div>                                                           
+                                                            </div>
+                                                        </div>                                                    
+                                                    </div>
+                                                    <div class="col-lg-6">
+                                                        <div class="ibox-title">
+                                                            <h5>Craques </h5>
+                                                            <div class="mt15">
+                                                                <div class="form-group col-lg-6">
+                                                                    <input type="number" min="0" name="premium_upgrade_coins" id="assinatura" class="form-control input-medium" value="{{ params.premium_upgrade_coins }}" required>
+                                                                    <label class="form-control-placeholder" for="assinatura">Assinatura craque</label>
+                                                                </div>
+                                                                <div class="form-group col-lg-6">
+                                                                    <input type="number" min="0" name="consecutive_days_coins" id="impulsos-lv3" class="form-control input-medium" value="{{ params.consecutive_days_coins }}" required>
+                                                                    <label class="form-control-placeholder" for="impulsos-lv3">Impulsos LV3 (%)</label>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div id="limites" class="tab-pane">
+                                            <div class="panel-body">
+                                                <div class="row">
+                                                    <div class="col-lg-4">
+                                                        <div class="mt10">
+                                                            <div class="form-group col-lg-8">
+                                                                <input type="number" min="0" name="daily_videos_limit" id="limite" class="form-control input-medium" value="{{ params.daily_videos_limit }}" required>
+                                                                <label class="form-control-placeholder" for="limite">Videos diários</label>
+                                                            </div>
+                                                            <div class="form-group col-lg-8">
+                                                                <input type="number" min="0" name="standard_leagues_participation" id="limite-comum" class="form-control input-medium" value="{{ params.standard_leagues_participation }}" required>
+                                                                <label class="form-control-placeholder" for="limite-comum">Participação futligas (Comum)</label>
+                                                            </div>
+                                                            <div class="form-group col-lg-8">
+                                                                <input type="number" min="0" name="ace_leagues_participation" id="limite-craque" class="form-control input-medium" value="{{ params.ace_leagues_participation }}" required>
+                                                                <label class="form-control-placeholder" for="limite-craque">Participação futligas (Craque)</label>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div id="outros" class="tab-pane">									
+                                            <div class="panel-body">
+                                                <div class="row">                                                
+                                                    <div class="col-lg-6">
+                                                        <div class="ibox-title">
+                                                            <h5>IDs </h5>
+                                                            <div class="mt15">
+                                                                <div class="form-group col-lg-6">
+                                                                    <input type="text" name="contact_email" id="contato" class="form-control input-medium" value="{{ params.contact_email }}">
+                                                                    <label class="form-control-placeholder" for="contato">Email Contato</label>
+                                                                </div>
+                                                                <div class="form-group col-lg-6">
+                                                                    <input type="text" name="api_key" id="api_key" class="form-control input-medium" value="{{ params.api_key }}">
+                                                                    <label class="form-control-placeholder" for="api_key">Chave de api (Tiny)</label>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div id="redes" class="tab-pane">
+                                            <div class="panel-body">
+                                                <div class="row">
+                                                    <div class="col-lg-4">
+                                                        <div class="mt10">
+                                                            <div class="form-group col-lg-8">
+                                                                <input type="text" name="facebook" id="facebook" class="form-control input-medium" value="{{ params.facebook }}" required>
+                                                                <label class="form-control-placeholder" for="facebook">Facebook</label>
+                                                            </div>
+                                                            <div class="form-group col-lg-8">
+                                                                <input type="text" name="kwai" id="kwai" class="form-control input-medium" value="{{ params.kwai }}" required>
+                                                                <label class="form-control-placeholder" for="kwai">Kwai</label>
+                                                            </div>
+                                                            <div class="form-group col-lg-8">
+                                                                <input type="text" name="instagram" id="instagram" class="form-control input-medium" value="{{ params.instagram }}" required>
+                                                                <label class="form-control-placeholder" for="instagram">Instagram</label>
+                                                            </div>
+                                                            <div class="form-group col-lg-8">
+                                                                <input type="text" name="tiktok" id="tiktok" class="form-control input-medium" value="{{ params.tiktok }}" required>
+                                                                <label class="form-control-placeholder" for="tiktok">Tiktok</label>
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
-                                    <div id="recompensas" class="tab-pane">
-                                        <div class="panel-body">
-                                            <div class="row">
-                                                <div class="col-lg-6">
-                                                    <div class="ibox-title">
-                                                        <h5>Gratuítas </h5>
-                                                        <form class="mt15">
-                                                            <div class="form-group col-lg-6">
-                                                                <input type="number" min="0" id="video" class="form-control input-medium" required>
-                                                                <label class="form-control-placeholder" for="video">Assistir vídeo</label>
-                                                            </div>
-                                                            <div class="form-group col-lg-6">
-                                                                <input type="number" min="0" id="acerto" class="form-control input-medium" required>
-                                                                <label class="form-control-placeholder" for="acerto">Acerto palpites</label>
-                                                            </div>
-                                                            <div class="form-group col-lg-6">
-                                                                <input type="number" min="0" id="curtida" class="form-control input-medium" required>
-                                                                <label class="form-control-placeholder" for="curtida">Curtida fanpage</label>
-                                                            </div>                                                           
-                                                        </form>
-                                                    </div>                                                    
-                                                </div>
-                                                <div class="col-lg-6">
-                                                    <div class="ibox-title">
-                                                        <h5>Craques </h5>
-                                                        <form class="mt15">
-                                                            <div class="form-group col-lg-6">
-                                                                <input type="number" min="0" id="assinatura" class="form-control input-medium" required>
-                                                                <label class="form-control-placeholder" for="assinatura">Assinatura craque</label>
-                                                            </div>
-                                                            <div class="form-group col-lg-6">
-                                                                <input type="number" min="0" id="impulsos-lv3" class="form-control input-medium" required>
-                                                                <label class="form-control-placeholder" for="impulsos-lv3">Impulsos LV3 (%)</label>
-                                                            </div>
-                                                        </form>
-                                                    </div>
-                                                </div>
-                                            </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-lg-12">
+                                        <div class="panel panel-default mtm5 p15">
+                                            <button type="submit" class="btn btn-success ml20"><i class="glyphicon glyphicon-save mr5"></i> Salvar</button>
                                         </div>
                                     </div>
-                                    <div id="limites" class="tab-pane">
-                                        <div class="panel-body">
-                                            <div class="row">
-                                                <div class="col-lg-4">
-                                                    <form class="mt10">
-                                                        <div class="form-group col-lg-8">
-                                                            <input type="number" min="0" id="limite" class="form-control input-medium" required>
-                                                            <label class="form-control-placeholder" for="limite">Videos diários</label>
-                                                        </div>
-                                                        <div class="form-group col-lg-8">
-                                                            <input type="number" min="0" id="limite-comum" class="form-control input-medium" required>
-                                                            <label class="form-control-placeholder" for="limite-comum">Participação futligas (Comum)</label>
-                                                        </div>
-                                                        <div class="form-group col-lg-8">
-                                                            <input type="number" min="0" id="limite-craque" class="form-control input-medium" required>
-                                                            <label class="form-control-placeholder" for="limite-craque">Participação futligas (Craque)</label>
-                                                        </div>
-                                                    </form>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div id="outros" class="tab-pane">									
-                                        <div class="panel-body">
-                                            <div class="row">                                                
-                                                <div class="col-lg-6">
-                                                    <div class="ibox-title">
-                                                        <h5>IDs </h5>
-                                                        <form class="mt15">
-															<div class="form-group col-lg-6">
-                                                                <input type="text" min="0" id="idgoogle" class="form-control input-medium">
-                                                                <label class="form-control-placeholder" for="contato">Email Contato</label>
-                                                            </div>
-                                                            <div class="form-group col-lg-6">
-                                                                <input type="text" min="0" id="idgoogle" class="form-control input-medium">
-                                                                <label class="form-control-placeholder" for="idgoogle">Chave de api (Tiny)</label>
-                                                            </div>
-                                                        </form>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-									<div id="redes" class="tab-pane">
-										<div class="panel-body">
-                                            <div class="row">
-                                                <div class="col-lg-4">
-                                                    <form class="mt10">
-                                                        <div class="form-group col-lg-8">
-                                                            <input type="text" min="0" id="facebook" class="form-control input-medium" required>
-                                                            <label class="form-control-placeholder" for="facebook">Facebook</label>
-                                                        </div>
-														<div class="form-group col-lg-8">
-                                                            <input type="text" min="0" id="kwai" class="form-control input-medium" required>
-                                                            <label class="form-control-placeholder" for="kwai">Kwai</label>
-                                                        </div>
-                                                        <div class="form-group col-lg-8">
-                                                            <input type="text" min="0" id="instagram" class="form-control input-medium" required>
-                                                            <label class="form-control-placeholder" for="instagram">Instagram</label>
-                                                        </div>
-                                                        <div class="form-group col-lg-8">
-                                                            <input type="text" min="0" id="tiktok" class="form-control input-medium" required>
-                                                            <label class="form-control-placeholder" for="tiktok">Tiktok</label>
-                                                        </div>
-                                                    </form>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-								</div>
-                            </div>
-                            <div class="panel panel-default col-lg-12 mtm5 p15">
-                                <button type="button" class="btn btn-success ml20" id="successToast"><i class="glyphicon glyphicon-save mr5"></i> Salvar</button>
-                            </div>
+                                </div>
+                            </form>
                         </div>
                     </div>
                 </div>
@@ -423,5 +430,32 @@
         <script src="{% static 'administrativo/js/plugins/clockpicker/clockpicker.js' %}"></script>
         <script src="{% static 'administrativo/js/plugins/jasny/jasny-bootstrap.min.js' %}"></script>
         <script src="{% static 'administrativo/js/settings.js' %}"></script>
+
+        <script>
+        $(document).ready(function() {
+            // Inicializa o clockpicker
+            $('.clockpicker').clockpicker();
+
+            $('#parametrosForm').on('submit', function(e) {
+                e.preventDefault();
+                
+                $.ajax({
+                    url: '{% url "administrativo:parametros" %}',
+                    type: 'POST',
+                    data: $(this).serialize(),
+                    success: function(response) {
+                        if (response.success) {
+                            toastr.success(response.message);
+                        } else {
+                            toastr.error(response.message);
+                        }
+                    },
+                    error: function() {
+                        toastr.error('Erro ao salvar os parâmetros');
+                    }
+                });
+            });
+        });
+        </script>
     </body>
 </html>

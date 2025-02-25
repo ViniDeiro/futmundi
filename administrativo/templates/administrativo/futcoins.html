@@ -4,6 +4,7 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="csrf-token" content="{{ csrf_token }}">
 
         <title>Futcoins</title>
 
@@ -132,7 +133,7 @@
                                         <a href="{% url "administrativo:pacote_futcoin_novo" %}" class="btn btn-success btn-sm" title="Novo"><i class="fa fa-plus"></i></a>
                                     </div>
                                     <div class="group-options-right mr10">
-                                        <a class="btn btn-default btn-sm" title="Excluir"><i class="glyphicon glyphicon-trash" data-toggle="modal" data-target="#modalAlert"></i></a>
+                                        <button type="button" class="btn btn-default btn-sm" title="Excluir em Massa" onclick="excluirSelecionados()"><i class="glyphicon glyphicon-trash"></i></button>
                                     </div>
                                     <div class="table-responsive">
                                         <table class="table table-striped table-bordered table-hover dataTables-pacotes" >
@@ -153,42 +154,35 @@
                                                 </tr>
                                             </thead>
                                             <tbody>
+                                                {% for package in packages %}
                                                 <tr>
                                                     <td class="center-middle">
                                                         <div class="checkbox checkbox-success">
-                                                            <input id="checkbox2" type="checkbox">
-                                                            <label for="checkbox2"></label>
+                                                            <input id="checkbox{{ package.id }}" type="checkbox" class="check-item" value="{{ package.id }}">
+                                                            <label for="checkbox{{ package.id }}"></label>
                                                         </div>
                                                     </td>
-                                                    <td>Ultimate</td>
-                                                    <td>Promocional</td>
-                                                    <td>R$ 29,99</td>
-                                                    <td>R$ 29,99</td>
-                                                    <td>01/01/2000</td>
+                                                    <td>{{ package.name }}</td>
+                                                    <td>{{ package.package_type }}</td>
+                                                    <td>R$ {{ package.full_price }}</td>
+                                                    <td>{% if package.promotional_price %}R$ {{ package.promotional_price }}{% endif %}</td>
+                                                    <td>{{ package.created_at|date:"d/m/Y" }}</td>
                                                     <td>
-                                                        <button type="button" class="btn btn-info btn-xs" title="Editar"><i class="glyphicon glyphicon-pencil"></i></button>
-                                                        <button type="button" class="btn btn-success btn-xs" title="Ativar/Desavivar"><i class="glyphicon glyphicon-ok"></i></button>
-                                                        <button type="button" class="btn btn-danger btn-xs" title="Excluir"><i class="glyphicon glyphicon-trash" data-toggle="modal" data-target="#modalAlert2"></i></button>
+                                                        <a href="{% url 'administrativo:futcoin_editar' package.id %}" class="btn btn-info btn-xs edit-btn" title="Editar" onclick="event.stopPropagation();">
+                                                            <i class="glyphicon glyphicon-pencil"></i>
+                                                        </a>
+                                                        <button type="button" class="btn btn-toggle-package btn-xs {% if package.enabled %}btn-danger{% else %}btn-success{% endif %}" 
+                                                                title="{% if package.enabled %}Desativar{% else %}Ativar{% endif %}" 
+                                                                data-id="{{ package.id }}"
+                                                                onclick="event.stopPropagation();">
+                                                            <i class="glyphicon glyphicon-{% if package.enabled %}remove{% else %}ok{% endif %}" style="color: white;"></i>
+                                                        </button>
+                                                        <button type="button" class="btn btn-danger btn-xs delete-btn" title="Excluir" data-id="{{ package.id }}" onclick="event.stopPropagation();">
+                                                            <i class="glyphicon glyphicon-trash"></i>
+                                                        </button>
                                                     </td>
                                                 </tr>
-                                                <tr>
-                                                    <td class="center-middle">
-                                                        <div class="checkbox checkbox-success">
-                                                            <input id="checkbox3" type="checkbox">
-                                                            <label for="checkbox3"></label>
-                                                        </div>
-                                                    </td>
-                                                    <td>Ultimate</td>
-                                                    <td>Promocional</td>
-                                                    <td>R$ 29,99</td>
-                                                    <td>R$ 29,99</td>
-                                                    <td>01/01/2000</td>
-                                                    <td>
-                                                        <button type="button" class="btn btn-info btn-xs" title="Editar"><i class="glyphicon glyphicon-pencil"></i></button>
-                                                        <button type="button" class="btn btn-success btn-xs" title="Ativar/Desavivar"><i class="glyphicon glyphicon-ok"></i></button>
-                                                        <button type="button" class="btn btn-danger btn-xs" title="Excluir"><i class="glyphicon glyphicon-trash" data-toggle="modal" data-target="#modalAlert2"></i></button>
-                                                    </td>
-                                                </tr>
+                                                {% endfor %}
                                             </tbody>
                                         </table>
                                     </div>
@@ -246,21 +240,200 @@
         <script src="{% static 'administrativo/js/inspinia.js' %}"></script>
         <script src="{% static 'administrativo/js/plugins/pace/pace.min.js' %}"></script>
         <script src="{% static 'administrativo/js/plugins/checkAll/checkAll.js' %}"></script>
+        <script src="{% static 'administrativo/js/plugins/toastr/toastr.min.js' %}"></script>
         <script src="{% static 'administrativo/js/page-level.js' %}"></script>
+
         <script>
             $(document).ready(function() {
-                var table = $('.dataTables-pacotes');
-                if (!$.fn.DataTable.isDataTable(table)) {
-                    table.DataTable({
-                        pageLength: 10,
-                        responsive: true,
-                        dom: '<"html5buttons"B>lTfgitp',
-                        buttons: [],
-                        language: {
-                            url: "//cdn.datatables.net/plug-ins/1.10.19/i18n/Portuguese-Brasil.json"
+                // Setup CSRF token for AJAX requests
+                $.ajaxSetup({
+                    headers: {
+                        'X-CSRFToken': $('meta[name="csrf-token"]').attr('content')
+                    }
+                });
+
+                // Configuração do Toastr
+                toastr.options = {
+                    "closeButton": true,
+                    "debug": false,
+                    "newestOnTop": false,
+                    "progressBar": true,
+                    "positionClass": "toast-top-right",
+                    "preventDuplicates": false,
+                    "onclick": null,
+                    "showDuration": "300",
+                    "hideDuration": "500",
+                    "timeOut": "1500",
+                    "extendedTimeOut": "500",
+                    "showEasing": "swing",
+                    "hideEasing": "linear",
+                    "showMethod": "fadeIn",
+                    "hideMethod": "fadeOut"
+                };
+
+                // Inicializa DataTable
+                var table = $('.dataTables-pacotes').DataTable({
+                    destroy: true,
+                    pageLength: 25,
+                    responsive: true,
+                    dom: '<"html5buttons"B>lTfgitp',
+                    buttons: [],
+                    language: {
+                        "sEmptyTable": "Nenhum registro encontrado",
+                        "sInfo": "Mostrando de _START_ até _END_ de _TOTAL_ registros",
+                        "sInfoEmpty": "Mostrando 0 até 0 de 0 registros",
+                        "sInfoFiltered": "(Filtrados de _MAX_ registros)",
+                        "sInfoPostFix": "",
+                        "sInfoThousands": ".",
+                        "sLengthMenu": "_MENU_ resultados por página",
+                        "sLoadingRecords": "Carregando...",
+                        "sProcessing": "Processando...",
+                        "sZeroRecords": "Nenhum registro encontrado",
+                        "sSearch": "Pesquisar",
+                        "oPaginate": {
+                            "sNext": "Próximo",
+                            "sPrevious": "Anterior",
+                            "sFirst": "Primeiro",
+                            "sLast": "Último"
+                        },
+                        "oAria": {
+                            "sSortAscending": ": Ordenar colunas de forma ascendente",
+                            "sSortDescending": ": Ordenar colunas de forma descendente"
+                        }
+                    }
+                });
+
+                // Excluir pacote individual
+                var packageIdToDelete = null;
+                $(document).on('click', '.delete-btn', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    packageIdToDelete = $(this).data('id');
+                    $('#modalAlert2').modal('show');
+                });
+
+                $('#modalAlert2 .btn-danger').off('click').on('click', function() {
+                    if (!packageIdToDelete) {
+                        toastr.error('Pacote não identificado');
+                        return;
+                    }
+
+                    var row = $('.delete-btn[data-id="' + packageIdToDelete + '"]').closest('tr');
+                    var btn = row.find('.delete-btn');
+                    
+                    btn.prop('disabled', true);
+
+                    $.ajax({
+                        url: '{% url "administrativo:futcoin_excluir" 0 %}'.replace('0', packageIdToDelete),
+                        type: 'POST',
+                        data: {
+                            'csrfmiddlewaretoken': '{{ csrf_token }}'
+                        },
+                        success: function(response) {
+                            $('#modalAlert2').modal('hide');
+                            if (response.success) {
+                                toastr.success('Pacote excluído com sucesso!');
+                                table.row(row).remove().draw(false);
+                            } else {
+                                toastr.error(response.message);
+                                btn.prop('disabled', false);
+                            }
+                        },
+                        error: function() {
+                            $('#modalAlert2').modal('hide');
+                            toastr.error('Erro ao excluir pacote');
+                            btn.prop('disabled', false);
                         }
                     });
+                });
+
+                // Excluir pacotes em massa
+                window.excluirSelecionados = function() {
+                    const ids = [];
+                    $('.check-item:checked').each(function() {
+                        ids.push($(this).val());
+                    });
+
+                    if (ids.length === 0) {
+                        toastr.warning('Selecione pelo menos um pacote para excluir');
+                        return;
+                    }
+
+                    $('#modalAlert').modal('show');
+                    $('#modalAlert .btn-danger').off('click').on('click', function() {
+                        $.ajax({
+                            url: "{% url 'administrativo:futcoin_excluir_em_massa' %}",
+                            type: 'POST',
+                            data: {
+                                'ids[]': ids,
+                                'csrfmiddlewaretoken': '{{ csrf_token }}'
+                            },
+                            success: function(response) {
+                                $('#modalAlert').modal('hide');
+                                if (response.success) {
+                                    toastr.success('Pacotes excluídos com sucesso!');
+                                    ids.forEach(function(id) {
+                                        var row = $('.delete-btn[data-id="' + id + '"]').closest('tr');
+                                        table.row(row).remove().draw(false);
+                                    });
+                                    if (response.errors && response.errors.length > 0) {
+                                        response.errors.forEach(function(error) {
+                                            toastr.warning(error);
+                                        });
+                                    }
+                                } else {
+                                    toastr.error(response.message);
+                                }
+                            },
+                            error: function() {
+                                $('#modalAlert').modal('hide');
+                                toastr.error('Erro ao excluir pacotes');
+                            }
+                        });
+                    });
                 }
+
+                // Ativar/Desativar pacote
+                $('.btn-toggle-package').off('click').on('click', function(e) {
+                    e.stopPropagation();  // Impede propagação do evento
+                    var btn = $(this);
+                    var packageId = btn.data('id');
+                    
+                    $.ajax({
+                        url: "{% url 'administrativo:futcoin_toggle_status' %}",
+                        type: 'POST',
+                        data: {
+                            id: packageId,
+                            csrfmiddlewaretoken: '{{ csrf_token }}'
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                var icon = btn.find('i');
+                                if (response.enabled) {
+                                    icon.removeClass('glyphicon-ok').addClass('glyphicon-remove');
+                                    btn.removeClass('btn-success').addClass('btn-danger');
+                                    btn.attr('title', 'Desativar');
+                                } else {
+                                    icon.removeClass('glyphicon-remove').addClass('glyphicon-ok');
+                                    btn.removeClass('btn-danger').addClass('btn-success');
+                                    btn.attr('title', 'Ativar');
+                                }
+                                toastr.success(response.message);
+                            } else {
+                                toastr.error(response.message);
+                            }
+                        },
+                        error: function() {
+                            toastr.error('Erro ao alterar status do pacote');
+                        }
+                    });
+                });
+
+                // Adiciona evento de clique específico para o botão de editar
+                $('.edit-btn').off('click').on('click', function(e) {
+                    e.stopPropagation();
+                    window.location.href = $(this).attr('href');
+                });
             });
         </script>
     </body>
