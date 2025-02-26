@@ -8,14 +8,13 @@ $(document).ready(function() {
         "positionClass": "toast-top-right",
         "preventDuplicates": false,
         "onclick": null,
-        "showDuration": "300",
-        "hideDuration": "500",
-        "timeOut": "1500",
-        "extendedTimeOut": "500",
+        "showDuration": "400",
+        "hideDuration": "1000",
+        "timeOut": 4000,
+        "extendedTimeOut": "400",
         "showEasing": "swing",
         "hideEasing": "linear",
-        "showMethod": "fadeIn",
-        "hideMethod": "fadeOut"
+        "showMethod": 'slideDown'
     };
 
     // Manipulação da imagem
@@ -66,73 +65,55 @@ $(document).ready(function() {
         
         // Se nenhum tipo selecionado, esconde todos os campos
         if (!tipo) {
-            $('#etiqueta').closest('.form-group').hide();
-            $('#id3, #id4').closest('.form-group').hide();
-            $('#datetimepicker, #datetimepicker2').closest('.form-group').hide();
+            $('.label-fields').hide();
             return;
         }
         
-        // Campos de etiqueta e cores sempre visíveis
-        $('#etiqueta').closest('.form-group').show();
-        $('#id3, #id4').closest('.form-group').show();
-        
-        // Datas de exibição apenas para tipo Promocional
+        // Campos de etiqueta e cores sempre visíveis para tipo Promocional
         if (tipo === 'Promocional') {
-            $('#datetimepicker, #datetimepicker2').closest('.form-group').show();
-            // Define valores padrão para promoção
-            $('#etiqueta').val('OFERTA ESPECIAL');
-            $('#id3 input').val('#FFFFFF').trigger('change');
-            $('#id4 input').val('#FF0000').trigger('change');
-            // Atualiza os colorpickers
-            $('#id3, #id4').colorpicker('update');
+            $('.label-fields').show();
+            // Define valores padrão para promoção se os campos estiverem vazios
+            if (!$('#etiqueta').val()) {
+                $('#etiqueta').val('OFERTA ESPECIAL');
+            }
+            if (!$('#id3 input').val()) {
+                $('#id3 input').val('#FFFFFF');
+            }
+            if (!$('#id4 input').val()) {
+                $('#id4 input').val('#FF0000');
+            }
         } else {
-            $('#datetimepicker, #datetimepicker2').closest('.form-group').hide();
-            // Limpa os campos se não for promocional
-            $('#etiqueta').val('');
-            $('#id3 input').val('#192639').trigger('change');
-            $('#id4 input').val('#FFFFFF').trigger('change');
-            // Atualiza os colorpickers
-            $('#id3, #id4').colorpicker('update');
+            $('.label-fields').hide();
         }
+        
+        // Atualiza os colorpickers
+        $('#id3, #id4').colorpicker('update');
     });
 
-    // Validação e envio do formulário
+    // Handler para o botão Salvar
     $('.btn-success').click(function() {
-        // Validação dos campos obrigatórios
-        var nome = $('#nome').val();
-        var precoPadrao = $('#preco-padrao').val();
-        var precoPromocional = $('#preco-promocional').val();
-
-        if (!nome || !precoPadrao || !precoPromocional) {
-            toastr.error('Por favor, preencha todos os campos obrigatórios');
-            return;
-        }
-
-        // Cria o FormData com os dados do formulário
+        var $btn = $(this);
         var formData = new FormData();
-        formData.append('name', nome);
+
+        // Coleta os dados do formulário
+        formData.append('name', $('#nome').val());
         formData.append('plan', $('#plano').val());
         formData.append('billing_cycle', $('#vigencia').val());
-        formData.append('enabled', $('.i-checks input').is(':checked').toString());
-        formData.append('package_type', $('#tipo').val());
+        formData.append('enabled', $('#enabled').is(':checked'));
+        formData.append('tipo', $('#tipo').val());
         formData.append('label', $('#etiqueta').val());
-        formData.append('color_text_label', $('#id3 input').val());
-        formData.append('color_background_label', $('#id4 input').val());
-        formData.append('full_price', precoPadrao);
-        formData.append('promotional_price', precoPromocional);
-        formData.append('color_text_billing_cycle', $('#id5 input').val());
+        formData.append('color_text_label', $('#id3').colorpicker('getValue'));
+        formData.append('color_background_label', $('#id4').colorpicker('getValue'));
+        formData.append('full_price', $('#preco-padrao').val());
+        formData.append('promotional_price', $('#preco-promocional').val());
+        formData.append('color_text_billing_cycle', $('#id5').colorpicker('getValue'));
         formData.append('show_to', $('#exibir-para').val());
         formData.append('promotional_price_validity', $('#val-preco-prom').val());
-        
-        var startDate = $('#datetimepicker').val();
-        var endDate = $('#datetimepicker2').val();
-        
-        if (startDate) {
-            formData.append('start_date', moment(startDate, 'DD/MM/YYYY HH:mm').format('YYYY-MM-DD HH:mm'));
-        }
-        if (endDate) {
-            formData.append('end_date', moment(endDate, 'DD/MM/YYYY HH:mm').format('YYYY-MM-DD HH:mm'));
-        }
+        formData.append('start_date', $('#datetimepicker').val());
+        formData.append('end_date', $('#datetimepicker2').val());
+        formData.append('android_product_code', $('#android-product-code').val());
+        formData.append('ios_product_code', $('#ios-product-code').val());
+        formData.append('gateway_product_code', $('#gateway-product-code').val());
 
         // Adiciona a imagem se houver
         var imageFile = $('#image')[0].files[0];
@@ -140,8 +121,20 @@ $(document).ready(function() {
             formData.append('image', imageFile);
         }
 
-        // Desabilita o botão durante o envio
-        var $btn = $(this);
+        // Validação dos campos obrigatórios
+        if (!$('#nome').val()) {
+            toastr.error('O campo Nome é obrigatório');
+            return;
+        }
+        if (!$('#preco-padrao').val()) {
+            toastr.error('O campo Preço Padrão é obrigatório');
+            return;
+        }
+        if ($('#tipo').val() === 'Promocional' && !$('#etiqueta').val()) {
+            toastr.error('O campo Etiqueta é obrigatório para pacotes promocionais');
+            return;
+        }
+
         $btn.prop('disabled', true);
 
         // Envia os dados
@@ -151,6 +144,9 @@ $(document).ready(function() {
             data: formData,
             processData: false,
             contentType: false,
+            headers: {
+                'X-CSRFToken': $('meta[name="csrf-token"]').attr('content')
+            },
             success: function(response) {
                 if (response.success) {
                     toastr.success(response.message);

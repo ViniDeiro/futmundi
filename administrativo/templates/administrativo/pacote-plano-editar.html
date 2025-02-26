@@ -10,49 +10,56 @@
 <script>
     $(document).ready(function() {
         // Preenche os dados do plano
-        $('#nome').val("{{ plan.name|escapejs }}");
-        $('#plano').val("{{ plan.plan|escapejs }}");
-        $('#vigencia').val("{{ plan.billing_cycle|escapejs }}");
-        $('.i-checks input').prop('checked', {{ plan.enabled|yesno:"true,false" }});
-        $('#tipo').val("{{ plan.package_type|escapejs }}");
-        $('#etiqueta').val("{{ plan.label|default:''|escapejs }}");
-        $('#id3 input').val("{{ plan.color_text_label|default:'#000000'|escapejs }}");
-        $('#id4 input').val("{{ plan.color_background_label|default:'#FFFFFF'|escapejs }}");
-        $('#preco-padrao').val("{{ plan.full_price|escapejs }}");
-        $('#preco-promocional').val("{{ plan.promotional_price|default:''|escapejs }}");
-        $('#id5 input').val("{{ plan.color_text_billing_cycle|default:'#192639'|escapejs }}");
-        $('#exibir-para').val("{{ plan.show_to|escapejs }}");
-        $('#val-preco-prom').val("{{ plan.promotional_price_validity|default:''|escapejs }}");
+        const planData = JSON.parse('{{ plan_data|safe }}');
         
-        {% if plan.start_date %}
-        $('#datetimepicker').val("{{ plan.start_date|date:'d/m/Y H:i'|escapejs }}");
-        {% endif %}
+        $('#nome').val(planData.name);
+        $('#plano').val(planData.plan);
+        $('#vigencia').val(planData.billing_cycle);
+        $('#enabled').prop('checked', planData.enabled);
+        $('#tipo').val(planData.package_type);
+        $('#etiqueta').val(planData.label || '');
+        $('#id3 input').val(planData.color_text_label || '#000000');
+        $('#id4 input').val(planData.color_background_label || '#FFFFFF');
+        $('#preco-padrao').val(planData.full_price);
+        $('#preco-promocional').val(planData.promotional_price || '');
+        $('#id5 input').val(planData.color_text_billing_cycle || '#192639');
+        $('#exibir-para').val(planData.show_to);
+        $('#val-preco-prom').val(planData.promotional_price_validity || '');
         
-        {% if plan.end_date %}
-        $('#datetimepicker2').val("{{ plan.end_date|date:'d/m/Y H:i'|escapejs }}");
-        {% endif %}
+        if (planData.start_date) {
+            $('#datetimepicker').val(planData.start_date);
+        }
         
-        {% if plan.image %}
-        $('#image-preview').html(`
-            <img src="{{ plan.image.url }}" style="width: 48px; height: 48px; object-fit: contain; cursor: pointer;" onclick="document.getElementById('image').click()">
-            <button type="button" class="btn btn-danger btn-xs" id="remove_image_btn" style="position: absolute; bottom: -7px; right: -30px;">
-                <i class="fa fa-trash"></i>
-            </button>
-        `);
-        $('#image-preview').css('margin-top', '-7px');
+        if (planData.end_date) {
+            $('#datetimepicker2').val(planData.end_date);
+        }
         
-        // Adiciona handler para o botão de remover
-        $('#remove_image_btn').on('click', function() {
-            $('#image').val('');
-            $('#image-preview').html('<i class="fa fa-file-image-o" style="font-size: 48px; color: #ccc; cursor: pointer;" onclick="document.getElementById(\'image\').click()"></i>');
-        });
-        {% endif %}
+        if (planData.image) {
+            $('#image-preview').html(`
+                <img src="${planData.image}" style="width: 48px; height: 48px; object-fit: contain; cursor: pointer;" onclick="document.getElementById('image').click()">
+                <button type="button" class="btn btn-danger btn-xs" id="remove_image_btn" style="position: absolute; bottom: -7px; right: -30px;">
+                    <i class="fa fa-trash"></i>
+                </button>
+            `);
+            $('#image-preview').css('margin-top', '-7px');
+            
+            // Adiciona handler para o botão de remover
+            $('#remove_image_btn').on('click', function() {
+                $('#image').val('');
+                $('#image-preview').html('<i class="fa fa-file-image-o" style="font-size: 48px; color: #ccc; cursor: pointer;" onclick="document.getElementById(\'image\').click()"></i>');
+            });
+        }
         
         // Atualiza os colorpickers
         $('#id3, #id4, #id5').colorpicker('update');
         
         // Dispara o evento change do tipo para ajustar a visibilidade dos campos
         $('#tipo').trigger('change');
+        
+        // Garante que os campos de etiqueta sejam exibidos quando o tipo for promocional
+        if (planData.package_type === 'promotional') {
+            $('.label-fields').show();
+        }
     });
 </script>
 {% endblock %} 

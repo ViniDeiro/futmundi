@@ -1,6 +1,7 @@
 from django.db import models
 from django.utils import timezone
 from django.templatetags.static import static
+from django.db.models import Q
 
 class User(models.Model):
     PLAN_CHOICES = [
@@ -509,14 +510,14 @@ class Team(models.Model):
         """
         Verifica se o time pode ser excluído.
         """
-        return not Championship.objects.filter(teams=self).exists()
+        return not self.team_championships.exists()
 
     def get_related_data(self):
         """
         Retorna dados relacionados ao time.
         """
         return {
-            'championships': list(Championship.objects.filter(teams=self).values('id', 'name')),
+            'championships': list(self.team_championships.values('id', 'name')),
             'players': list(self.player_set.values('id', 'name'))
         }
 
@@ -530,9 +531,12 @@ class Team(models.Model):
 
     def has_championships(self):
         """
-        Verifica se o time tem campeonatos vinculados.
+        Verifica se o time tem campeonatos vinculados ou está em partidas.
         """
-        return Championship.objects.filter(teams=self).exists()
+        return (
+            self.team_championships.exists() or
+            ChampionshipMatch.objects.filter(Q(home_team=self) | Q(away_team=self)).exists()
+        )
 
     def save(self, *args, **kwargs):
         # Se for seleção, garante que o estado seja None

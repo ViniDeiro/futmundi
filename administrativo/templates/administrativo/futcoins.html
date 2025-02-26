@@ -245,111 +245,47 @@
 
         <script>
             $(document).ready(function() {
-                // Setup CSRF token for AJAX requests
-                $.ajaxSetup({
-                    headers: {
-                        'X-CSRFToken': $('meta[name="csrf-token"]').attr('content')
-                    }
-                });
-
-                // Configuração do Toastr
+                // Configurações do toastr
                 toastr.options = {
-                    "closeButton": true,
-                    "debug": false,
-                    "newestOnTop": false,
-                    "progressBar": true,
-                    "positionClass": "toast-top-right",
-                    "preventDuplicates": false,
-                    "onclick": null,
-                    "showDuration": "300",
-                    "hideDuration": "500",
-                    "timeOut": "1500",
-                    "extendedTimeOut": "500",
-                    "showEasing": "swing",
-                    "hideEasing": "linear",
-                    "showMethod": "fadeIn",
-                    "hideMethod": "fadeOut"
+                    closeButton: true,
+                    debug: false,
+                    progressBar: true,
+                    preventDuplicates: false,
+                    positionClass: "toast-top-right",
+                    onclick: null,
+                    showDuration: "400",
+                    hideDuration: "1000",
+                    timeOut: 4000,
+                    extendedTimeOut: "400",
+                    showEasing: "swing",
+                    hideEasing: "linear",
+                    showMethod: 'slideDown'
                 };
 
-                // Inicializa DataTable
-                var table = $('.dataTables-pacotes').DataTable({
-                    destroy: true,
-                    pageLength: 25,
-                    responsive: true,
-                    dom: '<"html5buttons"B>lTfgitp',
-                    buttons: [],
-                    language: {
-                        "sEmptyTable": "Nenhum registro encontrado",
-                        "sInfo": "Mostrando de _START_ até _END_ de _TOTAL_ registros",
-                        "sInfoEmpty": "Mostrando 0 até 0 de 0 registros",
-                        "sInfoFiltered": "(Filtrados de _MAX_ registros)",
-                        "sInfoPostFix": "",
-                        "sInfoThousands": ".",
-                        "sLengthMenu": "_MENU_ resultados por página",
-                        "sLoadingRecords": "Carregando...",
-                        "sProcessing": "Processando...",
-                        "sZeroRecords": "Nenhum registro encontrado",
-                        "sSearch": "Pesquisar",
-                        "oPaginate": {
-                            "sNext": "Próximo",
-                            "sPrevious": "Anterior",
-                            "sFirst": "Primeiro",
-                            "sLast": "Último"
-                        },
-                        "oAria": {
-                            "sSortAscending": ": Ordenar colunas de forma ascendente",
-                            "sSortDescending": ": Ordenar colunas de forma descendente"
-                        }
-                    }
-                });
-
-                // Excluir pacote individual
-                var packageIdToDelete = null;
-                $(document).on('click', '.delete-btn', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    packageIdToDelete = $(this).data('id');
-                    $('#modalAlert2').modal('show');
-                });
-
-                $('#modalAlert2 .btn-danger').off('click').on('click', function() {
-                    if (!packageIdToDelete) {
-                        toastr.error('Pacote não identificado');
-                        return;
-                    }
-
-                    var row = $('.delete-btn[data-id="' + packageIdToDelete + '"]').closest('tr');
-                    var btn = row.find('.delete-btn');
-                    
-                    btn.prop('disabled', true);
-
-                    $.ajax({
-                        url: '{% url "administrativo:futcoin_excluir" 0 %}'.replace('0', packageIdToDelete),
-                        type: 'POST',
-                        data: {
-                            'csrfmiddlewaretoken': '{{ csrf_token }}'
-                        },
-                        success: function(response) {
-                            $('#modalAlert2').modal('hide');
-                            if (response.success) {
-                                toastr.success('Pacote excluído com sucesso!');
-                                table.row(row).remove().draw(false);
-                            } else {
-                                toastr.error(response.message);
-                                btn.prop('disabled', false);
-                            }
-                        },
-                        error: function() {
-                            $('#modalAlert2').modal('hide');
-                            toastr.error('Erro ao excluir pacote');
-                            btn.prop('disabled', false);
+                // Inicializa DataTables
+                var table = $('.dataTables-pacotes');
+                if (!$.fn.DataTable.isDataTable(table)) {
+                    table = table.DataTable({
+                        pageLength: 10,
+                        responsive: true,
+                        dom: '<"html5buttons"B>lTfgitp',
+                        buttons: [],
+                        language: {
+                            url: "//cdn.datatables.net/plug-ins/1.10.19/i18n/Portuguese-Brasil.json"
                         }
                     });
+                } else {
+                    table = table.DataTable();
+                }
+
+                // Checkbox "Selecionar todos"
+                $('.checkAll').on('change', function() {
+                    $('.check-item').prop('checked', $(this).prop('checked'));
                 });
 
-                // Excluir pacotes em massa
+                // Handler para excluir em massa
                 window.excluirSelecionados = function() {
-                    const ids = [];
+                    var ids = [];
                     $('.check-item:checked').each(function() {
                         ids.push($(this).val());
                     });
@@ -366,21 +302,16 @@
                             type: 'POST',
                             data: {
                                 'ids[]': ids,
-                                'csrfmiddlewaretoken': '{{ csrf_token }}'
+                                'csrfmiddlewaretoken': $('meta[name="csrf-token"]').attr('content')
                             },
                             success: function(response) {
                                 $('#modalAlert').modal('hide');
                                 if (response.success) {
-                                    toastr.success('Pacotes excluídos com sucesso!');
+                                    toastr.success(response.message);
                                     ids.forEach(function(id) {
-                                        var row = $('.delete-btn[data-id="' + id + '"]').closest('tr');
-                                        table.row(row).remove().draw(false);
+                                        table.row($('.check-item[value="' + id + '"]').closest('tr')).remove().draw(false);
                                     });
-                                    if (response.errors && response.errors.length > 0) {
-                                        response.errors.forEach(function(error) {
-                                            toastr.warning(error);
-                                        });
-                                    }
+                                    $('.checkAll').prop('checked', false);
                                 } else {
                                     toastr.error(response.message);
                                 }
@@ -391,11 +322,45 @@
                             }
                         });
                     });
-                }
+                };
 
-                // Ativar/Desativar pacote
-                $('.btn-toggle-package').off('click').on('click', function(e) {
-                    e.stopPropagation();  // Impede propagação do evento
+                // Handler para excluir pacote individual
+                $('.delete-btn').on('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    var packageId = $(this).data('id');
+                    var row = $(this).closest('tr');
+                    
+                    $('#modalAlert2').modal('show');
+                    $('#modalAlert2 .btn-danger').off('click').on('click', function() {
+                        $.ajax({
+                            url: "{% url 'administrativo:futcoin_excluir' 0 %}".replace('0', packageId),
+                            type: 'POST',
+                            headers: {
+                                'X-CSRFToken': $('meta[name="csrf-token"]').attr('content')
+                            },
+                            success: function(response) {
+                                $('#modalAlert2').modal('hide');
+                                if (response.success) {
+                                    toastr.success(response.message);
+                                    table.row(row).remove().draw(false);
+                                } else {
+                                    toastr.error(response.message);
+                                }
+                            },
+                            error: function() {
+                                $('#modalAlert2').modal('hide');
+                                toastr.error('Erro ao excluir pacote');
+                            }
+                        });
+                    });
+                });
+
+                // Handler para alternar status
+                $('.btn-toggle-package').on('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
                     var btn = $(this);
                     var packageId = btn.data('id');
                     
@@ -403,22 +368,21 @@
                         url: "{% url 'administrativo:futcoin_toggle_status' %}",
                         type: 'POST',
                         data: {
-                            id: packageId,
-                            csrfmiddlewaretoken: '{{ csrf_token }}'
+                            'id': packageId,
+                            'csrfmiddlewaretoken': $('meta[name="csrf-token"]').attr('content')
                         },
                         success: function(response) {
                             if (response.success) {
-                                var icon = btn.find('i');
-                                if (response.enabled) {
-                                    icon.removeClass('glyphicon-ok').addClass('glyphicon-remove');
-                                    btn.removeClass('btn-success').addClass('btn-danger');
-                                    btn.attr('title', 'Desativar');
-                                } else {
-                                    icon.removeClass('glyphicon-remove').addClass('glyphicon-ok');
-                                    btn.removeClass('btn-danger').addClass('btn-success');
-                                    btn.attr('title', 'Ativar');
-                                }
                                 toastr.success(response.message);
+                                if (response.enabled) {
+                                    btn.removeClass('btn-success').addClass('btn-danger')
+                                       .attr('title', 'Desativar')
+                                       .find('i').removeClass('glyphicon-ok').addClass('glyphicon-remove');
+                                } else {
+                                    btn.removeClass('btn-danger').addClass('btn-success')
+                                       .attr('title', 'Ativar')
+                                       .find('i').removeClass('glyphicon-remove').addClass('glyphicon-ok');
+                                }
                             } else {
                                 toastr.error(response.message);
                             }

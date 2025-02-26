@@ -1,0 +1,43 @@
+.image-preview-container {
+    position: relative;
+    display: inline-block;
+}
+
+.preview-image {
+    max-width: 100px;
+    max-height: 100px;
+    object-fit: contain;
+}
+
+.remove-image,
+.remove-prize-image {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    padding: 2px 5px;
+    border-radius: 50%;
+}
+
+.prize-image-preview {
+    cursor: pointer;
+    width: 100px;
+    height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px dashed #ccc;
+    margin: 5px;
+}
+
+.prize-image-preview i {
+    font-size: 24px;
+    color: #ccc;
+}
+
+#prizes-table .form-control {
+    width: 100px;
+}
+
+#prizes-table td {
+    vertical-align: middle;
+} 

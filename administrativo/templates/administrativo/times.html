@@ -197,7 +197,7 @@
                         {% csrf_token %}
                         <div class="modal-body">
                             <div class="form-group">
-                                <label for="images">Selecione as Imagens</label>
+                                <label for="images">Selecione as Imagens ou Pasta</label>
                                 <div class="fileinput fileinput-new input-group" data-provides="fileinput">
                                     <div class="form-control" data-trigger="fileinput">
                                         <i class="fa fa-file fileinput-exists"></i>
@@ -205,9 +205,14 @@
                                     </div>
                                     <div class="input-group-append">
                                         <span class="input-group-text btn btn-default btn-file">
-                                            <span class="fileinput-new">Selecionar imagens</span>
+                                            <span class="fileinput-new">Selecionar arquivos</span>
                                             <span class="fileinput-exists">Alterar</span>
                                             <input type="file" name="images" accept="image/*" multiple required/>
+                                        </span>
+                                        <span class="input-group-text btn btn-default btn-file ml-2">
+                                            <span class="fileinput-new">Selecionar pasta</span>
+                                            <span class="fileinput-exists">Alterar</span>
+                                            <input type="file" name="images" accept="image/*" webkitdirectory directory/>
                                         </span>
                                     </div>
                                 </div>
@@ -218,7 +223,12 @@
                                     <li><strong>Nome do arquivo:</strong> Deve ser igual ao nome do time</li>
                                     <li><strong>Formatos aceitos:</strong> PNG, JPG, JPEG</li>
                                     <li><strong>Tamanho máximo:</strong> 2MB por arquivo</li>
-                                    <li><strong>Seleção múltipla:</strong> Você pode selecionar vários arquivos de uma vez</li>
+                                    <li><strong>Seleção de arquivos:</strong>
+                                        <ul>
+                                            <li>Clique normal: seleciona múltiplos arquivos</li>
+                                            <li>CTRL + Clique: seleciona uma pasta completa</li>
+                                        </ul>
+                                    </li>
                                 </ul>
                             </div>
                         </div>
@@ -343,6 +353,42 @@
                     });
                 });
 
+                // Configuração do input de arquivo para aceitar pastas
+                $('input[name="images"]').on('click', function(e) {
+                    if (e.ctrlKey || e.metaKey) {
+                        $(this).attr('webkitdirectory', 'true');
+                        $(this).attr('directory', 'true');
+                    } else {
+                        $(this).removeAttr('webkitdirectory');
+                        $(this).removeAttr('directory');
+                    }
+                });
+
+                // Atualiza o texto do input quando arquivos são selecionados
+                $('input[name="images"]').on('change', function() {
+                    var files = this.files;
+                    var fileCount = files.length;
+                    var text = '';
+
+                    if (fileCount > 0) {
+                        if (this.hasAttribute('webkitdirectory')) {
+                            // Conta quantas pastas diferentes existem
+                            var folders = new Set();
+                            for (var i = 0; i < files.length; i++) {
+                                var path = files[i].webkitRelativePath;
+                                if (path) {
+                                    folders.add(path.split('/')[0]);
+                                }
+                            }
+                            text = folders.size + ' pasta(s) selecionada(s) com ' + fileCount + ' arquivo(s)';
+                        } else {
+                            text = fileCount + ' arquivo(s) selecionado(s)';
+                        }
+                    }
+
+                    $(this).closest('.fileinput').find('.fileinput-filename').text(text);
+                });
+
                 // Mensagens do Django
                 {% if messages %}
                     {% for message in messages %}
@@ -364,17 +410,27 @@
                         success: function(response) {
                             $('#modalAlert2').modal('hide');
                             if (response.success) {
-                                $(`button[data-id="${id}"]`).closest('tr').fadeOut(400, function() {
-                                    $(this).remove();
-                                });
                                 toastr.success(response.message);
+                                // Remove a linha da tabela sem recarregar a página
+                                var table = $('.dataTables-times').DataTable();
+                                var row = $(`input[value="${id}"]`).closest('tr');
+                                table.row(row).remove().draw(false);
                             } else {
-                                toastr.error(response.message);
+                                toastr.warning(response.message);
                             }
                         },
                         error: function(xhr, status, error) {
                             $('#modalAlert2').modal('hide');
-                            toastr.error('Erro ao excluir time: ' + error);
+                            var message = 'Erro ao excluir time';
+                            try {
+                                var response = JSON.parse(xhr.responseText);
+                                if (response.message) {
+                                    message = response.message;
+                                }
+                            } catch (e) {
+                                message += ': ' + error;
+                            }
+                            toastr.warning(message);
                         }
                     });
                 });

@@ -77,7 +77,7 @@
                                                     </div>
                                                     <div class="mt5">
                                                         <label class="control-label" for="state">Estado</label>
-                                                        <select class="form-control select2" id="state" name="state">
+                                                        <select class="form-control select2" id="state" name="state" {% if team.is_national_team %}disabled{% endif %}>
                                                             <option value="">Selecione um estado</option>
                                                             {% for state in states %}
                                                                 <option value="{{ state.id }}" {% if team.state and team.state.id == state.id %}selected{% endif %}>{{ state.name }}</option>
@@ -141,51 +141,66 @@
                 // Inicializa Select2
                 $('.select2').select2();
 
-                // Função para controlar o estado do select
-                function toggleStateSelect(isNational) {
-                    var stateContainer = $('#state').closest('.mt5');
-                    var stateSelect = $('#state');
-                    
-                    if (isNational) {
-                        stateContainer.hide();
-                        stateSelect.val(null).trigger('change');
-                        stateSelect.prop('disabled', true);
-                        stateSelect.select2('enable', false);
-                    } else {
-                        stateContainer.show();
-                        stateSelect.prop('disabled', false);
-                        stateSelect.select2('enable', true);
-                    }
-                }
-
-                // Inicializa o estado do select baseado no checkbox
-                toggleStateSelect($('#is_national_team').is(':checked'));
-
                 // Carrega estados quando país é selecionado
                 $('#country').on('change', function() {
                     var countryId = $(this).val();
-                    if (countryId) {
+                    var stateSelect = $('#state');
+                    var isNationalTeam = $('#is_national_team').is(':checked');
+                    
+                    if (countryId && !isNationalTeam) {
                         $.ajax({
                             url: "{% url 'administrativo:get_states_by_country' %}",
-                            data: { country_id: countryId },
+                            type: 'POST',
+                            data: { 
+                                country_id: countryId,
+                                csrfmiddlewaretoken: $('[name=csrfmiddlewaretoken]').val()
+                            },
                             success: function(data) {
-                                var stateSelect = $('#state');
-                                stateSelect.empty().append('<option value="">Selecione um estado</option>');
-                                data.states.forEach(function(state) {
-                                    stateSelect.append(`<option value="${state.id}">${state.name}</option>`);
-                                });
-                                
-                                // Após carregar os estados, verifica se é seleção nacional
-                                toggleStateSelect($('#is_national_team').is(':checked'));
+                                if (data.success) {
+                                    stateSelect.empty().append('<option value="">Selecione um estado</option>');
+                                    data.states.forEach(function(state) {
+                                        stateSelect.append(`<option value="${state.id}">${state.name}</option>`);
+                                    });
+                                    
+                                    // Habilita/desabilita o campo de estado baseado se o país tem estados
+                                    if (data.states && data.states.length > 0) {
+                                        stateSelect.prop('disabled', false);
+                                        stateSelect.closest('.mt5').show();
+                                    } else {
+                                        stateSelect.prop('disabled', true);
+                                        stateSelect.closest('.mt5').hide();
+                                    }
+                                    
+                                    stateSelect.trigger('change');
+                                }
                             }
                         });
+                    } else {
+                        stateSelect.empty().append('<option value="">Selecione um estado</option>');
+                        stateSelect.prop('disabled', true);
+                        if (isNationalTeam) {
+                            stateSelect.closest('.mt5').hide();
+                        }
+                        stateSelect.trigger('change');
                     }
                 });
 
-                // Controla estado do select quando mudar o checkbox
+                // Controla visibilidade do campo estado quando mudar o checkbox de seleção nacional
                 $('#is_national_team').change(function() {
-                    toggleStateSelect($(this).is(':checked'));
+                    var isNationalTeam = $(this).is(':checked');
+                    var stateSelect = $('#state');
+                    
+                    if (isNationalTeam) {
+                        stateSelect.val('').trigger('change');
+                        stateSelect.prop('disabled', true);
+                        stateSelect.closest('.mt5').hide();
+                    } else {
+                        $('#country').trigger('change'); // Recarrega os estados
+                    }
                 });
+
+                // Dispara o evento change do país no carregamento da página
+                $('#country').trigger('change');
 
                 // Preview da imagem
                 $('#image').on('change', function() {

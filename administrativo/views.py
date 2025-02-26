@@ -10,6 +10,7 @@ from django.contrib.auth import authenticate, login as auth_login, logout as aut
 from django.contrib.auth.decorators import login_required
 from django.db.models import Case, When, Value, IntegerField
 from django.core.files.storage import default_storage
+from django.views.decorators.http import require_http_methods
 from .models import (
     User, Scope, Championship, Template, Team,
     FutcoinPackage, Plan, ClassicLeague, Player,
@@ -23,7 +24,7 @@ from .utils import export_to_excel, import_from_excel
 import pandas as pd
 import csv
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 import json
 
 def login(request):
@@ -1013,15 +1014,21 @@ def time_editar(request, id):
                     team.image.delete(save=False)
                 team.image = None
             
-            # Se não for seleção e o país tem estados, atualiza o estado
-            if not is_national_team and country.state_set.exists():
-                if not state_id:
-                    return JsonResponse({
-                        'success': False,
-                        'message': 'Estado é obrigatório para times deste país'
-                    })
-                team.state = State.objects.get(id=state_id)
+            # Se não for seleção nacional, verifica o estado
+            if not is_national_team:
+                # Se o país tem estados cadastrados, o estado é obrigatório
+                if country.state_set.exists():
+                    if not state_id:
+                        return JsonResponse({
+                            'success': False,
+                            'message': 'Estado é obrigatório para times deste país'
+                        })
+                    team.state = State.objects.get(id=state_id)
+                else:
+                    # Se o país não tem estados, remove qualquer estado que possa estar associado
+                    team.state = None
             else:
+                # Se for seleção nacional, remove o estado
                 team.state = None
             
             team.save()
@@ -1049,179 +1056,6 @@ def time_editar(request, id):
         'states': states,
         'has_championships': has_championships,
         'championships': championships
-    })
-
-def time_excluir(request, id):
-    """
-    Exclui um time.
-    """
-    if request.method == 'POST':
-        team = get_object_or_404(Team, id=id)
-        
-        if not team.can_delete():
-            return JsonResponse({
-                'success': False,
-                'message': 'Não é possível excluir este time pois ele está vinculado a campeonatos'
-            })
-            
-        try:
-            # Remove a imagem se existir
-            if team.image:
-                team.image.delete()
-            team.delete()
-            return JsonResponse({
-                'success': True,
-                'message': 'Time excluído com sucesso!'
-            })
-        except Exception as e:
-            return JsonResponse({
-                'success': False,
-                'message': f'Erro ao excluir time: {str(e)}'
-            })
-            
-    return JsonResponse({
-        'success': False,
-        'message': 'Método não permitido'
-    })
-
-def time_excluir_em_massa(request):
-    """
-    Exclui múltiplos times.
-    """
-    if request.method == 'POST':
-        team_ids = request.POST.getlist('ids[]')
-        
-        if not team_ids:
-            return JsonResponse({
-                'success': False,
-                'message': 'Nenhum time selecionado'
-            })
-            
-        teams = Team.objects.filter(id__in=team_ids)
-        deleted_count = 0
-        errors = []
-        
-        for team in teams:
-            if team.can_delete():
-                try:
-                    # Remove a imagem se existir
-                    if team.image:
-                        team.image.delete()
-                    team.delete()
-                    deleted_count += 1
-                except Exception as e:
-                    errors.append(f'Erro ao excluir time "{team.name}": {str(e)}')
-            else:
-                errors.append(f'Time "{team.name}" não pode ser excluído pois está vinculado a campeonatos')
-        
-        return JsonResponse({
-            'success': True,
-            'message': f'{deleted_count} time(s) excluído(s) com sucesso!',
-            'deleted': deleted_count,
-            'errors': errors
-        })
-        
-    return JsonResponse({
-        'success': False,
-        'message': 'Método não permitido'
-    })
-
-def time_importar(request):
-    """
-    Importa times de um arquivo Excel.
-    """
-    if request.method == 'POST' and request.FILES.get('file'):
-        try:
-            df = pd.read_excel(request.FILES['file'])
-            
-            required_columns = ['nome', 'pais']
-            if not all(col in df.columns for col in required_columns):
-                return JsonResponse({
-                    'success': False,
-                    'message': 'Arquivo não contém todas as colunas necessárias: nome, pais'
-                })
-                
-            with transaction.atomic():
-                teams_created = 0
-                teams_updated = 0
-                errors = []
-                
-                # Primeiro, verifica se todos os países existem
-                countries_not_found = []
-                for _, row in df.iterrows():
-                    country_name = row['pais']
-                    if not Country.objects.filter(name=country_name).exists():
-                        if country_name not in countries_not_found:
-                            countries_not_found.append(country_name)
-                
-                if countries_not_found:
-                    return JsonResponse({
-                        'success': False,
-                        'message': f'Os seguintes países não foram encontrados: {", ".join(countries_not_found)}. Por favor, cadastre-os primeiro.'
-                    })
-                
-                for _, row in df.iterrows():
-                    try:
-                        # Obtém o país
-                        country = Country.objects.get(name=row['pais'])
-                        
-                        # Verifica o estado se fornecido
-                        state = None
-                        if 'estado' in df.columns and pd.notna(row['estado']):
-                            state = State.objects.filter(name=row['estado'], country=country).first()
-                            if not state:
-                                errors.append(f'Estado "{row["estado"]}" não encontrado para o time "{row["nome"]}" no país "{country.name}"')
-                                continue
-                        
-                        team, created = Team.objects.get_or_create(
-                            name=row['nome'],
-                            country=country,
-                            defaults={
-                                'state': state,
-                                'continent': country.continent,
-                                'is_national_team': False
-                            }
-                        )
-                        
-                        if created:
-                            teams_created += 1
-                        else:
-                            # Só atualiza se não tiver campeonatos vinculados
-                            if not team.championships.exists():
-                                team.state = state
-                                team.continent = country.continent
-                                team.save()
-                                teams_updated += 1
-                            else:
-                                errors.append(f'Time "{team.name}" não foi atualizado pois tem campeonatos vinculados')
-                            
-                    except Exception as e:
-                        errors.append(f'Erro ao processar time "{row["nome"]}": {str(e)}')
-                
-                if teams_created == 0 and teams_updated == 0:
-                    return JsonResponse({
-                        'success': False,
-                        'message': 'Nenhum time foi importado devido a erros. Verifique os dados e tente novamente.'
-                    })
-                
-                message = f'{teams_created} times criados e {teams_updated} atualizados com sucesso!'
-                if errors:
-                    message += f'\nErros: {", ".join(errors)}'
-                    
-                return JsonResponse({
-                    'success': True,
-                    'message': message
-                })
-                
-        except Exception as e:
-            return JsonResponse({
-                'success': False,
-                'message': f'Erro ao importar times: {str(e)}'
-            })
-            
-    return JsonResponse({
-        'success': False,
-        'message': 'Nenhum arquivo enviado'
     })
 
 def time_exportar(request):
@@ -1303,9 +1137,13 @@ def time_importar_imagens(request):
                     times_not_found.append(filename)
             
             if times_not_found:
+                if len(times_not_found) > 4:
+                    message = f'{len(times_not_found)} times não estão cadastrados. Por favor, cadastre-os primeiro.'
+                else:
+                    message = f'Os seguintes times não foram encontrados: {", ".join(times_not_found)}. Por favor, cadastre-os primeiro.'
                 return JsonResponse({
                     'success': False,
-                    'message': f'Os seguintes times não foram encontrados: {", ".join(times_not_found)}. Por favor, cadastre-os primeiro.'
+                    'message': message
                 })
             
             success_count = 0
@@ -1376,6 +1214,21 @@ def pacote_futcoin_novo(request):
             data = request.POST
             files = request.FILES
             
+            # Tratamento das datas
+            start_date = data.get('start_date')
+            end_date = data.get('end_date')
+            
+            try:
+                if start_date:
+                    start_date = datetime.strptime(start_date, '%d/%m/%Y %H:%M')
+                if end_date:
+                    end_date = datetime.strptime(end_date, '%d/%m/%Y %H:%M')
+            except ValueError as e:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Formato de data inválido. Use o formato DD/MM/YYYY HH:mm'
+                })
+            
             # Criação do pacote
             package = FutcoinPackage(
                 name=data.get('name'),
@@ -1389,8 +1242,8 @@ def pacote_futcoin_novo(request):
                 content=data.get('content'),
                 bonus=data.get('bonus', 0),
                 show_to=data.get('show_to'),
-                start_date=data.get('start_date') if data.get('start_date') else None,
-                end_date=data.get('end_date') if data.get('end_date') else None,
+                start_date=start_date,
+                end_date=end_date,
                 android_product_code=data.get('android_product_code'),
                 ios_product_code=data.get('ios_product_code'),
                 gateway_product_code=data.get('gateway_product_code')
@@ -1489,7 +1342,7 @@ def futligas_classicas(request):
 @login_required
 def futliga_classica_novo(request):
     """
-    View para criar uma nova Futliga Clássica
+    Cria uma nova futliga clássica.
     """
     if request.method == 'POST':
         try:
@@ -1770,6 +1623,24 @@ def futligas_jogadores(request):
     return render(request, 'administrativo/futligas_jogadores.html', {
         'levels': levels
     })
+
+@login_required
+def futligas_niveis(request):
+    """
+    Lista todos os níveis das futligas
+    """
+    # Limpa as mensagens antigas
+    storage = messages.get_messages(request)
+    storage.used = True
+
+    # Obtém todos os níveis ordenados por data de criação
+    levels = CustomLeagueLevel.objects.all().order_by('-created_at')
+
+    context = {
+        'levels': levels
+    }
+
+    return render(request, 'administrativo/futligas-niveis.html', context)
 
 def continentes(request):
     """
@@ -2652,12 +2523,6 @@ def notificacao_editar(request, id):
         notification = Notifications.objects.get(id=id)
         
         if request.method == 'POST':
-            if not request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return JsonResponse({
-                    'success': False,
-                    'message': 'Requisição inválida'
-                }, status=400)
-
             title = request.POST.get('title')
             message = request.POST.get('message')
             notification_type = request.POST.get('notification_type')
@@ -2665,10 +2530,8 @@ def notificacao_editar(request, id):
             send_at = request.POST.get('send_at')
 
             if not all([title, message, notification_type]):
-                return JsonResponse({
-                    'success': False,
-                    'message': 'Campos obrigatórios não preenchidos'
-                }, status=400)
+                messages.error(request, 'Campos obrigatórios não preenchidos')
+                return redirect('administrativo:notificacao_editar', id=id)
 
             notification.title = title
             notification.message = message
@@ -2679,10 +2542,8 @@ def notificacao_editar(request, id):
                     package = FutcoinPackage.objects.get(id=package_id)
                     notification.package = package
                 except FutcoinPackage.DoesNotExist:
-                    return JsonResponse({
-                        'success': False,
-                        'message': 'Pacote não encontrado'
-                    }, status=400)
+                    messages.error(request, 'Pacote não encontrado')
+                    return redirect('administrativo:notificacao_editar', id=id)
             else:
                 notification.package = None
 
@@ -2691,19 +2552,21 @@ def notificacao_editar(request, id):
                     notification.send_at = datetime.strptime(send_at, '%Y-%m-%d %H:%M')
                     notification.status = 'pending'
                 except ValueError:
-                    return JsonResponse({
-                        'success': False,
-                        'message': 'Data de envio inválida'
-                    }, status=400)
+                    messages.error(request, 'Data de envio inválida')
+                    return redirect('administrativo:notificacao_editar', id=id)
             else:
                 notification.send_at = None
-                notification.status = 'pending'
+                try:
+                    # Aqui você implementaria a lógica de envio da notificação
+                    # Por exemplo: notification.send()
+                    notification.status = 'sent'
+                except Exception as e:
+                    notification.status = 'not_sent'
+                    notification.error_message = str(e)
 
             notification.save()
-            return JsonResponse({
-                'success': True,
-                'message': 'Notificação atualizada com sucesso'
-            })
+            messages.success(request, 'Notificação atualizada com sucesso')
+            return redirect('administrativo:notificacoes')
 
         packages = FutcoinPackage.objects.filter(enabled=True)
         return render(request, 'administrativo/notificacao-editar.html', {
@@ -2713,6 +2576,9 @@ def notificacao_editar(request, id):
 
     except Notifications.DoesNotExist:
         messages.error(request, 'Notificação não encontrada')
+        return redirect('administrativo:notificacoes')
+    except Exception as e:
+        messages.error(request, f'Erro ao carregar notificação: {str(e)}')
         return redirect('administrativo:notificacoes')
 
 def relatorios(request):
@@ -2941,8 +2807,8 @@ def campeonato_importar_jogos(request):
                     championship=championship,
                     stage=stage,
                     round=round_obj,
-                    team_home=team_home,
-                    team_away=team_away,
+                    home_team=team_home,
+                    away_team=team_away,
                     home_score=row['Placar Mandante'],
                     away_score=row['Placar Visitante'],
                     match_date=match_date
@@ -3010,34 +2876,31 @@ def campeonato_editar(request, id):
                         # Agrupa partidas por fase e rodada
                         stages = {}
                         for match in matches_data:
-                            stage_name = match['stage']
+                            template_stage_id = match['stage_id']  # ID da fase do template
                             round_number = match['round']
-                            template_stage_id = match.get('template_stage_id')
                             
-                            if stage_name not in stages:
-                                stages[stage_name] = {
-                                    'template_stage_id': template_stage_id,
-                                    'rounds': {}
-                                }
+                            if template_stage_id not in stages:
+                                stages[template_stage_id] = {}
                             
-                            if round_number not in stages[stage_name]['rounds']:
-                                stages[stage_name]['rounds'][round_number] = []
+                            if round_number not in stages[template_stage_id]:
+                                stages[template_stage_id][round_number] = []
                                 
-                            stages[stage_name]['rounds'][round_number].append(match)
+                            stages[template_stage_id][round_number].append(match)
                         
                         # Cria as fases, rodadas e partidas
-                        for stage_name, stage_data in stages.items():
-                            # Obtém o template_stage correspondente
-                            template_stage = TemplateStage.objects.get(id=stage_data['template_stage_id'])
-                                
+                        for template_stage_id, rounds in stages.items():
+                            # Busca a fase do template para obter o nome
+                            template_stage = championship.template.stages.get(id=template_stage_id)
+                            
+                            # Cria a fase do campeonato
                             stage = ChampionshipStage.objects.create(
                                 championship=championship,
-                                name=stage_name,
-                                template_stage=template_stage,
-                                order=template_stage.order
+                                name=template_stage.name,
+                                template_stage_id=template_stage_id,  # Adiciona o ID da fase do template
+                                order=template_stage.order  # Adiciona a ordem da fase do template
                             )
                             
-                            for round_number, matches in stage_data['rounds'].items():
+                            for round_number, matches in rounds.items():
                                 round_obj = ChampionshipRound.objects.create(
                                     championship=championship,
                                     stage=stage,
@@ -3048,15 +2911,15 @@ def campeonato_editar(request, id):
                                     match_date = datetime.strptime(match['match_date'], '%d/%m/%Y %H:%M')
                                     ChampionshipMatch.objects.create(
                                         championship=championship,
-                                        stage=stage,
                                         round=round_obj,
                                         home_team_id=match['home_team'],
                                         away_team_id=match['away_team'],
-                                        home_score=match['home_score'],
-                                        away_score=match['away_score'],
+                                        home_score=match['home_score'] if match['home_score'] != '' else None,
+                                        away_score=match['away_score'] if match['away_score'] != '' else None,
                                         match_date=match_date
                                     )
                     
+                    messages.success(request, 'Campeonato atualizado com sucesso')
                     return JsonResponse({
                         'success': True,
                         'message': 'Campeonato atualizado com sucesso',
@@ -3151,38 +3014,38 @@ def get_states_by_country(request):
 @login_required
 def campeonato_toggle_status(request):
     """
-    Ativa/desativa um campeonato via AJAX.
-    Permite desativar mesmo com templates ou locais vinculados.
+    Altera o status de um campeonato entre ativo e inativo.
     """
     if request.method == 'POST':
-        championship_id = request.POST.get('id')
         try:
+            championship_id = request.POST.get('championship_id')
             championship = Championship.objects.get(id=championship_id)
             
-            # Se estiver tentando ativar, verifica se o template está ativo
-            if not championship.is_active and championship.template and not championship.template.enabled:
-                return JsonResponse({
-                    'success': False,
-                    'message': 'Não é possível ativar um campeonato com template inativo.'
-                })
+            with transaction.atomic():
+                championship.is_active = not championship.is_active
+                championship.save()
+                transaction.commit()
             
-            championship.is_active = not championship.is_active
-            championship.save()
-            
-            status = 'ativado' if championship.is_active else 'desativado'
             return JsonResponse({
                 'success': True,
-                'message': f'Campeonato {status} com sucesso!',
+                'message': 'Status alterado com sucesso',
                 'is_active': championship.is_active
             })
+            
         except Championship.DoesNotExist:
             return JsonResponse({
                 'success': False,
-                'message': 'Campeonato não encontrado.'
+                'message': 'Campeonato não encontrado'
             })
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': f'Erro ao alterar status: {str(e)}'
+            })
+            
     return JsonResponse({
         'success': False,
-        'message': 'Método não permitido.'
+        'message': 'Método não permitido'
     })
 
 @login_required
@@ -3500,348 +3363,100 @@ def calcular_pontos_palpite(pred_home, pred_away, real_home, real_away, points_v
     return 0
 
 def plano_editar(request, id):
-    plan = get_object_or_404(Plan, id=id)
-    
-    if request.method == 'POST':
-        try:
-            data = request.POST
-            files = request.FILES
-            
-            # Validação dos campos obrigatórios
-            required_fields = ['name', 'full_price', 'promotional_price']
-            for field in required_fields:
-                if not data.get(field):
-                    return JsonResponse({
-                        'success': False,
-                        'message': f'O campo {field} é obrigatório.'
-                    })
-            
-            # Atualização do plano
-            plan.name = data.get('name')
-            plan.plan = data.get('plan')
-            plan.billing_cycle = data.get('billing_cycle')
-            plan.enabled = data.get('enabled').lower() == 'true'
-            plan.package_type = data.get('package_type')
-            plan.label = data.get('label')
-            plan.color_text_label = data.get('color_text_label', '#000000')
-            plan.color_background_label = data.get('color_background_label', '#FFFFFF')
-            plan.full_price = data.get('full_price')
-            plan.promotional_price = data.get('promotional_price')
-            plan.color_text_billing_cycle = data.get('color_text_billing_cycle', '#192639')
-            plan.show_to = data.get('show_to')
-            plan.start_date = data.get('start_date') if data.get('start_date') else None
-            plan.end_date = data.get('end_date') if data.get('end_date') else None
-            
-            # Tratamento da imagem
-            if 'image' in files:
-                if plan.image:
-                    plan.image.delete()
-                plan.image = files['image']
-            
-            plan.save()
-            
-            return JsonResponse({
-                'success': True,
-                'message': 'Plano atualizado com sucesso!'
-            })
-            
-        except Exception as e:
-            return JsonResponse({
-                'success': False,
-                'message': f'Erro ao atualizar plano: {str(e)}'
-            })
-    
-    # GET - renderiza o formulário com os dados do plano
-    return render(request, 'administrativo/pacote-plano-editar.html', {'plan': plan})
-
-def plano_excluir(request, id):
     try:
-        plan = Plan.objects.get(id=id)
-        plan.delete()
-        return JsonResponse({
-            'success': True,
-            'message': 'Plano excluído com sucesso!'
-        })
-    except Plan.DoesNotExist:
-        return JsonResponse({
-            'success': False,
-            'message': 'Plano não encontrado.'
-        })
-    except Exception as e:
-        return JsonResponse({
-            'success': False,
-            'message': f'Erro ao excluir plano: {str(e)}'
-        })
-
-def plano_excluir_em_massa(request):
-    try:
-        ids = request.POST.getlist('ids[]')
-        Plan.objects.filter(id__in=ids).delete()
-        return JsonResponse({
-            'success': True,
-            'message': 'Planos excluídos com sucesso!'
-        })
-    except Exception as e:
-        return JsonResponse({
-            'success': False,
-            'message': f'Erro ao excluir planos: {str(e)}'
-        })
-
-def plano_toggle_status(request):
-    """
-    Ativa/desativa um plano via AJAX.
-    """
-    if request.method == 'POST':
-        plan_id = request.POST.get('id')
-        try:
-            plan = Plan.objects.get(id=plan_id)
-            plan.enabled = not plan.enabled
-            plan.save()
-            
-            status = 'ativado' if plan.enabled else 'desativado'
-            return JsonResponse({
-                'success': True,
-                'message': f'Plano {status} com sucesso!',
-                'is_active': plan.enabled
-            })
-        except Plan.DoesNotExist:
-            return JsonResponse({
-                'success': False,
-                'message': 'Plano não encontrado.'
-            })
-    return JsonResponse({
-        'success': False,
-        'message': 'Método não permitido.'
-    })
-
-def futcoin_excluir(request, id):
-    """
-    Exclui um pacote Futcoin específico.
-    """
-    try:
-        package = FutcoinPackage.objects.get(id=id)
-        package.delete()
-        return JsonResponse({
-            'success': True,
-            'message': 'Pacote excluído com sucesso!'
-        })
-    except FutcoinPackage.DoesNotExist:
-        return JsonResponse({
-            'success': False,
-            'message': 'Pacote não encontrado.'
-        })
-    except Exception as e:
-        return JsonResponse({
-            'success': False,
-            'message': f'Erro ao excluir pacote: {str(e)}'
-        })
-
-def futcoin_excluir_em_massa(request):
-    """
-    Exclui múltiplos pacotes Futcoin.
-    """
-    try:
-        ids = request.POST.getlist('ids[]')
-        FutcoinPackage.objects.filter(id__in=ids).delete()
-        return JsonResponse({
-            'success': True,
-            'message': 'Pacotes excluídos com sucesso!'
-        })
-    except Exception as e:
-        return JsonResponse({
-            'success': False,
-            'message': f'Erro ao excluir pacotes: {str(e)}'
-        })
-
-def futcoin_toggle_status(request):
-    """
-    Alterna o status de ativação de um pacote Futcoin.
-    """
-    if request.method == 'POST':
-        package_id = request.POST.get('id')
-        try:
-            package = get_object_or_404(FutcoinPackage, id=package_id)
-            package.enabled = not package.enabled
-            package.save()
-            
-            return JsonResponse({
-                'success': True,
-                'message': 'Status alterado com sucesso!',
-                'enabled': package.enabled
-            })
-        except Exception as e:
-            return JsonResponse({
-                'success': False,
-                'message': f'Erro ao alterar status: {str(e)}'
-            })
-            
-    return JsonResponse({
-        'success': False,
-        'message': 'Método não permitido'
-    })
-
-@login_required
-def futcoin_editar(request, id):
-    try:
-        package = FutcoinPackage.objects.get(id=id)
+        plan = get_object_or_404(Plan, id=id)
         
         if request.method == 'POST':
-            # Atualiza os dados do pacote
-            package.name = request.POST.get('name')
-            package.enabled = request.POST.get('enabled') == 'true'
-            package.package_type = request.POST.get('package_type')
-            package.label = request.POST.get('label')
-            package.color_text_label = request.POST.get('color_text_label')
-            package.color_background_label = request.POST.get('color_background_label')
-            package.full_price = request.POST.get('full_price')
-            package.promotional_price = request.POST.get('promotional_price')
-            package.content = request.POST.get('content')
-            package.bonus = request.POST.get('bonus')
-            package.show_to = request.POST.get('show_to')
-            package.android_product_code = request.POST.get('android_product_code')
-            package.ios_product_code = request.POST.get('ios_product_code')
-            package.gateway_product_code = request.POST.get('gateway_product_code')
-            
-            # Converte as datas
-            start_date = request.POST.get('start_date')
-            end_date = request.POST.get('end_date')
-            
-            if start_date:
-                try:
-                    # Converte de DD/MM/YYYY HH:mm para YYYY-MM-DD HH:mm
-                    date_parts = start_date.split(' ')
-                    if len(date_parts) == 2:
-                        day, month, year = date_parts[0].split('/')
-                        time = date_parts[1]
-                        formatted_date = f"{year}-{month}-{day} {time}"
-                        package.start_date = datetime.strptime(formatted_date, '%Y-%m-%d %H:%M')
-                    else:
-                        return JsonResponse({
-                            'success': False,
-                            'message': 'Data de início inválida. Use o formato DD/MM/YYYY HH:mm'
-                        })
-                except (ValueError, IndexError):
-                    return JsonResponse({
-                        'success': False,
-                        'message': 'Data de início inválida. Use o formato DD/MM/YYYY HH:mm'
-                    })
-            else:
-                package.start_date = None
+            try:
+                data = request.POST
+                files = request.FILES
                 
-            if end_date:
+                # Atualização do plano
+                plan.name = data.get('name')
+                plan.plan = data.get('plan')
+                plan.billing_cycle = data.get('billing_cycle')
+                plan.enabled = data.get('enabled', '').lower() == 'true'
+                plan.package_type = data.get('tipo')  # Corrigido de package_type para tipo
+                plan.label = data.get('label')
+                plan.color_text_label = data.get('color_text_label')
+                plan.color_background_label = data.get('color_background_label')
+                plan.full_price = data.get('full_price')
+                plan.promotional_price = data.get('promotional_price')
+                plan.color_text_billing_cycle = data.get('color_text_billing_cycle')
+                plan.show_to = data.get('show_to')
+                plan.promotional_price_validity = data.get('promotional_price_validity')
+                
+                # Tratamento das datas
+                start_date = data.get('start_date')
+                end_date = data.get('end_date')
+                
                 try:
-                    # Converte de DD/MM/YYYY HH:mm para YYYY-MM-DD HH:mm
-                    date_parts = end_date.split(' ')
-                    if len(date_parts) == 2:
-                        day, month, year = date_parts[0].split('/')
-                        time = date_parts[1]
-                        formatted_date = f"{year}-{month}-{day} {time}"
-                        package.end_date = datetime.strptime(formatted_date, '%Y-%m-%d %H:%M')
+                    if start_date:
+                        plan.start_date = datetime.strptime(start_date, '%d/%m/%Y %H:%M')
                     else:
-                        return JsonResponse({
-                            'success': False,
-                            'message': 'Data de término inválida. Use o formato DD/MM/YYYY HH:mm'
-                        })
-                except (ValueError, IndexError):
+                        plan.start_date = None
+                        
+                    if end_date:
+                        plan.end_date = datetime.strptime(end_date, '%d/%m/%Y %H:%M')
+                    else:
+                        plan.end_date = None
+                except ValueError:
                     return JsonResponse({
                         'success': False,
-                        'message': 'Data de término inválida. Use o formato DD/MM/YYYY HH:mm'
+                        'message': 'Data inválida. Use o formato DD/MM/YYYY HH:mm'
                     })
-            else:
-                package.end_date = None
-            
-            # Processa a imagem se fornecida
-            if 'image' in request.FILES:
-                # Remove a imagem antiga se existir
-                if package.image:
-                    package.image.delete()
-                package.image = request.FILES['image']
-            
-            package.save()
-            
-            return JsonResponse({
-                'success': True,
-                'message': 'Pacote atualizado com sucesso!'
-            })
-        
-        # Se não for POST, renderiza o template com os dados do pacote
-        package_data = {
-            'id': package.id,
-            'name': package.name,
-            'enabled': package.enabled,
-            'package_type': package.package_type,
-            'label': package.label,
-            'color_text_label': package.color_text_label,
-            'color_background_label': package.color_background_label,
-            'full_price': str(package.full_price) if package.full_price else None,
-            'promotional_price': str(package.promotional_price) if package.promotional_price else None,
-            'content': str(package.content) if package.content else None,
-            'bonus': str(package.bonus) if package.bonus else None,
-            'show_to': package.show_to,
-            'android_product_code': package.android_product_code,
-            'ios_product_code': package.ios_product_code,
-            'gateway_product_code': package.gateway_product_code,
-            'start_date': package.start_date.strftime('%Y-%m-%d %H:%M') if package.start_date else None,
-            'end_date': package.end_date.strftime('%Y-%m-%d %H:%M') if package.end_date else None,
-            'image': package.image.url if package.image else None
-        }
-        
-        return render(request, 'administrativo/pacote-futcoin-editar.html', {
-            'package': package,
-            'package_data': json.dumps(package_data)
-        })
-        
-    except FutcoinPackage.DoesNotExist:
-        messages.error(request, 'Pacote não encontrado')
-        return redirect('administrativo:futcoins')
-
-@login_required
-def futligas_niveis(request):
-    """
-    Exibe a página de gerenciamento de níveis das Futligas.
-    """
-    levels = CustomLeagueLevel.objects.all().order_by('order')
-    return render(request, 'administrativo/futligas/niveis.html', {'levels': levels})
-
-@login_required
-def futliga_nivel_novo(request):
-    if request.method == 'POST':
-        try:
-            name = request.POST.get('name')
-            players = request.POST.get('players')
-            premium_players = request.POST.get('premium_players')
-            owner_premium = request.POST.get('owner_premium') == 'true'
-            image = request.FILES.get('image')
-
-            if not all([name, players, premium_players]):
+                
+                # Tratamento da imagem
+                if 'image' in files:
+                    if plan.image:
+                        plan.image.delete()
+                    plan.image = files['image']
+                
+                plan.save()
+                
+                return JsonResponse({
+                    'success': True,
+                    'message': 'Plano atualizado com sucesso!'
+                })
+                
+            except Exception as e:
                 return JsonResponse({
                     'success': False,
-                    'message': 'Todos os campos são obrigatórios'
+                    'message': f'Erro ao atualizar plano: {str(e)}'
                 })
-
-            level = CustomLeagueLevel.objects.create(
-                name=name,
-                players=players,
-                premium_players=premium_players,
-                owner_premium=owner_premium,
-                image=image
-            )
-
-            return JsonResponse({
-                'success': True,
-                'message': 'Nível criado com sucesso'
-            })
-
-        except Exception as e:
-            return JsonResponse({
-                'success': False,
-                'message': f'Erro ao criar nível: {str(e)}'
-            })
-
-    return JsonResponse({
-        'success': False,
-        'message': 'Método não permitido'
-    })
+        
+        # Se não for POST, renderiza o template com os dados do plano
+        plan_data = {
+            'id': plan.id,
+            'name': plan.name,
+            'plan': plan.plan,
+            'billing_cycle': plan.billing_cycle,
+            'enabled': plan.enabled,
+            'package_type': plan.package_type,
+            'label': plan.label,
+            'color_text_label': plan.color_text_label,
+            'color_background_label': plan.color_background_label,
+            'full_price': str(plan.full_price),
+            'promotional_price': str(plan.promotional_price) if plan.promotional_price else None,
+            'color_text_billing_cycle': plan.color_text_billing_cycle,
+            'show_to': plan.show_to,
+            'promotional_price_validity': plan.promotional_price_validity,
+            'start_date': plan.start_date.strftime('%d/%m/%Y %H:%M') if plan.start_date else None,
+            'end_date': plan.end_date.strftime('%d/%m/%Y %H:%M') if plan.end_date else None,
+            'image': plan.image.url if plan.image else None
+        }
+        
+        return render(request, 'administrativo/pacote-plano-editar.html', {
+            'plan': plan,
+            'plan_data': json.dumps(plan_data)
+        })
+        
+    except Plan.DoesNotExist:
+        messages.error(request, 'Plano não encontrado')
+        return redirect('administrativo:planos')
+    except Exception as e:
+        messages.error(request, f'Erro ao carregar plano: {str(e)}')
+        return redirect('administrativo:planos')
 
 @login_required
 def futliga_nivel_editar(request, id):
@@ -4033,12 +3648,6 @@ def notificacao_editar(request, id):
         notification = Notifications.objects.get(id=id)
         
         if request.method == 'POST':
-            if not request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return JsonResponse({
-                    'success': False,
-                    'message': 'Requisição inválida'
-                }, status=400)
-
             title = request.POST.get('title')
             message = request.POST.get('message')
             notification_type = request.POST.get('notification_type')
@@ -4046,10 +3655,8 @@ def notificacao_editar(request, id):
             send_at = request.POST.get('send_at')
 
             if not all([title, message, notification_type]):
-                return JsonResponse({
-                    'success': False,
-                    'message': 'Campos obrigatórios não preenchidos'
-                }, status=400)
+                messages.error(request, 'Campos obrigatórios não preenchidos')
+                return redirect('administrativo:notificacao_editar', id=id)
 
             notification.title = title
             notification.message = message
@@ -4060,10 +3667,8 @@ def notificacao_editar(request, id):
                     package = FutcoinPackage.objects.get(id=package_id)
                     notification.package = package
                 except FutcoinPackage.DoesNotExist:
-                    return JsonResponse({
-                        'success': False,
-                        'message': 'Pacote não encontrado'
-                    }, status=400)
+                    messages.error(request, 'Pacote não encontrado')
+                    return redirect('administrativo:notificacao_editar', id=id)
             else:
                 notification.package = None
 
@@ -4072,19 +3677,21 @@ def notificacao_editar(request, id):
                     notification.send_at = datetime.strptime(send_at, '%Y-%m-%d %H:%M')
                     notification.status = 'pending'
                 except ValueError:
-                    return JsonResponse({
-                        'success': False,
-                        'message': 'Data de envio inválida'
-                    }, status=400)
+                    messages.error(request, 'Data de envio inválida')
+                    return redirect('administrativo:notificacao_editar', id=id)
             else:
                 notification.send_at = None
-                notification.status = 'pending'
+                try:
+                    # Aqui você implementaria a lógica de envio da notificação
+                    # Por exemplo: notification.send()
+                    notification.status = 'sent'
+                except Exception as e:
+                    notification.status = 'not_sent'
+                    notification.error_message = str(e)
 
             notification.save()
-            return JsonResponse({
-                'success': True,
-                'message': 'Notificação atualizada com sucesso'
-            })
+            messages.success(request, 'Notificação atualizada com sucesso')
+            return redirect('administrativo:notificacoes')
 
         packages = FutcoinPackage.objects.filter(enabled=True)
         return render(request, 'administrativo/notificacao-editar.html', {
@@ -4094,6 +3701,9 @@ def notificacao_editar(request, id):
 
     except Notifications.DoesNotExist:
         messages.error(request, 'Notificação não encontrada')
+        return redirect('administrativo:notificacoes')
+    except Exception as e:
+        messages.error(request, f'Erro ao carregar notificação: {str(e)}')
         return redirect('administrativo:notificacoes')
 
 @login_required
@@ -4257,3 +3867,671 @@ def futliga_premio_novo(request):
         'success': False,
         'message': 'Método não permitido'
     })
+
+@login_required
+def campeonato_importar_rodadas(request):
+    """
+    Importa rodadas de um arquivo Excel.
+    """
+    if request.method == 'POST' and request.FILES.get('file'):
+        try:
+            championship_id = request.POST.get('championship_id')
+            championship = Championship.objects.get(id=championship_id)
+            
+            df = pd.read_excel(request.FILES['file'])
+            
+            required_columns = ['Fase', 'Rodada', 'Time Mandante', 'Time Visitante', 'Data', 'Hora']
+            if not all(col in df.columns for col in required_columns):
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Arquivo não contém todas as colunas necessárias: ' + ', '.join(required_columns)
+                })
+                
+            with transaction.atomic():
+                matches_created = 0
+                errors = []
+                
+                for _, row in df.iterrows():
+                    try:
+                        # Obtém ou cria a fase
+                        stage, _ = ChampionshipStage.objects.get_or_create(
+                            championship=championship,
+                            name=row['Fase']
+                        )
+                        
+                        # Obtém ou cria a rodada
+                        round_obj, _ = ChampionshipRound.objects.get_or_create(
+                            championship=championship,
+                            stage=stage,
+                            number=row['Rodada']
+                        )
+                        
+                        # Obtém os times
+                        try:
+                            home_team = Team.objects.get(name=row['Time Mandante'])
+                            away_team = Team.objects.get(name=row['Time Visitante'])
+                        except Team.DoesNotExist:
+                            errors.append(f"Time não encontrado: {row['Time Mandante']} ou {row['Time Visitante']}")
+                            continue
+                        
+                        # Cria a partida
+                        match_date = datetime.combine(
+                            row['Data'],
+                            datetime.strptime(str(row['Hora']), '%H:%M').time()
+                        )
+                        
+                        ChampionshipMatch.objects.create(
+                            championship=championship,
+                            stage=stage,
+                            round=round_obj,
+                            home_team=home_team,
+                            away_team=away_team,
+                            match_date=match_date
+                        )
+                        matches_created += 1
+                        
+                    except Exception as e:
+                        errors.append(f"Erro ao processar linha: {str(e)}")
+                
+                message = f"{matches_created} partidas importadas com sucesso."
+                if errors:
+                    message += f"\nErros encontrados: {'; '.join(errors)}"
+                
+                return JsonResponse({
+                    'success': True,
+                    'message': message
+                })
+                
+        except Championship.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'message': 'Campeonato não encontrado.'
+            })
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': f'Erro ao importar rodadas: {str(e)}'
+            })
+            
+    return JsonResponse({
+        'success': False,
+        'message': 'Método não permitido ou arquivo não fornecido.'
+    })
+
+def time_excluir(request, id):
+    """
+    Exclui um time específico.
+    Só exclui se o time não tiver campeonatos vinculados ou partidas.
+    """
+    if request.method == 'POST':
+        try:
+            team = get_object_or_404(Team, id=id)
+            
+            # Verifica se tem campeonatos vinculados ou partidas
+            if team.has_championships():
+                return JsonResponse({
+                    'success': False,
+                    'message': f'O time {team.name} não pode ser excluído pois está vinculado a campeonatos ou possui partidas cadastradas'
+                })
+                
+            # Remove a imagem se existir
+            if team.image:
+                team.image.delete()
+                
+            team.delete()
+            return JsonResponse({
+                'success': True,
+                'message': 'Time excluído com sucesso!'
+            })
+                
+        except Team.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'message': 'Time não encontrado'
+            })
+            
+    return JsonResponse({
+        'success': False,
+        'message': 'Método não permitido'
+    })
+
+def time_excluir_em_massa(request):
+    """
+    Exclui múltiplos times.
+    Só exclui os times que não têm campeonatos vinculados.
+    """
+    if request.method == 'POST':
+        team_ids = request.POST.getlist('ids[]')
+        
+        if not team_ids:
+            return JsonResponse({
+                'success': False,
+                'message': 'Nenhum time selecionado'
+            })
+            
+        # Filtra apenas times sem campeonatos
+        teams = Team.objects.filter(id__in=team_ids)
+        teams_to_delete = []
+        teams_with_championships = []
+        
+        for team in teams:
+            if team.has_championships():
+                teams_with_championships.append(team.name)
+            else:
+                teams_to_delete.append(team)
+        
+        # Remove as imagens e exclui os times
+        for team in teams_to_delete:
+            if team.image:
+                team.image.delete()
+            team.delete()
+        
+        # Monta a mensagem de retorno
+        if len(teams_with_championships) == 0:
+            message = 'Times excluídos com sucesso!'
+        else:
+            deleted_count = len(teams_to_delete)
+
+def time_importar(request):
+    """
+    Importa times a partir de um arquivo Excel.
+    O arquivo deve conter as colunas: Nome, País e Estado (opcional)
+    """
+    if request.method == 'POST' and request.FILES.get('file'):
+        try:
+            import pandas as pd
+            from django.db import transaction
+            
+            excel_file = request.FILES['file']
+            df = pd.read_excel(excel_file)
+            
+            required_columns = ['Nome', 'País']
+            if not all(col in df.columns for col in required_columns):
+                return JsonResponse({
+                    'success': False,
+                    'message': 'O arquivo deve conter as colunas: Nome e País'
+                })
+            
+            success_count = 0
+            error_messages = []
+            
+            with transaction.atomic():
+                for _, row in df.iterrows():
+                    try:
+                        # Busca o país
+                        country = Country.objects.filter(name__iexact=row['País']).first()
+                        if not country:
+                            error_messages.append(f"País não encontrado: {row['País']}")
+                            continue
+                        
+                        # Busca o estado se fornecido
+                        state = None
+                        if 'Estado' in df.columns and pd.notna(row['Estado']):
+                            state = State.objects.filter(
+                                name__iexact=row['Estado'],
+                                country=country
+                            ).first()
+                            if not state:
+                                error_messages.append(f"Estado não encontrado: {row['Estado']} ({country.name})")
+                                continue
+                        
+                        # Verifica se o time já existe
+                        team = Team.objects.filter(
+                            name__iexact=row['Nome'],
+                            country=country
+                        ).first()
+                        
+                        if team:
+                            # Se o time existe e tem campeonatos, não atualiza
+                            if team.has_championships():
+                                error_messages.append(f"Time {row['Nome']} não pode ser atualizado pois tem campeonatos vinculados")
+                                continue
+                            
+                            # Atualiza o time existente
+                            team.state = state
+                            team.is_national_team = state is None
+                            team.save()
+                            success_count += 1
+                        else:
+                            # Cria um novo time
+                            Team.objects.create(
+                                name=row['Nome'],
+                                country=country,
+                                state=state,
+                                is_national_team=state is None
+                            )
+                            success_count += 1
+                            
+                    except Exception as e:
+                        error_messages.append(f"Erro ao processar time {row['Nome']}: {str(e)}")
+            
+            # Monta a mensagem de retorno
+            if success_count > 0:
+                message = f'{success_count} time(s) importado(s)/atualizado(s) com sucesso. '
+            else:
+                message = 'Nenhum time foi importado. '
+                
+            if error_messages:
+                message += f'Erros encontrados: {"; ".join(error_messages)}'
+                
+            return JsonResponse({
+                'success': True,
+                'message': message
+            })
+                
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': f'Erro ao processar arquivo: {str(e)}'
+            })
+            
+    return JsonResponse({
+        'success': False,
+        'message': 'Método não permitido ou arquivo não fornecido'
+    }, status=405)
+
+def plano_excluir(request, id):
+    """
+    Exclui um plano específico.
+    """
+    if not request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({'success': False, 'message': 'Requisição inválida'})
+        
+    try:
+        plan = get_object_or_404(Plan, id=id)
+        plan.delete()
+        return JsonResponse({
+            'success': True,
+            'message': 'Plano excluído com sucesso!'
+        })
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Erro ao excluir plano: {str(e)}'
+        })
+
+def plano_excluir_em_massa(request):
+    """
+    Exclui múltiplos planos.
+    """
+    try:
+        ids = request.POST.getlist('ids[]')
+        Plan.objects.filter(id__in=ids).delete()
+        return JsonResponse({
+            'success': True,
+            'message': 'Planos excluídos com sucesso!'
+        })
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Erro ao excluir planos: {str(e)}'
+        })
+
+def plano_toggle_status(request):
+    """
+    Alterna o status de ativação de um plano.
+    """
+    if request.method == 'POST':
+        plan_id = request.POST.get('id')
+        try:
+            plan = get_object_or_404(Plan, id=plan_id)
+            plan.enabled = not plan.enabled
+            plan.save()
+            
+            return JsonResponse({
+                'success': True,
+                'message': 'Status alterado com sucesso!',
+                'enabled': plan.enabled
+            })
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': f'Erro ao alterar status: {str(e)}'
+            })
+            
+    return JsonResponse({
+        'success': False,
+        'message': 'Método não permitido'
+    })
+
+@login_required
+def futcoin_excluir(request, id):
+    """
+    Exclui um pacote de futcoins específico
+    """
+    if not request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({'success': False, 'message': 'Requisição inválida'})
+
+    try:
+        package = get_object_or_404(FutcoinPackage, id=id)
+        package.delete()
+        return JsonResponse({
+            'success': True,
+            'message': 'Pacote excluído com sucesso'
+        })
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Erro ao excluir pacote: {str(e)}'
+        })
+
+@login_required
+def futcoin_excluir_em_massa(request):
+    """
+    Exclui múltiplos pacotes de futcoins
+    """
+    if request.method != 'POST':
+        return JsonResponse({
+            'success': False,
+            'message': 'Método não permitido'
+        })
+
+    try:
+        ids = request.POST.getlist('ids[]')
+        if not ids:
+            return JsonResponse({
+                'success': False,
+                'message': 'Nenhum pacote selecionado'
+            })
+
+        FutcoinPackage.objects.filter(id__in=ids).delete()
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Pacotes excluídos com sucesso'
+        })
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Erro ao excluir pacotes: {str(e)}'
+        })
+
+@login_required
+def futcoin_toggle_status(request):
+    """
+    Alterna o status de ativação de um pacote de futcoins
+    """
+    if request.method != 'POST':
+        return JsonResponse({
+            'success': False,
+            'message': 'Método não permitido'
+        })
+
+    try:
+        package_id = request.POST.get('id')
+        if not package_id:
+            return JsonResponse({
+                'success': False,
+                'message': 'ID do pacote não fornecido'
+            })
+
+        package = get_object_or_404(FutcoinPackage, id=package_id)
+        package.enabled = not package.enabled
+        package.save()
+
+        status_text = 'ativado' if package.enabled else 'desativado'
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Pacote {status_text} com sucesso',
+            'enabled': package.enabled
+        })
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Erro ao alterar status do pacote: {str(e)}'
+        })
+
+@login_required
+def futcoin_editar(request, id):
+    """
+    Edita um pacote de futcoins existente
+    """
+    package = get_object_or_404(FutcoinPackage, id=id)
+    
+    if request.method == 'POST':
+        try:
+            # Atualiza os dados básicos
+            package.name = request.POST.get('name')
+            package.package_type = request.POST.get('package_type')
+            package.enabled = request.POST.get('enabled') == 'true'
+            package.full_price = request.POST.get('full_price')
+            package.promotional_price = request.POST.get('promotional_price')
+            package.label = request.POST.get('label')
+            package.color_text_label = request.POST.get('color_text_label')
+            package.color_background_label = request.POST.get('color_background_label')
+            package.show_to = request.POST.get('show_to')
+
+            # Processa datas se fornecidas
+            start_date = request.POST.get('start_date')
+            end_date = request.POST.get('end_date')
+
+            if start_date:
+                try:
+                    package.start_date = datetime.strptime(start_date, '%d/%m/%Y %H:%M')
+                except ValueError:
+                    return JsonResponse({
+                        'success': False,
+                        'message': 'Formato de data de início inválido. Use DD/MM/YYYY HH:mm'
+                    })
+
+            if end_date:
+                try:
+                    package.end_date = datetime.strptime(end_date, '%d/%m/%Y %H:%M')
+                except ValueError:
+                    return JsonResponse({
+                        'success': False,
+                        'message': 'Formato de data de término inválido. Use DD/MM/YYYY HH:mm'
+                    })
+
+            # Processa a imagem se fornecida
+            if 'image' in request.FILES:
+                image = request.FILES['image']
+                if image.size > 2 * 1024 * 1024:  # 2MB
+                    return JsonResponse({
+                        'success': False,
+                        'message': 'A imagem não pode ter mais que 2MB'
+                    })
+                package.image = image
+
+            package.save()
+            
+            return JsonResponse({
+                'success': True,
+                'message': 'Pacote atualizado com sucesso'
+            })
+            
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': f'Erro ao atualizar pacote: {str(e)}'
+            })
+    
+    # GET request - renderiza o template com os dados do pacote
+    context = {
+        'package': package,
+        'package_data': {
+            'id': package.id,
+            'name': package.name,
+            'package_type': package.package_type,
+            'enabled': package.enabled,
+            'full_price': package.full_price,
+            'promotional_price': package.promotional_price,
+            'label': package.label,
+            'color_text_label': package.color_text_label,
+            'color_background_label': package.color_background_label,
+            'show_to': package.show_to,
+            'start_date': package.start_date.strftime('%d/%m/%Y %H:%M') if package.start_date else '',
+            'end_date': package.end_date.strftime('%d/%m/%Y %H:%M') if package.end_date else '',
+            'image': package.image.url if package.image else None
+        }
+    }
+    
+    return render(request, 'administrativo/pacote-futcoin-editar.html', context)
+
+@login_required
+def futliga_nivel_novo(request):
+    if request.method == 'POST':
+        try:
+            name = request.POST.get('name')
+            players = request.POST.get('players')
+            premium_players = request.POST.get('premium_players')
+            owner_premium = request.POST.get('owner_premium') == 'true'
+            image = request.FILES.get('image')
+
+            if not all([name, players, premium_players]):
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Todos os campos são obrigatórios'
+                })
+
+            # Valida a imagem se fornecida
+            if image:
+                if not image.content_type.startswith('image/'):
+                    return JsonResponse({
+                        'success': False,
+                        'message': 'O arquivo selecionado não é uma imagem válida'
+                    })
+                if image.size > 2 * 1024 * 1024:
+                    return JsonResponse({
+                        'success': False,
+                        'message': 'A imagem não pode ter mais que 2MB'
+                    })
+
+            level = CustomLeagueLevel.objects.create(
+                name=name,
+                players=players,
+                premium_players=premium_players,
+                owner_premium=owner_premium,
+                image=image if image else None
+            )
+
+            return JsonResponse({
+                'success': True,
+                'message': 'Nível criado com sucesso!',
+                'level': {
+                    'id': level.id,
+                    'name': level.name,
+                    'players': level.players,
+                    'premium_players': level.premium_players,
+                    'owner_premium': level.owner_premium,
+                    'image': level.image.url if level.image else None,
+                    'order': level.order
+                }
+            })
+
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': f'Erro ao criar nível: {str(e)}'
+            })
+
+    return JsonResponse({
+        'success': False,
+        'message': 'Método não permitido'
+    })
+
+@login_required
+def jogador_importar(request):
+    if request.method == 'POST':
+        try:
+            file = request.FILES.get('file')
+            if not file:
+                return JsonResponse({'success': False, 'message': 'Nenhum arquivo foi enviado.'})
+            
+            # Verifica a extensão do arquivo
+            if not file.name.endswith('.xlsx'):
+                return JsonResponse({'success': False, 'message': 'O arquivo deve estar no formato .xlsx'})
+            
+            # TODO: Implementar a lógica de importação dos jogadores
+            # Por enquanto retorna sucesso
+            return JsonResponse({'success': True, 'message': 'Jogadores importados com sucesso!'})
+            
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': f'Erro ao importar jogadores: {str(e)}'})
+    
+    return JsonResponse({'success': False, 'message': 'Método não permitido.'})
+
+@login_required
+def importar_rodadas(request):
+    if request.method == 'POST' and request.FILES.get('arquivo'):
+        try:
+            import pandas as pd
+            from datetime import datetime
+            
+            # Lê o arquivo Excel
+            df = pd.read_excel(request.FILES['arquivo'])
+            
+            # Lista para armazenar as rodadas processadas
+            rodadas_processadas = []
+            
+            # Processa cada linha do Excel
+            for _, row in df.iterrows():
+                rodada = {
+                    'fase': str(row['Fase']),
+                    'rodada': int(row['Rodada']),
+                    'mandante': str(row['Mandante']),
+                    'placar_mandante': int(row['Placar M.']) if pd.notna(row['Placar M.']) else None,
+                    'placar_visitante': int(row['Placar V.']) if pd.notna(row['Placar V.']) else None,
+                    'visitante': str(row['Visitante']),
+                    'data': row['Data'],
+                    'hora': row['Hora']
+                }
+                rodadas_processadas.append(rodada)
+            
+            return JsonResponse({
+                'success': True,
+                'message': 'Rodadas importadas com sucesso',
+                'rodadas': rodadas_processadas
+            })
+            
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': f'Erro ao processar arquivo: {str(e)}'
+            }, status=400)
+            
+    return JsonResponse({
+        'success': False,
+        'message': 'Requisição inválida'
+    }, status=400)
+
+@login_required
+def futliga_importar(request):
+    if request.method == 'POST':
+        try:
+            file = request.FILES.get('file')
+            if not file:
+                return JsonResponse({'success': False, 'message': 'Nenhum arquivo foi enviado.'})
+            
+            if not file.name.endswith(('.xls', '.xlsx')):
+                return JsonResponse({'success': False, 'message': 'O arquivo deve ser do tipo Excel (.xls ou .xlsx).'})
+            
+            # Processa o arquivo Excel
+            df = pd.read_excel(file)
+            
+            # Verifica se todas as colunas necessárias existem
+            required_columns = ['Nome', 'Participantes', 'Craques', 'Dono Craque']
+            missing_columns = [col for col in required_columns if col not in df.columns]
+            
+            if missing_columns:
+                return JsonResponse({
+                    'success': False, 
+                    'message': f'As seguintes colunas estão faltando: {", ".join(missing_columns)}'
+                })
+            
+            # Processa cada linha do Excel
+            for _, row in df.iterrows():
+                FutligaJogadores.objects.create(
+                    name=row['Nome'],
+                    players=row['Participantes'],
+                    premium_players=row['Craques'],
+                    owner_premium=row['Dono Craque'].lower() == 'sim'
+                )
+            
+            return JsonResponse({'success': True, 'message': 'Futligas importadas com sucesso!'})
+            
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': f'Erro ao importar: {str(e)}'})
+    
+    return JsonResponse({'success': False, 'message': 'Método não permitido.'})

@@ -15,6 +15,8 @@
         <link href="{% static 'administrativo/css/plugins/awesome-bootstrap-checkbox/awesome-bootstrap-checkbox.css' %}" rel="stylesheet">   
         <!-- Custom -->      
         <link href="{% static 'administrativo/css/custom.css' %}" rel="stylesheet">
+        <!-- Toastr style -->
+        <link href="{% static 'administrativo/css/plugins/toastr/toastr.min.css' %}" rel="stylesheet">
         <!-- Favicon -->
         <link rel="icon" href="{% static 'administrativo/img/futmundi.ico' %}" type="image/png">
     </head>
@@ -133,7 +135,7 @@
                                         <a href="{% url 'administrativo:administrador_novo' %}" class="btn btn-success btn-sm" title="Novo"><i class="fa fa-plus"></i></a>
                                     </div>
                                     <div class="group-options-right mr10">
-                                        <a class="btn btn-default btn-sm" title="Excluir"><i class="glyphicon glyphicon-trash" data-toggle="modal" data-target="#modalAlert"></i></a>
+                                        <button type="button" class="btn btn-default btn-sm" id="btn-excluir-em-massa" title="Excluir"><i class="glyphicon glyphicon-trash"></i></button>
                                     </div>
                                     <div class="table-responsive">
                                         <table class="table table-striped table-bordered table-hover dataTables-usuarios-internos" >
@@ -223,115 +225,161 @@
         <script src="{% static 'administrativo/js/plugins/slimscroll/jquery.slimscroll.min.js' %}"></script>
         <script src="{% static 'administrativo/js/plugins/dataTables/datatables.min.js' %}"></script>
         <script src="{% static 'administrativo/js/plugins/dataTables/dataTables.bootstrap4.min.js' %}"></script>
+        <!-- Toastr -->
+        <script src="{% static 'administrativo/js/plugins/toastr/toastr.min.js' %}"></script>
         <!-- Custom and plugin javascript -->
         <script src="{% static 'administrativo/js/inspinia.js' %}"></script>
         <script src="{% static 'administrativo/js/plugins/pace/pace.min.js' %}"></script>
         <script src="{% static 'administrativo/js/plugins/checkAll/checkAll.js' %}"></script>
-        <script src="{% static 'administrativo/js/plugins/toastr/toastr.min.js' %}"></script>
         <script src="{% static 'administrativo/js/page-level.js' %}"></script>
-        
+
         {% if messages %}
         <script>
-            {% for message in messages %}
-                toastr.{{ message.tags }}("{{ message }}");
-            {% endfor %}
+            $(document).ready(function() {
+                {% for message in messages %}
+                toastr.{{ message.tags }}("{{ message|safe|escapejs }}");
+                {% endfor %}
+            });
         </script>
         {% endif %}
+
         <script>
-            // Configurações do Toastr
-            toastr.options = {
-                closeButton: true,
-                progressBar: true,
-                showMethod: 'slideDown',
-                timeOut: 4000,
-                positionClass: "toast-top-right"
-            };
+            $(document).ready(function() {
+                // Configuração do toastr
+                toastr.options = {
+                    closeButton: true,
+                    progressBar: true,
+                    preventDuplicates: true,
+                    positionClass: "toast-top-right",
+                    timeOut: 1500
+                };
 
-            // Função para atualizar a mensagem de "Exibindo X a Y de Z registros"
-            function atualizarInfoRegistros() {
-                var totalRows = $('.dataTables-usuarios-internos tbody tr').length;
-                if (totalRows === 0) {
-                    $('.dataTables-usuarios-internos tbody').html('<tr><td colspan="5" class="text-center">Não há dados disponíveis na tabela</td></tr>');
+                // DataTable - Verifica se já não está inicializado
+                var $table = $('.dataTables-usuarios-internos');
+                if (!$.fn.DataTable.isDataTable($table)) {
+                    var table = $table.DataTable({
+                        pageLength: 25,
+                        responsive: true,
+                        dom: '<"html5buttons"B>lTfgitp',
+                        buttons: [],
+                        language: {
+                            url: "//cdn.datatables.net/plug-ins/1.10.19/i18n/Portuguese-Brasil.json"
+                        }
+                    });
                 }
-            }
 
-            // Função para excluir um administrador
-            function excluirAdmin(id) {
-                $('#modalAlert2').modal('show');
-                $('#confirmDelete').off('click').on('click', function() {
+                // Checkbox "Selecionar todos"
+                $('.checkAll').on('change', function() {
+                    $('input[name="administradores[]"]').prop('checked', $(this).prop('checked'));
+                });
+
+                // Botão de exclusão em massa
+                $('#btn-excluir-em-massa').on('click', function() {
+                    var ids = [];
+                    $('input[name="administradores[]"]:checked').each(function() {
+                        ids.push($(this).val());
+                    });
+
+                    if (ids.length === 0) {
+                        toastr.warning('Selecione pelo menos um administrador para excluir');
+                        return;
+                    }
+
+                    $('#modalAlert').modal('show');
+                });
+
+                // Função para excluir em massa
+                function excluirMassa() {
+                    var ids = [];
+                    $('input[name="administradores[]"]:checked').each(function() {
+                        ids.push($(this).val());
+                    });
+
+                    if (ids.length === 0) {
+                        toastr.warning('Selecione pelo menos um administrador para excluir');
+                        return;
+                    }
+
+                    $('#modalAlert').modal('hide');
+                    
                     $.ajax({
-                        url: `/administrador/excluir/${id}/`,
+                        url: "{% url 'administrativo:administradores_excluir_massa' %}",
                         type: 'POST',
-                        headers: {
-                            'X-CSRFToken': $('[name=csrfmiddlewaretoken]').val()
+                        data: {
+                            'administradores[]': ids,
+                            'csrfmiddlewaretoken': $('[name=csrfmiddlewaretoken]').val()
                         },
                         success: function(response) {
-                            $('#modalAlert2').modal('hide');
                             if (response.success) {
-                                var row = $(`button[data-id="${id}"]`).closest('tr');
-                                row.fadeOut(400, function() {
-                                    row.remove();
-                                    atualizarInfoRegistros();
+                                ids.forEach(function(id) {
+                                    var row = $(`input[value="${id}"]`).closest('tr');
+                                    row.fadeOut(400, function() {
+                                        row.remove();
+                                        atualizarInfoRegistros();
+                                    });
                                 });
-                                toastr.success(response.message);
+                                toastr.success(response.message || 'Administradores excluídos com sucesso');
+                                $('.checkAll').prop('checked', false);
                             } else {
-                                toastr.error(response.message);
+                                toastr.error(response.message || 'Erro ao excluir administradores');
                             }
                         },
                         error: function(xhr, status, error) {
-                            $('#modalAlert2').modal('hide');
-                            toastr.error('Erro ao excluir administrador: ' + error);
+                            toastr.error('Erro ao excluir administradores: ' + error);
                         }
                     });
-                });
-            }
-
-            // Handler para excluir administrador
-            $(document).on('click', '.delete-btn', function() {
-                var adminId = $(this).data('id');
-                excluirAdmin(adminId);
-            });
-
-            // Nova função simplificada de exclusão em massa
-            function excluirMassa() {
-                var ids = [];
-                $('input[name="administradores[]"]:checked').each(function() {
-                    ids.push($(this).val());
-                });
-
-                if (ids.length === 0) {
-                    toastr.warning('Selecione pelo menos um administrador para excluir');
-                    return;
                 }
 
-                $.ajax({
-                    url: "{% url 'administrativo:administradores_excluir_massa' %}",
-                    type: 'POST',
-                    data: {
-                        'administradores[]': ids,
-                        'csrfmiddlewaretoken': '{{ csrf_token }}'
-                    },
-                    success: function(response) {
-                        $('#modalAlert').modal('hide');
-                        if (response.success) {
-                            ids.forEach(function(id) {
-                                var row = $(`input[value="${id}"]`).closest('tr');
-                                row.fadeOut(400, function() {
-                                    row.remove();
-                                    atualizarInfoRegistros();
-                                });
-                            });
-                            toastr.success(response.message);
-                        } else {
-                            toastr.error(response.message);
-                        }
-                    },
-                    error: function() {
-                        $('#modalAlert').modal('hide');
-                        toastr.error('Erro ao excluir administradores');
-                    }
+                // Botão de confirmar exclusão em massa
+                $('#modalAlert .btn-danger').on('click', function() {
+                    excluirMassa();
                 });
-            }
+
+                // Função para atualizar a mensagem de "Exibindo X a Y de Z registros"
+                function atualizarInfoRegistros() {
+                    var totalRows = $('.dataTables-usuarios-internos tbody tr').length;
+                    if (totalRows === 0) {
+                        $('.dataTables-usuarios-internos tbody').html('<tr><td colspan="5" class="text-center">Não há dados disponíveis na tabela</td></tr>');
+                    }
+                }
+
+                // Função para excluir um administrador
+                function excluirAdmin(id) {
+                    $('#modalAlert2').modal('show');
+                    $('#confirmDelete').off('click').on('click', function() {
+                        $('#modalAlert2').modal('hide');
+                        
+                        $.ajax({
+                            url: "{% url 'administrativo:administrador_excluir' 0 %}".replace('0', id),
+                            type: 'POST',
+                            headers: {
+                                'X-CSRFToken': $('[name=csrfmiddlewaretoken]').val()
+                            },
+                            success: function(response) {
+                                if (response.success) {
+                                    var row = $(`button[data-id="${id}"]`).closest('tr');
+                                    row.fadeOut(400, function() {
+                                        row.remove();
+                                        atualizarInfoRegistros();
+                                    });
+                                    toastr.success(response.message || 'Administrador excluído com sucesso');
+                                } else {
+                                    toastr.error(response.message || 'Erro ao excluir administrador');
+                                }
+                            },
+                            error: function(xhr, status, error) {
+                                toastr.error('Erro ao excluir administrador: ' + error);
+                            }
+                        });
+                    });
+                }
+
+                // Handler para excluir administrador
+                $(document).on('click', '.delete-btn', function() {
+                    var adminId = $(this).data('id');
+                    excluirAdmin(adminId);
+                });
+            });
         </script>
     </body>
 </html>

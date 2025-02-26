@@ -99,7 +99,7 @@
                         </div>
                         <ul class="nav navbar-top-links navbar-right">
                             <li>
-                                <span class="m-r-sm text-muted welcome-message">Andrews Cristhian</span>
+                                <span class="m-r-sm text-muted welcome-message">{{ request.user.get_full_name }}</span>
                             </li>
                             <li class="dropdown">
                                 <a class="dropdown-toggle count-info" data-toggle="dropdown" href="#">
@@ -161,7 +161,7 @@
                                                                 </select> 
                                                             </div>
                                                             <div class="col-lg-12 mt15">
-                                                                <div class="i-checks"><label><input type="checkbox" name="enabled" checked> Ativo</label></div>
+                                                                <div class="i-checks"><label><input type="checkbox" name="is_active" checked> Ativo</label></div>
                                                             </div>
                                                         </div>
                                                         <div class="col-lg-6">
@@ -306,53 +306,46 @@
                     </div>
                     <div class="modal-body">
                         <div class="fileinput fileinput-new" data-provides="fileinput">
-                            <span class="btn btn-primary btn-file"><span class="fileinput-new">Selecionar</span><span class="fileinput-exists">Mudar</span><input type="file" accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" name="..."></span>
+                            <span class="btn btn-primary btn-file"><span class="fileinput-new">Selecionar</span><span class="fileinput-exists">Mudar</span><input type="file" accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" name="arquivo_rodadas" id="arquivo_rodadas"></span>
                             <span class="fileinput-filename"></span>
                             <a href="#" class="close fileinput-exists" data-dismiss="fileinput" style="float: none">&times;</a>
                         </div>                
-                        <table class="table table-bordered">
-                            <thead class="thead-light">
-                                <tr>
-                                    <th class="per10">Campeonato</th>
-                                    <th class="per5">Fase</th>
-                                    <th class="per5">Rodada</th>
-                                    <th class="per20">Mandante</th>
-                                    <th class="per15">Placar M.</th>
-                                    <th class="per15">Placar V.</th>
-                                    <th class="per20">Visitante</th>
-                                    <th class="per5">Data</th>
-                                    <th class="per5">Hora</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>Libertadores</td>
-                                    <td>Oitavas</td>                                      
-                                    <td>2</td>  
-                                    <td>Athletico Paranaense</td> 
-                                    <td>2</td>                                    
-                                    <td>2</td>    
-                                    <td>Athletico Paranaense</td>                                 
-                                    <td>31/03</td>                                 
-                                    <td>13:00</td>                                 
-                                </tr>
-                                <tr>
-                                    <td>Libertadores</td>
-                                    <td>Oitavas</td>                                      
-                                    <td>2</td>  
-                                    <td>Athletico Paranaense</td> 
-                                    <td>2</td>                                    
-                                    <td>2</td>    
-                                    <td>Athletico Paranaense</td>                                 
-                                    <td>31/03</td>                                 
-                                    <td>13:00</td>                                 
-                                </tr>
-                            </tbody>
-                        </table>
+                        <div class="alert alert-info mt15">
+                            <h5>Instruções:</h5>
+                            <p>O arquivo Excel deve conter as seguintes colunas:</p>
+                            <ul>
+                                <li><strong>Fase</strong>: Nome da fase (ex: Fase de Grupos, Oitavas, etc)</li>
+                                <li><strong>Rodada</strong>: Número da rodada</li>
+                                <li><strong>Mandante</strong>: Nome do time mandante</li>
+                                <li><strong>Placar M.</strong>: Gols do mandante</li>
+                                <li><strong>Placar V.</strong>: Gols do visitante</li>
+                                <li><strong>Visitante</strong>: Nome do time visitante</li>
+                                <li><strong>Data</strong>: Data do jogo (formato: DD/MM/YYYY)</li>
+                                <li><strong>Hora</strong>: Horário do jogo (formato: HH:MM)</li>
+                            </ul>
+                        </div>
+                        <div id="preview-table" class="table-responsive" style="display: none;">
+                            <table class="table table-bordered">
+                                <thead class="thead-light">
+                                    <tr>
+                                        <th class="per5">Fase</th>
+                                        <th class="per5">Rodada</th>
+                                        <th class="per20">Mandante</th>
+                                        <th class="per15">Placar M.</th>
+                                        <th class="per15">Placar V.</th>
+                                        <th class="per20">Visitante</th>
+                                        <th class="per10">Data</th>
+                                        <th class="per10">Hora</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="preview-content">
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
-                        <button type="button" class="btn btn-success">Salvar</button>
+                        <button type="button" class="btn btn-success" id="btn-importar-rodadas">Importar</button>
                     </div>
                 </div>
             </div>
@@ -375,6 +368,7 @@
         <script src="{% static 'administrativo/js/plugins/moment/moment.js' %}"></script>
         <script src="{% static 'administrativo/js/plugins/tempusdominus/tempusdominus-bootstrap-4.min.js' %}"></script>
         <script src="{% static 'administrativo/js/settings.js' %}"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
         <script>
             $(document).ready(function() {
                 // Preenche o campo temporada com o ano atual
@@ -702,6 +696,185 @@
                         stateSelect.empty().append('<option value="">Selecione um estado</option>');
                     }
                 });
+
+                // Função para processar o arquivo Excel
+                function processExcelFile(file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        try {
+                            const data = new Uint8Array(e.target.result);
+                            const workbook = XLSX.read(data, { type: 'array' });
+                            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                            const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+
+                            // Limpa a tabela de preview
+                            $('#preview-content').empty();
+                            
+                            // Pula a primeira linha (cabeçalho) e processa os dados
+                            for (let i = 1; i < jsonData.length; i++) {
+                                const row = jsonData[i];
+                                if (row.length >= 8) { // Verifica se tem todas as colunas necessárias
+                                    const tr = $('<tr>');
+                                    tr.append(`<td>${row[0]}</td>`); // Fase
+                                    tr.append(`<td>${row[1]}</td>`); // Rodada
+                                    tr.append(`<td>${row[2]}</td>`); // Mandante
+                                    tr.append(`<td>${row[3]}</td>`); // Placar M
+                                    tr.append(`<td>${row[4]}</td>`); // Placar V
+                                    tr.append(`<td>${row[5]}</td>`); // Visitante
+                                    tr.append(`<td>${row[6]}</td>`); // Data
+                                    tr.append(`<td>${row[7]}</td>`); // Hora
+                                    $('#preview-content').append(tr);
+                                }
+                            }
+                            
+                            // Mostra a tabela de preview
+                            $('#preview-table').show();
+                        } catch (error) {
+                            toastr.error('Erro ao processar o arquivo Excel');
+                            console.error(error);
+                        }
+                    };
+                    reader.readAsArrayBuffer(file);
+                }
+
+                // Handler para mudança no input de arquivo
+                $('#arquivo_rodadas').on('change', function(e) {
+                    const file = e.target.files[0];
+                    if (file) {
+                        processExcelFile(file);
+                    }
+                });
+
+                // Handler para o botão de importar
+                $('#btn-importar-rodadas').on('click', function() {
+                    const file = $('#arquivo_rodadas')[0].files[0];
+                    if (!file) {
+                        toastr.warning('Selecione um arquivo para importar');
+                        return;
+                    }
+
+                    const formData = new FormData();
+                    formData.append('arquivo', file);
+                    formData.append('csrfmiddlewaretoken', $('[name=csrfmiddlewaretoken]').val());
+
+                    $.ajax({
+                        url: "{% url 'administrativo:importar_rodadas' %}",
+                        type: 'POST',
+                        data: formData,
+                        processData: false,
+                        contentType: false,
+                        success: function(response) {
+                            if (response.success) {
+                                toastr.success('Rodadas importadas com sucesso!');
+                                $('#modalImportXLS').modal('hide');
+                                // Atualiza a interface com as rodadas importadas
+                                atualizarRodadasInterface(response.rodadas);
+                            } else {
+                                toastr.error(response.message || 'Erro ao importar rodadas');
+                            }
+                        },
+                        error: function(xhr) {
+                            toastr.error(xhr.responseJSON?.message || 'Erro ao importar rodadas');
+                        }
+                    });
+                });
+
+                // Função para atualizar a interface com as rodadas importadas
+                function atualizarRodadasInterface(rodadas) {
+                    if (!rodadas || !rodadas.length) return;
+
+                    // Função auxiliar para criar uma nova linha de rodada
+                    function criarLinhaRodada() {
+                        return $(`
+                            <div class="row col-lg-12 mt10">
+                                <div class="col-lg-2">
+                                    <select class="form-control js-templating time-select time-mandante" style="width: 100%">
+                                        <option value="">Selecione o time</option>
+                                    </select>
+                                </div>
+                                <div class="col-lg-1 ml35 mrm15">
+                                    <input type="number" min="0" class="form-control placar">
+                                </div>
+                                <div class="col-lg-1 mlm30 mrm15">
+                                    <input type="number" min="0" class="form-control placar">
+                                </div>
+                                <div class="col-lg-2 mlm30 mr25">
+                                    <select class="form-control js-templating time-select time-visitante" style="width: 100%">
+                                        <option value="">Selecione o time</option>
+                                    </select>
+                                </div>
+                                <div class="col-lg-3 ml10">
+                                    <input type="text" class="form-control datetimepicker-input" style="width: 50%" data-toggle="datetimepicker"/>
+                                </div>
+                            </div>
+                        `);
+                    }
+
+                    // Limpa as rodadas existentes
+                    $('.row.col-lg-12.mt10').not(':first').remove();
+
+                    // Atualiza o select de fase com a primeira fase encontrada
+                    const primeiraFase = rodadas[0].fase;
+                    $('#fase').val(primeiraFase).trigger('change');
+
+                    // Atualiza o select de rodada com a primeira rodada encontrada
+                    const primeiraRodada = rodadas[0].rodada;
+                    $('#rodada').val(primeiraRodada).trigger('change');
+
+                    // Para cada rodada, cria ou atualiza a linha
+                    rodadas.forEach((rodada, index) => {
+                        let $linha;
+                        if (index === 0) {
+                            // Usa a primeira linha existente
+                            $linha = $('.row.col-lg-12.mt10').first();
+                        } else {
+                            // Cria uma nova linha
+                            $linha = criarLinhaRodada();
+                            $('.panel-body').append($linha);
+                        }
+
+                        // Atualiza os times
+                        const $mandante = $linha.find('.time-mandante');
+                        const $visitante = $linha.find('.time-visitante');
+                        
+                        // Atualiza os placares
+                        const $placares = $linha.find('input[type="number"]');
+                        if (rodada.placar_mandante !== null) $placares.eq(0).val(rodada.placar_mandante);
+                        if (rodada.placar_visitante !== null) $placares.eq(1).val(rodada.placar_visitante);
+
+                        // Atualiza a data/hora
+                        const $datetime = $linha.find('.datetimepicker-input');
+                        if (rodada.data && rodada.hora) {
+                            const dataHora = moment(rodada.data + ' ' + rodada.hora, 'DD/MM/YYYY HH:mm');
+                            $datetime.val(dataHora.format('DD/MM/YYYY HH:mm'));
+                        }
+
+                        // Inicializa os componentes da nova linha
+                        $linha.find('.js-templating').select2({
+                            templateResult: formatTeamOption,
+                            templateSelection: formatTeamOption,
+                            escapeMarkup: function(m) { return m; }
+                        });
+
+                        $linha.find('.datetimepicker-input').datetimepicker({
+                            format: 'DD/MM/YYYY HH:mm',
+                            locale: 'pt-br'
+                        });
+
+                        // Seleciona os times corretos
+                        setTimeout(() => {
+                            const timesMandante = $mandante.find('option').filter(function() {
+                                return $(this).text().trim() === rodada.mandante;
+                            });
+                            const timesVisitante = $visitante.find('option').filter(function() {
+                                return $(this).text().trim() === rodada.visitante;
+                            });
+
+                            if (timesMandante.length) $mandante.val(timesMandante.first().val()).trigger('change');
+                            if (timesVisitante.length) $visitante.val(timesVisitante.first().val()).trigger('change');
+                        }, 100);
+                    });
+                }
             });
         </script>
     </body>

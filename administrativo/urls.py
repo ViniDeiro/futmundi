@@ -18,6 +18,7 @@ urlpatterns = [
     path('campeonato/excluir-em-massa/', views.campeonato_excluir_em_massa, name='campeonato_excluir_em_massa'),
     path('campeonato/resultados/<int:id>/', views.campeonato_resultados, name='campeonato_resultados'),
     path('campeonato/toggle-status/', views.campeonato_toggle_status, name='campeonato_toggle_status'),
+    path('campeonato/importar-rodadas/', views.importar_rodadas, name='importar_rodadas'),
     path('templates/', views.templates, name='templates'),
     path('template/novo/', views.template_novo, name='template_novo'),
     path('template/editar/<int:id>/', views.template_editar, name='template_editar'),
@@ -61,7 +62,11 @@ urlpatterns = [
     
     # Futligas
     path('futligas/classicas/', views.futligas_classicas, name='futligas_classicas'),
+    path('futligas/classicas/novo/', views.futliga_classica_novo, name='futliga_classica_novo'),
+    path('futligas/classicas/editar/<int:id>/', views.futliga_classica_editar, name='futliga_classica_editar'),
     path('futligas/jogadores/', views.futligas_jogadores, name='futligas_jogadores'),
+    path('futligas/jogadores/importar/', views.jogador_importar, name='jogador_importar'),
+    path('futligas/jogadores/importar-futligas/', views.futliga_importar, name='futliga_importar'),
     path('futligas/niveis/', views.futligas_niveis, name='futligas_niveis'),
     path('futligas/premiacao/salvar/', views.futliga_premiacao_salvar, name='futliga_premiacao_salvar'),
     path('futligas/premio/novo/', views.futliga_premio_novo, name='futliga_premio_novo'),

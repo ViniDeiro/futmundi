@@ -15,6 +15,10 @@
         <link href="{% static 'administrativo/css/plugins/awesome-bootstrap-checkbox/awesome-bootstrap-checkbox.css' %}" rel="stylesheet"> 
         <!-- Custom -->      
         <link href="{% static 'administrativo/css/custom.css' %}" rel="stylesheet">
+        <!-- Toastr style -->
+        <link href="{% static 'administrativo/css/plugins/toastr/toastr.min.css' %}" rel="stylesheet">
+        <!-- Favicon -->
+        <link rel="icon" href="{% static 'administrativo/img/futmundi.ico' %}" type="image/png">
         <style>
             .status-badge {
                 padding: 5px 10px;
@@ -48,10 +52,9 @@
                 color: white;
             }
         </style>
-        <!-- Favicon -->
-        <link rel="icon" href="{% static 'administrativo/img/futmundi.ico' %}" type="image/png">
     </head>
     <body>
+        <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
         {% csrf_token %}
         <div id="wrapper">
             <nav class="navbar-default navbar-static-side">
@@ -169,7 +172,7 @@
                                         <a href="#" class="btn btn-default btn-sm" id="deleteSelected" title="Excluir"><i class="glyphicon glyphicon-trash"></i></a>
                                     </div>
                                     <div class="table-responsive">
-                                        <table class="table table-striped table-bordered table-hover dataTables-notificacoes">
+                                        <table class="table table-striped table-bordered table-hover dataTables-example">
                                             <thead>
                                                 <tr>
                                                     <th class="per10 center-middle">
@@ -275,16 +278,42 @@
         <script src="{% static 'administrativo/js/plugins/slimscroll/jquery.slimscroll.min.js' %}"></script>
         <script src="{% static 'administrativo/js/plugins/dataTables/datatables.min.js' %}"></script>
         <script src="{% static 'administrativo/js/plugins/dataTables/dataTables.bootstrap4.min.js' %}"></script>
+        <!-- Toastr -->
+        <script src="{% static 'administrativo/js/plugins/toastr/toastr.min.js' %}"></script>
         <!-- Custom and plugin javascript -->
         <script src="{% static 'administrativo/js/inspinia.js' %}"></script>
         <script src="{% static 'administrativo/js/plugins/pace/pace.min.js' %}"></script>
-        <script src="{% static 'administrativo/js/plugins/toastr/toastr.min.js' %}"></script>
         <script src="{% static 'administrativo/js/plugins/checkAll/checkAll.js' %}"></script>
+        <script src="{% static 'administrativo/js/page-level.js' %}"></script>
 
         <script>
         $(document).ready(function() {
-            // DataTable
-            var table = $(".dataTables-notificacoes").DataTable({
+            var csrftoken = $('input[name="csrfmiddlewaretoken"]').val();
+            
+            function getCookie(name) {
+                let cookieValue = null;
+                if (document.cookie && document.cookie !== '') {
+                    const cookies = document.cookie.split(';');
+                    for (let i = 0; i < cookies.length; i++) {
+                        const cookie = cookies[i].trim();
+                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                            break;
+                        }
+                    }
+                }
+                return cookieValue;
+            }
+
+            $.ajaxSetup({
+                beforeSend: function(xhr, settings) {
+                    if (!/^(GET|HEAD|OPTIONS|TRACE)$/i.test(settings.type) && !this.crossDomain) {
+                        xhr.setRequestHeader("X-CSRFToken", csrftoken || getCookie('csrftoken'));
+                    }
+                }
+            });
+
+            var table = $('.dataTables-example').DataTable({
                 pageLength: 10,
                 responsive: true,
                 dom: '<"html5buttons"B>lTfgitp',
@@ -295,52 +324,49 @@
                 }
             });
 
+            toastr.options = {
+                closeButton: true,
+                progressBar: true,
+                preventDuplicates: true,
+                positionClass: "toast-top-right",
+                timeOut: 1500
+            };
+
             // Checkbox "Selecionar todos"
             $('.checkAll').on('change', function() {
                 $('.checkItem').prop('checked', $(this).prop('checked'));
             });
 
-            // Variável para armazenar o ID da notificação a ser excluída
-            var notificationToDelete = null;
-
-            // Excluir notificação individual
+            // Exclusão individual
             $('.delete-notification').on('click', function(e) {
                 e.preventDefault();
-                notificationToDelete = $(this).data('id');
+                var notificationId = $(this).data('id');
+                var row = $(this).closest('tr');
+                
                 $('#deleteModal').modal('show');
-            });
-
-            // Confirmação de exclusão
-            $('#confirmDelete').on('click', function() {
-                if (notificationToDelete) {
-                    // Exclusão individual
+                
+                $('#confirmDelete').off('click').on('click', function() {
+                    $('#deleteModal').modal('hide');
+                    
                     $.ajax({
-                        url: "{% url 'administrativo:notificacao_excluir' 0 %}".replace('0', notificationToDelete),
+                        url: "{% url 'administrativo:notificacao_excluir' 0 %}".replace('0', notificationId),
                         type: 'POST',
-                        headers: {
-                            'X-CSRFToken': $('input[name="csrfmiddlewaretoken"]').val()
-                        },
                         success: function(response) {
-                            $('#deleteModal').modal('hide');
                             if (response.success) {
-                                toastr.success('Notificação excluída com sucesso!');
-                                setTimeout(function() {
-                                    location.reload();
-                                }, 1000);
+                                toastr.success('Notificação excluída com sucesso');
+                                table.row(row).remove().draw();
                             } else {
                                 toastr.error(response.message || 'Erro ao excluir a notificação');
                             }
                         },
                         error: function() {
-                            $('#deleteModal').modal('hide');
                             toastr.error('Erro ao excluir a notificação');
                         }
                     });
-                    notificationToDelete = null;
-                }
+                });
             });
 
-            // Excluir notificações em massa
+            // Exclusão em massa
             $('#deleteSelected').on('click', function(e) {
                 e.preventDefault();
                 var selectedIds = [];
@@ -355,28 +381,29 @@
                 }
 
                 $('#deleteModal').modal('show');
-
-                $('#confirmDelete').one('click', function() {
+                
+                $('#confirmDelete').off('click').on('click', function() {
+                    $('#deleteModal').modal('hide');
+                    
                     $.ajax({
                         url: '{% url "administrativo:notificacao_excluir_em_massa" %}',
                         type: 'POST',
                         data: {
-                            'ids[]': selectedIds,
-                            'csrfmiddlewaretoken': $('input[name="csrfmiddlewaretoken"]').val()
+                            'ids[]': selectedIds
                         },
                         success: function(response) {
-                            $('#deleteModal').modal('hide');
                             if (response.success) {
-                                toastr.success('Notificações excluídas com sucesso!');
-                                setTimeout(function() {
-                                    location.reload();
-                                }, 1000);
+                                toastr.success('Notificações excluídas com sucesso');
+                                selectedIds.forEach(function(id) {
+                                    table.row($('.checkItem[value="' + id + '"]').closest('tr')).remove();
+                                });
+                                table.draw();
+                                $('.checkAll').prop('checked', false);
                             } else {
                                 toastr.error(response.message || 'Erro ao excluir as notificações');
                             }
                         },
                         error: function() {
-                            $('#deleteModal').modal('hide');
                             toastr.error('Erro ao excluir as notificações');
                         }
                     });

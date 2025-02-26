@@ -230,27 +230,21 @@
                                         </div>
                                         <div id="times" class="tab-pane">
                                             <div class="panel-body">
-                                                <div class="col-md-12">
-                                                    <div class="form-group">
-                                                        <label>Filtrar por</label>
-                                                        <select class="form-control select2" id="filter_type" style="width: 200px;">
-                                                            <option value="all">Todos</option>
-                                                            <option value="team">Times</option>
-                                                            <option value="selection">Seleções</option>
-                                                        </select>
-                                                    </div>
-                                                </div>
-                                                <div class="row mt-4">
-                                                    <div class="col-md-12">
-                                                        <select class="duallistbox" multiple="multiple" name="teams[]">
-                                                            {% for team in teams %}
-                                                            <option value="{{ team.id }}" data-type="{{ team.is_selection|yesno:'selection,team' }}" data-image="{% if team.image %}{{ team.image.url }}{% else %}{% static 'administrativo/img/Generico.png' %}{% endif %}" {% if team in selected_teams %}selected{% endif %}>
-                                                                {{ team.name }}
-                                                            </option>
-                                                            {% endfor %}
-                                                        </select>
-                                                    </div>
-                                                </div>
+                                                <div class="col-lg-2">
+                                                    <label class="control-label" for="filtrar-por">Filtrar por</label>
+                                                    <select class="form-control" id="filtrar-por">
+                                                        <option value="all">Todos</option>
+                                                        <option value="teams">Times</option>
+                                                        <option value="selections">Seleções</option>
+                                                    </select>   
+                                                </div> 
+                                                <div class="col-lg-12 mt20">
+                                                    <select class="form-control dual_select" name="teams" multiple>
+                                                        {% for team in teams %}
+                                                        <option value="{{ team.id }}" data-image="{{ team.get_image_url }}" {% if team in selected_teams %}selected{% endif %}>{{ team.name }}</option>
+                                                        {% endfor %}
+                                                    </select>
+                                                </div>                                            
                                             </div>
                                         </div>
                                         <div id="rodadas" class="tab-pane">
@@ -487,36 +481,72 @@
                 $('.js-basic-single').select2();
 
                 // Inicializa o Bootstrap Dual Listbox para o select de times
-                $('.duallistbox').bootstrapDualListbox({
-                    nonSelectedListLabel: 'Disponíveis',
-                    selectedListLabel: 'Selecionados',
-                    preserveSelectionOnMove: 'moved',
-                    moveOnSelect: true,
+                $('.dual_select').bootstrapDualListbox({
+                    selectorMinimalHeight: 160,
+                    filterTextClear: 'mostrar todos',
+                    filterPlaceHolder: 'Filtrar',
+                    moveSelectedLabel: 'Mover selecionados',
+                    moveAllLabel: 'Mover todos',
+                    removeSelectedLabel: 'Remover selecionados',
+                    removeAllLabel: 'Remover todos',
                     infoText: 'Mostrando {0}',
-                    infoTextEmpty: 'Lista vazia',
-                    filterPlaceHolder: 'Filtro',
-                    filterTextClear: 'Mostrar todos',
-                    moveSelectedLabel: '→',
-                    moveAllLabel: '⇒',
-                    removeSelectedLabel: '←',
-                    removeAllLabel: '⇐',
-                    selectorMinimalHeight: 160
+                    infoTextFiltered: '<span class="label label-warning">Filtrado</span> {0} de {1}',
+                    infoTextEmpty: 'Lista vazia'
                 });
 
-                // Inicializa o Select2 para os times com template personalizado
-                $('.time-select').select2({
-                    templateResult: formatTeamOption,
-                    templateSelection: formatTeamOption,
-                    escapeMarkup: function(m) { return m; }
+                // Comportamento do filtro de times
+                $('#filtrar-por').change(function() {
+                    var filterType = $(this).val();
+                    var $options = $('.dual_select option');
+                    
+                    if (filterType === 'all') {
+                        $options.show();
+                    } else {
+                        $options.each(function() {
+                            if ($(this).data('type') === filterType) {
+                                $(this).show();
+                            } else {
+                                $(this).hide();
+                            }
+                        });
+                    }
+                    
+                    // Atualiza o duallistbox após o filtro
+                    $('.dual_select').bootstrapDualListbox('refresh');
+                });
+
+                // Função para atualizar os selects de times nas rodadas
+                function atualizarTimesRodadas() {
+                    var timesSelecionados = $('.dual_select').val();
+                    var options = '<option value="">Selecione o time</option>';
+                    
+                    if (timesSelecionados) {
+                        $('.dual_select option:selected').each(function() {
+                            var teamId = $(this).val();
+                            var teamName = $(this).text();
+                            var teamImage = $(this).data('image');
+                            options += `<option value="${teamId}" data-image="${teamImage}">${teamName}</option>`;
+                        });
+                    }
+                    
+                    $('.time-select').each(function() {
+                        $(this).html(options);
+                    });
+                    $('.time-select').trigger('change');
+                }
+
+                // Atualiza os times das rodadas quando mudar a seleção na dual listbox
+                $('.dual_select').on('change', function() {
+                    atualizarTimesRodadas();
                 });
 
                 // Função para criar uma nova linha de partida
                 function createMatchRow() {
-                    var teams = $('.duallistbox').val();
+                    var teams = $('.dual_select').val();
                     var teamOptions = '<option value="">Selecione o time</option>';
                     
                     if (teams) {
-                        $('.duallistbox option:selected').each(function() {
+                        $('.dual_select option:selected').each(function() {
                             var teamId = $(this).val();
                             var teamName = $(this).text();
                             var teamImage = $(this).data('image');
@@ -580,12 +610,12 @@
                 });
 
                 // Atualiza os times das rodadas quando mudar a seleção na dual listbox
-                $('.duallistbox').on('change', function() {
+                $('.dual_select').on('change', function() {
                     var teams = $(this).val();
                     var teamOptions = '<option value="">Selecione o time</option>';
                     
                     if (teams) {
-                        $('.duallistbox option:selected').each(function() {
+                        $(this).find('option').each(function() {
                             var teamId = $(this).val();
                             var teamName = $(this).text();
                             teamOptions += `<option value="${teamId}">${teamName}</option>`;
@@ -598,7 +628,7 @@
                 // Comportamento do filtro de times
                 $('#filter_type').change(function() {
                     var filterType = $(this).val();
-                    var $options = $('.duallistbox option');
+                    var $options = $('.dual_select option');
                     
                     if (filterType === 'all') {
                         $options.show();
@@ -613,16 +643,16 @@
                     }
                     
                     // Atualiza o duallistbox após o filtro
-                    $('.duallistbox').bootstrapDualListbox('refresh');
+                    $('.dual_select').bootstrapDualListbox('refresh');
                 });
 
                 // Função para atualizar os selects de times nas rodadas
                 function atualizarTimesRodadas() {
-                    var timesSelecionados = $('.duallistbox').val();
+                    var timesSelecionados = $('.dual_select').val();
                     var options = '<option value="">Selecione o time</option>';
                     
                     if (timesSelecionados) {
-                        $('.duallistbox option:selected').each(function() {
+                        $('.dual_select option:selected').each(function() {
                             var teamId = $(this).val();
                             var teamName = $(this).text();
                             var teamImage = $(this).data('image');
@@ -643,7 +673,7 @@
                 }
 
                 // Atualiza os times das rodadas quando mudar a seleção na dual listbox
-                $('.duallistbox').on('change', function() {
+                $('.dual_select').on('change', function() {
                     atualizarTimesRodadas();
                 });
 
@@ -716,41 +746,10 @@
                         success: function(response) {
                             if (response.success) {
                                 toastr.success(response.message);
-                                
-                                // Se estiver na aba Geral, permanece na mesma página
-                                if (activeTab === '#geral') {
-                                    // Atualiza os times baseado no âmbito selecionado
-                                    $.ajax({
-                                        url: "{% url 'administrativo:times_por_tipo' %}",
-                                        type: 'POST',
-                                        data: {
-                                            scope: $('#scope').val(),
-                                            continent: $('#continent').val(),
-                                            country: $('#country').val(),
-                                            state: $('#state').val(),
-                                            csrfmiddlewaretoken: $('[name=csrfmiddlewaretoken]').val()
-                                        },
-                                        success: function(data) {
-                                            if (data.success) {
-                                                // Atualiza as opções da duallistbox
-                                                var $duallistbox = $('.duallistbox');
-                                                $duallistbox.empty();
-                                                
-                                                data.teams.forEach(function(team) {
-                                                    var option = new Option(team.name, team.id);
-                                                    $(option).attr('data-type', team.is_national_team ? 'selection' : 'team');
-                                                    $(option).attr('data-image', team.image || "{% static 'administrativo/img/Generico.png' %}");
-                                                    $duallistbox.append(option);
-                                                });
-                                                
-                                                $duallistbox.bootstrapDualListbox('refresh');
-                                            }
-                                        }
-                                    });
-                                } else if (response.redirect_url) {
-                                    // Se estiver em outra aba, redireciona
-                                    window.location.href = response.redirect_url;
-                                }
+                                // Redireciona sempre após o sucesso
+                                setTimeout(function() {
+                                    window.location.href = response.redirect_url || "{% url 'administrativo:campeonatos' %}";
+                                }, 1500);
                             } else {
                                 toastr.error(response.message || 'Erro ao processar formulário');
                             }
@@ -791,7 +790,7 @@
                         }
                     } else if (targetTab === '#rodadas') {
                         // Valida se há times selecionados
-                        if ($('.duallistbox').val() === null || $('.duallistbox').val().length === 0) {
+                        if ($('.dual_select').val() === null || $('.dual_select').val().length === 0) {
                             e.preventDefault();
                             toastr.error('Selecione pelo menos um time');
                             return false;
@@ -930,6 +929,65 @@
                     var currentYear = new Date().getFullYear();
                     $('#temporada').val(currentYear);
                 }
+
+                // Controle dos campos baseado no âmbito
+                $('#scope').on('change', function() {
+                    var scope = $(this).find('option:selected').text().trim();
+                    
+                    // Reseta todos os campos
+                    $('#continent, #country, #state').prop('disabled', false).val('').trigger('change');
+                    
+                    if (scope === 'Mundial') {
+                        $('#continent, #country, #state').prop('disabled', true).val('').trigger('change');
+                    } else if (scope === 'Continental') {
+                        $('#continent').prop('disabled', false);
+                        $('#country, #state').prop('disabled', true).val('').trigger('change');
+                    } else if (scope === 'Nacional') {
+                        $('#continent, #country').prop('disabled', false);
+                        $('#state').prop('disabled', true).val('').trigger('change');
+                    } else if (scope === 'Estadual') {
+                        $('#continent, #country, #state').prop('disabled', false);
+                    }
+                });
+
+                // Dispara o evento change no carregamento da página
+                $('#scope').trigger('change');
+
+                // Importação de rodadas
+                $('#modalImportXLS').on('show.bs.modal', function() {
+                    // Limpa o input de arquivo
+                    $('.fileinput').fileinput('clear');
+                });
+
+                $('.fileinput input[type="file"]').on('change', function() {
+                    var formData = new FormData();
+                    formData.append('file', this.files[0]);
+                    formData.append('championship_id', '{{ championship.id }}');
+                    formData.append('csrfmiddlewaretoken', $('[name=csrfmiddlewaretoken]').val());
+                    
+                    $.ajax({
+                        url: "{% url 'administrativo:importar_rodadas' %}",
+                        type: 'POST',
+                        data: formData,
+                        processData: false,
+                        contentType: false,
+                        success: function(response) {
+                            if (response.success) {
+                                toastr.success(response.message);
+                                $('#modalImportXLS').modal('hide');
+                                // Recarrega a página após 1.5 segundos
+                                setTimeout(function() {
+                                    window.location.reload();
+                                }, 1500);
+                            } else {
+                                toastr.error(response.message);
+                            }
+                        },
+                        error: function(xhr) {
+                            toastr.error(xhr.responseJSON?.message || 'Erro ao importar rodadas');
+                        }
+                    });
+                });
             });
         </script>
     </body>

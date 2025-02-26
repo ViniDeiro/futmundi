@@ -4,6 +4,7 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="csrf-token" content="{{ csrf_token }}">
 
         <title>Futligas Clássicas</title>
 
@@ -197,15 +198,18 @@
             <div class="modal-dialog modal-dialog-centered modal-sm">
                 <div class="modal-content animated fadeIn">
                     <div class="modal-header">
-                        <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
-                        <h4 class="modal-title">Tem certeza?</h4>
+                        <button type="button" class="close" data-dismiss="modal">
+                            <span aria-hidden="true">&times;</span>
+                            <span class="sr-only">Fechar</span>
+                        </button>
+                        <h4 class="modal-title">Confirmar Exclusão</h4>
                     </div>
                     <div class="modal-body">
                         <p>Tem certeza que deseja excluir as Futligas Clássicas selecionadas?</p>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
-                        <button type="button" class="btn btn-danger" id="confirm-mass-delete">Deletar</button>
+                        <button type="button" class="btn btn-white" data-dismiss="modal">Cancelar</button>
+                        <button type="button" class="btn btn-danger" id="confirm-mass-delete">Excluir</button>
                     </div>
                 </div>
             </div>
@@ -215,15 +219,18 @@
             <div class="modal-dialog modal-dialog-centered modal-sm">
                 <div class="modal-content animated fadeIn">
                     <div class="modal-header">
-                        <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
-                        <h4 class="modal-title">Tem certeza?</h4>
+                        <button type="button" class="close" data-dismiss="modal">
+                            <span aria-hidden="true">&times;</span>
+                            <span class="sr-only">Fechar</span>
+                        </button>
+                        <h4 class="modal-title">Confirmar Exclusão</h4>
                     </div>
                     <div class="modal-body">
                         <p>Tem certeza que deseja excluir esta Futliga Clássica?</p>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
-                        <button type="button" class="btn btn-danger" id="confirm-delete">Deletar</button>
+                        <button type="button" class="btn btn-white" data-dismiss="modal">Cancelar</button>
+                        <button type="button" class="btn btn-danger" id="confirm-delete">Excluir</button>
                     </div>
                 </div>
             </div>

@@ -231,7 +231,7 @@
                                                 <label class="form-control-placeholder" for="mensagem">Mensagem</label>
                                             </div>
                                             <div class="form-group col-lg-12">
-                                                <button type="submit" id="successToast" class="btn btn-success"><i class="fa fa-check"></i> Salvar</button>
+                                                <button type="submit" class="btn btn-success"><i class="fa fa-check"></i> Salvar</button>
                                                 <a href="{% url 'administrativo:notificacoes' %}" class="btn btn-danger"><i class="fa fa-times"></i> Cancelar</a>
                                             </div>
                                         </form>
@@ -290,6 +290,12 @@
                     preventDuplicates: true,
                     positionClass: 'toast-top-right'
                 };
+
+                {% if messages %}
+                    {% for message in messages %}
+                        toastr.{{ message.tags }}("{{ message }}");
+                    {% endfor %}
+                {% endif %}
 
                 // Inicializa o Select2
                 $('.js-example-basic-single').select2();
@@ -361,75 +367,36 @@
                     $('#datetimepicker').prop('disabled', true);
                 }
 
-                // Botão Salvar
+                // Validação do formulário
                 $('#notificationForm').on('submit', function(e) {
-                    e.preventDefault();
-                    
-                    var $form = $(this);
-                    var $submitButton = $form.find('button[type="submit"]');
-                    
-                    // Desabilita o botão para evitar múltiplos envios
-                    $submitButton.prop('disabled', true);
-                    
                     var titulo = $('#nome').val();
                     var mensagem = $('#mensagem').val();
-                    var tipo = $('#tipo').val();
-                    var pacote = $('#pacote').val();
-                    var envioImediato = $('input[name="a"][value="option1"]').is(':checked');
-                    var dataEnvio = $('#datetimepicker').val();
 
                     if (!titulo || !mensagem) {
+                        e.preventDefault();
                         toastr.error('Por favor, preencha todos os campos obrigatórios');
-                        $submitButton.prop('disabled', false);
                         return false;
                     }
 
-                    var formData = {
-                        title: titulo,
-                        message: mensagem,
-                        notification_type: tipo,
-                        csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val()
-                    };
+                    var envioImediato = $('input[name="a"][value="option1"]').is(':checked');
+                    var dataEnvio = $('#datetimepicker').val();
 
-                    if (tipo !== 'generic') {
-                        formData.package = pacote;
+                    if (!envioImediato && !dataEnvio) {
+                        e.preventDefault();
+                        toastr.error('Por favor, selecione uma data de envio');
+                        return false;
                     }
 
-                    // Ajuste no envio da data
-                    if (envioImediato) {
-                        formData.send_at = null;  // Envio imediato, sem data
-                    } else if (dataEnvio) {
-                        // Converte a data do formato DD/MM/YYYY HH:mm para YYYY-MM-DD HH:mm
-                        formData.send_at = moment(dataEnvio, 'DD/MM/YYYY HH:mm').format('YYYY-MM-DD HH:mm');
+                    if (!envioImediato && dataEnvio) {
+                        var sendAtInput = $('<input>').attr({
+                            type: 'hidden',
+                            name: 'send_at',
+                            value: moment(dataEnvio, 'DD/MM/YYYY HH:mm').format('YYYY-MM-DD HH:mm')
+                        });
+                        $(this).append(sendAtInput);
                     }
 
-                    console.log('Dados sendo enviados:', formData); // Debug
-
-                    $.ajax({
-                        url: window.location.href,
-                        type: 'POST',
-                        data: formData,
-                        headers: {
-                            'X-Requested-With': 'XMLHttpRequest'
-                        },
-                        success: function(response) {
-                            if (response.success) {
-                                toastr.success('Notificação salva com sucesso');
-                                setTimeout(function() {
-                                    window.location.href = '{% url "administrativo:notificacoes" %}';
-                                }, 1000);
-                            } else {
-                                toastr.error(response.message || 'Erro ao salvar a notificação');
-                                $submitButton.prop('disabled', false);
-                            }
-                        },
-                        error: function(xhr) {
-                            toastr.error('Erro ao salvar a notificação');
-                            $submitButton.prop('disabled', false);
-                        }
-                    });
-                    
-                    return false;
+                    return true;
                 });
             });
         </script>
