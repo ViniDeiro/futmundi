@@ -992,6 +992,15 @@ class Parameters(models.Model):
     # Premiação
     reward_time = models.TimeField(verbose_name='Horário Premiação', null=True, blank=True)
     
+    # Premiação Semanal
+    weekly_award_day = models.CharField(verbose_name='Dia da Premiação Semanal', max_length=20, null=True, blank=True)
+    weekly_award_time = models.TimeField(verbose_name='Horário da Premiação Semanal', null=True, blank=True)
+    
+    # Premiação por Temporada
+    season_award_month = models.CharField(verbose_name='Mês da Premiação por Temporada', max_length=20, null=True, blank=True)
+    season_award_day = models.CharField(verbose_name='Dia da Premiação por Temporada', max_length=20, null=True, blank=True)
+    season_award_time = models.TimeField(verbose_name='Horário da Premiação por Temporada', null=True, blank=True)
+    
     # Recompensas
     watch_video_coins = models.IntegerField(verbose_name='Futcoins por Vídeo', default=0)
     hit_prediction_coins = models.IntegerField(verbose_name='Futcoins por Acerto', default=0)

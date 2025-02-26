@@ -61,20 +61,16 @@ urlpatterns = [
     
     # Futligas
     path('futligas/classicas/', views.futligas_classicas, name='futligas_classicas'),
-    path('futligas/classicas/novo/', views.futliga_classica_novo, name='futliga_classica_novo'),
-    path('futligas/classicas/editar/<int:id>/', views.futliga_classica_editar, name='futliga_classica_editar'),
-    path('futligas/classicas/excluir/<int:id>/', views.futliga_classica_excluir, name='futliga_classica_excluir'),
-    path('futligas/classicas/excluir-em-massa/', views.futliga_classica_excluir_em_massa, name='futliga_classica_excluir_em_massa'),
-    path('futligas-jogadores/', views.futligas_jogadores, name='futligas_jogadores'),
-    
-    # Níveis de Futligas
+    path('futligas/jogadores/', views.futligas_jogadores, name='futligas_jogadores'),
     path('futligas/niveis/', views.futligas_niveis, name='futligas_niveis'),
+    path('futligas/premiacao/salvar/', views.futliga_premiacao_salvar, name='futliga_premiacao_salvar'),
+    path('futligas/premio/novo/', views.futliga_premio_novo, name='futliga_premio_novo'),
     path('futligas/niveis/novo/', views.futliga_nivel_novo, name='futliga_nivel_novo'),
     path('futligas/niveis/editar/<int:id>/', views.futliga_nivel_editar, name='futliga_nivel_editar'),
     path('futligas/niveis/excluir/<int:id>/', views.futliga_nivel_excluir, name='futliga_nivel_excluir'),
-    path('futligas/niveis/salvar/', views.futliga_nivel_salvar, name='futliga_nivel_salvar'),
     path('futligas/niveis/importar/', views.futliga_nivel_importar, name='futliga_nivel_importar'),
     path('futligas/niveis/exportar/', views.futliga_nivel_exportar, name='futliga_nivel_exportar'),
+    path('futligas/niveis/importar-imagens/', views.futliga_nivel_importar_imagens, name='futliga_nivel_importar_imagens'),
     
     # Locais
     path('continentes/', views.continentes, name='continentes'),

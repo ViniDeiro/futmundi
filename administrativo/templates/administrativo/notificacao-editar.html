@@ -1,195 +1,437 @@
-{% extends 'administrativo/base.html' %}
 {% load static %}
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-{% block title %}Editar Notificação{% endblock %}
+        <title>Editar Notificação</title>
 
-{% block extra_css %}
-<link href="{% static 'administrativo/css/plugins/datapicker/datepicker3.css' %}" rel="stylesheet">
-<link href="{% static 'administrativo/css/plugins/clockpicker/clockpicker.css' %}" rel="stylesheet">
-<link href="{% static 'administrativo/css/plugins/toastr/toastr.min.css' %}" rel="stylesheet">
-<style>
-    .radio-primary input[type="radio"]:checked + label::before {
-        border-color: #1ab394;
-    }
-    .radio-primary input[type="radio"]:checked + label::after {
-        background-color: #1ab394;
-    }
-    .input-group {
-        width: 100%;
-    }
-</style>
-{% endblock %}
+        <link href="{% static 'administrativo/css/bootstrap.min.css' %}" rel="stylesheet">
+        <link href="{% static 'administrativo/font-awesome/css/font-awesome.css' %}" rel="stylesheet">
 
-{% block content %}
-<div class="row wrapper border-bottom white-bg page-heading">
-    <div class="col-lg-10">
-        <h2>Editar Notificação</h2>
-    </div>
-</div>
+        <!-- Toastr style -->
+        <link href="{% static 'administrativo/css/plugins/toastr/toastr.min.css' %}" rel="stylesheet">
+        
+        <link href="{% static 'administrativo/css/plugins/iCheck/custom.css' %}" rel="stylesheet">
+        <link href="{% static 'administrativo/css/plugins/tempusdominus/tempusdominus-bootstrap-4.min.css' %}" rel="stylesheet">
+        <link href="{% static 'administrativo/css/plugins/select2/select2.min.css' %}" rel="stylesheet">
+        <link href="{% static 'administrativo/css/animate.css' %}" rel="stylesheet">
+        <link href="{% static 'administrativo/css/style.css' %}" rel="stylesheet">  
+        
+        <!-- Custom -->      
+        <link href="{% static 'administrativo/css/custom.css' %}" rel="stylesheet">
 
-<div class="wrapper wrapper-content">
-    <div class="row">
-        <div class="col-lg-12">
-            <div class="ibox">
-                <div class="ibox-content">
-                    <form id="notificationForm" method="post">
-                        {% csrf_token %}
-                        <input type="hidden" name="id" value="{{ notification.id }}">
-                        
-                        <div class="form-group">
-                            <label>Tipo de Notificação</label>
-                            <select class="form-control" name="notification_type" id="notification_type" required>
-                                <option value="generic" {% if notification.notification_type == 'generic' %}selected{% endif %}>Genérica</option>
-                                <option value="package" {% if notification.notification_type == 'package' %}selected{% endif %}>Pacote</option>
-                            </select>
+        <!-- Favicon -->
+        <link rel="icon" href="{% static 'administrativo/img/futmundi.ico' %}" type="image/png">
+
+        <style>
+            .form-group {
+                margin-bottom: 15px;
+            }
+            .form-control {
+                border-radius: 0;
+                box-shadow: none;
+                border: 1px solid #e5e6e7;
+            }
+            .select2-container {
+                width: 200px !important;
+            }
+            .select2-container .select2-selection--single {
+                height: 34px;
+                border-radius: 0;
+            }
+            .select2-container--default .select2-selection--single {
+                border: 1px solid #e5e6e7;
+            }
+            .select2-container--default .select2-selection--single .select2-selection__rendered {
+                line-height: 32px;
+            }
+            .select2-container--default .select2-selection--single .select2-selection__arrow {
+                height: 32px;
+            }
+            .input-group-text {
+                border-radius: 0;
+            }
+            .btn {
+                border-radius: 3px;
+                padding: 6px 12px;
+                margin-right: 5px;
+            }
+            .btn i {
+                margin-right: 5px;
+            }
+            .btn-success {
+                background-color: #1ab394;
+                border-color: #1ab394;
+            }
+            .btn-danger {
+                background-color: #ed5565;
+                border-color: #ed5565;
+            }
+            .form-row {
+                display: flex;
+                margin-bottom: 15px;
+            }
+            .form-row > div {
+                margin-right: 15px;
+            }
+            .form-row > div:last-child {
+                margin-right: 0;
+            }
+            .radio-row {
+                display: flex;
+                align-items: center;
+                margin-bottom: 15px;
+            }
+            .radio-row label {
+                margin-right: 20px;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="wrapper">
+            <nav class="navbar-default navbar-static-side">
+                <div class="sidebar-collapse">
+                    <ul class="nav metismenu" id="side-menu">
+                        <li class="nav-header">
+                            <div class="dropdown profile-element">
+                                <a href="{% url "administrativo:usuarios" %}">
+                                    <img src="{% static 'administrativo/img/logo.svg' %}" alt="Futmundi logo">
+                                </a>
+                            </div>
+                            <div class="logo-element">
+                                <a href="{% url "administrativo:usuarios" %}">
+                                    <img src="{% static 'administrativo/img/logosm.svg' %}" alt="Futmundi logo">
+                                </a>                            
+                            </div>
+                        </li>
+                        <li>
+                            <a href="{% url "administrativo:usuarios" %}"><i class="fa fa-user"></i> <span class="nav-label">Usuários</span></a>
+                        </li>
+                        <li>
+                            <a href="#"><i class="fa fa-trophy"></i> <span class="nav-label">Campeonatos</span><span class="fa arrow"></span></a>
+                            <ul class="nav nav-second-level collapse">
+                                <li><a href="{% url "administrativo:ambitos" %}">Âmbitos</a></li>
+                                <li><a href="{% url "administrativo:campeonatos" %}">Campeonatos</a></li>
+                                <li><a href="{% url "administrativo:templates" %}">Templates</a></li>
+                                <li><a href="{% url "administrativo:times" %}">Times</a></li>
+                            </ul>
+                        </li>
+                        <li>
+                            <a href="#"><i class="fa fa-shopping-cart"></i> <span class="nav-label">Pacotes</span><span class="fa arrow"></span></a>
+                            <ul class="nav nav-second-level collapse">
+                                <li><a href="{% url "administrativo:futcoins" %}">Futcoins</a></li>
+                                <li><a href="{% url "administrativo:planos" %}">Planos</a></li>
+                            </ul>
+                        </li>
+                        <li>
+                            <a href="#"><i class="fa fa-diamond"></i> <span class="nav-label">Futligas</span><span class="fa arrow"></span></a>
+                            <ul class="nav nav-second-level collapse">
+                                <li><a href="{% url "administrativo:futligas_classicas" %}">Clássicas</a></li>
+                                <li><a href="{% url "administrativo:futligas_jogadores" %}">Jogadores</a></li>
+                            </ul>
+                        </li>
+                        <li>
+                            <a href="#"><i class="fa fa-globe"></i> <span class="nav-label">Locais</span><span class="fa arrow"></span></a>
+                            <ul class="nav nav-second-level collapse">
+                                <li><a href="{% url "administrativo:continentes" %}">Continentes</a></li>
+                                <li><a href="{% url "administrativo:paises" %}">Países</a></li>
+                                <li><a href="{% url "administrativo:estados" %}">Estados</a></li>
+                            </ul>
+                        </li>
+                        <li class="active">
+                            <a href="#"><i class="fa fa-gear"></i> <span class="nav-label">Configurações</span><span class="fa arrow"></span></a>
+                            <ul class="nav nav-second-level collapse">
+                                <li><a href="{% url "administrativo:parametros" %}">Parâmetros</a></li>
+                                <li><a href="{% url "administrativo:termo" %}">Termo</a></li>
+                                <li><a href="{% url "administrativo:notificacoes" %}">Notificações</a></li>
+                            </ul>
+                        </li>
+                        <li>
+                            <a href="{% url "administrativo:relatorios" %}"><i class="fa fa-pie-chart"></i> <span class="nav-label">Relatórios</span></a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+            <div id="page-wrapper" class="gray-bg">
+                <div class="row border-bottom">
+                    <nav class="navbar navbar-static-top" style="margin-bottom: 0">
+                        <div class="navbar-header">
+                            <a class="navbar-minimalize minimalize-styl-2 btn btn-success " href="#"><i class="fa fa-bars"></i> </a>
                         </div>
-
-                        <div class="form-group" id="packageField" {% if notification.notification_type != 'package' %}style="display: none;"{% endif %}>
-                            <label>Pacote</label>
-                            <select class="form-control" name="package" id="package">
-                                <option value="">Selecione um pacote</option>
-                                {% for package in packages %}
-                                <option value="{{ package.id }}" {% if notification.package_id == package.id %}selected{% endif %}>{{ package.name }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-
-                        <div class="form-group">
-                            <label>Título</label>
-                            <input type="text" class="form-control" name="title" value="{{ notification.title }}" required>
-                        </div>
-
-                        <div class="form-group">
-                            <label>Mensagem</label>
-                            <textarea class="form-control" name="message" rows="4" required>{{ notification.message }}</textarea>
-                        </div>
-
-                        <div class="form-group">
-                            <label>Envio</label>
-                            <div>
-                                <div class="radio radio-primary">
-                                    <input type="radio" id="sendNow" name="send_type" value="now" {% if not notification.send_at %}checked{% endif %}>
-                                    <label for="sendNow">Enviar agora</label>
-                                </div>
-                                <div class="radio radio-primary">
-                                    <input type="radio" id="sendLater" name="send_type" value="schedule" {% if notification.send_at %}checked{% endif %}>
-                                    <label for="sendLater">Agendar envio</label>
+                        <ul class="nav navbar-top-links navbar-right">
+                            <li>
+                                <span class="m-r-sm text-muted welcome-message">{{ request.session.admin_name }}</span>
+                            </li>
+                            <li class="dropdown">
+                                <a class="dropdown-toggle count-info" data-toggle="dropdown" href="#">
+                                    <i class="fa fa-gear"></i>
+                                </a>
+                                <ul class="dropdown-menu dropdown-alerts">
+                                    <li>
+                                        <a href="{% url "administrativo:administradores" %}" class="dropdown-item">
+                                            <div>
+                                                <i class="fa fa-users"></i> Administradores
+                                            </div>
+                                        </a>
+                                    </li>
+                                    <li class="dropdown-divider"></li>
+                                    <li>
+                                        <a href="{% url "administrativo:login" %}" class="dropdown-item">
+                                            <div>
+                                                <i class="fa fa-sign-out"></i> Sair
+                                            </div>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+                <div class="row wrapper border-bottom white-bg page-heading">
+                    <div class="col-lg-10">
+                        <h2>Editar Notificação</h2>
+                    </div>
+                </div>
+                <div class="wrapper wrapper-content">
+                    <div class="row">
+                        <div class="col-lg-12">
+                            <div class="ibox-content">
+                                <div class="row mt10">
+                                    <div class="col-lg-4">
+                                        <form method="post" class="mt10" id="notificationForm">
+                                            {% csrf_token %}
+                                            <div class="form-group col-lg-12">
+                                                <div class="row">
+                                                    <div class="col-lg-6 mtm20">
+                                                        <label class="control-label" for="tipo">Tipo</label>
+                                                        <select class="form-control js-example-basic-single" name="notification_type" id="tipo" style="width: 80%">
+                                                            <option value="generic">Geral</option>
+                                                            <option value="package_coins">Pacote Futcoins</option>
+                                                            <option value="package_plan">Pacote Plano</option>
+                                                        </select>
+                                                    </div>
+                                                    <div class="col-lg-6 mtm20">
+                                                        <label class="control-label" for="pacote">Pacote</label>
+                                                        <select class="form-control js-example-basic-single" name="package" id="pacote" style="width: 80%">
+                                                            {% for package in packages %}
+                                                                <option value="{{ package.id }}">{{ package.name }}</option>
+                                                            {% endfor %}
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="form-group col-lg-8">
+                                                <input type="text" id="nome" name="title" class="form-control" required>
+                                                <label class="form-control-placeholder" for="nome">Título</label>
+                                            </div>
+                                            <div class="form-group col-lg-12 mt30">
+                                                <input type="text" id="mensagem" name="message" class="form-control" required>
+                                                <label class="form-control-placeholder" for="mensagem">Mensagem</label>
+                                            </div>
+                                            <div class="form-group col-lg-12">
+                                                <button type="submit" id="successToast" class="btn btn-success"><i class="fa fa-check"></i> Salvar</button>
+                                                <a href="{% url 'administrativo:notificacoes' %}" class="btn btn-danger"><i class="fa fa-times"></i> Cancelar</a>
+                                            </div>
+                                        </form>
+                                    </div>
+                                    <div class="col-lg-4 ml30 mt10">
+                                        <div class="row">
+                                            <div class="form-group col-lg-6 ml10">
+                                                <div class="i-checks"><label> <input type="radio" value="option1" name="a" checked> <i></i>Envio Imediato</label></div>
+                                            </div>
+                                            <div class="form-group col-lg-6 mlm50">
+                                                <div class="i-checks"><label> <input type="radio" value="option2" name="a"> <i></i>Agendada</label></div>
+                                            </div> 
+                                        </div>
+                                        <div class="form-group col-lg-8 mtm10">
+                                            <label class="control-label">Data Envio</label>
+                                            <div class="input-group date" data-target-input="nearest">
+                                                <input type="text" class="form-control datetimepicker-input" name="send_at" id="datetimepicker" data-toggle="datetimepicker" data-target="#datetimepicker"/>
+                                                <div class="input-group-append" data-target="#datetimepicker" data-toggle="datetimepicker">
+                                                    <div class="input-group-text"><i class="fa fa-calendar"></i></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-
-                        <div id="sendDateField" {% if not notification.send_at %}style="display: none;"{% endif %}>
-                            <div class="form-group">
-                                <label>Data de Envio</label>
-                                <div class="input-group date">
-                                    <input type="text" class="form-control" name="send_date" id="send_date" value="{% if notification.send_at %}{{ notification.send_at|date:'d/m/Y' }}{% endif %}">
-                                    <span class="input-group-addon"><i class="fa fa-calendar"></i></span>
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label>Hora de Envio</label>
-                                <div class="input-group clockpicker">
-                                    <input type="text" class="form-control" name="send_time" id="send_time" value="{% if notification.send_at %}{{ notification.send_at|date:'H:i' }}{% endif %}">
-                                    <span class="input-group-addon"><i class="fa fa-clock-o"></i></span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <button type="submit" class="btn btn-primary">Salvar</button>
-                            <a href="{% url 'administrativo:notificacoes' %}" class="btn btn-white">Cancelar</a>
-                        </div>
-                    </form>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-</div>
-{% endblock %}
+        <!-- Mainly scripts -->
+        <script src="{% static 'administrativo/js/jquery-3.4.1.min.js' %}"></script>
+        <script src="{% static 'administrativo/js/popper.min.js' %}"></script>
+        <script src="{% static 'administrativo/js/bootstrap.js' %}"></script>
+        <script src="{% static 'administrativo/js/plugins/metisMenu/jquery.metisMenu.js' %}"></script>
+        <script src="{% static 'administrativo/js/plugins/slimscroll/jquery.slimscroll.min.js' %}"></script>
 
-{% block extra_js %}
-<script src="{% static 'administrativo/js/plugins/datapicker/bootstrap-datepicker.js' %}"></script>
-<script src="{% static 'administrativo/js/plugins/datapicker/locales/bootstrap-datepicker.pt-BR.js' %}"></script>
-<script src="{% static 'administrativo/js/plugins/clockpicker/clockpicker.js' %}"></script>
-<script src="{% static 'administrativo/js/plugins/toastr/toastr.min.js' %}"></script>
-<script>
-$(document).ready(function() {
-    // Configuração do datepicker
-    $('.input-group.date').datepicker({
-        format: 'dd/mm/yyyy',
-        todayBtn: "linked",
-        keyboardNavigation: false,
-        forceParse: false,
-        calendarWeeks: true,
-        autoclose: true,
-        language: 'pt-BR',
-        startDate: new Date()
-    });
+        <!-- Custom and plugin javascript -->
+        <script src="{% static 'administrativo/js/inspinia.js' %}"></script>
+        <script src="{% static 'administrativo/js/plugins/pace/pace.min.js' %}"></script>
+        <script src="{% static 'administrativo/js/plugins/toastr/toastr.min.js' %}"></script>
+        <script src="{% static 'administrativo/js/plugins/select2/select2.min.js' %}"></script>    
+        <script src="{% static 'administrativo/js/plugins/moment/moment.js' %}"></script>
+        <script src="{% static 'administrativo/js/plugins/tempusdominus/tempusdominus-bootstrap-4.min.js' %}"></script>   
+        <script src="{% static 'administrativo/js/plugins/iCheck/icheck.min.js' %}"></script>
+        <script src="{% static 'administrativo/js/settings.js' %}"></script>
 
-    // Configuração do clockpicker
-    $('.clockpicker').clockpicker({
-        autoclose: true,
-        'default': 'now'
-    });
+        <script>
+            $(document).ready(function() {
+                // Configuração do Toastr
+                toastr.options = {
+                    closeButton: true,
+                    progressBar: true,
+                    showMethod: 'slideDown',
+                    timeOut: 2000,
+                    preventDuplicates: true,
+                    positionClass: 'toast-top-right'
+                };
 
-    // Controle do campo de pacote
-    $('#notification_type').change(function() {
-        if ($(this).val() === 'package') {
-            $('#packageField').show();
-            $('#package').prop('required', true);
-        } else {
-            $('#packageField').hide();
-            $('#package').prop('required', false);
-        }
-    });
+                // Inicializa o Select2
+                $('.js-example-basic-single').select2();
 
-    // Controle do campo de data de envio
-    $('input[name="send_type"]').change(function() {
-        if ($(this).val() === 'schedule') {
-            $('#sendDateField').show();
-            $('#send_date, #send_time').prop('required', true);
-        } else {
-            $('#sendDateField').hide();
-            $('#send_date, #send_time').prop('required', false);
-        }
-    });
+                // Inicializa o iCheck
+                $('.i-checks').iCheck({
+                    checkboxClass: 'icheckbox_square-green',
+                    radioClass: 'iradio_square-green'
+                });
 
-    // Submissão do formulário
-    $('#notificationForm').on('submit', function(e) {
-        e.preventDefault();
-        
-        var formData = new FormData(this);
-        
-        // Combinar data e hora se necessário
-        if ($('input[name="send_type"]:checked').val() === 'schedule') {
-            var date = $('#send_date').val();
-            var time = $('#send_time').val();
-            if (date && time) {
-                formData.set('send_at', date + ' ' + time);
-            }
-        }
-        
-        $.ajax({
-            url: window.location.href,
-            type: 'POST',
-            data: formData,
-            processData: false,
-            contentType: false,
-            success: function(response) {
-                if (response.success) {
-                    toastr.success(response.message);
-                    setTimeout(function() {
-                        window.location.href = "{% url 'administrativo:notificacoes' %}";
-                    }, 1000);
-                } else {
-                    toastr.error(response.message);
+                // Inicializa o DateTimePicker
+                $('#datetimepicker').datetimepicker({
+                    format: 'DD/MM/YYYY HH:mm',
+                    icons: {
+                        time: 'fa fa-clock-o',
+                        date: 'fa fa-calendar',
+                        up: 'fa fa-chevron-up',
+                        down: 'fa fa-chevron-down',
+                        previous: 'fa fa-chevron-left',
+                        next: 'fa fa-chevron-right',
+                        today: 'fa fa-screenshot',
+                        clear: 'fa fa-trash',
+                        close: 'fa fa-remove'
+                    }
+                });
+
+                // Controle do campo de pacote baseado no tipo
+                $('#tipo').on('change', function() {
+                    var tipo = $(this).val();
+                    if (tipo === 'generic') {
+                        $('#pacote').prop('disabled', true);
+                    } else {
+                        $('#pacote').prop('disabled', false);
+                    }
+                });
+
+                // Controle do campo de data baseado no tipo de envio
+                $('input[name="a"]').on('ifChecked', function(event) {
+                    if ($(this).val() === 'option1') {
+                        $('#datetimepicker').prop('disabled', true).val('');
+                    } else {
+                        $('#datetimepicker').prop('disabled', false);
+                    }
+                });
+
+                // Carrega os dados existentes
+                var notification = {
+                    notification_type: "{{ notification.notification_type|default:'generic' }}",
+                    package_id: "{{ notification.package.id|default:'' }}",
+                    title: "{{ notification.title|escapejs }}",
+                    message: "{{ notification.message|escapejs }}",
+                    send_at: "{{ notification.send_at|date:'Y-m-d H:i'|default:'' }}"
+                };
+
+                // Define os valores nos campos
+                $('#tipo').val(notification.notification_type).trigger('change');
+                if (notification.package_id) {
+                    $('#pacote').val(notification.package_id);
                 }
-            },
-            error: function() {
-                toastr.error('Erro ao salvar a notificação');
-            }
-        });
-    });
-});
-</script>
-{% endblock %} 
+                $('#nome').val(notification.title);
+                $('#mensagem').val(notification.message);
+                
+                if (notification.send_at) {
+                    $('input[name="a"][value="option2"]').iCheck('check');
+                    $('#datetimepicker').prop('disabled', false);
+                    $('#datetimepicker').val(moment(notification.send_at, 'YYYY-MM-DD HH:mm').format('DD/MM/YYYY HH:mm'));
+                } else {
+                    $('input[name="a"][value="option1"]').iCheck('check');
+                    $('#datetimepicker').prop('disabled', true);
+                }
+
+                // Botão Salvar
+                $('#notificationForm').on('submit', function(e) {
+                    e.preventDefault();
+                    
+                    var $form = $(this);
+                    var $submitButton = $form.find('button[type="submit"]');
+                    
+                    // Desabilita o botão para evitar múltiplos envios
+                    $submitButton.prop('disabled', true);
+                    
+                    var titulo = $('#nome').val();
+                    var mensagem = $('#mensagem').val();
+                    var tipo = $('#tipo').val();
+                    var pacote = $('#pacote').val();
+                    var envioImediato = $('input[name="a"][value="option1"]').is(':checked');
+                    var dataEnvio = $('#datetimepicker').val();
+
+                    if (!titulo || !mensagem) {
+                        toastr.error('Por favor, preencha todos os campos obrigatórios');
+                        $submitButton.prop('disabled', false);
+                        return false;
+                    }
+
+                    var formData = {
+                        title: titulo,
+                        message: mensagem,
+                        notification_type: tipo,
+                        csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val()
+                    };
+
+                    if (tipo !== 'generic') {
+                        formData.package = pacote;
+                    }
+
+                    // Ajuste no envio da data
+                    if (envioImediato) {
+                        formData.send_at = null;  // Envio imediato, sem data
+                    } else if (dataEnvio) {
+                        // Converte a data do formato DD/MM/YYYY HH:mm para YYYY-MM-DD HH:mm
+                        formData.send_at = moment(dataEnvio, 'DD/MM/YYYY HH:mm').format('YYYY-MM-DD HH:mm');
+                    }
+
+                    console.log('Dados sendo enviados:', formData); // Debug
+
+                    $.ajax({
+                        url: window.location.href,
+                        type: 'POST',
+                        data: formData,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                toastr.success('Notificação salva com sucesso');
+                                setTimeout(function() {
+                                    window.location.href = '{% url "administrativo:notificacoes" %}';
+                                }, 1000);
+                            } else {
+                                toastr.error(response.message || 'Erro ao salvar a notificação');
+                                $submitButton.prop('disabled', false);
+                            }
+                        },
+                        error: function(xhr) {
+                            toastr.error('Erro ao salvar a notificação');
+                            $submitButton.prop('disabled', false);
+                        }
+                    });
+                    
+                    return false;
+                });
+            });
+        </script>
+    </body>
+</html>

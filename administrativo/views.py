@@ -1712,8 +1712,64 @@ def futliga_classica_excluir_em_massa(request):
     
     return JsonResponse({'success': False, 'message': 'Método não permitido'})
 
+@login_required
 def futligas_jogadores(request):
-    return render(request, 'administrativo/futligas-jogadores.html')
+    if request.method == 'POST':
+        try:
+            name = request.POST.get('name')
+            players = request.POST.get('players')
+            premium_players = request.POST.get('premium_players')
+            owner_premium = request.POST.get('owner_premium') == 'true'
+            image = request.FILES.get('image')
+
+            if not all([name, players, premium_players]):
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Todos os campos são obrigatórios'
+                })
+
+            # Valida a imagem se fornecida
+            if image:
+                # Verifica o tipo de arquivo
+                if not image.content_type.startswith('image/'):
+                    return JsonResponse({
+                        'success': False,
+                        'message': 'O arquivo selecionado não é uma imagem válida'
+                    })
+                    
+                # Verifica o tamanho do arquivo (max 2MB)
+                if image.size > 2 * 1024 * 1024:
+                    return JsonResponse({
+                        'success': False,
+                        'message': 'A imagem não pode ter mais que 2MB'
+                    })
+
+            # Cria o nível
+            level = CustomLeagueLevel.objects.create(
+                name=name,
+                players=players,
+                premium_players=premium_players,
+                owner_premium=owner_premium,
+                image=image if image else None
+            )
+
+            return JsonResponse({
+                'success': True,
+                'message': 'Nível criado com sucesso!',
+                'redirect_url': reverse('administrativo:futligas_jogadores')
+            })
+
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': f'Erro ao criar nível: {str(e)}'
+            })
+
+    # GET - renderiza o template com os níveis existentes
+    levels = CustomLeagueLevel.objects.all().order_by('order')
+    return render(request, 'administrativo/futligas_jogadores.html', {
+        'levels': levels
+    })
 
 def continentes(request):
     """
@@ -2596,24 +2652,29 @@ def notificacao_editar(request, id):
         notification = Notifications.objects.get(id=id)
         
         if request.method == 'POST':
+            if not request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Requisição inválida'
+                }, status=400)
+
             title = request.POST.get('title')
             message = request.POST.get('message')
             notification_type = request.POST.get('notification_type')
             package_id = request.POST.get('package')
-            send_type = request.POST.get('send_type')
             send_at = request.POST.get('send_at')
 
             if not all([title, message, notification_type]):
                 return JsonResponse({
                     'success': False,
                     'message': 'Campos obrigatórios não preenchidos'
-                })
+                }, status=400)
 
             notification.title = title
             notification.message = message
             notification.notification_type = notification_type
 
-            if notification_type == 'package' and package_id:
+            if notification_type != 'generic' and package_id:
                 try:
                     package = FutcoinPackage.objects.get(id=package_id)
                     notification.package = package
@@ -2621,20 +2682,22 @@ def notificacao_editar(request, id):
                     return JsonResponse({
                         'success': False,
                         'message': 'Pacote não encontrado'
-                    })
+                    }, status=400)
             else:
                 notification.package = None
 
-            if send_type == 'schedule' and send_at:
+            if send_at:
                 try:
-                    notification.send_at = datetime.strptime(send_at, '%d/%m/%Y %H:%M')
+                    notification.send_at = datetime.strptime(send_at, '%Y-%m-%d %H:%M')
+                    notification.status = 'pending'
                 except ValueError:
                     return JsonResponse({
                         'success': False,
                         'message': 'Data de envio inválida'
-                    })
+                    }, status=400)
             else:
                 notification.send_at = None
+                notification.status = 'pending'
 
             notification.save()
             return JsonResponse({
@@ -3742,240 +3805,199 @@ def futligas_niveis(request):
 
 @login_required
 def futliga_nivel_novo(request):
-    """
-    Cria um novo nível de Futliga.
-    """
-    if request.method != 'POST':
-        return JsonResponse({'success': False, 'message': 'Método não permitido'})
+    if request.method == 'POST':
+        try:
+            name = request.POST.get('name')
+            players = request.POST.get('players')
+            premium_players = request.POST.get('premium_players')
+            owner_premium = request.POST.get('owner_premium') == 'true'
+            image = request.FILES.get('image')
 
-    try:
-        name = request.POST.get('name')
-        players = request.POST.get('players')
-        premium_players = request.POST.get('premium_players')
-        owner_premium = request.POST.get('owner_premium') == 'true'
-        image = request.FILES.get('image')
+            if not all([name, players, premium_players]):
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Todos os campos são obrigatórios'
+                })
 
-        # Validação dos campos obrigatórios
-        if not all([name, players, premium_players]):
-            return JsonResponse({'success': False, 'message': 'Campos obrigatórios não preenchidos'})
+            level = CustomLeagueLevel.objects.create(
+                name=name,
+                players=players,
+                premium_players=premium_players,
+                owner_premium=owner_premium,
+                image=image
+            )
 
-        # Verifica se já existe um nível com o mesmo nome
-        if CustomLeagueLevel.objects.filter(name=name).exists():
-            return JsonResponse({'success': False, 'message': 'Já existe um nível com este nome'})
+            return JsonResponse({
+                'success': True,
+                'message': 'Nível criado com sucesso'
+            })
 
-        # Cria o novo nível
-        level = CustomLeagueLevel.objects.create(
-            name=name,
-            players=players,
-            premium_players=premium_players,
-            owner_premium=owner_premium,
-            order=CustomLeagueLevel.objects.count() + 1
-        )
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': f'Erro ao criar nível: {str(e)}'
+            })
 
-        # Salva a imagem se fornecida
-        if image:
-            level.image = image
-            level.save()
-
-        return JsonResponse({
-            'success': True,
-            'level': {
-                'id': level.id,
-                'name': level.name,
-                'players': level.players,
-                'premium_players': level.premium_players,
-                'owner_premium': level.owner_premium,
-                'image': level.image.url if level.image else None,
-                'order': level.order
-            }
-        })
-    except Exception as e:
-        return JsonResponse({'success': False, 'message': str(e)})
+    return JsonResponse({
+        'success': False,
+        'message': 'Método não permitido'
+    })
 
 @login_required
 def futliga_nivel_editar(request, id):
-    """
-    Edita um nível de Futliga existente.
-    """
-    if request.method != 'POST':
-        return JsonResponse({'success': False, 'message': 'Método não permitido'})
-
     try:
-        level = get_object_or_404(CustomLeagueLevel, id=id)
-        name = request.POST.get('name')
-        players = request.POST.get('players')
-        premium_players = request.POST.get('premium_players')
-        owner_premium = request.POST.get('owner_premium') == 'true'
-        image = request.FILES.get('image')
+        level = CustomLeagueLevel.objects.get(id=id)
+        
+        if request.method == 'POST':
+            name = request.POST.get('name')
+            players = request.POST.get('players')
+            premium_players = request.POST.get('premium_players')
+            owner_premium = request.POST.get('owner_premium') == 'true'
+            image = request.FILES.get('image')
 
-        # Validação dos campos obrigatórios
-        if not all([name, players, premium_players]):
-            return JsonResponse({'success': False, 'message': 'Campos obrigatórios não preenchidos'})
+            if not all([name, players, premium_players]):
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Todos os campos são obrigatórios'
+                })
 
-        # Verifica se já existe outro nível com o mesmo nome
-        if CustomLeagueLevel.objects.filter(name=name).exclude(id=id).exists():
-            return JsonResponse({'success': False, 'message': 'Já existe um nível com este nome'})
+            level.name = name
+            level.players = players
+            level.premium_players = premium_players
+            level.owner_premium = owner_premium
+            if image:
+                level.image = image
+            level.save()
 
-        # Atualiza os dados do nível
-        level.name = name
-        level.players = players
-        level.premium_players = premium_players
-        level.owner_premium = owner_premium
-
-        # Atualiza a imagem se fornecida
-        if image:
-            if level.image:
-                default_storage.delete(level.image.path)
-            level.image = image
-
-        level.save()
+            return JsonResponse({
+                'success': True,
+                'message': 'Nível atualizado com sucesso'
+            })
 
         return JsonResponse({
             'success': True,
-            'level': {
+            'data': {
                 'id': level.id,
                 'name': level.name,
                 'players': level.players,
                 'premium_players': level.premium_players,
                 'owner_premium': level.owner_premium,
-                'image': level.image.url if level.image else None,
-                'order': level.order
+                'image_url': level.image.url if level.image else None
             }
         })
+
+    except CustomLeagueLevel.DoesNotExist:
+        return JsonResponse({
+            'success': False,
+            'message': 'Nível não encontrado'
+        })
     except Exception as e:
-        return JsonResponse({'success': False, 'message': str(e)})
+        return JsonResponse({
+            'success': False,
+            'message': f'Erro ao processar requisição: {str(e)}'
+        })
 
 @login_required
 def futliga_nivel_excluir(request, id):
-    """
-    Exclui um nível de Futliga.
-    """
     if request.method != 'POST':
-        return JsonResponse({'success': False, 'message': 'Método não permitido'})
+        return JsonResponse({
+            'success': False,
+            'message': 'Método não permitido'
+        })
 
     try:
-        level = get_object_or_404(CustomLeagueLevel, id=id)
-        
-        # Remove a imagem se existir
-        if level.image:
-            default_storage.delete(level.image.path)
-        
+        level = CustomLeagueLevel.objects.get(id=id)
         level.delete()
-        
-        # Reordena os níveis restantes
-        for i, level in enumerate(CustomLeagueLevel.objects.all().order_by('order'), 1):
-            level.order = i
-            level.save()
-
-        return JsonResponse({'success': True})
+        return JsonResponse({
+            'success': True,
+            'message': 'Nível excluído com sucesso'
+        })
+    except CustomLeagueLevel.DoesNotExist:
+        return JsonResponse({
+            'success': False,
+            'message': 'Nível não encontrado'
+        })
     except Exception as e:
-        return JsonResponse({'success': False, 'message': str(e)})
-
-@login_required
-def futliga_nivel_salvar(request):
-    """
-    Salva a ordem dos níveis.
-    """
-    if request.method != 'POST':
-        return JsonResponse({'success': False, 'message': 'Método não permitido'})
-
-    try:
-        data = json.loads(request.body)
-        levels = data.get('levels', [])
-
-        with transaction.atomic():
-            for level_data in levels:
-                level = get_object_or_404(CustomLeagueLevel, id=level_data['id'])
-                level.order = level_data['order']
-                level.save()
-
-        return JsonResponse({'success': True})
-    except Exception as e:
-        return JsonResponse({'success': False, 'message': str(e)})
+        return JsonResponse({
+            'success': False,
+            'message': f'Erro ao excluir nível: {str(e)}'
+        })
 
 @login_required
 def futliga_nivel_importar(request):
-    """
-    Importa níveis de um arquivo Excel.
-    """
-    if request.method != 'POST':
-        return JsonResponse({'success': False, 'message': 'Método não permitido'})
-
-    try:
-        file = request.FILES.get('file')
-        if not file:
-            return JsonResponse({'success': False, 'message': 'Nenhum arquivo fornecido'})
-
-        # Lê o arquivo Excel
-        df = pd.read_excel(file)
-        required_columns = ['Nome', 'Participantes', 'Craques', 'Dono Premium']
-        
-        if not all(col in df.columns for col in required_columns):
-            return JsonResponse({'success': False, 'message': 'Formato do arquivo inválido'})
-
-        levels = []
-        with transaction.atomic():
-            # Remove todos os níveis existentes
-            CustomLeagueLevel.objects.all().delete()
+    if request.method == 'POST' and request.FILES.get('file'):
+        try:
+            excel_file = request.FILES['file']
+            df = pd.read_excel(excel_file)
             
-            # Cria os novos níveis
-            for index, row in df.iterrows():
-                level = CustomLeagueLevel.objects.create(
-                    name=row['Nome'],
-                    players=row['Participantes'],
-                    premium_players=row['Craques'],
-                    owner_premium=row['Dono Premium'],
-                    order=index + 1
-                )
-                levels.append({
-                    'id': level.id,
-                    'name': level.name,
-                    'players': level.players,
-                    'premium_players': level.premium_players,
-                    'owner_premium': level.owner_premium,
-                    'image': level.image.url if level.image else None,
-                    'order': level.order
+            success_count = 0
+            errors = []
+            
+            for _, row in df.iterrows():
+                try:
+                    CustomLeagueLevel.objects.create(
+                        name=row['Nome'],
+                        players=row['Participantes'],
+                        premium_players=row['Craques'],
+                        owner_premium=row['Dono Craque'] == 'Sim'
+                    )
+                    success_count += 1
+                except Exception as e:
+                    errors.append(f'Erro na linha {_ + 2}: {str(e)}')
+            
+            if success_count == 0:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Nenhum nível foi importado devido a erros. Verifique o arquivo e tente novamente.'
                 })
-
-        return JsonResponse({'success': True, 'levels': levels})
-    except Exception as e:
-        return JsonResponse({'success': False, 'message': str(e)})
+            
+            message = f'{success_count} níveis importados com sucesso!'
+            if errors:
+                message += f'\nErros: {", ".join(errors)}'
+                
+            return JsonResponse({
+                'success': True,
+                'message': message
+            })
+            
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': f'Erro ao importar níveis: {str(e)}'
+            })
+    
+    return JsonResponse({
+        'success': False,
+        'message': 'Nenhum arquivo enviado'
+    })
 
 @login_required
 def futliga_nivel_exportar(request):
-    """
-    Exporta os níveis para um arquivo Excel.
-    """
     try:
         levels = CustomLeagueLevel.objects.all().order_by('order')
-        data = []
         
+        data = []
         for level in levels:
             data.append({
                 'Nome': level.name,
                 'Participantes': level.players,
                 'Craques': level.premium_players,
-                'Dono Premium': level.owner_premium
+                'Dono Craque': 'Sim' if level.owner_premium else 'Não'
             })
-
+        
         df = pd.DataFrame(data)
         
-        # Cria o arquivo Excel
-        filename = 'niveis_futliga.xlsx'
-        filepath = os.path.join('temp', filename)
-        df.to_excel(filepath, index=False)
+        response = HttpResponse(content_type='application/vnd.ms-excel')
+        response['Content-Disposition'] = 'attachment; filename="niveis_futliga.xlsx"'
         
-        # Retorna o arquivo para download
-        with open(filepath, 'rb') as f:
-            response = HttpResponse(f.read(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-            response['Content-Disposition'] = f'attachment; filename="{filename}"'
-        
-        # Remove o arquivo temporário
-        os.remove(filepath)
-        
+        df.to_excel(response, index=False)
         return response
+        
     except Exception as e:
-        return JsonResponse({'success': False, 'message': str(e)})
+        return JsonResponse({
+            'success': False,
+            'message': f'Erro ao exportar níveis: {str(e)}'
+        })
 
 @login_required
 def notificacao_excluir(request, id):
@@ -4004,3 +4026,234 @@ def notificacao_excluir_em_massa(request):
         except Exception as e:
             return JsonResponse({'success': False, 'message': str(e)})
     return JsonResponse({'success': False, 'message': 'Método não permitido.'})
+
+@login_required
+def notificacao_editar(request, id):
+    try:
+        notification = Notifications.objects.get(id=id)
+        
+        if request.method == 'POST':
+            if not request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Requisição inválida'
+                }, status=400)
+
+            title = request.POST.get('title')
+            message = request.POST.get('message')
+            notification_type = request.POST.get('notification_type')
+            package_id = request.POST.get('package')
+            send_at = request.POST.get('send_at')
+
+            if not all([title, message, notification_type]):
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Campos obrigatórios não preenchidos'
+                }, status=400)
+
+            notification.title = title
+            notification.message = message
+            notification.notification_type = notification_type
+
+            if notification_type != 'generic' and package_id:
+                try:
+                    package = FutcoinPackage.objects.get(id=package_id)
+                    notification.package = package
+                except FutcoinPackage.DoesNotExist:
+                    return JsonResponse({
+                        'success': False,
+                        'message': 'Pacote não encontrado'
+                    }, status=400)
+            else:
+                notification.package = None
+
+            if send_at:
+                try:
+                    notification.send_at = datetime.strptime(send_at, '%Y-%m-%d %H:%M')
+                    notification.status = 'pending'
+                except ValueError:
+                    return JsonResponse({
+                        'success': False,
+                        'message': 'Data de envio inválida'
+                    }, status=400)
+            else:
+                notification.send_at = None
+                notification.status = 'pending'
+
+            notification.save()
+            return JsonResponse({
+                'success': True,
+                'message': 'Notificação atualizada com sucesso'
+            })
+
+        packages = FutcoinPackage.objects.filter(enabled=True)
+        return render(request, 'administrativo/notificacao-editar.html', {
+            'notification': notification,
+            'packages': packages
+        })
+
+    except Notifications.DoesNotExist:
+        messages.error(request, 'Notificação não encontrada')
+        return redirect('administrativo:notificacoes')
+
+@login_required
+def futliga_nivel_importar_imagens(request):
+    if request.method == 'POST' and request.FILES.getlist('images'):
+        try:
+            files = request.FILES.getlist('images')
+            success_count = 0
+            errors = []
+            
+            for file in files:
+                # Remove a extensão do nome do arquivo
+                filename = os.path.splitext(file.name)[0]
+                
+                # Procura o nível pelo nome do arquivo
+                level = CustomLeagueLevel.objects.filter(name__iexact=filename).first()
+                
+                if not level:
+                    errors.append(f'Nível não encontrado para o arquivo "{file.name}"')
+                    continue
+                
+                try:
+                    # Verifica o tipo de arquivo
+                    if not file.content_type.startswith('image/'):
+                        errors.append(f'Arquivo "{file.name}" não é uma imagem válida')
+                        continue
+                        
+                    # Verifica o tamanho do arquivo (max 2MB)
+                    if file.size > 2 * 1024 * 1024:
+                        errors.append(f'Imagem "{file.name}" excede o tamanho máximo de 2MB')
+                        continue
+                        
+                    # Remove imagem antiga se existir
+                    if level.image:
+                        level.image.delete(save=False)
+                        
+                    # Salva a nova imagem
+                    level.image = file
+                    level.save()
+                    success_count += 1
+                except Exception as e:
+                    errors.append(f'Erro ao processar imagem "{file.name}": {str(e)}')
+            
+            if success_count == 0:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Nenhuma imagem foi importada devido a erros. Verifique os arquivos e tente novamente.'
+                })
+            
+            message = f'{success_count} imagens importadas com sucesso!'
+            if errors:
+                message += f'\nErros: {", ".join(errors)}'
+                
+            return JsonResponse({
+                'success': True,
+                'message': message
+            })
+            
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': f'Erro ao importar imagens: {str(e)}'
+            })
+            
+    return JsonResponse({
+        'success': False,
+        'message': 'Nenhum arquivo enviado'
+    })
+
+@login_required
+def futliga_premiacao_salvar(request):
+    """
+    View para salvar as configurações de premiação das Futligas
+    """
+    if request.method == 'POST':
+        try:
+            # Obtém ou cria os parâmetros
+            params = Parameters.objects.first()
+            if not params:
+                params = Parameters.objects.create()
+
+            # Ranking Semanal
+            params.weekly_award_day = request.POST.get('weekly_day')
+            weekly_time = request.POST.get('weekly_time')
+            if weekly_time:
+                try:
+                    from datetime import datetime
+                    params.weekly_award_time = datetime.strptime(weekly_time, '%H:%M').time()
+                except ValueError:
+                    params.weekly_award_time = None
+
+            # Ranking Temporada
+            params.season_award_month = request.POST.get('season_month')
+            params.season_award_day = request.POST.get('season_day')
+            season_time = request.POST.get('season_time')
+            if season_time:
+                try:
+                    params.season_award_time = datetime.strptime(season_time, '%H:%M').time()
+                except ValueError:
+                    params.season_award_time = None
+
+            # Salva as alterações
+            params.save()
+
+            return JsonResponse({
+                'success': True,
+                'message': 'Configurações de premiação salvas com sucesso!'
+            })
+
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': f'Erro ao salvar configurações: {str(e)}'
+            })
+
+    return JsonResponse({
+        'success': False,
+        'message': 'Método não permitido'
+    })
+
+@login_required
+def futliga_premio_novo(request):
+    """
+    View para adicionar um novo prêmio de Futliga
+    """
+    if request.method == 'POST':
+        try:
+            # Obtém os dados do formulário
+            position = request.POST.get('position')
+            image = request.FILES.get('image')
+            prize_iniciante = request.POST.get('prize_iniciante')
+            prize_nacional = request.POST.get('prize_nacional')
+            prize_internacional = request.POST.get('prize_internacional')
+
+            # Validações
+            if not all([position, prize_iniciante, prize_nacional, prize_internacional]):
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Todos os campos são obrigatórios'
+                })
+
+            # Cria o prêmio
+            premio = CustomLeaguePrize.objects.create(
+                position=position,
+                image=image,
+                prize=f"Iniciante: {prize_iniciante}, Nacional: {prize_nacional}, Internacional: {prize_internacional}"
+            )
+
+            return JsonResponse({
+                'success': True,
+                'message': 'Prêmio adicionado com sucesso!'
+            })
+
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': f'Erro ao adicionar prêmio: {str(e)}'
+            })
+
+    return JsonResponse({
+        'success': False,
+        'message': 'Método não permitido'
+    })

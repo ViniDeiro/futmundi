@@ -139,27 +139,28 @@
                                     <div class="panel-body">
                                         <div class="row">
                                             <div class="col-lg-4">
-                                                <form class="mt10">
+                                                <form id="nivelForm" class="mt10">
+                                                    {% csrf_token %}
                                                     <div class="form-group col-lg-6">
-                                                        <input type="text" id="nome" class="form-control" required>
+                                                        <input type="text" id="nome" name="name" class="form-control" required>
                                                         <label class="form-control-placeholder" for="nome">Nome</label>
                                                     </div>
                                                     <div class="card ui-card-shadow ui-widget ui-widget-content ui-corner-all card-small ml15">
                                                         <div class="card-heading">
                                                             <h5>Imagem</h5>
                                                         </div>
-                                                        <div class="card-content">
-                                                            <label class="label-card label-card-small">
-                                                                <i class="fa fa-file-image-o label-content" style="cursor:pointer;"></i>
-                                                                <input accept="image/*" type="file" class="input-image">
-                                                            </label>
+                                                        <div class="card-content" style="position: relative; padding: 0;">
+                                                            <div id="image-preview" style="display: flex; justify-content: center; padding: 0; margin-top: -7px;">
+                                                                <i class="fa fa-file-image-o" style="font-size: 48px; color: #ccc; cursor: pointer;" onclick="document.getElementById('image').click()"></i>
+                                                            </div>
+                                                            <input type="file" id="image" name="image" class="input-image" accept="image/*" style="display: none;">
                                                         </div>
                                                     </div>
                                                     <div class="form-group mt10">
                                                         <div class="col-lg-12">
                                                             <div class="row">
                                                                 <div class="col-lg-6">
-                                                                    <input type="number" min="0" id="participantes" class="form-control" required>
+                                                                    <input type="number" min="0" id="participantes" name="players" class="form-control" required>
                                                                     <label class="form-control-placeholder" for="participantes">Qtde Participantes</label>
                                                                 </div>
                                                             </div>
@@ -169,7 +170,7 @@
                                                         <div class="col-lg-12">
                                                             <div class="row">
                                                                 <div class="col-lg-6">
-                                                                    <input type="number" min="0" id="craques" class="form-control" required>
+                                                                    <input type="number" min="0" id="craques" name="premium_players" class="form-control" required>
                                                                     <label class="form-control-placeholder" for="craques">Qtde Craques</label>
                                                                 </div>
                                                             </div>
@@ -179,20 +180,32 @@
                                                         <div class="col-lg-12">
                                                             <div class="row">
                                                                 <div class="col-lg-6 mt5">
-                                                                    <div class="i-checks"><label> <input type="checkbox"> Dono Craque</label></div>
+                                                                    <div class="i-checks">
+                                                                        <label>
+                                                                            <input type="checkbox" name="owner_premium" id="owner_premium">
+                                                                            <span class="ml5">Dono Craque</span>
+                                                                        </label>
+                                                                    </div>
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                        <div class="col-lg-12 mt25">
-                                                            <button type="button" class="btn btn-primary"><i class="fa fa-plus mr5"></i> Adicionar</button>
-                                                            <button type="button" class="btn btn-primary ml20"><i class="fa fa-upload mr5"></i> Importar</button>
+                                                    </div>
+                                                    <div class="form-group mt25">
+                                                        <div class="col-lg-12">
+                                                            <button type="submit" class="btn btn-primary" id="btnAdicionar"><i class="fa fa-plus mr5"></i> Adicionar</button>
+                                                            <button type="button" class="btn btn-primary ml20" id="btnImportar"><i class="fa fa-upload mr5"></i> Importar</button>
                                                         </div>
                                                     </div>
+                                                </form>
+                                                <!-- Form oculto para importação -->
+                                                <form id="importForm" style="display: none;">
+                                                    {% csrf_token %}
+                                                    <input type="file" name="file" id="importFile" accept=".xlsx,.xls">
                                                 </form>
                                             </div>
                                             <div class="col-lg-8">
                                                 <div class="group-options-right">
-                                                    <a class="btn btn-default btn-sm" title="Exportar"><i class="glyphicon glyphicon-download-alt"></i></a>
+                                                    <a href="{% url 'administrativo:futliga_nivel_exportar' %}" class="btn btn-default btn-sm" title="Exportar"><i class="glyphicon glyphicon-download-alt"></i></a>
                                                 </div>
                                                 <div class="table-responsive">
                                                     <table id="table" class="table table-bordered table-hover">
@@ -207,45 +220,29 @@
                                                             </tr>
                                                         </thead>
                                                         <tbody>
+                                                            {% for level in levels %}
                                                             <tr>
-                                                                <td>Iniciante</td>
-                                                                <td class="center-middle"><img src="{% static 'administrativo/img/Corinthians.png' %}" class="img-sm" alt="Imagem"></td>
-                                                                <td>100</td>
-                                                                <td>50</td>
-                                                                <td>Sim</td>
+                                                                <td>{{ level.name }}</td>
+                                                                <td class="center-middle">
+                                                                    {% if level.image %}
+                                                                        <img src="{{ level.image.url }}" class="img-sm" alt="Imagem">
+                                                                    {% endif %}
+                                                                </td>
+                                                                <td>{{ level.players }}</td>
+                                                                <td>{{ level.premium_players }}</td>
+                                                                <td>{% if level.owner_premium %}Sim{% else %}Não{% endif %}</td>
                                                                 <td>
                                                                     <div>
-                                                                        <button type="button" class="btn btn-info btn-xs mr5" title="Editar"><i class="glyphicon glyphicon-pencil"></i></button>
-                                                                        <button type="button" class="btn btn-danger btn-xs mr5" title="Excluir"><i class="glyphicon glyphicon-trash"></i></button>
+                                                                        <button type="button" class="btn btn-info btn-xs mr5 btnEditar" title="Editar" data-id="{{ level.id }}">
+                                                                            <i class="glyphicon glyphicon-pencil"></i>
+                                                                        </button>
+                                                                        <button type="button" class="btn btn-danger btn-xs mr5 btnExcluir" title="Excluir" data-id="{{ level.id }}">
+                                                                            <i class="glyphicon glyphicon-trash"></i>
+                                                                        </button>
                                                                     </div>
                                                                 </td>
                                                             </tr>
-                                                            <tr>
-                                                                <td>Nacional</td>
-                                                                <td class="center-middle"><img src="{% static 'administrativo/img/Corinthians.png' %}" class="img-sm" alt="Imagem"></td>
-                                                                <td>100</td>
-                                                                <td>50</td>
-                                                                <td>Sim</td>
-                                                                <td>
-                                                                    <div>
-                                                                        <button type="button" class="btn btn-info btn-xs mr5" title="Editar"><i class="glyphicon glyphicon-pencil"></i></button>
-                                                                        <button type="button" class="btn btn-danger btn-xs mr5" title="Excluir"><i class="glyphicon glyphicon-trash"></i></button>
-                                                                    </div>
-                                                                </td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td>Internacional</td>
-                                                                <td class="center-middle"><img src="{% static 'administrativo/img/Corinthians.png' %}" class="img-sm" alt="Imagem"></td>
-                                                                <td>100</td>
-                                                                <td>50</td>
-                                                                <td>Sim</td>
-                                                                <td>
-                                                                    <div>
-                                                                        <button type="button" class="btn btn-info btn-xs mr5" title="Editar"><i class="glyphicon glyphicon-pencil"></i></button>
-                                                                        <button type="button" class="btn btn-danger btn-xs mr5" title="Excluir"><i class="glyphicon glyphicon-trash"></i></button>
-                                                                    </div>
-                                                                </td>
-                                                            </tr>
+                                                            {% endfor %}
                                                         </tbody>
                                                     </table>
                                                 </div>
@@ -268,35 +265,33 @@
                                                     </tr>
                                                 </thead>
                                                 <tbody>
+                                                    {% for premio in premios %}
                                                     <tr>
-                                                        <td>1°</td>
-                                                        <td class="center-middle"><img src="{% static 'administrativo/img/Corinthians.png' %}" height="32" width="32" alt="Imagem"></td>
-                                                        <td>1000</td>
-                                                        <td>1000</td>
-                                                        <td>1000</td>
+                                                        <td>{{ premio.position }}°</td>
+                                                        <td class="center-middle">
+                                                            {% if premio.image %}
+                                                                <img src="{{ premio.image.url }}" height="32" width="32" alt="Imagem">
+                                                            {% else %}
+                                                                <img src="{% static 'administrativo/img/Corinthians.png' %}" height="32" width="32" alt="Imagem">
+                                                            {% endif %}
+                                                        </td>
+                                                        <td>{{ premio.iniciante }}</td>
+                                                        <td>{{ premio.nacional }}</td>
+                                                        <td>{{ premio.internacional }}</td>
                                                         <td>
                                                             <div>
-                                                                <button type="button" class="btn btn-danger btn-xs mr5" title="Excluir"><i class="glyphicon glyphicon-trash" data-toggle="modal" data-target="#modal-alert2"></i></button>
+                                                                <button type="button" class="btn btn-danger btn-xs mr5 btnExcluirPremio" title="Excluir" data-id="{{ premio.id }}">
+                                                                    <i class="glyphicon glyphicon-trash"></i>
+                                                                </button>
                                                             </div>
                                                         </td>
                                                     </tr>
-                                                    <tr>
-                                                        <td>2°</td>
-                                                        <td class="center-middle"><img src="{% static 'administrativo/img/Corinthians.png' %}" height="32" width="32" alt="Imagem"></td>
-                                                        <td>1000</td>
-                                                        <td>1000</td>
-                                                        <td>1000</td>
-                                                        <td>
-                                                            <div>
-                                                                <button type="button" class="btn btn-danger btn-xs mr5" title="Excluir"><i class="glyphicon glyphicon-trash" data-toggle="modal" data-target="#modal-alert2"></i></button>
-                                                            </div>
-                                                        </td>
-                                                    </tr>
+                                                    {% endfor %}
                                                 </tbody>
                                             </table>
                                         </div>
                                         <div class="row col-lg-12 mt15 mb20">
-                                            <button type="button" class="btn btn-primary"><i class="fa fa-plus mr5"></i> Adicionar</button>
+                                            <button type="button" class="btn btn-primary" id="btnAddPremio"><i class="fa fa-plus mr5"></i> Adicionar</button>
                                         </div>
                                     </div>
                                 </div>
@@ -328,7 +323,7 @@
                                                                         Premiação
                                                                     </label>
                                                                     <div class="input-group clockpicker" data-autoclose="true" style="width: 80%">
-                                                                        <input type="text" class="form-control">
+                                                                        <input type="text" class="form-control" id="weekly-time">
                                                                         <span class="input-group-addon">
                                                                             <span class="fa fa-clock-o"></span>
                                                                         </span>
@@ -373,7 +368,7 @@
                                                                         Premiação
                                                                     </label>
                                                                     <div class="input-group clockpicker" data-autoclose="true" style="width: 80%">
-                                                                        <input type="text" class="form-control">
+                                                                        <input type="text" class="form-control" id="season-time">
                                                                         <span class="input-group-addon">
                                                                             <span class="fa fa-clock-o"></span>
                                                                         </span>
@@ -412,5 +407,357 @@
     <script src="{% static 'administrativo/js/plugins/tablednd/jquery.tablednd.min.js' %}"></script>
     <script src="{% static 'administrativo/js/plugins/clockpicker/clockpicker.js' %}"></script>
     <script src="{% static 'administrativo/js/settings.js' %}"></script>
+    <script>
+    $(document).ready(function() {
+        // Configuração do Toastr
+        toastr.options = {
+            closeButton: true,
+            progressBar: true,
+            showMethod: 'slideDown',
+            timeOut: 4000,
+            extendedTimeOut: 2000,
+            showEasing: 'swing',
+            hideEasing: 'linear',
+            showMethod: 'fadeIn',
+            hideMethod: 'fadeOut',
+            positionClass: 'toast-top-right'
+        };
+
+        // Função para mostrar o modal de sucesso
+        function showSuccessModal(message) {
+            $('#modalSuccessMessage').text(message);
+            $('#modalSuccess').modal('show');
+            setTimeout(function() {
+                $('#modalSuccess').modal('hide');
+                window.location.reload();
+            }, 2000);
+        }
+
+        // Preview de imagem com Jasny Bootstrap
+        $('.fileinput').fileinput();
+
+        // Preview da imagem
+        $('#image').on('change', function() {
+            var file = this.files[0];
+            if (file) {
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    $('#image-preview').html(`
+                        <img src="${e.target.result}" style="max-width: 50px; max-height: 50px; object-fit: contain; cursor: pointer;" onclick="document.getElementById('image').click()">
+                        <button type="button" class="btn btn-danger btn-xs" id="remove_image_btn" style="position: absolute; bottom: -7px; right: -30px;">
+                            <i class="fa fa-trash"></i>
+                        </button>
+                    `);
+                    $('#image-preview').css('margin-top', '-7px');
+                    
+                    // Adiciona handler para o botão de remover
+                    $('#remove_image_btn').on('click', function() {
+                        $('#image').val('');
+                        $('#image-preview').html('<i class="fa fa-file-image-o" style="font-size: 48px; color: #ccc; cursor: pointer;" onclick="document.getElementById(\'image\').click()"></i>');
+                    });
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Inicializa o iCheck
+        $('.i-checks').iCheck({
+            checkboxClass: 'icheckbox_square-green',
+            radioClass: 'iradio_square-green'
+        });
+
+        // Atualiza o valor do checkbox no formData quando mudar
+        $('#owner_premium').on('ifChanged', function(event) {
+            var isChecked = event.target.checked;
+            $(this).prop('checked', isChecked);
+        });
+
+        // Adicionar novo nível
+        $('#nivelForm').on('submit', function(e) {
+            e.preventDefault();
+            
+            var formData = new FormData(this);
+            formData.set('owner_premium', $('#owner_premium').prop('checked'));
+            
+            $.ajax({
+                url: '{% url "administrativo:futliga_nivel_novo" %}',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(response) {
+                    if (response.success) {
+                        showSuccessModal('Nível adicionado com sucesso!');
+                    } else {
+                        toastr.error(response.message || 'Erro ao adicionar nível', 'Erro');
+                    }
+                },
+                error: function() {
+                    toastr.error('Erro ao adicionar nível. Tente novamente.', 'Erro');
+                }
+            });
+        });
+
+        // Importar níveis
+        $('#btnImportar').click(function() {
+            $('#importFile').click();
+        });
+
+        $('#importFile').change(function() {
+            var formData = new FormData($('#importForm')[0]);
+            
+            $.ajax({
+                url: '{% url "administrativo:futliga_nivel_importar" %}',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(response) {
+                    if (response.success) {
+                        showSuccessModal('Níveis importados com sucesso!');
+                    } else {
+                        toastr.error(response.message || 'Erro ao importar níveis', 'Erro');
+                    }
+                },
+                error: function() {
+                    toastr.error('Erro ao importar níveis. Tente novamente.', 'Erro');
+                }
+            });
+        });
+
+        // Variável para armazenar ID do item a ser excluído
+        var deleteId = null;
+
+        // Editar nível
+        $('.btnEditar').click(function() {
+            var id = $(this).data('id');
+            window.location.href = '/administrativo/futligas/niveis/editar/' + id + '/';
+        });
+
+        // Excluir nível - abre modal
+        $('.btnExcluir').click(function() {
+            deleteId = $(this).data('id');
+            $('#modalConfirmDelete').modal('show');
+        });
+
+        // Confirmar exclusão
+        $('#btnConfirmDelete').click(function() {
+            if (deleteId) {
+                $.ajax({
+                    url: '/administrativo/futligas/niveis/excluir/' + deleteId + '/',
+                    type: 'POST',
+                    data: {
+                        csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]').val()
+                    },
+                    success: function(response) {
+                        $('#modalConfirmDelete').modal('hide');
+                        if (response.success) {
+                            showSuccessModal('Nível excluído com sucesso!');
+                        } else {
+                            toastr.error(response.message || 'Erro ao excluir nível', 'Erro');
+                        }
+                    },
+                    error: function() {
+                        $('#modalConfirmDelete').modal('hide');
+                        toastr.error('Erro ao excluir nível. Tente novamente.', 'Erro');
+                    }
+                });
+            }
+        });
+
+        // Limpar form após fechar modal
+        $('#modalConfirmDelete').on('hidden.bs.modal', function () {
+            deleteId = null;
+        });
+
+        // Adicionar prêmio - abre modal
+        $('#btnAddPremio').click(function() {
+            $('#premioForm')[0].reset();
+            $('#modalPremio').modal('show');
+        });
+
+        // Salvar prêmio
+        $('#btnSalvarPremio').click(function() {
+            var formData = new FormData($('#premioForm')[0]);
+            
+            $.ajax({
+                url: '{% url "administrativo:futliga_premio_novo" %}',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(response) {
+                    $('#modalPremio').modal('hide');
+                    if (response.success) {
+                        showSuccessModal('Prêmio adicionado com sucesso!');
+                    } else {
+                        toastr.error(response.message || 'Erro ao adicionar prêmio', 'Erro');
+                    }
+                },
+                error: function() {
+                    $('#modalPremio').modal('hide');
+                    toastr.error('Erro ao adicionar prêmio. Tente novamente.', 'Erro');
+                }
+            });
+        });
+
+        // Excluir prêmio
+        $('.btnExcluirPremio').click(function() {
+            var id = $(this).data('id');
+            
+            $.ajax({
+                url: '/administrativo/futligas/premios/excluir/' + id + '/',
+                type: 'POST',
+                data: {
+                    csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]').val()
+                },
+                success: function(response) {
+                    if (response.success) {
+                        showSuccessModal('Prêmio excluído com sucesso!');
+                    } else {
+                        toastr.error(response.message || 'Erro ao excluir prêmio', 'Erro');
+                    }
+                },
+                error: function() {
+                    toastr.error('Erro ao excluir prêmio. Tente novamente.', 'Erro');
+                }
+            });
+        });
+
+        // Preview da imagem do prêmio
+        $('#premio_image').on('change', function() {
+            var file = this.files[0];
+            if (file) {
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    $('#premio_image_preview').html(`
+                        <img src="${e.target.result}" style="max-width: 100px; max-height: 100px;">
+                    `);
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Inicializa o clockpicker
+        $('.clockpicker').clockpicker({
+            autoclose: true,
+            donetext: 'Pronto'
+        });
+
+        // Salvar configurações de premiação
+        $('#successToast').click(function() {
+            var formData = new FormData();
+            formData.append('csrfmiddlewaretoken', $('input[name=csrfmiddlewaretoken]').val());
+
+            // Ranking Semanal
+            formData.append('weekly_day', $('#dia-premiacao').val());
+            formData.append('weekly_time', $('#weekly-time').val());
+
+            // Ranking Temporada
+            formData.append('season_month', $('#mes-ano-premiacao').val());
+            formData.append('season_day', $('#dia-ano-premiacao').val());
+            formData.append('season_time', $('#season-time').val());
+
+            $.ajax({
+                url: '{% url "administrativo:futliga_premiacao_salvar" %}',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(response) {
+                    if (response.success) {
+                        showSuccessModal('Configurações de premiação salvas com sucesso!');
+                    } else {
+                        toastr.error(response.message || 'Erro ao salvar configurações de premiação', 'Erro');
+                    }
+                },
+                error: function() {
+                    toastr.error('Erro ao salvar configurações de premiação. Tente novamente.', 'Erro');
+                }
+            });
+        });
+    });
+    </script>
+    <!-- Modal de confirmação para exclusão -->
+    <div class="modal inmodal" id="modalConfirmDelete" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content animated bounceInRight">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Fechar</span></button>
+                    <i class="fa fa-exclamation-triangle modal-icon"></i>
+                    <h4 class="modal-title">Confirmar Exclusão</h4>
+                </div>
+                <div class="modal-body">
+                    <p>Tem certeza que deseja excluir este nível?</p>
+                    <p><strong>Esta ação não poderá ser desfeita.</strong></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-white" data-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-danger" id="btnConfirmDelete">Excluir</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de sucesso -->
+    <div class="modal inmodal" id="modalSuccess" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content animated bounceInRight">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Fechar</span></button>
+                    <i class="fa fa-check-circle modal-icon text-success"></i>
+                    <h4 class="modal-title">Operação Realizada</h4>
+                </div>
+                <div class="modal-body">
+                    <p id="modalSuccessMessage">Operação realizada com sucesso!</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-success" data-dismiss="modal">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Adicionar/Editar Prêmio -->
+    <div class="modal inmodal" id="modalPremio" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content animated bounceInRight">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Fechar</span></button>
+                    <i class="fa fa-trophy modal-icon"></i>
+                    <h4 class="modal-title">Prêmio</h4>
+                </div>
+                <div class="modal-body">
+                    <form id="premioForm">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            <label>Posição</label>
+                            <input type="number" class="form-control" id="position" name="position" min="1" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Imagem</label>
+                            <input type="file" class="form-control" id="premio_image" name="image" accept="image/*">
+                        </div>
+                        <div class="form-group">
+                            <label>Iniciante</label>
+                            <input type="number" class="form-control" id="iniciante" name="iniciante" min="0" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Nacional</label>
+                            <input type="number" class="form-control" id="nacional" name="nacional" min="0" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Internacional</label>
+                            <input type="number" class="form-control" id="internacional" name="internacional" min="0" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-white" data-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="btnSalvarPremio">Salvar</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
