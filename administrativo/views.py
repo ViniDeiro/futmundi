@@ -26,6 +26,9 @@ import csv
 import os
 from datetime import datetime, timedelta
 import json
+import logging
+
+logger = logging.getLogger(__name__)
 
 def login(request):
     # Limpa as mensagens antigas
@@ -37,33 +40,52 @@ def login(request):
         password = request.POST.get('password')
         remember_me = request.POST.get('remember_me') == 'on'
         
+        logger.error(f"Tentativa de login - Email: {email}")  # Usando error para garantir que apareça no log
+        
         if not all([email, password]):
             messages.error(request, 'Todos os campos são obrigatórios')
             return render(request, 'administrativo/login.html')
         
         try:
-            # Tenta autenticar usando o email como username
-            user = authenticate(request, username=email, password=password)
+            # Primeiro, tenta encontrar o usuário pelo email
+            try:
+                user_obj = User.objects.get(email=email)
+                logger.error(f"Usuário encontrado - Username: {user_obj.username}, Is Staff: {user_obj.is_staff}, Is Superuser: {user_obj.is_superuser}")
+            except User.DoesNotExist:
+                logger.error(f"Nenhum usuário encontrado com o email: {email}")
+                messages.error(request, 'Email ou senha inválidos')
+                return render(request, 'administrativo/login.html')
             
-            if user is not None and user.is_staff:  # Verifica se é um administrador
-                auth_login(request, user)
+            # Tenta autenticar com o username encontrado
+            user = authenticate(request, username=user_obj.username, password=password)
+            logger.error(f"Resultado da autenticação: {user}")
+            
+            if user is not None:
+                logger.error(f"Usuário autenticado - Is Staff: {user.is_staff}, Is Superuser: {user.is_superuser}")
                 
-                # Se o usuário marcou "lembrar-me"
-                if remember_me:
-                    request.session.set_expiry(60 * 60 * 24 * 30)  # 30 dias
+                if user.is_staff or user.is_superuser:
+                    auth_login(request, user)
+                    
+                    if remember_me:
+                        request.session.set_expiry(60 * 60 * 24 * 30)  # 30 dias
+                    else:
+                        request.session.set_expiry(0)  # Expira ao fechar o navegador
+                    
+                    request.session['admin_id'] = user.id
+                    request.session['admin_name'] = user.get_full_name() or user.email
+                    request.session['is_root'] = user.is_superuser
+                    
+                    logger.error("Login bem-sucedido - Redirecionando para usuarios")
+                    return redirect('administrativo:usuarios')
                 else:
-                    request.session.set_expiry(0)  # Expira ao fechar o navegador
-                
-                # Salva dados na sessão
-                request.session['admin_id'] = user.id
-                request.session['admin_name'] = user.get_full_name() or user.email
-                request.session['is_root'] = user.is_superuser
-                
-                return redirect('administrativo:usuarios')
+                    logger.error("Usuário não tem permissões de staff/superuser")
+                    messages.error(request, 'Você não tem permissão para acessar esta área')
             else:
+                logger.error("Autenticação falhou - Senha incorreta")
                 messages.error(request, 'Email ou senha inválidos')
                 
         except Exception as e:
+            logger.error(f"Erro durante o login: {str(e)}")
             messages.error(request, 'Erro ao realizar login')
             
     return render(request, 'administrativo/login.html')

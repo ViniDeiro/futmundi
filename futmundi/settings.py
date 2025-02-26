@@ -85,11 +85,13 @@ WSGI_APPLICATION = "futmundi.wsgi.application"
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'futmundi_db',
-        'USER': 'futmundi_user',
-        'PASSWORD': 'Vdl@2209',
-        'HOST': 'localhost',
-        'PORT': '3306',
+        'NAME': 'ViniDeiro$fuutmundi',  # Note o duplo 'u' em fuutmundi
+        'USER': 'ViniDeiro',           # Seu username do PythonAnywhere
+        'PASSWORD': 'Vdl@2209',        # A senha que você definiu no PythonAnywhere
+        'HOST': 'ViniDeiro.mysql.pythonanywhere-services.com',  # O hostname mostrado no painel
+        'OPTIONS': {
+            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+        },
     }
 }
 
@@ -174,6 +176,11 @@ SESSION_COOKIE_SAMESITE = 'Lax'  # Configuração de segurança para cookies
 LOGIN_URL = 'administrativo:login'
 LOGIN_REDIRECT_URL = 'administrativo:index'
 
+# Authentication backends
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+]
+
 # CORS settings
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",  # React frontend
@@ -184,3 +191,23 @@ CORS_ALLOW_CREDENTIALS = True
 
 # Upload settings
 DATA_UPLOAD_MAX_NUMBER_FILES = 1000  # Aumenta o limite para 1000 arquivos
+
+# Logging Configuration
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'file': {
+            'level': 'ERROR',
+            'class': 'logging.FileHandler',
+            'filename': 'debug.log',
+        },
+    },
+    'loggers': {
+        'administrativo': {
+            'handlers': ['file'],
+            'level': 'ERROR',
+            'propagate': True,
+        },
+    },
+}
