@@ -2603,8 +2603,8 @@ def relatorios(request):
     return render(request, 'administrativo/relatorios.html')
 
 def administradores(request):
-    # Lista todos os administradores exceto o root
-    admins = Administrator.objects.filter(is_root=False).order_by('-created_at')
+    # Lista todos os administradores exceto o superuser
+    admins = User.objects.filter(is_staff=True, is_superuser=False).order_by('-date_joined')
     return render(request, 'administrativo/administradores.html', {'admins': admins})
 
 @login_required
@@ -2639,11 +2639,11 @@ def administrador_novo(request):
     return render(request, 'administrativo/administrador_novo.html')
 
 def administrador_editar(request, id):
-    admin = get_object_or_404(Administrator, id=id)
+    admin = get_object_or_404(User, id=id)
     
-    # Não permite editar o usuário root
-    if admin.is_root:
-        messages.error(request, 'Não é permitido editar o usuário root')
+    # Não permite editar o superuser
+    if admin.is_superuser:
+        messages.error(request, 'Não é permitido editar o usuário master')
         return redirect('administrativo:administradores')
     
     if request.method == 'POST':
@@ -2655,15 +2655,17 @@ def administrador_editar(request, id):
             messages.error(request, 'Nome e email são obrigatórios')
             return render(request, 'administrativo/administrador-editar.html', {'admin': admin})
         
-        # Verifica se o email já existe para outro administrador
-        if Administrator.objects.filter(email=email).exclude(id=id).exists():
+        # Verifica se o email já existe para outro usuário
+        if User.objects.filter(email=email).exclude(id=id).exists():
             messages.error(request, 'Email já cadastrado')
             return render(request, 'administrativo/administrador-editar.html', {'admin': admin})
             
-        admin.name = name
+        # Atualiza os dados do usuário
+        admin.first_name = name
         admin.email = email
+        admin.username = email  # Mantém o username igual ao email
         if password:  # Só atualiza a senha se foi fornecida
-            admin.password = make_password(password)
+            admin.set_password(password)
         admin.save()
         
         messages.success(request, 'Administrador atualizado com sucesso')
@@ -2672,13 +2674,13 @@ def administrador_editar(request, id):
     return render(request, 'administrativo/administrador-editar.html', {'admin': admin})
 
 def administrador_excluir(request, id):
-    admin = get_object_or_404(Administrator, id=id)
+    admin = get_object_or_404(User, id=id)
     
-    # Não permite excluir o usuário root
-    if admin.is_root:
+    # Não permite excluir o superuser
+    if admin.is_superuser:
         return JsonResponse({
             'success': False,
-            'message': 'Não é permitido excluir o usuário root'
+            'message': 'Não é permitido excluir o usuário master'
         })
         
     try:
@@ -2704,8 +2706,8 @@ def administradores_excluir_massa(request):
             })
             
         try:
-            # Garante que não exclui o usuário root
-            deleted_count = Administrator.objects.filter(id__in=ids, is_root=False).delete()[0]
+            # Garante que não exclui o superuser
+            deleted_count = User.objects.filter(id__in=ids, is_superuser=False).delete()[0]
             return JsonResponse({
                 'success': True,
                 'message': f'{deleted_count} administrador(es) excluído(s) com sucesso'
