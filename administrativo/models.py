@@ -1079,5 +1079,6 @@ class Notifications(models.Model):
         return self.title
 
     class Meta:
+        db_table = 'notifications'
         verbose_name = 'Notificação'
         verbose_name_plural = 'Notificações'
