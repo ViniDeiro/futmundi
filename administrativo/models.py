@@ -1,9 +1,11 @@
+from django.conf import settings
+from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils import timezone
 from django.templatetags.static import static
 from django.db.models import Q
 
-class User(models.Model):
+class User(AbstractUser):
     PLAN_CHOICES = [
         ('common', 'Common'),
         ('star', 'Star'),
@@ -16,8 +18,6 @@ class User(models.Model):
         ('annual', 'Annual'),
     ]
     
-    name = models.CharField(max_length=255)
-    email = models.EmailField(unique=True)
     futcoins = models.IntegerField(default=0)
     current_plan = models.CharField(max_length=20, choices=PLAN_CHOICES, default='common')
     registration_date = models.DateTimeField(default=timezone.now)
@@ -31,16 +31,34 @@ class User(models.Model):
     total_spent = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     plan_spent = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     packages_spent = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    is_active = models.BooleanField(default=True)
     is_star = models.BooleanField(default=False)
+    
+    # Sobrescrevendo os campos ManyToMany do AbstractUser para adicionar related_name
+    groups = models.ManyToManyField(
+        'auth.Group',
+        verbose_name='groups',
+        blank=True,
+        help_text='The groups this user belongs to.',
+        related_name='administrativo_users',  # Adicionando related_name personalizado
+        related_query_name='administrativo_user'
+    )
+    user_permissions = models.ManyToManyField(
+        'auth.Permission',
+        verbose_name='user permissions',
+        blank=True,
+        help_text='Specific permissions for this user.',
+        related_name='administrativo_users',  # Adicionando related_name personalizado
+        related_query_name='administrativo_user'
+    )
     
     class Meta:
         db_table = 'users'
         verbose_name = 'User'
         verbose_name_plural = 'Users'
+        swappable = 'AUTH_USER_MODEL'
     
     def __str__(self):
-        return self.name
+        return self.get_full_name() or self.username
 
 # Campeonatos
 class ScopeLevel(models.Model):
@@ -365,7 +383,11 @@ class Prediction(models.Model):
         ('miss', 'Erro'),
     ]
     
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='predictions')
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='predictions'
+    )
     match = models.ForeignKey(ChampionshipMatch, on_delete=models.CASCADE, related_name='predictions')
     result = models.CharField(max_length=20, choices=RESULT_CHOICES)
     boost_bonus = models.IntegerField(default=0)
@@ -387,13 +409,12 @@ class Prediction(models.Model):
         verbose_name = 'Palpite'
         verbose_name_plural = 'Palpites'
         ordering = ['-created_at']
-        unique_together = ['user', 'match']  # Um palpite por usuário por partida
+        unique_together = ['user', 'match']
 
     def __str__(self):
-        return f"{self.user.name} - {self.match}"
+        return f"{self.user.get_full_name() or self.user.username} - {self.match}"
 
     def save(self, *args, **kwargs):
-        # Calcula o total de gastos
         self.total_expenses = self.leverage_expenses + self.insurance_expenses
         super().save(*args, **kwargs)
 
@@ -967,7 +988,12 @@ class LeagueInvitation(models.Model):
     """
     Entidade que representa os convites para Futligas.
     """
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='league_invitations', verbose_name='Usuário')
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='league_invitations',
+        verbose_name='Usuário'
+    )
     invitations = models.IntegerField(default=0, verbose_name='Quantidade de Convites')
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
@@ -978,7 +1004,7 @@ class LeagueInvitation(models.Model):
         verbose_name_plural = 'Convites de Futliga'
 
     def __str__(self):
-        return f'{self.user.name} - {self.invitations} convites'
+        return f'{self.user.get_full_name() or self.user.username} - {self.invitations} convites'
 
 class Parameters(models.Model):
     """

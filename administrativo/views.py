@@ -40,36 +40,32 @@ def login(request):
         if not all([email, password]):
             messages.error(request, 'Todos os campos são obrigatórios')
             return render(request, 'administrativo/login.html')
-            
-        administrator = Administrator.objects.filter(email=email).first()
         
-        if not administrator or not check_password(password, administrator.password):
-            messages.error(request, 'Email ou senha inválidos')
-            return render(request, 'administrativo/login.html')
+        try:
+            # Tenta autenticar usando o email como username
+            user = authenticate(request, username=email, password=password)
             
-        # Autentica o usuário no Django
-        user = authenticate(request, username=email, password=password)
-        if user is None:
-            # Se o usuário não existe no Django, cria um novo
-            from django.contrib.auth.models import User
-            user = User.objects.create_user(username=email, email=email, password=password)
+            if user is not None and user.is_staff:  # Verifica se é um administrador
+                auth_login(request, user)
+                
+                # Se o usuário marcou "lembrar-me"
+                if remember_me:
+                    request.session.set_expiry(60 * 60 * 24 * 30)  # 30 dias
+                else:
+                    request.session.set_expiry(0)  # Expira ao fechar o navegador
+                
+                # Salva dados na sessão
+                request.session['admin_id'] = user.id
+                request.session['admin_name'] = user.get_full_name() or user.email
+                request.session['is_root'] = user.is_superuser
+                
+                return redirect('administrativo:usuarios')
+            else:
+                messages.error(request, 'Email ou senha inválidos')
+                
+        except Exception as e:
+            messages.error(request, 'Erro ao realizar login')
             
-        # Faz o login do usuário
-        auth_login(request, user)
-        
-        # Se o usuário marcou "lembrar-me", define o tempo de expiração da sessão para 30 dias
-        if remember_me:
-            request.session.set_expiry(60 * 60 * 24 * 30)  # 30 dias em segundos
-        else:
-            request.session.set_expiry(0)  # Expira quando o navegador fechar
-            
-        # Salva os dados do admin na sessão com os nomes corretos das variáveis
-        request.session['admin_id'] = administrator.id
-        request.session['admin_name'] = administrator.name
-        request.session['is_root'] = administrator.is_root
-        
-        return redirect('administrativo:usuarios')
-        
     return render(request, 'administrativo/login.html')
 
 def usuarios(request):
@@ -2591,10 +2587,6 @@ def administradores(request):
 
 @login_required
 def administrador_novo(request):
-    # Limpa as mensagens antigas
-    storage = messages.get_messages(request)
-    storage.used = True
-    
     if request.method == 'POST':
         name = request.POST.get('name')
         email = request.POST.get('email')
@@ -2604,22 +2596,23 @@ def administrador_novo(request):
             messages.error(request, 'Todos os campos são obrigatórios')
             return render(request, 'administrativo/administrador_novo.html')
         
-        if Administrator.objects.filter(email=email).exists():
+        if User.objects.filter(email=email).exists():
             messages.error(request, 'Email já cadastrado')
             return render(request, 'administrativo/administrador_novo.html')
             
         try:
-            Administrator.objects.create(
-                name=name,
+            # Cria um novo usuário administrador
+            user = User.objects.create_user(
+                username=email,
                 email=email,
-                password=make_password(password),
-                is_root=False
+                password=password,
+                first_name=name,
+                is_staff=True  # Marca como staff para ter acesso ao admin
             )
             messages.success(request, 'Administrador criado com sucesso')
             return redirect('administrativo:administradores')
         except Exception as e:
             messages.error(request, f'Erro ao criar administrador: {str(e)}')
-            return render(request, 'administrativo/administrador_novo.html')
             
     return render(request, 'administrativo/administrador_novo.html')
 
