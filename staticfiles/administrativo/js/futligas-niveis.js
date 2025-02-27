@@ -22,9 +22,9 @@ $(document).ready(function() {
 
     // Função para validar os campos obrigatórios
     function validateFields() {
-        var name = $("#nome").val();
-        var players = $("#participantes").val();
-        var premiumPlayers = $("#craques").val();
+        var name = $("#level-name").val();
+        var players = $("#players").val();
+        var premiumPlayers = $("#premium-players").val();
 
         if (!name || !players || !premiumPlayers) {
             toastr.error('Os campos Nome, Participantes e Craques são obrigatórios');
@@ -52,48 +52,44 @@ $(document).ready(function() {
 
     // Função para limpar o formulário
     function clearForm() {
-        $("#nome").val('');
-        $("#participantes").val('');
-        $("#craques").val('');
-        $("#owner_premium").prop('checked', false);
-        $("#image").val('');
-        $("#image-preview").html('<i class="fa fa-file-image-o" style="font-size: 48px; color: #ccc; cursor: pointer;" onclick="document.getElementById(\'image\').click()"></i>');
+        $("#level-name").val('');
+        $("#players").val('');
+        $("#premium-players").val('');
+        $("#owner-premium").prop('checked', false);
+        $("#level-image").val('');
+        $("#image-preview").html('<i class="fa fa-image"></i>');
         isEditing = false;
         editingId = null;
-        $("#btnAdicionar").html('<i class="fa fa-plus mr5"></i> Adicionar');
+        $("#add-level").text('Adicionar');
     }
 
     // Preview da imagem
-    $("#image").change(function() {
+    $("#level-image").change(function() {
         var file = this.files[0];
         if (file) {
             var reader = new FileReader();
             reader.onload = function(e) {
-                $("#image-preview").html(`
-                    <img src="${e.target.result}" style="max-width: 50px; max-height: 50px; object-fit: contain; cursor: pointer;" onclick="document.getElementById('image').click()">
-                    <button type="button" class="btn btn-danger btn-xs" id="remove_image_btn" style="position: absolute; bottom: -7px; right: -30px;">
-                        <i class="fa fa-trash"></i>
-                    </button>
-                `);
-                
-                // Adiciona handler para o botão de remover
-                $('#remove_image_btn').on('click', function() {
-                    $('#image').val('');
-                    $('#image-preview').html('<i class="fa fa-file-image-o" style="font-size: 48px; color: #ccc; cursor: pointer;" onclick="document.getElementById(\'image\').click()"></i>');
-                });
+                $("#image-preview").html(`<img src="${e.target.result}" style="width: 48px; height: 48px; object-fit: contain;">`);
             }
             reader.readAsDataURL(file);
         }
     });
 
-    // Adicionar/Editar nível - modificando para escutar o envio do formulário
-    $("#nivelForm").on('submit', function(e) {
-        e.preventDefault();
-        
+    // Adicionar/Editar nível
+    $("#add-level").click(function() {
         if (!validateFields()) return;
 
-        var formData = new FormData(this);
+        var formData = new FormData();
+        formData.append('name', $("#level-name").val());
+        formData.append('players', $("#players").val());
+        formData.append('premium_players', $("#premium-players").val());
+        formData.append('owner_premium', $("#owner-premium").is(':checked'));
         
+        var imageFile = $("#level-image")[0].files[0];
+        if (imageFile) {
+            formData.append('image', imageFile);
+        }
+
         var url = isEditing ? 
             '/administrativo/futligas/niveis/editar/' + editingId + '/' :
             '/administrativo/futligas/niveis/novo/';
@@ -167,26 +163,17 @@ $(document).ready(function() {
         editingId = row.data('id');
         isEditing = true;
 
-        $("#nome").val(row.find("td:eq(1)").text());
-        $("#participantes").val(row.find("td:eq(2)").text());
-        $("#craques").val(row.find("td:eq(3)").text());
-        $("#owner_premium").prop('checked', row.find("td:eq(4)").text() === 'Sim');
+        $("#level-name").val(row.find("td:eq(1)").text());
+        $("#players").val(row.find("td:eq(2)").text());
+        $("#premium-players").val(row.find("td:eq(3)").text());
+        $("#owner-premium").prop('checked', row.find("td:eq(4)").text() === 'Sim');
         
         var imgElement = row.find("td:eq(5) img");
         if (imgElement.length) {
-            $("#image-preview").html(`<img src="${imgElement.attr('src')}" style="max-width: 50px; max-height: 50px; object-fit: contain; cursor: pointer;" onclick="document.getElementById('image').click()">
-                <button type="button" class="btn btn-danger btn-xs" id="remove_image_btn" style="position: absolute; bottom: -7px; right: -30px;">
-                    <i class="fa fa-trash"></i>
-                </button>`);
-            
-            // Adiciona handler para o botão de remover
-            $('#remove_image_btn').on('click', function() {
-                $('#image').val('');
-                $('#image-preview').html('<i class="fa fa-file-image-o" style="font-size: 48px; color: #ccc; cursor: pointer;" onclick="document.getElementById(\'image\').click()"></i>');
-            });
+            $("#image-preview").html(`<img src="${imgElement.attr('src')}" style="width: 48px; height: 48px; object-fit: contain;">`);
         }
 
-        $("#btnAdicionar").html('<i class="fa fa-save mr5"></i> Salvar Alterações');
+        $("#add-level").text('Salvar Alterações');
     });
 
     // Excluir nível
@@ -280,5 +267,29 @@ $(document).ready(function() {
                 toastr.error('Erro ao salvar alterações');
             }
         });
+    });
+
+    // Handler para o input de imagem
+    $('#level-image').on('change', function(e) {
+        if (e.target.files && e.target.files[0]) {
+            var reader = new FileReader();
+            
+            reader.onload = function(e) {
+                $('#image-preview').html(`
+                    <img src="${e.target.result}" style="width: 48px; height: 48px; object-fit: contain; cursor: pointer;" onclick="document.getElementById('level-image').click()">
+                    <button type="button" class="btn btn-danger btn-xs" id="remove_image_btn" style="position: absolute; bottom: -7px; right: -30px;">
+                        <i class="fa fa-trash"></i>
+                    </button>
+                `);
+                
+                // Adiciona handler para o botão de remover
+                $('#remove_image_btn').on('click', function() {
+                    $('#level-image').val('');
+                    $('#image-preview').html('<i class="fa fa-file-image-o" style="font-size: 48px; color: #ccc; cursor: pointer;" onclick="document.getElementById(\'level-image\').click()"></i>');
+                });
+            }
+            
+            reader.readAsDataURL(e.target.files[0]);
+        }
     });
 }); 

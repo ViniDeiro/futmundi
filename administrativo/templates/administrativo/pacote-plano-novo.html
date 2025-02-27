@@ -208,7 +208,7 @@
                                                 </div>
                                                 <div class="col-lg-6">
                                                     <form class="mtm10">
-                                                        <div class="form-group col-lg-12">
+                                                        <div class="form-group col-lg-12 date-fields">
                                                             <div class="row">
                                                                 <div class="col-lg-5">
                                                                     <label class="control-label">Data de Início</label>
@@ -275,8 +275,11 @@
                 }
             });
             
-            // Dispara o evento change do tipo para ajustar a visibilidade inicial dos campos
-            $('#tipo').trigger('change');
+            $(document).ready(function() {
+                // Apenas dispara o evento change para ajustar a visibilidade dos campos
+                // de acordo com o valor atual (que será vazio)
+                $('#tipo').trigger('change');
+            });
         </script>
     </body>
 </html>

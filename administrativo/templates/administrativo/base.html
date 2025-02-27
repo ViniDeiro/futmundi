@@ -4,6 +4,11 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Anti-cache meta tags -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+
     <title>{% block title %}Futmundi{% endblock %}</title>
 
     <!-- CSS Base -->
@@ -21,6 +26,31 @@
     {% block extra_css %}{% endblock %}
 </head>
 <body>
+    <!-- Detector de recarregamento forçado -->
+    <script>
+        // Verificar se precisamos forçar um recarregamento completo 
+        (function() {
+            // Detectar parâmetro de reload na URL
+            if (window.location.href.indexOf('_reload=') > -1) {
+                console.log("Parâmetro de recarregamento detectado, limpando URL e recarregando a página...");
+                
+                // Remover parâmetro de reload da URL
+                var newUrl = window.location.href.replace(/([&?])_reload=[^&]+(&|$)/, function(match, p1, p2) {
+                    return p2 === '&' ? p1 : '';
+                });
+                
+                // Se outras interrogações foram removidas e ainda há um '?', remover o '?' 
+                newUrl = newUrl.replace(/\?$/, '');
+                
+                // Atualizar o histórico sem recarregar
+                window.history.replaceState({}, document.title, newUrl);
+                
+                // Forçar recarregamento completo sem cache
+                window.location.reload(true);
+            }
+        })();
+    </script>
+    
     <div id="wrapper">
         <!-- Sidebar -->
         <nav class="navbar-default navbar-static-side">
@@ -137,10 +167,107 @@
     <script src="{% static 'administrativo/js/plugins/metisMenu/jquery.metisMenu.js' %}"></script>
     <script src="{% static 'administrativo/js/plugins/slimscroll/jquery.slimscroll.min.js' %}"></script>
     
+    <!-- Script de redirecionamento seguro -->
+    <script>
+        // Função global para redirecionamento seguro - versão extrema com enfoque em carregar do zero
+        window.redirectSafely = function(url) {
+            if (!url) return;
+            
+            console.log("Redirecionamento seguro para:", url);
+            
+            // Verifica se a URL já contém o parâmetro de reload
+            if (url.indexOf('_reload=') === -1) {
+                // Adiciona parâmetro de timestamp para forçar recarregamento
+                var timestamp = Date.now();
+                var separator = url.indexOf('?') !== -1 ? '&' : '?';
+                url = url + separator + '_reload=' + timestamp;
+            }
+            
+            console.log("URL final com parâmetro de reload:", url);
+            
+            // Substitui a entrada atual do histórico (não adiciona nova entrada)
+            window.location.replace(url);
+            return false;
+        };
+        
+        // O listener de AJAX Success fica mais simples agora
+        $(document).ajaxSuccess(function(event, xhr, settings, data) {
+            if (data && data.redirect_url) {
+                console.log("Redirecionamento AJAX detectado:", data.redirect_url);
+                setTimeout(function() {
+                    window.redirectSafely(data.redirect_url);
+                }, 800); // Atraso para permitir que mensagens de toast sejam exibidas
+            }
+        });
+
+        // Verificar se devemos forçar um recarregamento completo dos estilos
+        document.addEventListener('DOMContentLoaded', function() {
+            // Remover flags obsoletos
+            localStorage.removeItem('forceRefresh');
+            localStorage.removeItem('lastRedirect');
+            
+            // Diagnóstico para entender problemas de layout
+            console.log("---- DIAGNÓSTICO DE LAYOUT ----");
+            console.log("URL atual:", window.location.href);
+            console.log("Arquivos CSS carregados:");
+            document.querySelectorAll('link[rel="stylesheet"]').forEach(function(link) {
+                console.log(" - " + link.href);
+            });
+            
+            // Verificar estado dos arquivos CSS importantes
+            var cssFiles = [
+                "{% static 'administrativo/css/bootstrap.min.css' %}",
+                "{% static 'administrativo/css/style.css' %}",
+                "{% static 'administrativo/css/custom.css' %}"
+            ];
+            
+            cssFiles.forEach(function(cssFile) {
+                var link = document.querySelector('link[href^="' + cssFile + '"]');
+                console.log(cssFile + ": " + (link ? "CARREGADO" : "NÃO ENCONTRADO"));
+            });
+            
+            console.log("Cor de fundo do body:", window.getComputedStyle(document.body).backgroundColor);
+            console.log("----------------------------");
+        });
+
+        // Verificar se os estilos estão carregados corretamente e corrigir problemas
+        $(document).ready(function() {
+            // Verificação única e simples para detectar problemas de CSS
+            var bodyStyle = window.getComputedStyle(document.body);
+            if (bodyStyle.backgroundColor === 'rgba(0, 0, 0, 0)' || 
+                bodyStyle.backgroundColor === 'transparent') {
+                
+                console.error("PROBLEMA DE CSS DETECTADO - Fundo transparente");
+                
+                // Forçar recarregamento da página com parâmetro de reload
+                window.location.replace(window.location.href + 
+                    (window.location.href.indexOf('?') !== -1 ? '&' : '?') + 
+                    '_reload=' + Date.now());
+            }
+            
+            // Capturar todos os cliques em links para usar redirecionamento seguro
+            $(document).on('click', 'a:not([target="_blank"]):not([href^="#"]):not([href^="javascript:"]):not(.no-capture)', function(e) {
+                var href = $(this).attr('href');
+                if (href && href !== '#' && !href.startsWith('javascript:')) {
+                    e.preventDefault();
+                    window.redirectSafely(href);
+                    return false;
+                }
+            });
+        });
+    </script>
+    
     <!-- Custom and Plugin Scripts -->
     <script src="{% static 'administrativo/js/inspinia.js' %}"></script>
     <script src="{% static 'administrativo/js/plugins/pace/pace.min.js' %}"></script>
     <script src="{% static 'administrativo/js/settings.js' %}"></script>
+
+    <!-- Script para verificar e corrigir problemas de layout -->
+    <script>
+        $(document).ready(function() {
+            // Este script está obsoleto e será substituído pelo mecanismo de redirecionamento seguro acima
+        });
+    </script>
 
     {% block extra_js %}{% endblock %}
 </body>

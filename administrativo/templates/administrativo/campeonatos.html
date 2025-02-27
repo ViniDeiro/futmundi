@@ -18,6 +18,7 @@
         <link href="{% static 'administrativo/css/custom.css' %}" rel="stylesheet">
         <!-- Favicon -->
         <link rel="icon" href="{% static 'administrativo/img/futmundi.ico' %}" type="image/png">
+        <link rel="icon" type="image/png" href="{% static 'administrativo/img/favicon.png' %}">
     </head>
     <body>
         <div id="wrapper">
@@ -263,7 +264,45 @@
         <script src="{% static 'administrativo/js/plugins/toastr/toastr.min.js' %}"></script>
         <script src="{% static 'administrativo/js/settings.js' %}"></script>
         <script>
+            var dataTable; // Variável global para armazenar a referência do DataTable
+            
+            // Função específica para inicializar o DataTable
+            function initializeDataTable() {
+                console.log("Inicializando DataTable...");
+                
+                // Se já existe um DataTable, destrua-o primeiro
+                if ($.fn.DataTable.isDataTable('.dataTables-campeonatos')) {
+                    console.log("Destruindo DataTable existente...");
+                    $('.dataTables-campeonatos').DataTable().destroy();
+                }
+                
+                // Inicializa o DataTable
+                dataTable = $('.dataTables-campeonatos').DataTable({
+                    pageLength: 25,
+                    responsive: true,
+                    dom: '<"html5buttons"B>lTfgitp',
+                    buttons: [],
+                    language: {
+                        url: "//cdn.datatables.net/plug-ins/1.10.19/i18n/Portuguese-Brasil.json"
+                    }
+                });
+                
+                console.log("DataTable inicializado com sucesso!");
+            }
+            
+            // Garante que o DataTable seja inicializado quando a página estiver totalmente carregada
+            window.onload = function() {
+                console.log("Página totalmente carregada, garantindo inicialização do DataTable");
+                setTimeout(function() {
+                    // Força a reinicialização do DataTable após a página estar completamente carregada
+                    initializeDataTable();
+                }, 100);
+            };
+            
             $(document).ready(function() {
+                // Inicializa o DataTable na carga da página
+                initializeDataTable();
+                
                 // Exibe mensagens do Django usando toastr
                 var messagesElement = document.getElementById('django-messages');
                 if (messagesElement) {
@@ -298,17 +337,6 @@
                     }
                 });
 
-                // Inicializa o DataTable
-                $('.dataTables-campeonatos').DataTable({
-                    pageLength: 25,
-                    responsive: true,
-                    dom: '<"html5buttons"B>lTfgitp',
-                    buttons: [],
-                    language: {
-                        url: "//cdn.datatables.net/plug-ins/1.10.19/i18n/Portuguese-Brasil.json"
-                    }
-                });
-
                 // Excluir campeonato
                 var championshipIdToDelete = null;
                 $('.btn-excluir').off('click').on('click', function(e) {
@@ -331,9 +359,8 @@
                             $('#modalExcluirIndividual').modal('hide');
                             if (response.success) {
                                 toastr.success(response.message);
-                                setTimeout(function() {
-                                    window.location.reload();
-                                }, 1500);
+                                // Recarregar página e garantir que o DataTable seja inicializado
+                                window.location.href = window.location.pathname;
                             } else {
                                 toastr.error(response.message);
                             }
@@ -375,9 +402,8 @@
                                             toastr.warning(error);
                                         });
                                     }
-                                    setTimeout(function() {
-                                        window.location.reload();
-                                    }, 1500);
+                                    // Recarregar página e garantir que o DataTable seja inicializado
+                                    window.location.href = window.location.pathname;
                                 } else {
                                     toastr.error(response.message || 'Erro ao excluir campeonatos');
                                 }
@@ -434,10 +460,8 @@
                                     btn.attr('title', 'Ativar');
                                 }
                                 toastr.success(response.message);
-                                // Recarrega a página após 1 segundo
-                                setTimeout(function() {
-                                    window.location.reload();
-                                }, 1000);
+                                // Recarregar página e garantir que o DataTable seja inicializado
+                                window.location.href = window.location.pathname;
                             } else {
                                 toastr.error(response.message);
                             }

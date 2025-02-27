@@ -69,15 +69,20 @@ $(document).ready(function() {
         
         var newRow = $('<tr>').attr('id', 'prize-row-' + prizeCounter);
         
-        // Coluna Posição - Agora readonly pois o sistema já reorganiza automaticamente
+        // Coluna Posição
         newRow.append($('<td>').append(
             $('<input>').attr({
                 'type': 'number',
                 'class': 'form-control position-input',
                 'required': true,
                 'min': '1',
-                'value': newPosition,
-                'readonly': true
+                'value': newPosition
+            }).on('input', function() {
+                var value = $(this).val();
+                if (!validatePositiveInteger(value)) {
+                    $(this).val(newPosition);
+                    toastr.error('A posição deve ser um número inteiro positivo');
+                }
             })
         ));
         
@@ -142,20 +147,7 @@ $(document).ready(function() {
                 reader.onload = function(e) {
                     preview.html(`
                         <img src="${e.target.result}" style="width: 32px; height: 32px; object-fit: contain; cursor: pointer;" onclick="$(this).closest('.prize-image-container').find('.prize-image').click()">
-                        <button type="button" class="btn btn-danger btn-xs clear-prize-image" style="position: absolute; bottom: -5px; right: -5px;">
-                            <i class="fa fa-trash"></i>
-                        </button>
                     `);
-                    
-                    // Adiciona handler para o botão de limpar imagem do prêmio
-                    preview.find('.clear-prize-image').on('click', function(e) {
-                        e.stopPropagation();
-                        var container = $(this).closest('.prize-image-container');
-                        container.find('.prize-image').val('');
-                        container.find('.prize-image-preview').html(`
-                            <i class="fa fa-file-image-o" style="font-size: 24px; color: #ccc; cursor: pointer;"></i>
-                        `);
-                    });
                 }
                 reader.readAsDataURL(file);
             }

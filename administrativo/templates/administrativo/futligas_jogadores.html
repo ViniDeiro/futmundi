@@ -705,6 +705,7 @@
             formData.append('season_day', $('#dia-ano-premiacao').val());
             formData.append('season_time', $('#season-time').val());
 
+            // Primeiro, salvar as configurações de data/hora
             $.ajax({
                 url: '{% url "administrativo:futliga_premiacao_salvar" %}',
                 type: 'POST',
@@ -713,7 +714,59 @@
                 contentType: false,
                 success: function(response) {
                     if (response.success) {
-                        showSuccessModal('Configurações de premiação salvas com sucesso!');
+                        // Após salvar as configurações, salvar cada prêmio da tabela
+                        var premiosSuccess = true;
+                        var premiosTotal = $('#premiosTable tbody tr').length;
+                        var premiosSalvos = 0;
+                        
+                        if (premiosTotal === 0) {
+                            showSuccessModal('Configurações de premiação salvas com sucesso!');
+                            return;
+                        }
+                        
+                        $('#premiosTable tbody tr').each(function(index) {
+                            var row = $(this);
+                            var premioFormData = new FormData();
+                            premioFormData.append('csrfmiddlewaretoken', $('input[name=csrfmiddlewaretoken]').val());
+                            premioFormData.append('position', row.find('.position-input').val());
+                            
+                            // Verificar se há uma imagem selecionada
+                            var imageInput = row.find('.premio-image')[0];
+                            if (imageInput && imageInput.files.length > 0) {
+                                premioFormData.append('image', imageInput.files[0]);
+                            }
+                            
+                            premioFormData.append('prize_iniciante', row.find('.iniciante-input').val() || 0);
+                            premioFormData.append('prize_nacional', row.find('.nacional-input').val() || 0);
+                            premioFormData.append('prize_internacional', row.find('.internacional-input').val() || 0);
+                            
+                            $.ajax({
+                                url: '{% url "administrativo:futliga_premio_novo" %}',
+                                type: 'POST',
+                                data: premioFormData,
+                                processData: false,
+                                contentType: false,
+                                async: false, // Para garantir que os prêmios sejam salvos em ordem
+                                success: function(premioResponse) {
+                                    if (premioResponse.success) {
+                                        premiosSalvos++;
+                                    } else {
+                                        premiosSuccess = false;
+                                        toastr.error('Erro ao salvar prêmio na posição ' + row.find('.position-input').val() + ': ' + premioResponse.message, 'Erro');
+                                    }
+                                },
+                                error: function() {
+                                    premiosSuccess = false;
+                                    toastr.error('Erro ao salvar prêmio na posição ' + row.find('.position-input').val(), 'Erro');
+                                }
+                            });
+                        });
+                        
+                        if (premiosSuccess) {
+                            showSuccessModal('Configurações de premiação e ' + premiosSalvos + ' prêmios salvos com sucesso!');
+                        } else {
+                            toastr.warning('Configurações de premiação salvas, mas alguns prêmios não puderam ser salvos.', 'Atenção');
+                        }
                     } else {
                         toastr.error(response.message || 'Erro ao salvar configurações de premiação', 'Erro');
                     }

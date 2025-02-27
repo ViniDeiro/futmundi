@@ -1,0 +1,41 @@
+<head>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+</head>
+
+<form action="{% url 'administrativo:campeonato_editar' championship.id %}" method="post" id="form-editar-campeonato" class="no-intercept"> 
+
+<!-- Script de força de recarregamento -->
+<script type="text/javascript">
+document.addEventListener('DOMContentLoaded', function() {
+    // Captura o formulário
+    var form = document.getElementById('form-editar-campeonato');
+    
+    // Sobrescreve o comportamento padrão
+    form.addEventListener('submit', function(e) {
+        e.preventDefault(); // Previne submissão padrão
+        
+        // Cria FormData para enviar os dados do formulário
+        var formData = new FormData(form);
+        
+        // Envia via fetch API
+        fetch(form.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'ForcedSubmit' // Cabeçalho customizado para identificar esse tipo de submissão
+            }
+        })
+        .then(response => {
+            // Após qualquer resposta, força recarregamento para a página de campeonatos
+            window.location.href = '{% url "administrativo:campeonatos" %}?t=' + new Date().getTime();
+        })
+        .catch(error => {
+            console.error('Erro:', error);
+            // Mesmo com erro, redireciona para garantir o layout
+            window.location.href = '{% url "administrativo:campeonatos" %}?t=' + new Date().getTime();
+        });
+    });
+});
+</script> 

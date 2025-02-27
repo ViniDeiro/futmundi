@@ -283,4 +283,94 @@ function WinMove() {
         .disableSelection();
 }
 
+// Função auto-executável para garantir que os estilos e o layout sejam mantidos após redirecionamentos
+(function() {
+    // Função para adicionar timestamp para evitar cache
+    function addCacheBuster(url) {
+        // Não modificar se não for uma URL
+        if (!url || typeof url !== 'string') return url;
+
+        // Adicionar parâmetro de timestamp para evitar cache
+        var separator = url.indexOf('?') !== -1 ? '&' : '?';
+        return url + separator + '_ts=' + new Date().getTime();
+    }
+
+    // Sobrescrever a função location.href para adicionar cache buster
+    var originalLocationDescriptor = Object.getOwnPropertyDescriptor(window, 'location');
+    var proxiedLocation = {};
+
+    // Criar um proxy para window.location para interceptar redirecionamentos
+    Object.defineProperty(window, 'location', {
+        get: function() {
+            return proxiedLocation;
+        },
+        set: function(url) {
+            // Quando o location é definido diretamente, adicionar cache buster
+            console.log("Redirecionando com cache buster:", url);
+            originalLocationDescriptor.set.call(window, addCacheBuster(url));
+            return url;
+        },
+        configurable: true
+    });
+
+    // Sobrescrever o window.location.href para adicionar cache buster
+    Object.defineProperty(proxiedLocation, 'href', {
+        get: function() {
+            return originalLocationDescriptor.get.call(window).href;
+        },
+        set: function(url) {
+            // Armazenar um identificador de redirecionamento no sessionStorage
+            sessionStorage.setItem('lastRedirect', new Date().getTime());
+            
+            // Usar o valor original com cache buster
+            console.log("Redirecionando (href) com cache buster:", url);
+            originalLocationDescriptor.get.call(window).href = addCacheBuster(url);
+            return url;
+        },
+        configurable: true
+    });
+
+    // Armazenar a hora do último unload para detectar navegação para trás/frente
+    window.addEventListener('beforeunload', function() {
+        sessionStorage.setItem('lastUnload', new Date().getTime());
+    });
+
+    // Verificar ao carregar a página se precisamos recarregar recursos
+    document.addEventListener('DOMContentLoaded', function() {
+        var lastUnload = sessionStorage.getItem('lastUnload');
+        var lastRedirect = sessionStorage.getItem('lastRedirect');
+        var now = new Date().getTime();
+        var timeSinceUnload = lastUnload ? now - parseInt(lastUnload) : 99999;
+        
+        // Se a última ação foi um unload (navegação para trás/frente) e não um redirecionamento intencional
+        if (timeSinceUnload < 5000 && (!lastRedirect || (now - parseInt(lastRedirect) > 5000))) {
+            console.log("Navegação detectada, forçando recarregamento de CSS");
+            
+            // Recarregar CSS para garantir que o layout está correto
+            var links = document.querySelectorAll("link[rel='stylesheet']");
+            links.forEach(function(link) {
+                // Criar novo link para forçar recarregamento
+                var newLink = document.createElement('link');
+                newLink.rel = 'stylesheet';
+                newLink.href = addCacheBuster(link.href);
+                document.head.appendChild(newLink);
+            });
+        }
+        
+        // Verificar se o CSS foi carregado corretamente
+        setTimeout(function() {
+            // Verificar se o elemento body tem o estilo esperado
+            var bodyStyles = window.getComputedStyle(document.body);
+            var bodyBgColor = bodyStyles.backgroundColor;
+            
+            // Se o background for transparente ou não foi definido, é provável que o CSS não foi carregado
+            if (bodyBgColor === 'rgba(0, 0, 0, 0)' || bodyBgColor === 'transparent') {
+                console.log("Detectado problema no carregamento de CSS. Recarregando página...");
+                // Recarregar a página com parâmetro de cache buster
+                window.location.href = addCacheBuster(window.location.href);
+            }
+        }, 500);
+    });
+})();
+
 

@@ -11,12 +11,13 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Case, When, Value, IntegerField
 from django.core.files.storage import default_storage
 from django.views.decorators.http import require_http_methods
+from django.views.decorators.csrf import csrf_exempt
 from .models import (
     User, Scope, Championship, Template, Team,
     FutcoinPackage, Plan, ClassicLeague, Player,
     Continent, Country, State, Parameters, Terms, 
     Notifications, Administrator, ScopeLevel, TemplateStage,
-    ChampionshipStage, ChampionshipRound, ChampionshipMatch,
+    ChampionshipStage, ChampionshipRound, ChampionshipMatch as Match,
     Prediction, StandardLeague, StandardLeaguePrize,
     CustomLeague, CustomLeagueLevel, CustomLeaguePrize
 )
@@ -210,18 +211,22 @@ def campeonatos(request):
 @login_required
 def campeonato_novo(request):
     if request.method == 'POST':
+        # Verificar se é uma requisição "Aplicar"
+        is_apply_request = request.POST.get('apply_only') == 'true'
+        print(f"Tipo de requisição: {'APLICAR' if is_apply_request else 'SALVAR NORMAL'}")
+        
         try:
             with transaction.atomic():
                 # Cria o campeonato com os dados básicos
                 championship = Championship.objects.create(
                     name=request.POST.get('name'),
                     season=request.POST.get('season'),
-                    points=request.POST.get('points', 0),
+                    points=int(request.POST.get('points', 0) or 0),
                     template_id=request.POST.get('template'),
                     scope_id=request.POST.get('scope'),
-                    continent_id=request.POST.get('continent'),
-                    country_id=request.POST.get('country'),
-                    state_id=request.POST.get('state'),
+                    continent_id=request.POST.get('continent') or None,
+                    country_id=request.POST.get('country') or None,
+                    state_id=request.POST.get('state') or None,
                     is_active=request.POST.get('is_active') == 'on'
                 )
 
@@ -230,7 +235,9 @@ def campeonato_novo(request):
                 if teams:
                     # Adicionar log para depuração
                     print(f"Times selecionados: {teams}")
-                    championship.teams.add(*teams)
+                    # Usar o método add com desempacotamento para garantir que todos os times sejam adicionados corretamente
+                    team_ids = [int(team_id) for team_id in teams]
+                    championship.teams.add(*team_ids)
                     print(f"Times vinculados ao campeonato: {list(championship.teams.values_list('id', flat=True))}")
                 else:
                     print("Nenhum time selecionado")
@@ -267,28 +274,48 @@ def campeonato_novo(request):
                             )
                             
                             for match in matches:
-                                match_date = datetime.strptime(match['match_date'], '%d/%m/%Y %H:%M')
-                                ChampionshipMatch.objects.create(
+                                match_date = None
+                                if match.get('match_date'):
+                                    try:
+                                        match_date = datetime.strptime(match['match_date'], '%d/%m/%Y %H:%M')
+                                    except ValueError:
+                                        match_date = None
+                                        
+                                Match.objects.create(
                                     championship=championship,
                                     stage=stage,
                                     round=round_obj,
-                                    home_team_id=match['home_team'],
-                                    away_team_id=match['away_team'],
+                                    home_team=Team.objects.get(name=match['home_team']),
+                                    away_team=Team.objects.get(name=match['away_team']),
                                     home_score=match['home_score'],
                                     away_score=match['away_score'],
                                     match_date=match_date
                                 )
 
-                return JsonResponse({
-                    'success': True,
-                    'message': 'Campeonato criado com sucesso!'
-                })
+                # Se for uma requisição "Aplicar", retorna JSON com ID do campeonato
+                if is_apply_request:
+                    return JsonResponse({
+                        'success': True,
+                        'message': 'Campeonato criado com sucesso!',
+                        'championship_id': championship.id
+                    })
+                else:
+                    # Para requisições normais, adiciona mensagem e redireciona
+                    messages.success(request, 'Campeonato criado com sucesso!')
+                    return redirect('administrativo:campeonatos')
 
         except Exception as e:
-            return JsonResponse({
-                'success': False,
-                'message': f'Erro ao criar campeonato: {str(e)}'
-            })
+            error_msg = f'Erro ao criar campeonato: {str(e)}'
+            print(f"ERRO AO CRIAR CAMPEONATO: {error_msg}")
+            
+            if is_apply_request:
+                return JsonResponse({
+                    'success': False,
+                    'message': error_msg
+                })
+            else:
+                messages.error(request, error_msg)
+                # No caso de erro em requisição normal, recarrega o formulário
 
     templates = Template.objects.filter(enabled=True)
     # Define a ordem personalizada para os tipos de âmbito
@@ -1298,13 +1325,39 @@ def pacote_plano_novo(request):
             files = request.FILES
             
             # Validação dos campos obrigatórios
+            field_names = {
+                'name': 'Nome',
+                'full_price': 'Preço Padrão',
+                'promotional_price': 'Preço Promocional'
+            }
+            
             required_fields = ['name', 'full_price', 'promotional_price']
             for field in required_fields:
                 if not data.get(field):
                     return JsonResponse({
                         'success': False,
-                        'message': f'O campo {field} é obrigatório.'
+                        'message': f'O campo {field_names.get(field, field)} é obrigatório.'
                     })
+            
+            # Converter os formatos de data se existirem
+            from datetime import datetime
+            
+            start_date = data.get('start_date')
+            end_date = data.get('end_date')
+            
+            if start_date:
+                try:
+                    # Converte de DD/MM/YYYY HH:MM para YYYY-MM-DD HH:MM
+                    start_date = datetime.strptime(start_date, '%d/%m/%Y %H:%M').strftime('%Y-%m-%d %H:%M')
+                except ValueError:
+                    pass
+                
+            if end_date:
+                try:
+                    # Converte de DD/MM/YYYY HH:MM para YYYY-MM-DD HH:MM
+                    end_date = datetime.strptime(end_date, '%d/%m/%Y %H:%M').strftime('%Y-%m-%d %H:%M')
+                except ValueError:
+                    pass
             
             # Criação do plano
             plan = Plan(
@@ -1312,7 +1365,7 @@ def pacote_plano_novo(request):
                 plan=data.get('plan'),
                 billing_cycle=data.get('billing_cycle'),
                 enabled=data.get('enabled', 'true') == 'true',
-                package_type=data.get('package_type'),
+                package_type=data.get('tipo'), # Corrigido de 'package_type' para 'tipo'
                 label=data.get('label'),
                 color_text_label=data.get('color_text_label', '#000000'),
                 color_background_label=data.get('color_background_label', '#FFFFFF'),
@@ -1323,8 +1376,8 @@ def pacote_plano_novo(request):
                 apple_product_code=data.get('apple_product_code'),
                 color_text_billing_cycle=data.get('color_text_billing_cycle', '#192639'),
                 show_to=data.get('show_to'),
-                start_date=data.get('start_date') if data.get('start_date') else None,
-                end_date=data.get('end_date') if data.get('end_date') else None
+                start_date=start_date,
+                end_date=end_date
             )
             
             # Tratamento da imagem
@@ -1357,175 +1410,195 @@ def futligas_classicas(request):
         'futligas': futligas
     })
 
-@login_required
+@csrf_exempt
 def futliga_classica_novo(request):
-    """
-    Cria uma nova futliga clássica.
-    """
     if request.method == 'POST':
+        # Validação básica
+        name = request.POST.get('name', '').strip()
+        players = request.POST.get('players', '')
+        award_frequency = request.POST.get('award_frequency', '')
+        award_time = request.POST.get('award_time', '')
+        
+        # Verificações de campos obrigatórios
+        if not name:
+            return JsonResponse({'success': False, 'message': 'O campo Nome é obrigatório'}, status=400)
+        if not players:
+            return JsonResponse({'success': False, 'message': 'O campo Participantes é obrigatório'}, status=400)
+        if not award_frequency:
+            return JsonResponse({'success': False, 'message': 'O campo Frequência de Premiação é obrigatório'}, status=400)
+        
         try:
-            # Dados básicos
-            name = request.POST.get('name')
-            players = request.POST.get('players')
-            award_frequency = request.POST.get('award_frequency')
+            # Verificações específicas por frequência
+            if award_frequency == 'weekly':
+                weekday = request.POST.get('weekday')
+                if not weekday:
+                    return JsonResponse({'success': False, 'message': 'O campo Dia de Premiação é obrigatório para ligas semanais'}, status=400)
+                monthday = None
+            elif award_frequency == 'monthly':
+                monthday = request.POST.get('monthday')
+                if not monthday:
+                    return JsonResponse({'success': False, 'message': 'O campo Dia do Mês é obrigatório para ligas mensais'}, status=400)
+                weekday = 0  # Valor padrão para ligas mensais
+            else:  # annual
+                monthday = None
+                weekday = 0  # Valor padrão para ligas anuais
             
-            # Validações
-            if not name:
-                return JsonResponse({'success': False, 'message': 'O nome é obrigatório'})
+            # Mapeamento dos valores de players
+            players_map = {
+                'Comum': 1,
+                'Craque': 2,
+                'Todos': 0
+            }
             
-            if not award_frequency:
-                return JsonResponse({'success': False, 'message': 'A frequência de premiação é obrigatória'})
-            
-            # Cria a Futliga
-            futliga = StandardLeague(
+            # Criação da liga
+            futliga = StandardLeague.objects.create(
                 name=name,
-                players=players,
-                award_frequency=award_frequency
+                players=players_map.get(players, 0),
+                award_frequency=award_frequency,
+                weekday=weekday,
+                monthday=monthday,
+                award_time=award_time
             )
             
             # Imagem principal
-            if request.FILES.get('image'):
+            if 'image' in request.FILES:
                 futliga.image = request.FILES['image']
+                futliga.save()
             
-            # Dia/horário de premiação
-            if award_frequency == 'Semanal':
-                weekday = request.POST.get('weekday')
-                if not weekday:
-                    return JsonResponse({'success': False, 'message': 'O dia da semana é obrigatório para premiação semanal'})
-                futliga.weekday = weekday
-            elif award_frequency == 'Mensal':
-                monthday = request.POST.get('monthday')
-                if not monthday:
-                    return JsonResponse({'success': False, 'message': 'O dia do mês é obrigatório para premiação mensal'})
-                futliga.monthday = monthday
+            # Processamento dos prêmios
+            prize_positions = request.POST.getlist('prize_positions[]', [])
+            prize_descriptions = request.POST.getlist('prize_descriptions[]', [])
             
-            award_time = request.POST.get('award_time')
-            if award_time:
-                futliga.award_time = award_time
+            if len(prize_positions) != len(prize_descriptions):
+                return JsonResponse({'success': False, 'message': 'Dados de prêmios inválidos'}, status=400)
             
-            futliga.save()
+            # Criação dos prêmios
+            for i in range(len(prize_positions)):
+                try:
+                    position = int(prize_positions[i])
+                    prize = int(prize_descriptions[i])
+                    
+                    prize_obj = StandardLeaguePrize.objects.create(
+                        league=futliga,
+                        position=position,
+                        prize=prize
+                    )
+                    
+                    # Imagem do prêmio
+                    if 'prize_images[]' in request.FILES and i < len(request.FILES.getlist('prize_images[]')):
+                        prize_obj.image = request.FILES.getlist('prize_images[]')[i]
+                        prize_obj.save()
+                
+                except (ValueError, IndexError):
+                    # Se houver erro em um prêmio, pula para o próximo
+                    continue
             
-            # Processa os prêmios
-            positions = request.POST.getlist('prize_positions[]')
-            descriptions = request.POST.getlist('prize_descriptions[]')
-            images = request.FILES.getlist('prize_images[]')
-            
-            for i in range(len(positions)):
-                prize = StandardLeaguePrize(
-                    league=futliga,
-                    position=positions[i],
-                    prize=descriptions[i]
-                )
-                if i < len(images):
-                    prize.image = images[i]
-                prize.save()
-            
-            return JsonResponse({'success': True})
-            
+            return JsonResponse({'success': True, 'message': 'Futliga Clássica criada com sucesso!'})
+        
         except Exception as e:
-            return JsonResponse({'success': False, 'message': str(e)})
+            return JsonResponse({'success': False, 'message': f'Erro ao criar Futliga Clássica: {str(e)}'}, status=500)
     
     return render(request, 'administrativo/futliga-classica-novo.html')
 
 @login_required
-def futliga_classica_editar(request, id):
-    """
-    View para editar uma Futliga Clássica existente
-    """
+@csrf_exempt
+def futliga_classica_editar(request, futliga_id):
     try:
-        futliga = StandardLeague.objects.get(id=id)
+        futliga = StandardLeague.objects.get(id=futliga_id)
     except StandardLeague.DoesNotExist:
-        messages.error(request, 'Futliga Clássica não encontrada')
-        return redirect('administrativo:futligas_classicas')
+        return JsonResponse({'success': False, 'message': 'Liga não encontrada'}, status=404)
     
     if request.method == 'POST':
+        # Validação básica
+        name = request.POST.get('name', '').strip()
+        players = request.POST.get('players', '')
+        award_frequency = request.POST.get('award_frequency', '')
+        award_time = request.POST.get('award_time', '')
+        
+        # Verificações de campos obrigatórios
+        if not name:
+            return JsonResponse({'success': False, 'message': 'O campo Nome é obrigatório'}, status=400)
+        if not players:
+            return JsonResponse({'success': False, 'message': 'O campo Participantes é obrigatório'}, status=400)
+        if not award_frequency:
+            return JsonResponse({'success': False, 'message': 'O campo Frequência de Premiação é obrigatório'}, status=400)
+        
         try:
-            # Dados básicos
-            name = request.POST.get('name')
-            players = request.POST.get('players')
-            award_frequency = request.POST.get('award_frequency')
+            # Verificações específicas por frequência
+            if award_frequency == 'weekly':
+                weekday = request.POST.get('weekday')
+                if not weekday:
+                    return JsonResponse({'success': False, 'message': 'O campo Dia de Premiação é obrigatório para ligas semanais'}, status=400)
+                monthday = None
+            elif award_frequency == 'monthly':
+                monthday = request.POST.get('monthday')
+                if not monthday:
+                    return JsonResponse({'success': False, 'message': 'O campo Dia do Mês é obrigatório para ligas mensais'}, status=400)
+                weekday = 0  # Valor padrão para ligas mensais
+            else:  # annual
+                monthday = None
+                weekday = 0  # Valor padrão para ligas anuais
             
-            # Validações
-            if not name:
-                return JsonResponse({'success': False, 'message': 'O nome é obrigatório'})
+            # Mapeamento dos valores de players
+            players_map = {
+                'Comum': 1,
+                'Craque': 2,
+                'Todos': 0
+            }
             
-            if not award_frequency:
-                return JsonResponse({'success': False, 'message': 'A frequência de premiação é obrigatória'})
-            
-            # Atualiza a Futliga
+            # Atualização dos campos da liga
             futliga.name = name
-            futliga.players = players
+            futliga.players = players_map.get(players, 0)
             futliga.award_frequency = award_frequency
+            futliga.weekday = weekday
+            futliga.monthday = monthday
+            futliga.award_time = award_time
             
             # Imagem principal
-            if request.FILES.get('image'):
+            if 'image' in request.FILES:
                 if futliga.image:
                     futliga.image.delete()
                 futliga.image = request.FILES['image']
             
-            # Dia/horário de premiação
-            if award_frequency == 'weekly':
-                weekday = request.POST.get('weekday')
-                if not weekday:
-                    return JsonResponse({'success': False, 'message': 'O dia da semana é obrigatório para premiação semanal'})
-                try:
-                    weekday = int(weekday)
-                    if weekday < 0 or weekday > 6:
-                        return JsonResponse({'success': False, 'message': 'Dia da semana inválido'})
-                    futliga.weekday = weekday
-                except ValueError:
-                    return JsonResponse({'success': False, 'message': 'Dia da semana inválido'})
-            elif award_frequency == 'monthly':
-                monthday = request.POST.get('monthday')
-                if not monthday:
-                    return JsonResponse({'success': False, 'message': 'O dia do mês é obrigatório para premiação mensal'})
-                try:
-                    monthday = int(monthday)
-                    if monthday < 1 or monthday > 31:
-                        return JsonResponse({'success': False, 'message': 'Dia do mês inválido'})
-                    futliga.monthday = monthday
-                except ValueError:
-                    return JsonResponse({'success': False, 'message': 'Dia do mês inválido'})
-            
-            award_time = request.POST.get('award_time')
-            if award_time:
-                futliga.award_time = award_time
-            
             futliga.save()
             
-            # Remove prêmios existentes
+            # Limpa os prêmios antigos
             futliga.prizes.all().delete()
             
-            # Processa os novos prêmios
-            positions = request.POST.getlist('prize_positions[]')
-            descriptions = request.POST.getlist('prize_descriptions[]')
-            images = request.FILES.getlist('prize_images[]')
+            # Processamento dos novos prêmios
+            prize_positions = request.POST.getlist('prize_positions[]', [])
+            prize_descriptions = request.POST.getlist('prize_descriptions[]', [])
             
-            for i in range(len(positions)):
+            if len(prize_positions) != len(prize_descriptions):
+                return JsonResponse({'success': False, 'message': 'Dados de prêmios inválidos'}, status=400)
+            
+            # Criação dos prêmios
+            for i in range(len(prize_positions)):
                 try:
-                    position = int(positions[i])
-                    if position < 1:
-                        return JsonResponse({'success': False, 'message': f'Posição {position} inválida'})
-                        
-                    prize = StandardLeaguePrize(
+                    position = int(prize_positions[i])
+                    prize = int(prize_descriptions[i])
+                    
+                    prize_obj = StandardLeaguePrize.objects.create(
                         league=futliga,
                         position=position,
-                        prize=descriptions[i]
+                        prize=prize
                     )
-                    if i < len(images):
-                        prize.image = images[i]
-                    prize.save()
-                except ValueError:
-                    return JsonResponse({'success': False, 'message': f'Posição {positions[i]} inválida'})
+                    
+                    # Imagem do prêmio
+                    if 'prize_images[]' in request.FILES and i < len(request.FILES.getlist('prize_images[]')):
+                        prize_obj.image = request.FILES.getlist('prize_images[]')[i]
+                        prize_obj.save()
+                
+                except (ValueError, IndexError):
+                    # Se houver erro em um prêmio, pula para o próximo
+                    continue
             
-            return JsonResponse({'success': True})
-            
+            return JsonResponse({'success': True, 'message': 'Futliga Clássica atualizada com sucesso!'})
+        
         except Exception as e:
-            return JsonResponse({'success': False, 'message': str(e)})
+            return JsonResponse({'success': False, 'message': f'Erro ao atualizar Futliga Clássica: {str(e)}'}, status=500)
     
-    return render(request, 'administrativo/futliga-classica-editar.html', {
-        'futliga': futliga
-    })
+    return render(request, 'administrativo/futliga-classica-editar.html', {'futliga': futliga})
 
 @login_required
 def futliga_classica_excluir(request, id):
@@ -1643,7 +1716,7 @@ def futligas_jogadores(request):
     })
 
 @login_required
-def futligas_niveis(request):
+def futliga_niveis(request):
     """
     Lista todos os níveis das futligas
     """
@@ -2807,7 +2880,7 @@ def campeonato_importar_jogos(request):
                 )
                 
                 # Verifica se o jogo já existe
-                existing_match = ChampionshipMatch.objects.filter(
+                existing_match = Match.objects.filter(
                     championship=championship,
                     round=round_obj,
                     team_home=team_home,
@@ -2820,7 +2893,7 @@ def campeonato_importar_jogos(request):
                     continue
                 
                 # Cria o novo jogo
-                ChampionshipMatch.objects.create(
+                Match.objects.create(
                     championship=championship,
                     stage=stage,
                     round=round_obj,
@@ -2858,96 +2931,214 @@ def campeonato_importar_jogos(request):
 
 @login_required
 def campeonato_editar(request, id):
+    """
+    View para editar um campeonato existente.
+    Suporta tanto redirecionamento tradicional quanto resposta JSON para solicitações de "Aplicar".
+    """
     try:
+        # Log de depuração
+        print(f"Iniciando edição do campeonato ID: {id}")
+        print(f"Método da request: {request.method}")
+        print(f"Headers: {request.headers}")
+        
         championship = Championship.objects.get(id=id)
         has_rounds = championship.rounds.exists()
         
         if request.method == 'POST':
+            # Verificar se é uma requisição "Aplicar"
+            is_apply_request = request.POST.get('apply_only') == 'true'
+            print(f"Tipo de requisição: {'APLICAR' if is_apply_request else 'SALVAR NORMAL'}")
+            
             try:
                 with transaction.atomic():
                     # Atualiza dados básicos do campeonato
                     championship.name = request.POST.get('name')
                     championship.season = request.POST.get('season')
-                    championship.points = request.POST.get('points', 0)
-                    championship.template_id = request.POST.get('template')
                     championship.scope_id = request.POST.get('scope')
-                    championship.continent_id = request.POST.get('continent')
-                    championship.country_id = request.POST.get('country')
-                    championship.state_id = request.POST.get('state')
-                    championship.is_active = request.POST.get('is_active') == 'on'
+                    championship.template_id = request.POST.get('template')
+                    championship.is_active = 'is_active' in request.POST
+                    championship.points = int(request.POST.get('points', 0) or 0)
+                    
+                    # Atualizar campos geográficos baseados no âmbito
+                    championship.continent_id = request.POST.get('continent') or None
+                    championship.country_id = request.POST.get('country') or None
+                    championship.state_id = request.POST.get('state') or None
+                    
                     championship.save()
                     
-                    # Atualiza os times
-                    teams = request.POST.getlist('teams')
-                    championship.teams.clear()
-                    championship.teams.add(*teams)
+                    print(f"Campeonato básico atualizado: {championship.name}")
                     
-                    # Processa as rodadas se houver
-                    matches_data = json.loads(request.POST.get('matches', '[]'))
-                    if matches_data:
-                        # Limpa rodadas existentes
-                        championship.matches.all().delete()
-                        championship.rounds.all().delete()
-                        championship.stages.all().delete()
+                    # Processa times selecionados, se existirem
+                    if 'teams' in request.POST:
+                        # Obter a lista atual de times vinculados para comparação
+                        current_team_ids = set(championship.teams.values_list('id', flat=True))
                         
-                        # Agrupa partidas por fase e rodada
-                        stages = {}
-                        for match in matches_data:
-                            template_stage_id = match['stage_id']  # ID da fase do template
-                            round_number = match['round']
+                        # Obter a nova lista de times selecionados
+                        new_team_ids = set([int(team_id) for team_id in request.POST.getlist('teams')])
+                        
+                        # Calcular times a serem removidos e adicionados
+                        teams_to_remove = current_team_ids - new_team_ids
+                        teams_to_add = new_team_ids - current_team_ids
+                        
+                        print(f"Times atuais: {current_team_ids}")
+                        print(f"Novos times: {new_team_ids}")
+                        print(f"Times a remover: {teams_to_remove}")
+                        print(f"Times a adicionar: {teams_to_add}")
+                        
+                        # Remover times desvinculados - usar o método set() para atualizar ambos os lados da relação
+                        if teams_to_remove:
+                            championship.teams.remove(*teams_to_remove)
+                        
+                        # Adicionar novos times
+                        if teams_to_add:
+                            championship.teams.add(*teams_to_add)
+                        
+                        print(f"Times atualizados. Total: {championship.teams.count()}")
+                    
+                    # Processa partidas, se existirem
+                    if request.POST.get('matches'):
+                        try:
+                            # Converte os dados do formulário para Python
+                            matches_json = request.POST.get('matches')
+                            print(f"Dados de partidas recebidos: {matches_json}")
+                            matches_data = json.loads(matches_json)
                             
-                            if template_stage_id not in stages:
-                                stages[template_stage_id] = {}
-                            
-                            if round_number not in stages[template_stage_id]:
-                                stages[template_stage_id][round_number] = []
+                            # Para cada grupo de partidas, processa as rodadas
+                            for round_data in matches_data:
+                                stage_id = round_data.get('stage_id')
+                                round_number = round_data.get('round_number')
                                 
-                            stages[template_stage_id][round_number].append(match)
-                        
-                        # Cria as fases, rodadas e partidas
-                        for template_stage_id, rounds in stages.items():
-                            # Busca a fase do template para obter o nome
-                            template_stage = championship.template.stages.get(id=template_stage_id)
-                            
-                            # Cria a fase do campeonato
-                            stage = ChampionshipStage.objects.create(
-                                championship=championship,
-                                name=template_stage.name,
-                                template_stage_id=template_stage_id,  # Adiciona o ID da fase do template
-                                order=template_stage.order  # Adiciona a ordem da fase do template
-                            )
-                            
-                            for round_number, matches in rounds.items():
-                                round_obj = ChampionshipRound.objects.create(
+                                if not stage_id or not round_number:
+                                    continue
+                                
+                                # Verifica se a fase existe
+                                try:
+                                    stage = ChampionshipStage.objects.get(id=stage_id)
+                                except ChampionshipStage.DoesNotExist:
+                                    error_msg = f"Fase com ID {stage_id} não existe. Verifique se o template do campeonato está configurado corretamente."
+                                    print(error_msg)
+                                    if is_apply_request:
+                                        return JsonResponse({
+                                            'success': False,
+                                            'message': error_msg
+                                        })
+                                    else:
+                                        messages.error(request, error_msg)
+                                        raise ValueError(error_msg)
+                                    
+                                # Busca ou cria a rodada
+                                round_obj, created = ChampionshipRound.objects.get_or_create(
                                     championship=championship,
-                                    stage=stage,
-                                    number=round_number
+                                    stage_id=stage_id,
+                                    number=round_number,
+                                    defaults={}
                                 )
                                 
-                                for match in matches:
-                                    match_date = datetime.strptime(match['match_date'], '%d/%m/%Y %H:%M')
-                                    ChampionshipMatch.objects.create(
-                                        championship=championship,
-                                        round=round_obj,
-                                        home_team_id=match['home_team'],
-                                        away_team_id=match['away_team'],
-                                        home_score=match['home_score'] if match['home_score'] != '' else None,
-                                        away_score=match['away_score'] if match['away_score'] != '' else None,
-                                        match_date=match_date
-                                    )
+                                # Para cada partida na rodada
+                                for match in round_data.get('matches', []):
+                                    home_team_id = match.get('home_team')
+                                    away_team_id = match.get('away_team')
+                                    
+                                    if not home_team_id or not away_team_id:
+                                        continue
+                                    
+                                    # Formata a data da partida
+                                    match_date = None
+                                    if match.get('match_date'):
+                                        try:
+                                            match_date = datetime.strptime(match['match_date'], '%d/%m/%Y %H:%M')
+                                        except ValueError as e:
+                                            print(f"Erro ao converter data: {e}")
+                                            match_date = None
+                                    
+                                    # Formata os placares
+                                    home_score = match.get('home_score')
+                                    if home_score == '' or home_score is None:
+                                        home_score = None
+                                    
+                                    away_score = match.get('away_score')
+                                    if away_score == '' or away_score is None:
+                                        away_score = None
+                                    
+                                    # Atualiza ou cria a partida
+                                    match_id = match.get('id')
+                                    match_defaults = {
+                                        'home_team_id': home_team_id,
+                                        'away_team_id': away_team_id,
+                                        'home_score': home_score,
+                                        'away_score': away_score,
+                                        'match_date': match_date
+                                    }
+                                    
+                                    if match_id and match_id.strip():
+                                        try:
+                                            match_obj = Match.objects.get(id=match_id)
+                                            for key, value in match_defaults.items():
+                                                setattr(match_obj, key, value)
+                                            match_obj.save()
+                                        except Match.DoesNotExist:
+                                            Match.objects.create(
+                                                championship=championship,
+                                                round=round_obj,
+                                                **match_defaults
+                                            )
+                                    else:
+                                        Match.objects.create(
+                                            championship=championship,
+                                            round=round_obj,
+                                            **match_defaults
+                                        )
+                            
+                            print("Partidas processadas com sucesso")
+                        except Exception as e:
+                            error_msg = f"Erro ao processar partidas: {str(e)}"
+                            print(error_msg)
+                            if is_apply_request:
+                                return JsonResponse({
+                                    'success': False,
+                                    'message': error_msg
+                                })
+                            else:
+                                messages.error(request, error_msg)
+                                raise
                     
-                    messages.success(request, 'Campeonato atualizado com sucesso')
+                    # Mensagem de sucesso para o usuário
+                    if not is_apply_request:
+                        messages.success(request, 'Campeonato atualizado com sucesso')
+                
+                # Se for uma requisição "Aplicar", retorna JSON
+                if is_apply_request:
+                    return JsonResponse({
+                        'success': True,
+                        'message': 'Campeonato atualizado com sucesso'
+                    })
+                else:
+                    # Sempre retorna JSON para submissão normal também
+                    # isso permitirá que o JavaScript trate a resposta sem recarregar a página
                     return JsonResponse({
                         'success': True,
                         'message': 'Campeonato atualizado com sucesso',
-                        'redirect_url': reverse('administrativo:campeonatos')
+                        'redirect_url': reverse('administrativo:campeonatos') + '?success=1'
                     })
                     
             except Exception as e:
-                return JsonResponse({
-                    'success': False,
-                    'message': f'Erro ao atualizar campeonato: {str(e)}'
-                })
+                # Log do erro para debug
+                error_msg = f"Erro ao atualizar campeonato: {str(e)}"
+                print(f"ERRO AO EDITAR CAMPEONATO: {error_msg}")
+                logger.error(error_msg)
+                
+                # Se for uma requisição "Aplicar", retorna JSON com erro
+                if is_apply_request:
+                    return JsonResponse({
+                        'success': False,
+                        'message': f'Erro ao processar formulário: {str(e)}'
+                    })
+                else:
+                    # Retornar JSON para qualquer tipo de requisição
+                    return JsonResponse({
+                        'success': False,
+                        'message': f'Erro ao processar formulário: {str(e)}'
+                    })
         
         # Obtém dados para o formulário
         templates = Template.objects.filter(enabled=True)
@@ -2958,6 +3149,9 @@ def campeonato_editar(request, id):
         teams = Team.objects.all().order_by('name')
         selected_teams = championship.teams.all()
         
+        # Busca partidas existentes
+        matches = Match.objects.filter(championship=championship).order_by('round__number', 'match_date')
+        
         context = {
             'championship': championship,
             'templates': templates,
@@ -2967,7 +3161,8 @@ def campeonato_editar(request, id):
             'states': states,
             'teams': teams,
             'selected_teams': selected_teams,
-            'has_rounds': has_rounds
+            'has_rounds': has_rounds,
+            'matches': matches
         }
         
         return render(request, 'administrativo/campeonato-editar.html', context)
@@ -3007,6 +3202,69 @@ def times_por_tipo(request):
     })
 
 @login_required
+def times_por_ambito(request):
+    """
+    Retorna times filtrados por âmbito (mundial, continental, nacional ou estadual)
+    e pelos respectivos filtros geográficos (continente, país, estado).
+    """
+    if request.method == 'POST':
+        scope_id = request.POST.get('scope_id')
+        continent_id = request.POST.get('continent_id')
+        country_id = request.POST.get('country_id')
+        state_id = request.POST.get('state_id')
+        filter_type = request.POST.get('type', 'all')  # tipo de filtro: all, teams, selections
+        
+        try:
+            scope = Scope.objects.get(id=scope_id)
+            teams = Team.objects.all()
+            
+            # Filtra por tipo de time (time ou seleção)
+            if filter_type == 'teams':
+                teams = teams.filter(is_national_team=False)
+            elif filter_type == 'selections':
+                teams = teams.filter(is_national_team=True)
+            
+            # Filtra por localização baseado no âmbito
+            scope_name = scope.name.lower()
+            
+            if scope_name == 'mundial':
+                # Sem filtro adicional para âmbito mundial
+                pass
+            elif scope_name == 'continental' and continent_id:
+                teams = teams.filter(continent_id=continent_id)
+            elif scope_name == 'nacional' and country_id:
+                teams = teams.filter(country_id=country_id)
+            elif scope_name == 'estadual' and state_id:
+                teams = teams.filter(state_id=state_id)
+            
+            teams_data = [{
+                'id': team.id,
+                'name': team.name,
+                'image_url': team.get_image_url()
+            } for team in teams]
+            
+            return JsonResponse({
+                'success': True,
+                'teams': teams_data
+            })
+        
+        except Scope.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'message': 'Âmbito não encontrado'
+            })
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': f'Erro ao filtrar times: {str(e)}'
+            })
+    
+    return JsonResponse({
+        'success': False,
+        'message': 'Método não permitido'
+    })
+
+@login_required
 def get_states_by_country(request):
     """
     Retorna uma lista de estados filtrados por país.
@@ -3035,13 +3293,13 @@ def campeonato_toggle_status(request):
     """
     if request.method == 'POST':
         try:
-            championship_id = request.POST.get('championship_id')
+            championship_id = request.POST.get('id')
             championship = Championship.objects.get(id=championship_id)
             
             with transaction.atomic():
                 championship.is_active = not championship.is_active
                 championship.save()
-                transaction.commit()
+                # transaction.commit() - Removida esta linha
             
             return JsonResponse({
                 'success': True,
@@ -3283,7 +3541,7 @@ def atualizar_placares(request):
                 new_away_score = match_data.get('away_score')
                 
                 try:
-                    match = ChampionshipMatch.objects.get(id=match_id)
+                    match = Match.objects.get(id=match_id)
                     
                     # Verifica se houve alteração no placar
                     if (match.home_score != new_home_score or 
@@ -3298,7 +3556,7 @@ def atualizar_placares(request):
                         recalcular_pontos_jogo(match)
                         updated += 1
                         
-                except ChampionshipMatch.DoesNotExist:
+                except Match.DoesNotExist:
                     continue
             
             return JsonResponse({
@@ -3937,7 +4195,7 @@ def campeonato_importar_rodadas(request):
                             datetime.strptime(str(row['Hora']), '%H:%M').time()
                         )
                         
-                        ChampionshipMatch.objects.create(
+                        Match.objects.create(
                             championship=championship,
                             stage=stage,
                             round=round_obj,

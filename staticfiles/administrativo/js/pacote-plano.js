@@ -17,21 +17,6 @@ $(document).ready(function() {
         "showMethod": 'slideDown'
     };
 
-    // Função para marcar os campos preenchidos
-    function markFilledInputs() {
-        $('input.form-control, select.form-control').each(function() {
-            if ($(this).val() && $(this).val() !== '') {
-                $(this).addClass('has-value');
-            } else {
-                $(this).removeClass('has-value');
-            }
-        });
-    }
-    
-    // Aplica a marcação inicial e sempre que um campo mudar
-    markFilledInputs();
-    $(document).on('change keyup', 'input.form-control, select.form-control', markFilledInputs);
-
     // Manipulação da imagem
     $('#image').on('change', function() {
         var file = this.files[0];
@@ -81,35 +66,24 @@ $(document).ready(function() {
         // Se nenhum tipo selecionado, esconde todos os campos
         if (!tipo) {
             $('.label-fields').hide();
-            $('.date-fields').hide();
             return;
         }
         
-        // Campos de etiqueta sempre visíveis para tipo Padrão e Promocional
-        if (tipo === 'Promocional' || tipo === 'Padrão') {
+        // Campos de etiqueta e cores sempre visíveis para tipo Promocional
+        if (tipo === 'Promocional') {
             $('.label-fields').show();
-            
             // Define valores padrão para promoção se os campos estiverem vazios
-            if (tipo === 'Promocional') {
-                if (!$('#etiqueta').val()) {
-                    $('#etiqueta').val('OFERTA ESPECIAL');
-                }
-                if (!$('#id3 input').val()) {
-                    $('#id3 input').val('#FFFFFF');
-                }
-                if (!$('#id4 input').val()) {
-                    $('#id4 input').val('#CC000C');
-                }
-                
-                // Mostra campos de data apenas para promocional
-                $('.date-fields').show();
-            } else {
-                // Esconde campos de data para tipo padrão
-                $('.date-fields').hide();
+            if (!$('#etiqueta').val()) {
+                $('#etiqueta').val('OFERTA ESPECIAL');
+            }
+            if (!$('#id3 input').val()) {
+                $('#id3 input').val('#FFFFFF');
+            }
+            if (!$('#id4 input').val()) {
+                $('#id4 input').val('#FF0000');
             }
         } else {
             $('.label-fields').hide();
-            $('.date-fields').hide();
         }
         
         // Atualiza os colorpickers

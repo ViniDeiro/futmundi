@@ -62,7 +62,11 @@ table.table tbody tr.selected {
 }
 
 .form-control:focus + .form-control-placeholder,
-.form-control:valid + .form-control-placeholder {
+.form-control:valid + .form-control-placeholder,
+.form-control[value]:not([value=""]) + .form-control-placeholder,
+input.form-control:not(:placeholder-shown) + .form-control-placeholder,
+input.form-control:not([value=""]) + .form-control-placeholder,
+input.form-control.has-value + .form-control-placeholder {
   font-size: 75%;
   transform: translate3d(0, -100%, 0);
   opacity: 1;

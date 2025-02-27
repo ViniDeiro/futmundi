@@ -256,28 +256,31 @@
                                                         </select> 
                                                     </div>
                                                     <div class="col-lg-4 mb10">   
+                                                    <button type="button" class="btn btn-primary ml20" id="btn-add-partida"><i class="fa fa-plus mr5"></i> Adicionar Partida</button>
                                                     <button type="button" class="btn btn-primary ml20" data-toggle="modal" data-target="#modalImportXLS"><i class="fa fa-upload mr5"></i> Importar</button>      
                                                     </div>
                                                 </div>
-                                                <div class="row col-lg-12 mt10">
-                                                    <div class="col-lg-2">
-                                                        <select class="form-control js-templating time-select time-mandante" style="width: 100%">
-                                                            <option value="">Selecione o time</option>
-                                                        </select>
-                                                    </div>
-                                                    <div class="col-lg-1 ml35 mrm15">
-                                                        <input type="number" min="0" class="form-control placar">
-                                                    </div>
-                                                    <div class="col-lg-1 mlm30 mrm15">
-                                                        <input type="number" min="0" class="form-control placar">
-                                                    </div>
-                                                    <div class="col-lg-2 mlm30 mr25">
-                                                        <select class="form-control js-templating time-select time-visitante" style="width: 100%">
-                                                            <option value="">Selecione o time</option>
-                                                        </select>
-                                                    </div>
-                                                    <div class="col-lg-3 ml10">
-                                                        <input type="text" class="form-control datetimepicker-input" style="width: 50%" id="datetimepicker" data-toggle="datetimepicker" data-target="#datetimepicker"/>
+                                                <div id="matches-container">
+                                                    <div class="row col-lg-12 mt10">
+                                                        <div class="col-lg-2">
+                                                            <select class="form-control js-templating time-select time-mandante" style="width: 100%">
+                                                                <option value="">Selecione o time</option>
+                                                            </select>
+                                                        </div>
+                                                        <div class="col-lg-1 ml35 mrm15">
+                                                            <input type="number" min="0" class="form-control placar">
+                                                        </div>
+                                                        <div class="col-lg-1 mlm30 mrm15">
+                                                            <input type="number" min="0" class="form-control placar">
+                                                        </div>
+                                                        <div class="col-lg-2 mlm30 mr25">
+                                                            <select class="form-control js-templating time-select time-visitante" style="width: 100%">
+                                                                <option value="">Selecione o time</option>
+                                                            </select>
+                                                        </div>
+                                                        <div class="col-lg-3 ml10">
+                                                            <input type="text" class="form-control datetimepicker-input" style="width: 50%" id="datetimepicker" data-toggle="datetimepicker" data-target="#datetimepicker"/>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -287,6 +290,9 @@
                                 <div class="panel panel-default col-lg-12 p15">
                                     <button type="submit" class="btn btn-success ml20">
                                         <i class="fa fa-save mr5"></i> Salvar
+                                    </button>
+                                    <button type="button" id="btn-aplicar" class="btn btn-primary ml15">
+                                        <i class="fa fa-check mr5"></i> Aplicar
                                     </button>
                                     <a href="{% url 'administrativo:campeonatos' %}" class="btn btn-danger ml15">
                                         <i class="fa fa-times mr5"></i> Cancelar
@@ -884,6 +890,299 @@
                         }, 100);
                     });
                 }
+
+                // Handler para o botão "Aplicar"
+                $('#btn-aplicar').on('click', function() {
+                    console.log("Botão Aplicar clicado - Enviando formulário via AJAX");
+                    
+                    // Coletar dados das partidas se necessário
+                    coletarDadosPartidas();
+                    
+                    // Criar FormData a partir do formulário
+                    var formData = new FormData($('#form-campeonato')[0]);
+                    
+                    // Adicionar parâmetro para indicar que é uma requisição "Aplicar"
+                    formData.append('apply_only', 'true');
+                    
+                    $.ajax({
+                        url: $('#form-campeonato').attr('action'),
+                        type: 'POST',
+                        data: formData,
+                        processData: false,
+                        contentType: false,
+                        success: function(response) {
+                            // Verificar se a resposta é JSON
+                            var jsonResponse;
+                            try {
+                                if (typeof response === 'string') {
+                                    jsonResponse = JSON.parse(response);
+                                } else {
+                                    jsonResponse = response;
+                                }
+                                
+                                if (jsonResponse.success) {
+                                    toastr.success(jsonResponse.message || "Campeonato criado com sucesso!");
+                                    
+                                    // Se houver um ID retornado, atualizar URL para edição
+                                    if (jsonResponse.championship_id) {
+                                        var editUrl = "{% url 'administrativo:campeonato_editar' 0 %}".replace('0', jsonResponse.championship_id);
+                                        setTimeout(function() {
+                                            window.location.href = editUrl;
+                                        }, 1500);
+                                    }
+                                } else {
+                                    toastr.error(jsonResponse.message || "Erro ao criar campeonato");
+                                }
+                            } catch (e) {
+                                // Se não for JSON, mostrar mensagem genérica
+                                console.log("Resposta não é JSON:", e);
+                                toastr.error("Erro ao processar resposta do servidor");
+                            }
+                        },
+                        error: function(xhr, status, error) {
+                            console.error("Erro na requisição AJAX:", error);
+                            toastr.error("Erro ao processar formulário");
+                        }
+                    });
+                });
+
+                // Função para coletar dados das partidas
+                function coletarDadosPartidas() {
+                    var matches = [];
+                    
+                    // Cada linha de partida na interface
+                    $('.row.col-lg-12.mt10').each(function(index) {
+                        // Ignora a primeira linha (cabeçalho)
+                        if (index === 0) return;
+                        
+                        var $row = $(this);
+                        var stage = $('#fase').val();
+                        var round = $('#rodada').val();
+                        var homeTeam = $row.find('.time-mandante').val();
+                        var awayTeam = $row.find('.time-visitante').val();
+                        var homeScore = $row.find('input.placar').eq(0).val();
+                        var awayScore = $row.find('input.placar').eq(1).val();
+                        var matchDate = $row.find('.datetimepicker-input').val();
+                        
+                        // Só adiciona se tiver pelo menos os times selecionados
+                        if (homeTeam && awayTeam) {
+                            matches.push({
+                                stage: stage,
+                                round: round,
+                                home_team: homeTeam,
+                                away_team: awayTeam,
+                                home_score: homeScore || null,
+                                away_score: awayScore || null,
+                                match_date: matchDate || null
+                            });
+                        }
+                    });
+                    
+                    // Adiciona campo oculto com JSON ou atualiza se já existir
+                    var matchesJson = JSON.stringify(matches);
+                    var $matchesInput = $('#matches-data');
+                    
+                    if ($matchesInput.length) {
+                        $matchesInput.val(matchesJson);
+                    } else {
+                        $('<input>').attr({
+                            type: 'hidden',
+                            id: 'matches-data',
+                            name: 'matches',
+                            value: matchesJson
+                        }).appendTo('#form-campeonato');
+                    }
+                    
+                    console.log("Dados das partidas coletados:", matches);
+                }
+
+                // Handler para remover partidas existentes
+                $('.remove-match').on('click', function() {
+                    $(this).closest('.match-row').remove();
+                });
+
+                // Inicializa o Select2 para os times nas partidas
+                function inicializarSelectTimes() {
+                    $('.time-select').select2({
+                        width: '100%',
+                        placeholder: 'Selecione o time',
+                        allowClear: true
+                    });
+                }
+                
+                // Handler para o botão de adicionar partida
+                $('#btn-add-partida').on('click', function() {
+                    var fase = $('#fase').val();
+                    var rodada = $('#rodada').val();
+                    
+                    if (!fase || !rodada) {
+                        toastr.warning('Selecione uma fase e uma rodada antes de adicionar uma partida');
+                        return;
+                    }
+                    
+                    // Clonar a primeira linha de partida
+                    var $novaPartida = $('.row.col-lg-12.mt10').first().clone();
+                    
+                    // Limpar os valores
+                    $novaPartida.find('select').val('');
+                    $novaPartida.find('input').val('');
+                    
+                    // Adicionar à interface
+                    $('#matches-container').append($novaPartida);
+                    
+                    // Inicializar o Select2 na nova linha
+                    inicializarSelectTimes();
+                    
+                    // Inicializar o datepicker
+                    $('.datetimepicker-input').datetimepicker({
+                        format: 'DD/MM/YYYY HH:mm',
+                        locale: 'pt-br',
+                        icons: {
+                            time: 'fa fa-clock-o',
+                            date: 'fa fa-calendar',
+                            up: 'fa fa-chevron-up',
+                            down: 'fa fa-chevron-down',
+                            previous: 'fa fa-chevron-left',
+                            next: 'fa fa-chevron-right',
+                            today: 'fa fa-check',
+                            clear: 'fa fa-trash',
+                            close: 'fa fa-times'
+                        }
+                    });
+                });
+                
+                // Inicializa os componentes na carga da página
+                inicializarSelectTimes();
+                
+                $('.datetimepicker-input').datetimepicker({
+                    format: 'DD/MM/YYYY HH:mm',
+                    locale: 'pt-br',
+                    icons: {
+                        time: 'fa fa-clock-o',
+                        date: 'fa fa-calendar',
+                        up: 'fa fa-chevron-up',
+                        down: 'fa fa-chevron-down',
+                        previous: 'fa fa-chevron-left',
+                        next: 'fa fa-chevron-right',
+                        today: 'fa fa-check',
+                        clear: 'fa fa-trash',
+                        close: 'fa fa-times'
+                    }
+                });
+
+                $('.dual_select').bootstrapDualListbox({
+                    selectorMinimalHeight: 160,
+                    filterTextClear: 'mostrar todos',
+                    filterPlaceHolder: 'Filtrar',
+                    moveSelectedLabel: 'Mover selecionados',
+                    moveAllLabel: 'Mover todos',
+                    removeSelectedLabel: 'Remover selecionados',
+                    removeAllLabel: 'Remover todos',
+                    infoText: 'Mostrando {0}',
+                    infoTextFiltered: '<span class="label label-warning">Filtrado</span> {0} de {1}',
+                    infoTextEmpty: 'Lista vazia'
+                });
+                
+                // Adicionar atributos data para cada time com informações de estado, país e continente
+                var teamOptions = {};
+                {% for team in teams %}
+                teamOptions[{{ team.id }}] = {
+                    id: {{ team.id }},
+                    name: "{{ team.name }}",
+                    state_id: {% if team.state_id %}"{{ team.state_id }}"{% else %}null{% endif %},
+                    country_id: {% if team.country_id %}"{{ team.country_id }}"{% else %}null{% endif %},
+                    continent_id: {% if team.country.continent_id %}"{{ team.country.continent_id }}"{% else %}null{% endif %},
+                    is_national_team: {% if team.is_national_team %}true{% else %}false{% endif %}
+                };
+                {% endfor %}
+                
+                // Função para filtrar times com base nas seleções de continente, país e estado
+                function filterTeams() {
+                    var continentId = $('#continente').val();
+                    var countryId = $('#pais').val();
+                    var stateId = $('#estado').val();
+                    var filterType = $('#filtrar-por').val();
+                    
+                    console.log("Filtrando times. Continente:", continentId, "País:", countryId, "Estado:", stateId, "Tipo:", filterType);
+                    
+                    // Obter o select e a DualListbox 
+                    var $select = $('.dual_select');
+                    var dualListbox = $select.data('bootstrapDualListbox');
+                    
+                    // Guardar os times já selecionados para preservá-los
+                    var selectedTeams = [];
+                    $select.find('option:selected').each(function() {
+                        selectedTeams.push($(this).val());
+                    });
+                    
+                    // Limpar e reconstruir o select
+                    $select.empty();
+                    
+                    // Filtrar e adicionar times com base nos critérios
+                    {% for team in teams %}
+                    var team = {
+                        id: {{ team.id }},
+                        name: "{{ team.name }}",
+                        state_id: {% if team.state_id %}"{{ team.state_id }}"{% else %}null{% endif %},
+                        country_id: {% if team.country_id %}"{{ team.country_id }}"{% else %}null{% endif %},
+                        continent_id: {% if team.country.continent_id %}"{{ team.country.continent_id }}"{% else %}null{% endif %},
+                        is_national_team: {% if team.is_national_team %}true{% else %}false{% endif %}
+                    };
+                    
+                    var shouldAdd = true;
+                    
+                    // Filtrar por tipo (times ou seleções)
+                    if (filterType === 'teams' && team.is_national_team) {
+                        shouldAdd = false;
+                    } else if (filterType === 'selections' && !team.is_national_team) {
+                        shouldAdd = false;
+                    }
+                    
+                    // Filtrar por estado se selecionado
+                    if (shouldAdd && stateId && stateId !== '' && team.state_id !== stateId) {
+                        shouldAdd = false;
+                    }
+                    
+                    // Filtrar por país se selecionado
+                    if (shouldAdd && countryId && countryId !== '' && team.country_id !== countryId) {
+                        shouldAdd = false;
+                    }
+                    
+                    // Filtrar por continente se selecionado
+                    if (shouldAdd && continentId && continentId !== '' && team.continent_id !== continentId) {
+                        shouldAdd = false;
+                    }
+                    
+                    if (shouldAdd) {
+                        var selected = selectedTeams.includes("{{ team.id }}");
+                        $select.append('<option value="{{ team.id }}" data-image="{{ team.get_image_url }}" ' + 
+                            (selected ? 'selected' : '') + '>{{ team.name }}</option>');
+                    }
+                    {% endfor %}
+                    
+                    // Atualizar a DualListbox
+                    $select.bootstrapDualListbox('refresh');
+                }
+                
+                // Associar eventos de mudança aos selects da aba Geral
+                $('#continente, #pais, #estado').change(function() {
+                    filterTeams();
+                });
+                
+                // Associar evento ao filtro de tipos
+                $('#filtrar-por').change(function() {
+                    filterTeams();
+                });
+                
+                // Associar evento à mudança de abas
+                $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+                    if ($(e.target).attr('href') === '#times') {
+                        filterTeams();
+                    }
+                });
+                
+                // Filtrar times inicialmente
+                filterTeams();
             });
         </script>
     </body>
