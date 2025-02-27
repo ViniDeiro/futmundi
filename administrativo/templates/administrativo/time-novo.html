@@ -65,9 +65,9 @@
                                                     {% endfor %}
                                                 </select>                                         
                                             </div>
-                                            <div class="mt5" id="state-container">
-                                                <label class="control-label" for="state">Estado</label>
-                                                <select class="form-control select2" id="state" name="state">
+                                            <div class="mt5" id="state-container" style="display: none;">
+                                                <label class="control-label" for="state" style="display: block;">Estado</label>
+                                                <select class="form-control select2" id="state" name="state" style="width: 100%;">
                                                     <option value="">Selecione um estado</option>
                                                 </select>                                       
                                             </div>
@@ -107,6 +107,9 @@
 
         <script>
             $(document).ready(function() {
+                // Esconde o container de estado por padrão
+                $('#state-container').hide();
+                
                 // Inicializa Select2
                 $('.select2').select2();
 
@@ -137,84 +140,75 @@
                 // Carrega estados quando país é selecionado
                 $('#country').on('change', function() {
                     var countryId = $(this).val();
-                    if (countryId) {
-                        $.ajax({
-                            url: "{% url 'administrativo:get_states_by_country' %}",
-                            type: 'POST',
-                            data: { 
-                                country_id: countryId,
-                                csrfmiddlewaretoken: $('[name=csrfmiddlewaretoken]').val()
-                            },
-                            success: function(data) {
-                                if (data.success) {
-                                    var stateSelect = $('#state');
-                                    var stateContainer = $('#state-container');
-                                    stateSelect.empty().append('<option value="">Selecione um estado</option>');
-                                    
-                                    if (data.states && data.states.length > 0) {
-                                        data.states.forEach(function(state) {
-                                            stateSelect.append(`<option value="${state.id}">${state.name}</option>`);
-                                        });
-                                        stateContainer.show();
-                                        stateSelect.prop('required', !$('#is_national_team').is(':checked'));
-                                    } else {
-                                        // Se o país não tem estados, esconde o campo de estado
-                                        stateContainer.hide();
-                                        stateSelect.prop('required', false);
-                                    }
-                                } else {
-                                    toastr.error(data.message || 'Erro ao carregar estados');
-                                    $('#state-container').hide();
-                                }
-                                
-                                // Mostra/esconde o campo de estado com base no checkbox
-                                toggleStateField();
-                            },
-                            error: function() {
-                                toastr.error('Erro ao carregar estados');
-                                $('#state-container').hide();
-                            }
-                        });
-                    } else {
-                        var stateSelect = $('#state');
-                        stateSelect.empty().append('<option value="">Selecione um estado</option>');
-                        $('#state-container').hide();
-                        toggleStateField();
+                    var stateSelect = $('#state');
+                    var stateContainer = $('#state-container');
+                    var isNationalTeam = $('#is_national_team').is(':checked');
+
+                    console.log('País selecionado:', countryId);
+                    console.log('É seleção:', isNationalTeam);
+
+                    // Sempre esconde e limpa o estado primeiro
+                    stateContainer.hide();
+                    stateSelect.empty().append('<option value="">Selecione um estado</option>');
+                    stateSelect.prop('required', false);
+
+                    // Se não tiver país selecionado ou for seleção nacional, mantém escondido
+                    if (!countryId || isNationalTeam) {
+                        console.log('Campo estado permanece oculto - Sem país ou é seleção');
+                        return;
                     }
+
+                    // Busca estados do país
+                    $.ajax({
+                        url: "{% url 'administrativo:get_states_by_country' %}",
+                        type: 'POST',
+                        data: { 
+                            country_id: countryId,
+                            csrfmiddlewaretoken: $('[name=csrfmiddlewaretoken]').val()
+                        },
+                        success: function(data) {
+                            console.log('Resposta da API:', data);
+                            
+                            if (data.success && data.states && data.states.length > 0) {
+                                console.log('Estados encontrados:', data.states.length);
+                                
+                                // Preenche os estados
+                                data.states.forEach(function(state) {
+                                    stateSelect.append(`<option value="${state.id}">${state.name}</option>`);
+                                });
+                                
+                                // Mostra o campo apenas se não for seleção nacional
+                                if (!isNationalTeam) {
+                                    console.log('Exibindo campo de estado');
+                                    stateContainer.css('display', 'block');
+                                    stateSelect.prop('required', true);
+                                }
+                            } else {
+                                console.log('Nenhum estado encontrado ou erro na resposta');
+                            }
+                        },
+                        error: function(xhr, status, error) {
+                            console.error('Erro ao carregar estados:', error);
+                            toastr.error('Erro ao carregar estados');
+                        }
+                    });
                 });
 
                 // Toggle do campo de estado quando marca/desmarca "É seleção"
                 $('#is_national_team').on('change', function() {
                     var isNational = $(this).is(':checked');
+                    var stateContainer = $('#state-container');
+                    var stateSelect = $('#state');
+
                     if (isNational) {
-                        $('#state-container').hide();
-                        $('#state').val('').trigger('change');
-                        $('#state').prop('disabled', true);
-                        $('#state').prop('required', false);
-                        // Força limpeza do estado
-                        $('select[name="state"]').val('');
+                        stateContainer.hide();
+                        stateSelect.val('').trigger('change');
+                        stateSelect.prop('required', false);
                     } else {
-                        $('#state-container').show();
-                        $('#state').prop('disabled', false);
-                        $('#state').prop('required', $('#state option').length > 1);
+                        // Recarrega os estados do país atual
+                        $('#country').trigger('change');
                     }
                 });
-
-                function toggleStateField() {
-                    var isNationalTeam = $('#is_national_team').is(':checked');
-                    if (isNationalTeam) {
-                        $('#state-container').hide();
-                        $('#state').val('').trigger('change');
-                        $('#state').prop('disabled', true);
-                        $('#state').prop('required', false);
-                        // Força limpeza do estado
-                        $('select[name="state"]').val('');
-                    } else {
-                        $('#state-container').show();
-                        $('#state').prop('disabled', false);
-                        $('#state').prop('required', $('#state option').length > 1);
-                    }
-                }
 
                 // Configurações do toastr
                 toastr.options = {
@@ -274,9 +268,6 @@
                         toastr.{{ message.tags }}("{{ message }}");
                     {% endfor %}
                 {% endif %}
-
-                // Inicializa o estado do campo de estado
-                toggleStateField();
             });
         </script>
     </body>

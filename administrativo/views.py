@@ -1008,66 +1008,55 @@ def time_editar(request, id):
         return redirect('administrativo:times')
 
     has_championships = team.has_championships()
+    championships = team.team_championships.all().order_by('name')
 
     if request.method == 'POST':
         try:
+            # Atualiza o nome
             team.name = request.POST.get('name')
-            team.is_national_team = request.POST.get('is_national_team') == 'on'
-            team.country_id = request.POST.get('country')
             
-            # Verifica se o time é uma seleção nacional ou se o país não tem estados cadastrados
-            if team.is_national_team or (team.country and not State.objects.filter(country_id=team.country_id).exists()):
-                team.state = None
-            else:
-                team.state_id = request.POST.get('state')
-            
-            # Atualiza o continente baseado no país selecionado
-            if team.country:
-                team.continent = team.country.continent
-            
-            # Verifica se é para remover a imagem existente (usando o novo campo hidden)
-            should_remove_image = request.POST.get('should_remove_image')
-            remove_image = request.POST.get('remove_image')
-            print(f"Valor do campo should_remove_image: {should_remove_image}")
-            print(f"Valor do checkbox remove_image: {remove_image}")
+            # Só atualiza país, estado e is_national_team se não tiver campeonatos vinculados
+            if not championships.exists():
+                team.is_national_team = request.POST.get('is_national_team') == 'on'
+                team.country_id = request.POST.get('country')
+                
+                # Verifica se o time é uma seleção nacional ou se o país não tem estados cadastrados
+                if team.is_national_team or (team.country and not State.objects.filter(country_id=team.country_id).exists()):
+                    team.state = None
+                else:
+                    team.state_id = request.POST.get('state')
+                
+                # Atualiza o continente baseado no país selecionado
+                if team.country:
+                    team.continent = team.country.continent
             
             # Verifica se é para remover a imagem existente
+            should_remove_image = request.POST.get('should_remove_image')
+            remove_image = request.POST.get('remove_image')
+            
             if should_remove_image == 'yes' or remove_image == 'on':
-                print(f"Removendo imagem do time {team.name}")
                 if team.image:
-                    old_image_path = team.image.path if team.image and hasattr(team.image, 'path') else None
-                    print(f"Caminho da imagem a ser removida: {old_image_path}")
                     team.image.delete()
                 team.image = None
-                print("Imagem removida e atributo definido como None")
-            # Verifica se foi enviada uma nova imagem
             elif 'image' in request.FILES:
-                print(f"Nova imagem enviada para o time {team.name}")
-                if team.image:
-                    team.image.delete()
                 team.image = request.FILES['image']
             
             team.save()
-            print(f"Time salvo. Image URL: {team.get_image_url() if hasattr(team, 'get_image_url') else 'Método get_image_url não encontrado'}")
             
-            messages.success(request, 'Time atualizado com sucesso')
+            messages.success(request, 'Time atualizado com sucesso!')
             return redirect('administrativo:times')
+            
         except Exception as e:
-            print(f"Erro ao atualizar time: {str(e)}")
             messages.error(request, f'Erro ao atualizar time: {str(e)}')
-            return render(request, 'administrativo/time-editar.html', {
-                'team': team,
-                'countries': Country.objects.all().order_by('name'),
-                'states': State.objects.filter(country=team.country).order_by('name') if team.country else [],
-                'has_championships': has_championships,
-                'championships': team.team_championships.all().order_by('name'),
-                'error': str(e)
-            })
+            return redirect('administrativo:time_editar', id=id)
     
-    # GET: Carrega o formulário
+    # Obtém todos os países ordenados por nome
     countries = Country.objects.all().order_by('name')
-    states = State.objects.filter(country=team.country).order_by('name') if team.country else []
-    championships = team.team_championships.all().order_by('name')
+    
+    # Obtém os estados do país do time, se houver
+    states = []
+    if team.country:
+        states = State.objects.filter(country=team.country).order_by('name')
     
     return render(request, 'administrativo/time-editar.html', {
         'team': team,
