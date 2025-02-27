@@ -271,8 +271,6 @@ class Championship(models.Model):
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
-        if not kwargs.get('update_fields'):
-            self.update_points()
 
 class ChampionshipStage(models.Model):
     """

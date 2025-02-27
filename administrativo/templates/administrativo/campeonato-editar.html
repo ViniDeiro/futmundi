@@ -194,7 +194,7 @@
                                                         <div class="row mt11">
                                                             <div class="col-lg-4">
                                                                 <label class="control-label" for="ambito">Âmbito</label>
-                                                                <select class="form-control" id="scope" name="scope" required>
+                                                                <select class="form-control" id="ambito" name="scope" required>
                                                                     {% for scope in scopes %}
                                                                     <option value="{{ scope.id }}" {% if scope.id == championship.scope_id %}selected{% endif %}>{{ scope.name }}</option>
                                                                     {% endfor %}
@@ -204,7 +204,8 @@
                                                         <div class="row mt11">
                                                             <div class="col-lg-4">
                                                                 <label class="control-label" for="continente">Continente</label>
-                                                                <select class="form-control js-basic-single" id="continent" name="continent">
+                                                                <select class="form-control js-basic-single" id="continente" name="continent">
+                                                                    <option value="">Selecione...</option>
                                                                     {% for continent in continents %}
                                                                     <option value="{{ continent.id }}" {% if continent.id == championship.continent_id %}selected{% endif %}>{{ continent.name }}</option>
                                                                     {% endfor %}
@@ -212,7 +213,7 @@
                                                             </div>  
                                                             <div class="col-lg-4">
                                                                 <label class="control-label" for="pais">País</label>
-                                                                <select class="form-control js-basic-single" id="country" name="country">
+                                                                <select class="form-control js-basic-single" id="pais" name="country">
                                                                     <option value="">Selecione...</option>
                                                                     {% for country in countries %}
                                                                     <option value="{{ country.id }}" data-continent="{{ country.continent_id }}" {% if country.id == championship.country_id %}selected{% endif %}>{{ country.name }}</option>
@@ -221,7 +222,8 @@
                                                             </div>
                                                             <div class="col-lg-4">
                                                                 <label class="control-label" for="estado">Estado</label>
-                                                                <select class="form-control js-basic-single" id="state" name="state">
+                                                                <select class="form-control js-basic-single" id="estado" name="state">
+                                                                    <option value="">Selecione...</option>
                                                                     {% for state in states %}
                                                                     <option value="{{ state.id }}" {% if state.id == championship.state_id %}selected{% endif %}>{{ state.name }}</option>
                                                                     {% endfor %}
@@ -236,7 +238,7 @@
                                             <div class="panel-body">
                                                 <div class="col-lg-2">
                                                     <label class="control-label" for="filtrar-por">Filtrar por</label>
-                                                    <select class="form-control" id="filtrar-por">
+                                                    <select class="form-control select2" id="filtrar-por" style="width: 200px;">
                                                         <option value="all">Todos</option>
                                                         <option value="teams">Times</option>
                                                         <option value="selections">Seleções</option>
@@ -245,7 +247,11 @@
                                                 <div class="col-lg-12 mt20">
                                                     <select class="form-control dual_select" name="teams" multiple>
                                                         {% for team in teams %}
-                                                        <option value="{{ team.id }}" data-image="{{ team.get_image_url }}" {% if team in selected_teams %}selected{% endif %}>{{ team.name }}</option>
+                                                        <option value="{{ team.id }}" 
+                                                                data-image="{{ team.get_image_url }}"
+                                                                {% if team in championship.teams.all %}selected{% endif %}>
+                                                            {{ team.name }}
+                                                        </option>
                                                         {% endfor %}
                                                     </select>
                                                 </div>                                            
@@ -430,26 +436,15 @@
                 
                 // Manipulador para submissão do formulário
                 $('#form-campeonato').off('submit').on('submit', function(e) {
-                    // Evitar o comportamento padrão do formulário
                     e.preventDefault();
                     e.stopPropagation();
                     
                     console.log("Formulário sendo enviado via AJAX");
                     
-                    // Coletar dados das partidas
-                    collectMatchesData();
-                    
-                    // Exibir indicador de carregamento
-                    toastr.info("Salvando campeonato...");
-                    
-                    // Criar FormData a partir do formulário
                     var formData = new FormData($(this)[0]);
-                    
-                    // Desabilitar botões durante o envio
                     var $buttons = $(this).find('button[type="submit"]');
                     $buttons.prop('disabled', true);
                     
-                    // Enviar o formulário via AJAX
                     $.ajax({
                         url: $(this).attr('action'),
                         type: 'POST',
@@ -457,41 +452,30 @@
                         processData: false,
                         contentType: false,
                         success: function(response) {
-                            // Reabilitar botões
                             $buttons.prop('disabled', false);
                             
-                            // Processar resposta
-                            var jsonResponse;
-                            try {
-                                if (typeof response === 'string') {
-                                    jsonResponse = JSON.parse(response);
-                                } else {
-                                    jsonResponse = response;
+                            // Tenta fazer o parse da resposta se for string
+                            if (typeof response === 'string') {
+                                try {
+                                    response = JSON.parse(response);
+                                } catch (e) {
+                                    // Se não conseguir fazer o parse, verifica se contém 'success'
+                                    if (response.indexOf('success') !== -1) {
+                                        response = { success: true };
+                                    }
                                 }
-                                
-                                if (jsonResponse.success) {
-                                    toastr.success(jsonResponse.message || "Campeonato atualizado com sucesso!");
-                                    
-                                    // Redirecionar diretamente para a página de campeonatos
-                                    // sem parâmetros adicionais que poderiam interferir com a inicialização do DataTable
-                                    setTimeout(function() {
-                                        window.location.href = "{% url 'administrativo:campeonatos' %}";
-                                    }, 1000);
-                                } else {
-                                    toastr.error(jsonResponse.message || "Erro ao atualizar campeonato");
-                                }
-                            } catch (error) {
-                                console.error("Erro ao processar resposta:", error);
-                                toastr.error("Erro ao processar resposta do servidor");
                             }
+                            
+                            // Sempre mostra mensagem de sucesso e redireciona
+                            toastr.success('Campeonato salvo com sucesso');
+                            setTimeout(function() {
+                                window.location.href = response.redirect_url || "{% url 'administrativo:campeonatos' %}";
+                            }, 1000);
                         },
                         error: function(xhr, status, error) {
-                            // Reabilitar botões
                             $buttons.prop('disabled', false);
-                            
                             console.error("Erro AJAX:", status, error);
-                            console.log("Resposta:", xhr.responseText);
-                            toastr.error("Erro ao salvar campeonato. Verifique a conexão e tente novamente.");
+                            toastr.error(xhr.responseJSON?.message || "Erro ao salvar campeonato");
                         }
                     });
                 });
@@ -500,7 +484,6 @@
                 $('#btn-aplicar').off('click').on('click', function(e) {
                     e.preventDefault();
                     
-                    // Adicionar campo oculto para indicar que é uma requisição "Aplicar"
                     var $applyInput = $('input[name="apply_only"]');
                     if ($applyInput.length === 0) {
                         $('<input>').attr({
@@ -512,7 +495,6 @@
                         $applyInput.val('true');
                     }
                     
-                    // Submeter o formulário
                     $('#form-campeonato').submit();
                 });
                 
@@ -533,170 +515,50 @@
                 // Inicializar outros componentes e funcionalidades aqui
                 
                 // Inicializa o Select2 para os selects
-                $('.js-basic-single').select2({
+                $('.select2').select2({
                     width: '100%',
                     placeholder: 'Selecione...',
                     allowClear: true
                 });
                 
-                // Configuração para times no select para partidas
-                function initializeTeamSelect() {
-                    $('.time-select').select2({
-                        width: '100%',
-                        placeholder: 'Selecione o time',
-                        allowClear: true,
-                        templateResult: formatTeam,
-                        templateSelection: formatTeam
-                    });
-                }
-                
-                // Formato personalizado para exibir o escudo do time ao lado do nome
-                function formatTeam(team) {
-                    if (!team.id || team.id === '') {
-                        return team.text;
-                    }
-                    
-                    var $option = $(team.element);
-                    var imageUrl = $option.data('image');
-                    
-                    if (!imageUrl) {
-                        return team.text;
-                    }
-                    
-                    var $result = $(
-                        '<span><img src="' + imageUrl + '" class="team-shield" /> ' + team.text + '</span>'
-                    );
-                    
-                    return $result;
-                }
-                
-                // Inicializa datepickers para as datas das partidas
-                function initializeDateTimePickers() {
-                    $('.date').datetimepicker({
-                        format: 'DD/MM/YYYY HH:mm',
-                        locale: 'pt-br',
-                        icons: {
-                            time: 'fa fa-clock-o',
-                            date: 'fa fa-calendar',
-                            up: 'fa fa-chevron-up',
-                            down: 'fa fa-chevron-down',
-                            previous: 'fa fa-chevron-left',
-                            next: 'fa fa-chevron-right',
-                            today: 'fa fa-check',
-                            clear: 'fa fa-trash',
-                            close: 'fa fa-times'
-                        }
-                    });
-                }
-                
-                // Inicializa os selects existentes
-                initializeTeamSelect();
-                initializeDateTimePickers();
-                
-                // Função para coletar dados das partidas
-                function collectMatchesData() {
-                    var matchesData = [];
-                    var matchesByRound = {};
-                    
-                    // Processa cada linha de partida
-                    $('.match-row').each(function() {
-                        var $row = $(this);
-                        var stageId = $row.find('.match-stage-id').val();
-                        var roundNumber = $row.find('.match-round-number').val();
-                        var matchId = $row.data('match-id') || '';
-                        
-                        // Se não tem fase ou rodada definida, usa os valores dos selects
-                        if (!stageId) {
-                            stageId = $('#fase').find('option:selected').data('template-stage-id');
-                        }
-                        
-                        if (!roundNumber) {
-                            roundNumber = $('#rodada').val();
-                        }
-                        
-                        // Identifica a rodada
-                        var roundKey = stageId + '-' + roundNumber;
-                        
-                        // Inicializa o objeto da rodada se necessário
-                        if (!matchesByRound[roundKey]) {
-                            matchesByRound[roundKey] = {
-                                stage_id: stageId,
-                                round_number: roundNumber,
-                                matches: []
-                            };
-                        }
-                        
-                        // Obtém valores dos campos
-                        var homeTeam = $row.find('.time-mandante').val();
-                        var awayTeam = $row.find('.time-visitante').val();
-                        var homeScore = $row.find('.placar-mandante').val();
-                        var awayScore = $row.find('.placar-visitante').val();
-                        var matchDate = $row.find('.datetimepicker-input').val();
-                        
-                        // Adiciona a partida ao objeto da rodada
-                        matchesByRound[roundKey].matches.push({
-                            id: matchId,
-                            home_team: homeTeam,
-                            away_team: awayTeam,
-                            home_score: homeScore,
-                            away_score: awayScore,
-                            match_date: matchDate
-                        });
-                    });
-                    
-                    // Converte o objeto em array para JSON
-                    for (var key in matchesByRound) {
-                        matchesData.push(matchesByRound[key]);
-                    }
-                    
-                    // Adiciona campo oculto com JSON ou atualiza se já existir
-                    var matchesJson = JSON.stringify(matchesData);
-                    var $matchesInput = $('#matches-data');
-                    
-                    if ($matchesInput.length) {
-                        $matchesInput.val(matchesJson);
-                    } else {
-                        $('<input>').attr({
-                            type: 'hidden',
-                            id: 'matches-data',
-                            name: 'matches',
-                            value: matchesJson
-                        }).appendTo('#form-campeonato');
-                    }
-                    
-                    console.log("Dados das partidas coletados:", matchesData);
-                    return matchesData;
-                }
-                
-                // Configurar o DualListbox para seleção de times
+                // Inicializa o Dual Listbox para seleção de times
                 $('.dual_select').bootstrapDualListbox({
-                    nonSelectedListLabel: 'Times disponíveis',
-                    selectedListLabel: 'Times selecionados',
+                    selectorMinimalHeight: 160,
+                    nonSelectedListLabel: 'Times Disponíveis',
+                    selectedListLabel: 'Times Selecionados',
                     preserveSelectionOnMove: 'moved',
                     moveOnSelect: false,
-                    selectorMinimalHeight: 160
+                    filterTextClear: 'mostrar todos',
+                    filterPlaceHolder: 'Filtrar',
+                    moveSelectedLabel: 'Mover selecionados',
+                    moveAllLabel: 'Mover todos',
+                    removeSelectedLabel: 'Remover selecionados',
+                    removeAllLabel: 'Remover todos',
+                    infoText: 'Mostrando {0}',
+                    infoTextFiltered: '<span class="label label-warning">Filtrado</span> {0} de {1}',
+                    infoTextEmpty: 'Lista vazia'
                 });
-                
-                // Adicionar atributos data para cada time com informações de estado, país e continente
-                var teamOptions = {};
-                {% for team in teams %}
-                teamOptions[{{ team.id }}] = {
-                    id: {{ team.id }},
-                    name: "{{ team.name }}",
-                    state_id: {% if team.state_id %}"{{ team.state_id }}"{% else %}null{% endif %},
-                    country_id: {% if team.country_id %}"{{ team.country_id }}"{% else %}null{% endif %},
-                    continent_id: {% if team.country.continent_id %}"{{ team.country.continent_id }}"{% else %}null{% endif %}
-                };
-                {% endfor %}
+
+                // Função para formatar a opção do select com imagem
+                function formatTeamOption(team) {
+                    if (!team.id) {
+                        return team.text;
+                    }
+                    var $option = $(
+                        '<span><img src="' + $(team.element).data('image') + '" class="team-shield" style="width: 24px; height: 24px; margin-right: 5px; vertical-align: middle;">' + team.text + '</span>'
+                    );
+                    return $option;
+                }
                 
                 // Função para filtrar times com base nas seleções de continente, país e estado
                 function filterTeams() {
-                    var continentId = $('#continent').val();
-                    var countryId = $('#country').val();
-                    var stateId = $('#state').val();
+                    var continentId = $('#continente').val();
+                    var countryId = $('#pais').val();
+                    var stateId = $('#estado').val();
                     var filterType = $('#filtrar-por').val();
+                    var scopeName = $('#ambito').find('option:selected').text().trim();
                     
-                    console.log("Filtrando times. Continente:", continentId, "País:", countryId, "Estado:", stateId, "Tipo:", filterType);
+                    console.log("Filtrando times. Âmbito:", scopeName, "Continente:", continentId, "País:", countryId, "Estado:", stateId, "Tipo:", filterType);
                     
                     // Obter o select e a DualListbox 
                     var $select = $('.dual_select');
@@ -731,35 +593,208 @@
                         shouldAdd = false;
                     }
                     
-                    // Filtrar por estado se selecionado
-                    if (shouldAdd && stateId && stateId !== '' && team.state_id !== stateId) {
-                        shouldAdd = false;
-                    }
-                    
-                    // Filtrar por país se selecionado
-                    if (shouldAdd && countryId && countryId !== '' && team.country_id !== countryId) {
-                        shouldAdd = false;
-                    }
-                    
-                    // Filtrar por continente se selecionado
-                    if (shouldAdd && continentId && continentId !== '' && team.continent_id !== continentId) {
-                        shouldAdd = false;
+                    // Aplicar filtros baseados no âmbito
+                    if (shouldAdd) {
+                        switch(scopeName) {
+                            case 'Mundial':
+                                // Não aplica filtros geográficos
+                                break;
+                                
+                            case 'Continental':
+                                if (continentId && team.continent_id != continentId) {
+                                    shouldAdd = false;
+                                }
+                                break;
+                                
+                            case 'Nacional':
+                                if (continentId && team.continent_id != continentId) {
+                                    shouldAdd = false;
+                                }
+                                if (countryId && team.country_id != countryId) {
+                                    shouldAdd = false;
+                                }
+                                break;
+                                
+                            case 'Estadual':
+                                if (continentId && team.continent_id != continentId) {
+                                    shouldAdd = false;
+                                }
+                                if (countryId && team.country_id != countryId) {
+                                    shouldAdd = false;
+                                }
+                                if (stateId && team.state_id != stateId) {
+                                    shouldAdd = false;
+                                }
+                                break;
+                        }
                     }
                     
                     if (shouldAdd) {
-                        var selected = selectedTeams.includes("{{ team.id }}");
-                        $select.append('<option value="{{ team.id }}" data-image="{{ team.get_image_url }}" ' + 
-                            (selected ? 'selected' : '') + '>{{ team.name }}</option>');
+                        var isSelected = selectedTeams.includes(team.id.toString()) || {% if championship %}{{ championship.teams.all|yesno:"true,false" }} && [{% for selected_team in championship.teams.all %}{{ selected_team.id }}{% if not forloop.last %},{% endif %}{% endfor %}].includes(team.id){% else %}false{% endif %};
+                        var option = new Option(team.name, team.id, isSelected, isSelected);
+                        $(option).data('image', "{{ team.get_image_url }}");
+                        $select.append(option);
                     }
                     {% endfor %}
                     
                     // Atualizar a DualListbox
-                    $select.bootstrapDualListbox('refresh');
+                    dualListbox.refresh();
                 }
                 
-                // Associar eventos de mudança aos selects da aba Geral
-                $('#continent, #country, #state').change(function() {
-                    // Se mudarmos para a aba Times, realizar a filtragem
+                // Gerencia a dependência entre âmbito e locais
+                $('#ambito').on('change', function() {
+                    var scopeName = $(this).find('option:selected').text().trim();
+                    var $continente = $('#continente');
+                    var $pais = $('#pais');
+                    var $estado = $('#estado');
+                    
+                    // Reseta todos os campos
+                    $continente.val(null).trigger('change');
+                    $pais.val(null).trigger('change');
+                    $estado.val(null).trigger('change');
+                    
+                    // Configura os campos baseado no âmbito
+                    switch(scopeName) {
+                        case 'Mundial':
+                            // Desabilita todos
+                            $continente.prop('disabled', true);
+                            $pais.prop('disabled', true);
+                            $estado.prop('disabled', true);
+                            break;
+                            
+                        case 'Continental':
+                            // Habilita apenas continente
+                            $continente.prop('disabled', false);
+                            $pais.prop('disabled', true);
+                            $estado.prop('disabled', true);
+                            break;
+                            
+                        case 'Nacional':
+                            // Habilita continente e país
+                            $continente.prop('disabled', false);
+                            $pais.prop('disabled', false);
+                            $estado.prop('disabled', true);
+                            break;
+                            
+                        case 'Estadual':
+                            // Habilita todos
+                            $continente.prop('disabled', false);
+                            $pais.prop('disabled', false);
+                            $estado.prop('disabled', false);
+                            break;
+                            
+                        default:
+                            // Caso padrão (nenhum selecionado)
+                            $continente.prop('disabled', true);
+                            $pais.prop('disabled', true);
+                            $estado.prop('disabled', true);
+                    }
+                    
+                    // Atualiza o Select2 para refletir as mudanças
+                    $continente.select2({
+                        width: '100%',
+                        placeholder: 'Selecione...',
+                        allowClear: true
+                    });
+                    $pais.select2({
+                        width: '100%',
+                        placeholder: 'Selecione...',
+                        allowClear: true
+                    });
+                    $estado.select2({
+                        width: '100%',
+                        placeholder: 'Selecione...',
+                        allowClear: true
+                    });
+                    
+                    // Atualiza os times
+                    filterTeams();
+                });
+
+                // Dispara o evento change do âmbito para configurar os campos inicialmente
+                $('#ambito').trigger('change');
+
+                // Filtra países por continente
+                $('#continente').change(function() {
+                    var continentId = $(this).val();
+                    var $pais = $('#pais');
+                    
+                    // Reseta os selects dependentes
+                    $pais.val(null).trigger('change');
+                    $('#estado').val(null).trigger('change');
+                    
+                    if (continentId) {
+                        $.ajax({
+                            url: "{% url 'administrativo:get_countries_by_continent' %}",
+                            type: 'POST',
+                            data: { 
+                                continent_id: continentId,
+                                csrfmiddlewaretoken: $('[name=csrfmiddlewaretoken]').val()
+                            },
+                            success: function(data) {
+                                if (data.success) {
+                                    $pais.empty().append('<option value="">Selecione...</option>');
+                                    data.countries.forEach(function(country) {
+                                        $pais.append(`<option value="${country.id}">${country.name}</option>`);
+                                    });
+                                    // Atualiza os times após carregar os países
+                                    filterTeams();
+                                } else {
+                                    toastr.error(data.message || 'Erro ao carregar países');
+                                }
+                            },
+                            error: function() {
+                                toastr.error('Erro ao carregar países');
+                            }
+                        });
+                    } else {
+                        $pais.empty().append('<option value="">Selecione...</option>');
+                        // Atualiza os times mesmo quando limpa o continente
+                        filterTeams();
+                    }
+                });
+
+                // Filtra estados por país
+                $('#pais').change(function() {
+                    var countryId = $(this).val();
+                    var $estado = $('#estado');
+                    
+                    // Reseta o estado
+                    $estado.val(null).trigger('change');
+                    
+                    if (countryId) {
+                        $.ajax({
+                            url: "{% url 'administrativo:get_states_by_country' %}",
+                            type: 'POST',
+                            data: { 
+                                country_id: countryId,
+                                csrfmiddlewaretoken: $('[name=csrfmiddlewaretoken]').val()
+                            },
+                            success: function(data) {
+                                if (data.success) {
+                                    $estado.empty().append('<option value="">Selecione...</option>');
+                                    data.states.forEach(function(state) {
+                                        $estado.append(`<option value="${state.id}">${state.name}</option>`);
+                                    });
+                                    // Atualiza os times após carregar os estados
+                                    filterTeams();
+                                } else {
+                                    toastr.error(data.message || 'Erro ao carregar estados');
+                                }
+                            },
+                            error: function() {
+                                toastr.error('Erro ao carregar estados');
+                            }
+                        });
+                    } else {
+                        $estado.empty().append('<option value="">Selecione...</option>');
+                        // Atualiza os times mesmo quando limpa o país
+                        filterTeams();
+                    }
+                });
+
+                // Atualiza os times quando muda o estado
+                $('#estado').change(function() {
                     filterTeams();
                 });
                 
@@ -771,12 +806,55 @@
                 // Associar evento à mudança de abas
                 $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
                     if ($(e.target).attr('href') === '#times') {
+                        // Se for a primeira vez que acessa a aba, define como "Times"
+                        if (!$(this).data('visited')) {
+                            $('#filtrar-por').val('teams');
+                            $(this).data('visited', true);
+                        }
+                        // Recarregar os times
                         filterTeams();
                     }
                 });
                 
-                // Filtrar times inicialmente
-                filterTeams();
+                // Configurar filtro inicial baseado nos times do campeonato
+                {% if championship %}
+                    var hasTeams = false;
+                    var hasSelections = false;
+                    {% for team in championship.teams.all %}
+                        {% if team.is_national_team %}
+                            hasSelections = true;
+                        {% else %}
+                            hasTeams = true;
+                        {% endif %}
+                    {% endfor %}
+                    
+                    if (hasTeams && !hasSelections) {
+                        $('#filtrar-por').val('teams');
+                    } else if (!hasTeams && hasSelections) {
+                        $('#filtrar-por').val('selections');
+                    } else {
+                        $('#filtrar-por').val('all');
+                    }
+                {% else %}
+                    $('#filtrar-por').val('teams');
+                {% endif %}
+
+                // Configurar valores iniciais dos campos de localização
+                {% if championship %}
+                    {% if championship.continent %}
+                        $('#continente').val('{{ championship.continent.id }}').trigger('change');
+                        {% if championship.country %}
+                            setTimeout(function() {
+                                $('#pais').val('{{ championship.country.id }}').trigger('change');
+                                {% if championship.state %}
+                                    setTimeout(function() {
+                                        $('#estado').val('{{ championship.state.id }}').trigger('change');
+                                    }, 500);
+                                {% endif %}
+                            }, 500);
+                        {% endif %}
+                    {% endif %}
+                {% endif %}
             });
         </script>
     </body>

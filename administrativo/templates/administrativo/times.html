@@ -462,42 +462,10 @@
                         success: function(response) {
                             $('#modalAlert').modal('hide');
                             if (response.success) {
-                                toastr.success(response.message);
-                                
-                                var table = $('.dataTables-times').DataTable();
-                                
-                                if (response.deleted > 0) {
-                                    ids.forEach(function(id) {
-                                        var row = $(`input[value="${id}"]`).closest('tr');
-                                        var teamName = row.find('td:eq(1)').text();
-                                        var canDelete = true;
-                                        
-                                        if (response.errors && response.errors.length > 0) {
-                                            for (var i = 0; i < response.errors.length; i++) {
-                                                if (response.errors[i].includes(teamName)) {
-                                                    canDelete = false;
-                                                    break;
-                                                }
-                                            }
-                                        }
-                                        
-                                        if (canDelete) {
-                                            table.row(row).remove().draw(false);
-                                        }
-                                    });
-                                }
-                                
-                                if (response.errors && response.errors.length > 0) {
-                                    response.errors.forEach(function(error) {
-                                        toastr.warning(error);
-                                    });
-                                }
-                                
-                                $('.checkAll').prop('checked', false);
-                                
-                                if (table.data().count() === 0) {
-                                    table.clear().draw();
-                                }
+                                toastr.warning(response.message);
+                                setTimeout(function() {
+                                    window.location.reload();
+                                }, 1000);
                             } else {
                                 toastr.error(response.message);
                             }

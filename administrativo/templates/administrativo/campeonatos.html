@@ -186,7 +186,7 @@
                                                         <span class="label label-default">Inativo</span>
                                                         {% endif %}
                                                     </td>
-                                                    <td>{{ championship.created_at|date:"d/m/Y" }}</td>
+                                                    <td>{{ championship.created_at|date:"d/m/Y H:i" }}</td>
                                                     <td>
                                                         <a href="{% url 'administrativo:campeonato_editar' championship.id %}" class="btn btn-info btn-xs" title="Editar"><i class="glyphicon glyphicon-pencil"></i></a>
                                                         <button type="button" class="btn btn-xs btn-toggle-championship {% if championship.is_active %}btn-danger{% else %}btn-success{% endif %}" 

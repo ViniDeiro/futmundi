@@ -1102,8 +1102,9 @@
                     var countryId = $('#pais').val();
                     var stateId = $('#estado').val();
                     var filterType = $('#filtrar-por').val();
+                    var scopeName = $('#ambito').find('option:selected').text().trim();
                     
-                    console.log("Filtrando times. Continente:", continentId, "País:", countryId, "Estado:", stateId, "Tipo:", filterType);
+                    console.log("Filtrando times. Âmbito:", scopeName, "Continente:", continentId, "País:", countryId, "Estado:", stateId, "Tipo:", filterType);
                     
                     // Obter o select e a DualListbox 
                     var $select = $('.dual_select');
@@ -1131,26 +1132,39 @@
                     
                     var shouldAdd = true;
                     
-                    // Filtrar por tipo (times ou seleções)
-                    if (filterType === 'teams' && team.is_national_team) {
-                        shouldAdd = false;
-                    } else if (filterType === 'selections' && !team.is_national_team) {
-                        shouldAdd = false;
+                    // Primeiro aplicar filtros baseados no âmbito
+                    if (scopeName === 'Mundial') {
+                        // Não aplica filtros geográficos para âmbito mundial
+                        shouldAdd = true;
+                    } else if (scopeName === 'Continental') {
+                        // Filtra apenas por continente
+                        if (continentId && team.continent_id !== continentId) {
+                            shouldAdd = false;
+                        }
+                    } else if (scopeName === 'Nacional') {
+                        // Filtra por país
+                        if (countryId && team.country_id !== countryId) {
+                            shouldAdd = false;
+                        }
+                    } else if (scopeName === 'Estadual') {
+                        // Filtra por estado
+                        if (stateId && team.state_id !== stateId) {
+                            shouldAdd = false;
+                        }
                     }
                     
-                    // Filtrar por estado se selecionado
-                    if (shouldAdd && stateId && stateId !== '' && team.state_id !== stateId) {
-                        shouldAdd = false;
-                    }
-                    
-                    // Filtrar por país se selecionado
-                    if (shouldAdd && countryId && countryId !== '' && team.country_id !== countryId) {
-                        shouldAdd = false;
-                    }
-                    
-                    // Filtrar por continente se selecionado
-                    if (shouldAdd && continentId && continentId !== '' && team.continent_id !== continentId) {
-                        shouldAdd = false;
+                    // Depois aplicar filtro por tipo (times ou seleções)
+                    if (shouldAdd && filterType !== 'all') {
+                        if (filterType === 'teams' && team.is_national_team) {
+                            shouldAdd = false;
+                        } else if (filterType === 'selections' && !team.is_national_team) {
+                            shouldAdd = false;
+                        }
+                        
+                        // Caso especial: não mostrar seleções em âmbito estadual
+                        if (scopeName === 'Estadual' && filterType === 'selections') {
+                            shouldAdd = false;
+                        }
                     }
                     
                     if (shouldAdd) {
@@ -1165,7 +1179,9 @@
                 }
                 
                 // Associar eventos de mudança aos selects da aba Geral
-                $('#continente, #pais, #estado').change(function() {
+                $('#ambito, #continente, #pais, #estado').change(function() {
+                    // Limpar o filtro ao mudar qualquer campo geográfico
+                    $('#filtrar-por').val('all');
                     filterTeams();
                 });
                 
@@ -1177,11 +1193,18 @@
                 // Associar evento à mudança de abas
                 $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
                     if ($(e.target).attr('href') === '#times') {
+                        // Se for a primeira vez que acessa a aba, define como "Times"
+                        if (!$(this).data('visited')) {
+                            $('#filtrar-por').val('teams');
+                            $(this).data('visited', true);
+                        }
+                        // Recarregar os times
                         filterTeams();
                     }
                 });
                 
-                // Filtrar times inicialmente
+                // Filtrar times inicialmente com o filtro em "Times"
+                $('#filtrar-por').val('teams');
                 filterTeams();
             });
         </script>
