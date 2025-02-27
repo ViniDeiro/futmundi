@@ -493,7 +493,9 @@ input::-webkit-inner-spin-button {
 
 /* Estilo para escudos dos times na tabela */
 .team-shield {
-    width: 30px;
-    height: 30px;
+    width: 30px !important;
+    height: 30px !important;
+    max-width: 30px !important;
+    max-height: 30px !important;
     object-fit: contain;
 }
