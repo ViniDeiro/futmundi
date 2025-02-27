@@ -798,6 +798,16 @@
                     }
                 });
 
+                // Se já existe um país selecionado, carrega os estados
+                if ($('#country').val()) {
+                    $('#country').trigger('change');
+                }
+
+                // Armazena os valores iniciais para restauração se necessário
+                var initialCountryId = $('#country').val();
+                var initialStateId = $('#state').val();
+                var initialTeams = $('.dual_select').val();
+
                 // Filtra países por continente
                 $('#continent').change(function() {
                     var continentId = $(this).val();
@@ -874,9 +884,58 @@
                 // Dispara o evento de change do âmbito no carregamento da página
                 $('#scope').trigger('change');
 
-                // Se já existe um país selecionado, carrega os estados
-                if ($('#country').val()) {
-                    $('#country').trigger('change');
+                // Dispara a mudança do continente para carregar os países corretamente
+                if ($('#continent').val()) {
+                    var continentId = $('#continent').val();
+                    var countryId = $('#country').val();
+                    
+                    // Carrega os países do continente
+                    $.ajax({
+                        url: "{% url 'administrativo:get_countries_by_continent' %}",
+                        type: 'POST',
+                        data: { 
+                            continent_id: continentId,
+                            csrfmiddlewaretoken: $('[name=csrfmiddlewaretoken]').val()
+                        },
+                        success: function(data) {
+                            if (data.success) {
+                                var $countrySelect = $('#country');
+                                $countrySelect.empty().append('<option value="">Selecione...</option>');
+                                
+                                data.countries.forEach(function(country) {
+                                    var selected = (country.id == initialCountryId) ? 'selected' : '';
+                                    $countrySelect.append(`<option value="${country.id}" ${selected}>${country.name}</option>`);
+                                });
+                                
+                                $countrySelect.trigger('change.select2');
+                                
+                                // Após carregar os países, carrega os estados para o país selecionado
+                                if (initialCountryId) {
+                                    $.ajax({
+                                        url: "{% url 'administrativo:get_states_by_country' %}",
+                                        type: 'POST',
+                                        data: { 
+                                            country_id: initialCountryId,
+                                            csrfmiddlewaretoken: $('[name=csrfmiddlewaretoken]').val()
+                                        },
+                                        success: function(data) {
+                                            if (data.success) {
+                                                var $stateSelect = $('#state');
+                                                $stateSelect.empty().append('<option value="">Selecione um estado</option>');
+                                                
+                                                data.states.forEach(function(state) {
+                                                    var selected = (state.id == initialStateId) ? 'selected' : '';
+                                                    $stateSelect.append(`<option value="${state.id}" ${selected}>${state.name}</option>`);
+                                                });
+                                                
+                                                $stateSelect.trigger('change.select2');
+                                            }
+                                        }
+                                    });
+                                }
+                            }
+                        }
+                    });
                 }
 
                 // Função para controlar campos editáveis
@@ -949,9 +1008,6 @@
                         $('#continent, #country, #state').prop('disabled', false);
                     }
                 });
-
-                // Dispara o evento change no carregamento da página
-                $('#scope').trigger('change');
 
                 // Importação de rodadas
                 $('#modalImportXLS').on('show.bs.modal', function() {

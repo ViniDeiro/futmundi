@@ -226,9 +226,14 @@ def campeonato_novo(request):
                 )
 
                 # Adiciona os times selecionados
-                teams = request.POST.getlist('teams[]')
+                teams = request.POST.getlist('teams')
                 if teams:
+                    # Adicionar log para depuração
+                    print(f"Times selecionados: {teams}")
                     championship.teams.add(*teams)
+                    print(f"Times vinculados ao campeonato: {list(championship.teams.values_list('id', flat=True))}")
+                else:
+                    print("Nenhum time selecionado")
 
                 # Processa as rodadas se houver
                 matches_data = json.loads(request.POST.get('matches', '[]'))
@@ -887,20 +892,19 @@ def time_novo(request):
                     'message': 'O país é obrigatório'
                 })
 
-            if not is_national_team and not state_id:
-                return JsonResponse({
-                    'success': False,
-                    'message': 'O estado é obrigatório para times que não são seleções'
-                })
-
-            # Busca país e estado
+            # Busca país 
             country = Country.objects.get(id=country_id)
+            
+            # Verifica se o país tem estados cadastrados
+            has_states = country.state_set.exists()
+            
+            # Busca estado se informado
             state = None
-            if not is_national_team and state_id:
+            if state_id:
                 state = State.objects.get(id=state_id)
 
-            # Verifica se o país tem estados cadastrados e se é necessário um estado
-            if not is_national_team and country.state_set.exists() and not state_id:
+            # Validação de estado apenas se não for seleção E o país tiver estados cadastrados
+            if not is_national_team and has_states and not state_id:
                 return JsonResponse({
                     'success': False,
                     'message': 'O estado é obrigatório para times que não são seleções quando o país possui estados cadastrados'
@@ -968,105 +972,75 @@ def time_novo(request):
 
 def time_editar(request, id):
     """
-    View para editar um time existente.
+    Edita um time existente.
     """
-    team = get_object_or_404(Team, id=id)
+    try:
+        team = Team.objects.get(id=id)
+    except Team.DoesNotExist:
+        messages.error(request, 'Time não encontrado')
+        return redirect('administrativo:times')
+
     has_championships = team.has_championships()
-    
+
     if request.method == 'POST':
         try:
-            # Se tem campeonatos vinculados, só permite editar a imagem
-            if has_championships:
-                if 'image' in request.FILES:
-                    # Remove imagem antiga se existir
-                    if team.image:
-                        team.image.delete(save=False)
-                    team.image = request.FILES['image']
-                elif request.POST.get('remove_image') == 'on':
-                    # Remove a imagem se solicitado
-                    if team.image:
-                        team.image.delete(save=False)
-                    team.image = None
-                team.save()
-                return JsonResponse({
-                    'success': True,
-                    'message': 'Imagem do time atualizada com sucesso.',
-                    'redirect_url': reverse('administrativo:times')
-                })
+            team.name = request.POST.get('name')
+            team.is_national_team = request.POST.get('is_national_team') == 'on'
+            team.country_id = request.POST.get('country')
             
-            # Se não tem campeonatos, permite editar tudo
-            name = request.POST.get('name')
-            country_id = request.POST.get('country')
-            state_id = request.POST.get('state')
-            is_national_team = request.POST.get('is_national_team') == 'on'
-            
-            # Validações básicas
-            if not name or not country_id:
-                return JsonResponse({
-                    'success': False,
-                    'message': 'Nome e país são obrigatórios'
-                })
-                
-            # Busca o país
-            country = Country.objects.get(id=country_id)
-            
-            # Verifica se já existe outro time com o mesmo nome no país
-            if Team.objects.filter(name=name, country_id=country_id).exclude(id=id).exists():
-                return JsonResponse({
-                    'success': False,
-                    'message': 'Já existe um time com este nome neste país'
-                })
-                
-            # Atualiza os dados do time
-            team.name = name
-            team.country = country
-            team.is_national_team = is_national_team
-            
-            # Atualiza a imagem se fornecida
-            if 'image' in request.FILES:
-                if team.image:
-                    team.image.delete(save=False)
-                team.image = request.FILES['image']
-            elif request.POST.get('remove_image') == 'on':
-                if team.image:
-                    team.image.delete(save=False)
-                team.image = None
-            
-            # Se não for seleção nacional, verifica o estado
-            if not is_national_team:
-                # Se o país tem estados cadastrados, o estado é obrigatório
-                if country.state_set.exists():
-                    if not state_id:
-                        return JsonResponse({
-                            'success': False,
-                            'message': 'Estado é obrigatório para times deste país'
-                        })
-                    team.state = State.objects.get(id=state_id)
-                else:
-                    # Se o país não tem estados, remove qualquer estado que possa estar associado
-                    team.state = None
-            else:
-                # Se for seleção nacional, remove o estado
+            # Verifica se o time é uma seleção nacional ou se o país não tem estados cadastrados
+            if team.is_national_team or (team.country and not State.objects.filter(country_id=team.country_id).exists()):
                 team.state = None
+            else:
+                team.state_id = request.POST.get('state')
+            
+            # Atualiza o continente baseado no país selecionado
+            if team.country:
+                team.continent = team.country.continent
+            
+            # Verifica se é para remover a imagem existente (usando o novo campo hidden)
+            should_remove_image = request.POST.get('should_remove_image')
+            remove_image = request.POST.get('remove_image')
+            print(f"Valor do campo should_remove_image: {should_remove_image}")
+            print(f"Valor do checkbox remove_image: {remove_image}")
+            
+            # Verifica se é para remover a imagem existente
+            if should_remove_image == 'yes' or remove_image == 'on':
+                print(f"Removendo imagem do time {team.name}")
+                if team.image:
+                    old_image_path = team.image.path if team.image and hasattr(team.image, 'path') else None
+                    print(f"Caminho da imagem a ser removida: {old_image_path}")
+                    team.image.delete()
+                team.image = None
+                print("Imagem removida e atributo definido como None")
+            # Verifica se foi enviada uma nova imagem
+            elif 'image' in request.FILES:
+                print(f"Nova imagem enviada para o time {team.name}")
+                if team.image:
+                    team.image.delete()
+                team.image = request.FILES['image']
             
             team.save()
+            print(f"Time salvo. Image URL: {team.get_image_url() if hasattr(team, 'get_image_url') else 'Método get_image_url não encontrado'}")
             
-            return JsonResponse({
-                'success': True,
-                'message': 'Time atualizado com sucesso.',
-                'redirect_url': reverse('administrativo:times')
-            })
-            
+            messages.success(request, 'Time atualizado com sucesso')
+            return redirect('administrativo:times')
         except Exception as e:
-            return JsonResponse({
-                'success': False,
-                'message': f'Erro ao atualizar time: {str(e)}'
+            print(f"Erro ao atualizar time: {str(e)}")
+            messages.error(request, f'Erro ao atualizar time: {str(e)}')
+            return render(request, 'administrativo/time-editar.html', {
+                'team': team,
+                'countries': Country.objects.all().order_by('name'),
+                'states': State.objects.filter(country=team.country).order_by('name') if team.country else [],
+                'has_championships': has_championships,
+                'championships': team.team_championships.all().order_by('name'),
+                'error': str(e)
             })
     
     # GET: Carrega o formulário
     countries = Country.objects.all().order_by('name')
     states = State.objects.filter(country=team.country).order_by('name') if team.country else []
-    championships = Championship.objects.filter(teams=team).order_by('name')
+    championships = team.team_championships.all().order_by('name')
     
     return render(request, 'administrativo/time-editar.html', {
         'team': team,
@@ -1140,23 +1114,41 @@ def time_importar_imagens(request):
     """
     if request.method == 'POST':
         try:
+            # Obtém arquivos de ambos os inputs: seleção múltipla e diretório
             files = request.FILES.getlist('images')
-            if not files:
+            directory_files = request.FILES.getlist('directory_images')
+            
+            # Combina todos os arquivos
+            all_files = files + directory_files
+            
+            if not all_files:
                 return JsonResponse({
                     'success': False,
                     'message': 'Nenhuma imagem selecionada'
                 })
             
-            # Primeiro, verifica se todos os times existem
+            # Primeiro, identifica quais times existem e quais não existem
+            times_found = []
             times_not_found = []
-            for file in files:
+            file_mapping = {}  # Mapeia nome do time para o arquivo
+            
+            for file in all_files:
                 filename = os.path.splitext(file.name)[0]
-                if not Team.objects.filter(name__iexact=filename).exists():
+                # Para arquivos de diretório, remove o caminho e pega apenas o nome do arquivo
+                if hasattr(file, 'webkitRelativePath') and file.webkitRelativePath:
+                    filename = os.path.splitext(os.path.basename(file.webkitRelativePath))[0]
+                
+                team = Team.objects.filter(name__iexact=filename).first()
+                if team:
+                    times_found.append(filename)
+                    file_mapping[filename] = file
+                else:
                     times_not_found.append(filename)
             
-            if times_not_found:
+            # Se nenhum time foi encontrado, retorna mensagem de erro
+            if not times_found:
                 if len(times_not_found) > 4:
-                    message = f'{len(times_not_found)} times não estão cadastrados. Por favor, cadastre-os primeiro.'
+                    message = f'Nenhum dos {len(times_not_found)} times está cadastrado. Por favor, cadastre-os primeiro.'
                 else:
                     message = f'Os seguintes times não foram encontrados: {", ".join(times_not_found)}. Por favor, cadastre-os primeiro.'
                 return JsonResponse({
@@ -1167,12 +1159,10 @@ def time_importar_imagens(request):
             success_count = 0
             errors = []
             
-            for file in files:
-                # Remove a extensão do nome do arquivo
-                filename = os.path.splitext(file.name)[0]
-                
-                # Procura o time pelo nome do arquivo
-                team = Team.objects.filter(name__iexact=filename).first()
+            # Processa apenas os times que existem
+            for team_name in times_found:
+                file = file_mapping[team_name]
+                team = Team.objects.filter(name__iexact=team_name).first()
                 
                 try:
                     # Verifica o tipo de arquivo
@@ -1194,33 +1184,43 @@ def time_importar_imagens(request):
                     team.save()
                     success_count += 1
                 except Exception as e:
-                    errors.append(f'Erro ao processar imagem "{file.name}": {str(e)}')
+                    errors.append(f'Erro ao processar "{file.name}": {str(e)}')
             
-            if success_count == 0:
-                return JsonResponse({
-                    'success': False,
-                    'message': 'Nenhuma imagem foi importada devido a erros. Verifique os arquivos e tente novamente.'
-                })
+            # Mensagem de sucesso ou erro
+            message = f'{success_count} escudo(s) importado(s) com sucesso'
             
-            message = f'{success_count} imagens importadas com sucesso!'
+            # Adiciona informação sobre times não encontrados
+            if times_not_found:
+                if len(times_not_found) > 10:
+                    message += f', mas {len(times_not_found)} times não estão cadastrados'
+                else:
+                    message += f', mas os seguintes times não estão cadastrados: {", ".join(times_not_found[:10])}'
+                    if len(times_not_found) > 10:
+                        message += f' e mais {len(times_not_found) - 10}'
+            
+            # Adiciona informação sobre erros
             if errors:
-                message += f'\nErros: {", ".join(errors)}'
+                message += f'. Houve {len(errors)} erro(s) durante o processamento'
                 
             return JsonResponse({
                 'success': True,
-                'message': message
+                'message': message,
+                'found_count': len(times_found),
+                'not_found_count': len(times_not_found),
+                'success_count': success_count,
+                'error_count': len(errors),
+                'errors': errors if errors else None,
+                'not_found_sample': times_not_found[:10] if times_not_found else None
             })
-            
+                
         except Exception as e:
             return JsonResponse({
                 'success': False,
-                'message': f'Erro ao importar imagens: {str(e)}'
+                'message': f'Erro ao processar importação: {str(e)}'
             })
-            
-    return JsonResponse({
-        'success': False,
-        'message': 'Método não permitido'
-    })
+    
+    # Se não for POST, redireciona para a página de times
+    return redirect('administrativo:times')
 
 def futcoins(request):
     packages = FutcoinPackage.objects.all().order_by('-created_at')
@@ -2878,7 +2878,7 @@ def campeonato_editar(request, id):
                     championship.save()
                     
                     # Atualiza os times
-                    teams = request.POST.getlist('teams[]')
+                    teams = request.POST.getlist('teams')
                     championship.teams.clear()
                     championship.teams.add(*teams)
                     

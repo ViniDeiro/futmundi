@@ -39,6 +39,7 @@
                                     <div class="col-lg-12">
                                         <form id="team-form" method="post" action="{% url 'administrativo:time_editar' team.id %}" enctype="multipart/form-data">
                                             {% csrf_token %}
+                                            <input type="hidden" name="should_remove_image" id="should_remove_image" value="no">
                                             <div class="row">
                                                 <div class="col-lg-4">
                                                     <div class="form-group col-lg-8">
@@ -231,11 +232,18 @@
 
                 // Handler do botão remover
                 $('#remove_image_btn').click(function() {
-                    $('#remove_image').prop('checked', true);
-                    $('#image-preview').html(`
-                        <i class="fa fa-file-image-o" style="font-size: 48px; color: #ccc; cursor: pointer;" onclick="document.getElementById('image').click()"></i>
-                    `);
+                    // Marca o campo hidden para remoção de imagem
+                    $('#should_remove_image').val('yes');
+                    
+                    // Atualiza a exibição
+                    $('#image-preview').html('<i class="fa fa-file-image-o" style="font-size: 48px; color: #ccc; cursor: pointer;" onclick="document.getElementById(\'image\').click()"></i>');
                     $('#image').val('');
+                    
+                    // Debug para verificar se o campo hidden foi atualizado
+                    console.log("Campo should_remove_image: " + $('#should_remove_image').val());
+                    
+                    // Evita que o evento suba para elementos pais
+                    return false;
                 });
 
                 // Desabilita upload se remover imagem estiver marcado
@@ -253,41 +261,13 @@
 
                 // Validação e envio do formulário
                 $('#team-form').on('submit', function(e) {
-                    e.preventDefault();
+                    // Removendo a prevenção de envio do formulário
+                    // e.preventDefault();
                     
-                    var isNationalTeam = $('#is_national_team').is(':checked');
-                    var formData = new FormData(this);
-                    
-                    // Se a imagem foi removida, garante que o campo remove_image seja enviado
-                    if ($('#remove_image').is(':checked')) {
-                        formData.append('remove_image', 'true');
+                    // Quando o botão de remover foi clicado, garantimos que o valor é enviado
+                    if ($('#should_remove_image').val() === 'yes') {
+                        $('#remove_image').prop('checked', true);
                     }
-                    
-                    // Se for seleção nacional, não precisa de estado
-                    if (isNationalTeam) {
-                        formData.delete('state');
-                    }
-                    
-                    $.ajax({
-                        url: $(this).attr('action'),
-                        type: 'POST',
-                        data: formData,
-                        processData: false,
-                        contentType: false,
-                        success: function(response) {
-                            if (response.success) {
-                                toastr.success(response.message);
-                                setTimeout(function() {
-                                    window.location.href = response.redirect_url;
-                                }, 1500);
-                            } else {
-                                toastr.error(response.message);
-                            }
-                        },
-                        error: function(xhr) {
-                            toastr.error(xhr.responseJSON?.message || 'Erro ao atualizar time');
-                        }
-                    });
                 });
 
                 // Mostra mensagens do Django

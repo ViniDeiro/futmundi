@@ -207,12 +207,12 @@
                                         <span class="input-group-text btn btn-default btn-file">
                                             <span class="fileinput-new">Selecionar arquivos</span>
                                             <span class="fileinput-exists">Alterar</span>
-                                            <input type="file" name="images" accept="image/*" multiple required/>
+                                            <input type="file" name="images" id="file-images" accept="image/*" multiple/>
                                         </span>
                                         <span class="input-group-text btn btn-default btn-file ml-2">
                                             <span class="fileinput-new">Selecionar pasta</span>
                                             <span class="fileinput-exists">Alterar</span>
-                                            <input type="file" name="images" accept="image/*" webkitdirectory directory/>
+                                            <input type="file" name="directory_images" id="directory-images" accept="image/*" webkitdirectory directory multiple/>
                                         </span>
                                     </div>
                                 </div>
@@ -225,11 +225,14 @@
                                     <li><strong>Tamanho máximo:</strong> 2MB por arquivo</li>
                                     <li><strong>Seleção de arquivos:</strong>
                                         <ul>
-                                            <li>Clique normal: seleciona múltiplos arquivos</li>
-                                            <li>CTRL + Clique: seleciona uma pasta completa</li>
+                                            <li>"Selecionar arquivos": escolha múltiplos arquivos individuais</li>
+                                            <li>"Selecionar pasta": escolha uma pasta inteira com escudos</li>
                                         </ul>
                                     </li>
                                 </ul>
+                                <p class="mt10 text-warning" style="background-color: #ffffd1; padding: 10px; border-left: 4px solid #ffcc00;">
+                                    <i class="fa fa-exclamation-triangle"></i> <strong>Importante:</strong> Ao selecionar muitos arquivos ou uma pasta, o navegador exibirá um aviso de segurança com os dizeres "Enviar X arquivos para este site?". <strong>Isto é normal</strong> - clique em "Enviar" para continuar com a importação.
+                                </p>
                             </div>
                         </div>
                         <div class="modal-footer">
@@ -327,7 +330,20 @@
                 // Handler para o formulário de importar escudos
                 $('#formImportarEscudo').on('submit', function(e) {
                     e.preventDefault();
+                    
+                    // Verificar se pelo menos um arquivo foi selecionado em qualquer um dos inputs
+                    var filesInput = document.getElementById('file-images');
+                    var directoryInput = document.getElementById('directory-images');
+                    
+                    if (filesInput.files.length === 0 && directoryInput.files.length === 0) {
+                        toastr.warning('Selecione pelo menos um arquivo ou uma pasta com arquivos');
+                        return false;
+                    }
+                    
                     var formData = new FormData(this);
+                    
+                    // Mostrar informação de carregando
+                    toastr.info('Processando arquivos. Isso pode levar alguns instantes...');
                     
                     $.ajax({
                         url: $(this).attr('action'),
@@ -353,34 +369,16 @@
                     });
                 });
 
-                // Configuração do input de arquivo para aceitar pastas
-                $('input[name="images"]').on('click', function(e) {
-                    if (e.ctrlKey || e.metaKey) {
-                        $(this).attr('webkitdirectory', 'true');
-                        $(this).attr('directory', 'true');
-                    } else {
-                        $(this).removeAttr('webkitdirectory');
-                        $(this).removeAttr('directory');
-                    }
-                });
-
                 // Atualiza o texto do input quando arquivos são selecionados
-                $('input[name="images"]').on('change', function() {
+                $('input[type="file"]').on('change', function() {
                     var files = this.files;
                     var fileCount = files.length;
                     var text = '';
 
                     if (fileCount > 0) {
                         if (this.hasAttribute('webkitdirectory')) {
-                            // Conta quantas pastas diferentes existem
-                            var folders = new Set();
-                            for (var i = 0; i < files.length; i++) {
-                                var path = files[i].webkitRelativePath;
-                                if (path) {
-                                    folders.add(path.split('/')[0]);
-                                }
-                            }
-                            text = folders.size + ' pasta(s) selecionada(s) com ' + fileCount + ' arquivo(s)';
+                            // Conta quantas pastas diferentes existem (simplificado)
+                            text = fileCount + ' arquivo(s) da pasta selecionada';
                         } else {
                             text = fileCount + ' arquivo(s) selecionado(s)';
                         }
@@ -388,6 +386,10 @@
 
                     $(this).closest('.fileinput').find('.fileinput-filename').text(text);
                 });
+
+                // Remover qualquer outro listener antigo
+                $('input[name="images"]').off('click');
+                $('input[name="directory_images"]').off('click');
 
                 // Mensagens do Django
                 {% if messages %}

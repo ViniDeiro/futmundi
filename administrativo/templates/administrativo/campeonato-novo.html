@@ -189,7 +189,8 @@
                                                         <div class="row mt11">
                                                             <div class="col-lg-4">
                                                                 <label class="control-label" for="continente">Continente</label>
-                                                                <select class="form-control js-basic-single" id="continente" name="continent">
+                                                                <select class="form-control js-basic-single" id="continente" name="continent" data-placeholder="Selecione...">
+                                                                    <option value="">Selecione...</option>
                                                                     {% for continent in continents %}
                                                                     <option value="{{ continent.id }}">{{ continent.name }}</option>
                                                                     {% endfor %}
@@ -197,7 +198,7 @@
                                                             </div>  
                                                             <div class="col-lg-4">
                                                                 <label class="control-label" for="pais">País</label>
-                                                                <select class="form-control js-basic-single" id="pais" name="country">
+                                                                <select class="form-control js-basic-single" id="pais" name="country" data-placeholder="Selecione...">
                                                                     <option value="">Selecione...</option>
                                                                     {% for country in countries %}
                                                                     <option value="{{ country.id }}" data-continent="{{ country.continent_id }}">{{ country.name }}</option>
@@ -206,7 +207,8 @@
                                                             </div>
                                                             <div class="col-lg-4">
                                                                 <label class="control-label" for="estado">Estado</label>
-                                                                <select class="form-control js-basic-single" id="estado" name="state">
+                                                                <select class="form-control js-basic-single" id="estado" name="state" data-placeholder="Selecione...">
+                                                                    <option value="">Selecione...</option>
                                                                     {% for state in states %}
                                                                     <option value="{{ state.id }}">{{ state.name }}</option>
                                                                     {% endfor %}
@@ -376,7 +378,14 @@
                 $('#temporada').val(anoAtual);
 
                 // Inicializa o Select2 para os selects
-                $('.js-basic-single').select2();
+                $('.js-basic-single').select2({
+                    width: '100%',
+                    placeholder: 'Selecione...',
+                    allowClear: true
+                });
+
+                // Garante que os campos de localização comecem vazios
+                $('#continente, #pais, #estado').val(null).trigger('change');
 
                 // Inicializa o iCheck para checkboxes
                 $('.i-checks').iCheck({
@@ -668,6 +677,11 @@
                 // Filtra estados por país
                 $('#pais').change(function() {
                     var countryId = $(this).val();
+                    var stateSelect = $('#estado');
+                    
+                    // Sempre reseta o select de estado primeiro
+                    stateSelect.empty().append('<option value="">Selecione...</option>');
+                    
                     if (countryId) {
                         $.ajax({
                             url: "{% url 'administrativo:get_states_by_country' %}",
@@ -678,8 +692,6 @@
                             },
                             success: function(data) {
                                 if (data.success) {
-                                    var stateSelect = $('#estado');
-                                    stateSelect.empty().append('<option value="">Selecione um estado</option>');
                                     data.states.forEach(function(state) {
                                         stateSelect.append(`<option value="${state.id}">${state.name}</option>`);
                                     });
@@ -691,9 +703,6 @@
                                 toastr.error('Erro ao carregar estados');
                             }
                         });
-                    } else {
-                        var stateSelect = $('#estado');
-                        stateSelect.empty().append('<option value="">Selecione um estado</option>');
                     }
                 });
 

@@ -6,6 +6,13 @@ from django.templatetags.static import static
 from django.db.models import Q
 
 class User(AbstractUser):
+    # NOTA: Este modelo herda AbstractUser, mas a migração inicial não incluiu todos os campos
+    # necessários da classe base (como password, username, etc). O erro "Unknown column 'users.password'"
+    # ocorre porque o Django espera que esses campos existam na tabela.
+    # As opções para resolver são:
+    # 1. Refazer todas as migrações (recomendado para ambiente de desenvolvimento)
+    # 2. Criar uma migração manual para adicionar os campos faltantes (opção de emergência para produção)
+    
     PLAN_CHOICES = [
         ('common', 'Common'),
         ('star', 'Star'),

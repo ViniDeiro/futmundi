@@ -156,8 +156,11 @@
                                             stateSelect.append(`<option value="${state.id}">${state.name}</option>`);
                                         });
                                         stateContainer.show();
+                                        stateSelect.prop('required', !$('#is_national_team').is(':checked'));
                                     } else {
+                                        // Se o país não tem estados, esconde o campo de estado
                                         stateContainer.hide();
+                                        stateSelect.prop('required', false);
                                     }
                                 } else {
                                     toastr.error(data.message || 'Erro ao carregar estados');

@@ -85,13 +85,11 @@ WSGI_APPLICATION = "futmundi.wsgi.application"
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'ViniDeiro$fuutmundi',  # Note o duplo 'u' em fuutmundi
-        'USER': 'ViniDeiro',           # Seu username do PythonAnywhere
-        'PASSWORD': 'Vdl@2209',        # A senha que você definiu no PythonAnywhere
-        'HOST': 'ViniDeiro.mysql.pythonanywhere-services.com',  # O hostname mostrado no painel
-        'OPTIONS': {
-            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
-        },
+        'NAME': 'futmundi_db',
+        'USER': 'futmundi_user',
+        'PASSWORD': 'Vdl@2209',
+        'HOST': 'localhost',
+        'PORT': '3306',
     }
 }
 
