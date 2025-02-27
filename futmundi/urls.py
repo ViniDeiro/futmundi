@@ -24,4 +24,11 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     # Inclui todas as URLs do app administrativo
     path('', include('administrativo.urls')),
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT) if settings.DEBUG else []
+] 
+
+# Adiciona as URLs para servir arquivos de mídia, independente do ambiente
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+else:
+    # Para produção, ainda mantém as URLs, embora o servidor web deva ser configurado para servir estes arquivos diretamente
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
