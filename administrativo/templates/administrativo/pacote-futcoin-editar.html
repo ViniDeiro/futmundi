@@ -152,13 +152,14 @@
                                 <div class="tab-content">
                                     <div id="geral" class="tab-pane active">
                                         <div class="panel-body">
-                                            <div class="row">
-                                                <div class="col-lg-6">
-                                                    <form class="mt10">
+                                            <form id="package-form" method="post" enctype="multipart/form-data">
+                                                {% csrf_token %}
+                                                <div class="row">
+                                                    <div class="col-lg-6">
                                                         <div class="form-group col-lg-12">
                                                             <div class="row">
                                                                 <div class="col-lg-4">
-                                                                    <input type="text" id="nome" class="form-control" value="{{ package.name }}" required>
+                                                                    <input type="text" id="nome" name="name" class="form-control" value="{{ package.name }}" required>
                                                                     <label class="form-control-placeholder" for="nome">Nome *</label>
                                                                 </div>
                                                             </div>
@@ -172,157 +173,181 @@
                                                                         </div>
                                                                         <div class="card-content" style="position: relative; padding: 0;">
                                                                             <div id="image-preview" style="display: flex; justify-content: center; padding: 0; margin-top: -7px;">
-                                                                                <img src="{{ package.image.url|default:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMAAAADACAYAAABS3GwHAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAALEgAACxIB0t1+/AAAABZ0RVh0Q3JlYXRpb24gVGltZQAxMC8yOS8xMiKqq3kAAAAcdEVYdFNvZnR3YXJlAEFkb2JlIEZpcmV3b3JrcyBDUzVxteM2AAABHklEQVR4nO3BMQEAAADCoPVPbQZ/oAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB4GmXPAAF/RL+JAAAAAElFTkSuQmCC' }}" style="width: 48px; height: 48px; object-fit: contain; cursor: pointer;" onclick="document.getElementById('image').click()">
+                                                                                {% if package.image %}
+                                                                                    <img src="{{ package.image.url }}" style="width: 48px; height: 48px; object-fit: contain; cursor: pointer;" onclick="document.getElementById('image').click()">
+                                                                                    <button type="button" class="btn btn-danger btn-xs" id="remove_image_btn" style="position: absolute; bottom: -7px; right: -30px;">
+                                                                                        <i class="fa fa-trash"></i>
+                                                                                    </button>
+                                                                                {% else %}
+                                                                                    <i class="fa fa-file-image-o" style="font-size: 48px; color: #ccc; cursor: pointer;" onclick="document.getElementById('image').click()"></i>
+                                                                                {% endif %}
+                                                                            </div>
+                                                                            <input type="file" id="image" name="image" class="input-image" accept="image/*" style="display: none;">
+                                                                            <input type="hidden" name="should_remove_image" id="should_remove_image" value="no">
+                                                                        </div>                              
+                                                                    </div>
+                                                                </div>
+                                                                <div class="col-lg-3 mt35">
+                                                                    <div class="i-checks"><label> <input type="checkbox" name="enabled" {% if package.enabled %}checked{% endif %}> Ativo</label></div>
+                                                                </div>
                                                             </div>
-                                                            <input type="file" id="image" name="image" class="input-image" accept="image/*" style="display: none;">
-                                                        </div>                              
+                                                        </div>                                    
+                                                    </div>
+                                                    <div class="col-lg-6">
+                                                        <div class="form-group col-lg-12">
+                                                            <div class="row">
+                                                                <div class="col-lg-6 mtm20">
+                                                                    <label class="control-label" for="tipo">Tipo</label>
+                                                                    <select class="form-control js-example-basic-single" id="tipo" name="package_type" style="width: 80%">
+                                                                        <option value="">Selecione</option>
+                                                                        <option value="padrao" {% if package.package_type == 'padrao' %}selected{% endif %}>Padrão</option>
+                                                                        <option value="promocional" {% if package.package_type == 'promocional' %}selected{% endif %}>Promocional</option>
+                                                                    </select>
+                                                                </div>
+                                                            </div>
+                                                        </div>                                                            
+                                                        <div class="form-group col-lg-12">
+                                                            <div class="row">
+                                                                <div class="col-lg-4">
+                                                                    <input type="text" id="etiqueta" name="label" class="form-control" value="{{ package.label }}">
+                                                                    <label class="form-control-placeholder" for="etiqueta">Etiqueta</label>
+                                                                </div>
+                                                            </div>
+                                                            <div class="row label-fields">
+                                                                <div class="col-lg-4 mt10">                                                                        
+                                                                    <label class="control-label">Cor Texto Etiqueta</label>
+                                                                    <div id="id3" class="input-group colorpicker-component formcolorpicker">
+                                                                        <input type="text" name="color_text_label" value="{{ package.color_text_label }}" class="form-control"/>
+                                                                        <div class="input-group-append">
+                                                                            <span class="input-group-text input-group-addon"><i></i></span>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="col-lg-4 mt10">                                                                        
+                                                                    <label class="control-label">Cor Fundo Etiqueta</label>
+                                                                    <div id="id4" class="input-group colorpicker-component formcolorpicker">
+                                                                        <input type="text" name="color_background_label" value="{{ package.color_background_label }}" class="form-control"/>
+                                                                        <div class="input-group-append">
+                                                                            <span class="input-group-text input-group-addon"><i></i></span>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>                                                            
+                                                        </div>                                    
                                                     </div>
                                                 </div>
-                                                <div class="col-lg-3 mt35">
-                                                    <div class="i-checks"><label> <input type="checkbox" {% if package.enabled %}checked{% endif %}> Ativo</label></div>
-                                                </div>
-                                            </div>
+                                            </form>
                                         </div>                                    
-                                    </form>
+                                    </div>
+                                    <div id="configuracoes" class="tab-pane">
+                                        <div class="panel-body">
+                                            <form id="package-form-config" method="post" enctype="multipart/form-data">
+                                                {% csrf_token %}
+                                                <div class="row">
+                                                    <div class="col-lg-6">
+                                                        <div class="form-group col-lg-12">
+                                                            <div class="row">
+                                                                <div class="col-lg-4">
+                                                                    <input type="number" 
+                                                                           id="preco-padrao" 
+                                                                           name="full_price" 
+                                                                           class="form-control input-medium" 
+                                                                           value="{{ package.full_price|floatformat:2 }}" 
+                                                                           required 
+                                                                           step="0.01" 
+                                                                           min="0">
+                                                                    <label class="form-control-placeholder" for="preco-padrao">Preço Padrão *</label>
+                                                                </div>
+                                                                <div class="col-lg-4">
+                                                                    <input type="number" 
+                                                                           id="preco-promocional" 
+                                                                           name="promotional_price" 
+                                                                           class="form-control input-medium" 
+                                                                           value="{{ package.promotional_price|floatformat:2 }}" 
+                                                                           step="0.01" 
+                                                                           min="0">
+                                                                    <label class="form-control-placeholder" for="preco-promocional">Preço Promocional</label>
+                                                                </div>
+                                                            </div>
+                                                        </div>                                                            
+                                                        <div class="form-group col-lg-12">
+                                                            <div class="row">
+                                                                <div class="col-lg-4">
+                                                                    <input type="number" id="conteudo" name="content" class="form-control input-medium" value="{{ package.content }}" required>
+                                                                    <label class="form-control-placeholder" for="conteudo">Conteúdo (f$) *</label>
+                                                                </div>
+                                                                <div class="col-lg-4 bonus-field">
+                                                                    <input type="number" id="bonus" name="bonus" class="form-control input-medium" value="{{ package.bonus }}" min="0">
+                                                                    <label class="form-control-placeholder" for="bonus">Bônus (f$)</label>
+                                                                </div> 
+                                                            </div>
+                                                        </div>   
+                                                        <div class="form-group col-lg-12">
+                                                            <div class="row">
+                                                                <div class="col-lg-4 mtm15">
+                                                                    <label class="control-label" for="exibir-para">Exibir para</label>
+                                                                    <select class="form-control" id="exibir-para" name="show_to">
+                                                                        <option value="Todos" {% if package.show_to == 'todos' %}selected{% endif %}>Todos</option>
+                                                                        <option value="Comum" {% if package.show_to == 'comum' %}selected{% endif %}>Comum</option>
+                                                                        <option value="Craque" {% if package.show_to == 'craque' %}selected{% endif %}>Craque</option>
+                                                                    </select>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="form-group col-lg-12">
+                                                            <div class="row">
+                                                                <div class="col-lg-4">
+                                                                    <input type="text" id="android-product-code" name="android_product_code" class="form-control" value="{{ package.android_product_code }}">
+                                                                    <label class="form-control-placeholder" for="android-product-code">Código do Produto (Android)</label>
+                                                                </div>
+                                                                <div class="col-lg-4">
+                                                                    <input type="text" id="ios-product-code" name="ios_product_code" class="form-control" value="{{ package.ios_product_code }}">
+                                                                    <label class="form-control-placeholder" for="ios-product-code">Código do Produto (iOS)</label>
+                                                                </div>
+                                                                <div class="col-lg-4">
+                                                                    <input type="text" id="gateway-product-code" name="gateway_product_code" class="form-control" value="{{ package.gateway_product_code }}">
+                                                                    <label class="form-control-placeholder" for="gateway-product-code">Código do Produto (Gateway)</label>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-lg-6">
+                                                        <div class="form-group col-lg-12 date-fields">
+                                                            <div class="row">
+                                                                <div class="col-lg-6">
+                                                                    <label class="control-label">Data de Início</label>
+                                                                    <div class="input-group date" data-target-input="nearest">
+                                                                        <input type="text" name="start_date" class="form-control datetimepicker-input" id="datetimepicker" data-toggle="datetimepicker" data-target="#datetimepicker" value="{{ package.start_date|date:'d/m/Y H:i' }}"/>
+                                                                        <div class="input-group-append" data-target="#datetimepicker" data-toggle="datetimepicker">
+                                                                            <div class="input-group-text"><i class="fa fa-calendar"></i></div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="col-lg-6">
+                                                                    <label class="control-label">Data de Término</label>
+                                                                    <div class="input-group date" data-target-input="nearest">
+                                                                        <input type="text" name="end_date" class="form-control datetimepicker-input" id="datetimepicker2" data-toggle="datetimepicker" data-target="#datetimepicker2" value="{{ package.end_date|date:'d/m/Y H:i' }}"/>
+                                                                        <div class="input-group-append" data-target="#datetimepicker2" data-toggle="datetimepicker2">
+                                                                            <div class="input-group-text"><i class="fa fa-calendar"></i></div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="col-lg-6">
-                                    <form class="mt10">
-                                        <div class="form-group col-lg-12">
-                                            <div class="row">
-                                                <div class="col-lg-6 mtm20">
-                                                    <label class="control-label" for="tipo">Tipo</label>
-                                                    <select class="form-control js-example-basic-single" id="tipo" style="width: 80%">
-                                                        <option value="">Selecione</option>
-                                                        <option value="Padrão" {% if package.package_type == 'padrao' %}selected{% endif %}>Padrão</option>
-                                                        <option value="Promocional" {% if package.package_type == 'promocional' %}selected{% endif %}>Promocional</option>
-                                                    </select>
-                                                </div>
-                                            </div>
-                                        </div>                                                            
-                                        <div class="form-group col-lg-12">
-                                            <div class="row">
-                                                <div class="col-lg-4">
-                                                    <input type="text" id="etiqueta" class="form-control" value="{{ package.label }}">
-                                                    <label class="form-control-placeholder" for="etiqueta">Etiqueta</label>
-                                                </div>
-                                            </div>
-                                            <div class="row label-fields">
-                                                <div class="col-lg-4 mt10">                                                                        
-                                                    <label class="control-label">Cor Texto Etiqueta</label>
-                                                    <div id="id3" class="input-group colorpicker-component formcolorpicker">
-                                                        <input type="text" value="{{ package.color_text_label }}" class="form-control"/>
-                                                        <div class="input-group-append">
-                                                            <span class="input-group-text input-group-addon"><i></i></span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div class="col-lg-4 mt10">                                                                        
-                                                    <label class="control-label">Cor Fundo Etiqueta</label>
-                                                    <div id="id4" class="input-group colorpicker-component formcolorpicker">
-                                                        <input type="text" value="{{ package.color_background_label }}" class="form-control"/>
-                                                        <div class="input-group-append">
-                                                            <span class="input-group-text input-group-addon"><i></i></span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>                                                            
-                                        </div>                                    
-                                    </form>
+                                <div class="panel panel-default col-lg-12 mtm25 p15">
+                                    <button type="button" class="btn btn-success ml20" id="btnSalvar"><i class="fa fa-save mr5"></i> Salvar</button>
+                                    <a href="{% url 'administrativo:futcoins' %}" class="btn btn-danger ml15"><i class="fa fa-ban mr5"></i> Cancelar</a>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div id="configuracoes" class="tab-pane">
-                        <div class="panel-body">
-                            <div class="row">
-                                <div class="col-lg-6">
-                                    <form class="mt10">
-                                        <div class="form-group col-lg-12">
-                                            <div class="row">
-                                                <div class="col-lg-4">
-                                                    <input type="number" id="preco-padrao" class="form-control input-medium" value="{{ package.full_price }}" required>
-                                                    <label class="form-control-placeholder" for="preco-padrao">Preço Padrão *</label>
-                                                </div>
-                                                <div class="col-lg-4">
-                                                    <input type="number" id="preco-promocional" class="form-control input-medium" value="{{ package.promotional_price }}" required>
-                                                    <label class="form-control-placeholder" for="preco-promocional">Preço Promocional *</label>
-                                                </div>
-                                            </div>
-                                        </div>                                                            
-                                        <div class="form-group col-lg-12">
-                                            <div class="row">
-                                                <div class="col-lg-4">
-                                                    <input type="number" id="conteudo" class="form-control input-medium" value="{{ package.content }}" required>
-                                                    <label class="form-control-placeholder" for="conteudo">Conteúdo (f$) *</label>
-                                                </div>
-                                                <div class="col-lg-4 bonus-field">
-                                                    <input type="number" id="bonus" class="form-control input-medium" value="{{ package.bonus }}" required>
-                                                    <label class="form-control-placeholder" for="bonus">Bônus (f$)</label>
-                                                </div> 
-                                            </div>
-                                        </div>   
-                                        <div class="form-group col-lg-12">
-                                            <div class="row">
-                                                <div class="col-lg-4 mtm15">
-                                                    <label class="control-label" for="exibir-para">Exibir para</label>
-                                                    <select class="form-control" id="exibir-para">
-                                                        <option value="Todos" {% if package.show_to == 'todos' %}selected{% endif %}>Todos</option>
-                                                        <option value="Comum" {% if package.show_to == 'comum' %}selected{% endif %}>Comum</option>
-                                                        <option value="Craque" {% if package.show_to == 'craque' %}selected{% endif %}>Craque</option>
-                                                    </select>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="form-group col-lg-12">
-                                            <div class="row">
-                                                <div class="col-lg-4">
-                                                    <input type="text" id="android-product-code" class="form-control" value="{{ package.android_product_code }}">
-                                                    <label class="form-control-placeholder" for="android-product-code">Código do Produto (Android)</label>
-                                                </div>
-                                                <div class="col-lg-4">
-                                                    <input type="text" id="ios-product-code" class="form-control" value="{{ package.ios_product_code }}">
-                                                    <label class="form-control-placeholder" for="ios-product-code">Código do Produto (iOS)</label>
-                                                </div>
-                                                <div class="col-lg-4">
-                                                    <input type="text" id="gateway-product-code" class="form-control" value="{{ package.gateway_product_code }}">
-                                                    <label class="form-control-placeholder" for="gateway-product-code">Código do Produto (Gateway)</label>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </form>
-                                </div>
-                                <div class="col-lg-6">
-                                    <div class="form-group col-lg-12 date-fields">
-                                        <div class="row">
-                                            <div class="col-lg-6">
-                                                <label class="control-label">Data de Início</label>
-                                                <div class="input-group date" data-target-input="nearest">
-                                                    <input type="text" class="form-control datetimepicker-input" id="datetimepicker" data-toggle="datetimepicker" data-target="#datetimepicker" value="{{ package.start_date|date:'d/m/Y H:i' }}"/>
-                                                    <div class="input-group-append" data-target="#datetimepicker" data-toggle="datetimepicker">
-                                                        <div class="input-group-text"><i class="fa fa-calendar"></i></div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="col-lg-6">
-                                                <label class="control-label">Data de Término</label>
-                                                <div class="input-group date" data-target-input="nearest">
-                                                    <input type="text" class="form-control datetimepicker-input" id="datetimepicker2" data-toggle="datetimepicker" data-target="#datetimepicker2" value="{{ package.end_date|date:'d/m/Y H:i' }}"/>
-                                                    <div class="input-group-append" data-target="#datetimepicker2" data-toggle="datetimepicker2">
-                                                        <div class="input-group-text"><i class="fa fa-calendar"></i></div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>                                    
                 </div>
-            </div>
-            <div class="panel panel-default col-lg-12 mtm25 p15">
-                <button type="submit" form="package-form" class="btn btn-success ml20"><i class="fa fa-save mr5"></i> Salvar</button>
-                <a href="{% url 'administrativo:futcoins' %}" class="btn btn-danger ml15"><i class="fa fa-ban mr5"></i> Cancelar</a>
             </div>
         </div>
         <!-- Mainly scripts -->
@@ -342,9 +367,12 @@
         <script src="{% static 'administrativo/js/plugins/tempusdominus/tempusdominus-bootstrap-4.min.js' %}"></script>
         <script src="{% static 'administrativo/js/settings.js' %}"></script>
 
-        <script>
-            $(document).ready(function() {
-                // Setup CSRF token for AJAX requests
+        <script type="text/javascript">
+            // Aguarda todos os scripts serem carregados
+            window.addEventListener('load', function() {
+                console.log('Página totalmente carregada');
+
+                // Setup CSRF token para AJAX requests
                 $.ajaxSetup({
                     headers: {
                         'X-CSRFToken': $('meta[name="csrf-token"]').attr('content')
@@ -399,9 +427,6 @@
                     $('#datetimepicker').datetimepicker('maxDate', e.date);
                 });
 
-                // Inicializa o select2
-                $('.js-example-basic-single').select2();
-
                 // Inicializa iCheck
                 $('.i-checks').iCheck({
                     checkboxClass: 'icheckbox_square-green',
@@ -414,34 +439,32 @@
                     if (file) {
                         var reader = new FileReader();
                         reader.onload = function(e) {
-                            $('#image-preview img').attr('src', e.target.result);
+                            $('#image-preview').html(`
+                                <img src="${e.target.result}" style="width: 48px; height: 48px; object-fit: contain; cursor: pointer;" onclick="document.getElementById('image').click()">
+                                <button type="button" class="btn btn-danger btn-xs" id="remove_image_btn" style="position: absolute; bottom: -7px; right: -30px;">
+                                    <i class="fa fa-trash"></i>
+                                </button>
+                            `);
                         }
                         reader.readAsDataURL(file);
                     }
                 });
 
-                // Mostra/esconde campos de data baseado no tipo do pacote
-                function toggleDateFields() {
-                    if ($('#tipo').val() === 'Promocional') {
-                        $('.date-fields').show();
-                    } else {
-                        $('.date-fields').hide();
-                    }
-                }
+                // Handler para o botão de remover imagem
+                $(document).on('click', '#remove_image_btn', function() {
+                    $('#image').val('');
+                    $('#should_remove_image').val('yes');
+                    $('#image-preview').html('<i class="fa fa-file-image-o" style="font-size: 48px; color: #ccc; cursor: pointer;" onclick="document.getElementById(\'image\').click()"></i>');
+                });
 
-                // Chama a função ao carregar e quando mudar o tipo
-                toggleDateFields();
-                $('#tipo').change(toggleDateFields);
-
-                // Submissão do formulário
-                $('#package-form').on('submit', function(e) {
-                    e.preventDefault();
+                // Handler do botão salvar
+                $('#btnSalvar').click(function() {
+                    console.log('Botão salvar clicado');
 
                     // Validação dos campos obrigatórios
                     var nome = $('#nome').val();
                     var tipo = $('#tipo').val();
                     var precoPadrao = $('#preco-padrao').val();
-                    var precoPromocional = $('#preco-promocional').val();
                     var conteudo = $('#conteudo').val();
 
                     if (!nome || !tipo || !precoPadrao || !conteudo) {
@@ -449,41 +472,33 @@
                         return;
                     }
 
-                    // Cria o FormData
+                    // Cria o FormData com todos os campos do formulário
                     var formData = new FormData();
-                    formData.append('csrfmiddlewaretoken', $('[name=csrfmiddlewaretoken]').val());
-                    formData.append('name', nome);
-                    formData.append('enabled', $('.i-checks input[type="checkbox"]').is(':checked'));
-                    formData.append('package_type', $('#tipo').val());
-                    formData.append('label', $('#etiqueta').val());
-                    formData.append('color_text_label', $('#id3 input').val());
-                    formData.append('color_background_label', $('#id4 input').val());
-                    
-                    // Configurações
-                    formData.append('full_price', precoPadrao);
-                    formData.append('promotional_price', precoPromocional);
-                    formData.append('content', conteudo);
-                    formData.append('bonus', $('#bonus').val() || 0);
-                    formData.append('show_to', $('#exibir-para').val());
-                    
-                    // Trata as datas apenas se o tipo for Promocional
-                    if ($('#tipo').val() === 'Promocional') {
-                        var startDate = $('#datetimepicker').val();
-                        var endDate = $('#datetimepicker2').val();
-                        
-                        if (startDate) formData.append('start_date', startDate);
-                        if (endDate) formData.append('end_date', endDate);
-                    }
-                    
-                    // Códigos do produto
-                    formData.append('android_product_code', $('#android-product-code').val());
-                    formData.append('ios_product_code', $('#ios-product-code').val());
-                    formData.append('gateway_product_code', $('#gateway-product-code').val());
 
-                    // Imagem
-                    var imageFile = $('.input-image')[0].files[0];
-                    if (imageFile) {
-                        formData.append('image', imageFile);
+                    // Adiciona todos os campos dos dois formulários
+                    $('#package-form, #package-form-config').each(function() {
+                        var form = $(this);
+                        form.find('input, select, textarea').each(function() {
+                            var input = $(this);
+                            var name = input.attr('name');
+                            
+                            if (!name) return;
+
+                            if (input.attr('type') === 'file') {
+                                if (input[0].files[0]) {
+                                    formData.append(name, input[0].files[0]);
+                                }
+                            } else if (input.attr('type') === 'checkbox') {
+                                formData.append(name, input.prop('checked'));
+                            } else {
+                                formData.append(name, input.val() || '');
+                            }
+                        });
+                    });
+
+                    // Debug - mostra os dados que serão enviados
+                    for (var pair of formData.entries()) {
+                        console.log(pair[0] + ': ' + pair[1]); 
                     }
 
                     // Envia os dados
@@ -494,17 +509,29 @@
                         processData: false,
                         contentType: false,
                         success: function(response) {
+                            console.log('Resposta do servidor:', response);
                             if (response.success) {
-                                toastr.success(response.message);
+                                toastr.success(response.message || 'Pacote atualizado com sucesso!');
                                 setTimeout(function() {
                                     window.location.href = "{% url 'administrativo:futcoins' %}";
                                 }, 1000);
                             } else {
-                                toastr.error(response.message);
+                                toastr.error(response.message || 'Erro ao atualizar pacote');
                             }
                         },
-                        error: function() {
-                            toastr.error('Erro ao salvar o pacote');
+                        error: function(xhr, status, error) {
+                            console.log('Erro:', error);
+                            console.log('Status:', status);
+                            console.log('XHR:', xhr);
+                            
+                            var errorMessage = 'Erro ao atualizar pacote';
+                            try {
+                                var response = JSON.parse(xhr.responseText);
+                                errorMessage = response.message || errorMessage;
+                            } catch (e) {
+                                console.log('Erro ao parsear resposta:', e);
+                            }
+                            toastr.error(errorMessage);
                         }
                     });
                 });

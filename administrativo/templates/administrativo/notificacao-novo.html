@@ -203,17 +203,17 @@
                                                     <div class="col-lg-6 mtm20">
                                                         <label class="control-label" for="tipo">Tipo</label>
                                                         <select class="form-control js-example-basic-single" id="tipo" style="width: 80%">
-                                                            <option value="generic">Geral</option>
-                                                            <option value="package_coins">Pacote Futcoins</option>
-                                                            <option value="package_plan">Pacote Plano</option>
+                                                            <option value="Geral">Geral</option>
+                                                            <option value="PacoteFutcoins">Pacote Futcoins</option>
+                                                            <option value="PacotePlano">Pacote Plano</option>
                                                         </select>
                                                     </div>
                                                     <div class="col-lg-6 mtm20">
                                                         <label class="control-label" for="pacote">Pacote</label>
                                                         <select class="form-control js-example-basic-single" id="pacote" style="width: 80%">
-                                                            {% for package in packages %}
-                                                                <option value="{{ package.id }}">{{ package.name }}</option>
-                                                            {% endfor %}
+                                                            <option value="PacoteAtivo1">Pacote Ativo 1</option>
+                                                            <option value="PacoteAtivo2">Pacote Ativo 2</option>
+                                                            <option value="PacoteAtivo3">Pacote Ativo 3</option>
                                                         </select>
                                                     </div>
                                                 </div>
@@ -276,32 +276,83 @@
 
         <script>
         $(document).ready(function() {
-            // Inicializa o Select2
-            $('.js-example-basic-single').select2();
+            // Configuração do Toastr
+            toastr.options = {
+                closeButton: true,
+                progressBar: true,
+                showMethod: 'slideDown',
+                timeOut: 2000,
+                preventDuplicates: true,
+                positionClass: 'toast-top-right'
+            };
 
-            // Inicializa o Datetime picker
-            $('#datetimepicker').datetimepicker({
-                format: 'DD/MM/YYYY HH:mm',
-                locale: 'pt-br'
+            // Inicializa o Select2
+            $('.select2').select2({
+                width: '100%'
             });
 
             // Inicializa o iCheck
             $('.i-checks').iCheck({
                 checkboxClass: 'icheckbox_square-green',
-                radioClass: 'iradio_square-green',
+                radioClass: 'iradio_square-green'
             });
 
-            // Controla a visibilidade do campo pacote
-            $('#tipo').on('change', function() {
-                var type = $(this).val();
-                if (type === 'generic') {
-                    $('#pacote').prop('disabled', true);
-                } else {
-                    $('#pacote').prop('disabled', false);
+            // Inicializa o DateTimePicker
+            $('#datetimepicker').datetimepicker({
+                format: 'DD/MM/YYYY HH:mm',
+                icons: {
+                    time: 'fa fa-clock-o',
+                    date: 'fa fa-calendar',
+                    up: 'fa fa-chevron-up',
+                    down: 'fa fa-chevron-down',
+                    previous: 'fa fa-chevron-left',
+                    next: 'fa fa-chevron-right',
+                    today: 'fa fa-screenshot',
+                    clear: 'fa fa-trash',
+                    close: 'fa fa-remove'
                 }
             });
 
-            // Botão Salvar
+            // Controle do campo de pacote baseado no tipo
+            $('#tipo').on('change', function() {
+                var tipo = $(this).val();
+                var $pacoteSelect = $('#pacote');
+                
+                $pacoteSelect.empty().append('<option value="">Selecione um pacote</option>');
+                
+                if (tipo === 'generic') {
+                    $pacoteSelect.prop('disabled', true);
+                } else {
+                    $pacoteSelect.prop('disabled', false);
+                    
+                    // Carrega os pacotes baseado no tipo selecionado
+                    $.ajax({
+                        url: '{% url "administrativo:get_packages" %}',
+                        type: 'GET',
+                        data: {
+                            type: tipo
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                response.packages.forEach(function(package) {
+                                    $pacoteSelect.append(new Option(package.name, package.id));
+                                });
+                            }
+                        }
+                    });
+                }
+            });
+
+            // Controle do campo de data baseado no tipo de envio
+            $('input[name="a"]').on('ifChecked', function(event) {
+                if ($(this).val() === 'option1') {
+                    $('#datetimepicker').prop('disabled', true).val('');
+                } else {
+                    $('#datetimepicker').prop('disabled', false);
+                }
+            });
+
+            // Handler do botão salvar
             $('#successToast').on('click', function() {
                 var titulo = $('#nome').val();
                 var mensagem = $('#mensagem').val();
@@ -312,6 +363,16 @@
 
                 if (!titulo || !mensagem) {
                     toastr.error('Por favor, preencha todos os campos obrigatórios');
+                    return;
+                }
+
+                if (tipo !== 'generic' && !pacote) {
+                    toastr.error('Por favor, selecione um pacote');
+                    return;
+                }
+
+                if (!envioImediato && !dataEnvio) {
+                    toastr.error('Por favor, selecione uma data de envio');
                     return;
                 }
 

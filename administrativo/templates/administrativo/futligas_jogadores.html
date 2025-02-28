@@ -1,884 +1,368 @@
+{% extends "administrativo/base.html" %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Futligas Jogadores</title>
+{% block title %}Futligas Jogadores{% endblock %}
 
-    <link href="{% static 'administrativo/css/bootstrap.min.css' %}" rel="stylesheet">
-    <link href="{% static 'administrativo/font-awesome/css/font-awesome.css' %}" rel="stylesheet">
-    <link href="{% static 'administrativo/css/plugins/toastr/toastr.min.css' %}" rel="stylesheet">
-    <link href="{% static 'administrativo/css/plugins/clockpicker/clockpicker.css' %}" rel="stylesheet">
-    <link href="{% static 'administrativo/css/plugins/iCheck/custom.css' %}" rel="stylesheet">
-    <link href="{% static 'administrativo/css/plugins/jasny/jasny-bootstrap.min.css' %}" rel="stylesheet">
-    <link href="{% static 'administrativo/css/animate.css' %}" rel="stylesheet">
-    <link href="{% static 'administrativo/css/style.css' %}" rel="stylesheet">
-    <!-- Custom -->
-    <link href="{% static 'administrativo/css/custom.css' %}" rel="stylesheet">
-    <!-- Favicon -->
-    <link rel="icon" href="img/futmundi.ico" type="image/png">
-</head>
-<body>
-    <div id="wrapper">
-        <nav class="navbar-default navbar-static-side">
-            <div class="sidebar-collapse">
-                <ul class="nav metismenu" id="side-menu">
-                    <li class="nav-header">
-                        <div class="dropdown profile-element">
-                            <a href="{% url "administrativo:usuarios" %}">
-                                <img src="{% static 'administrativo/img/logo.svg' %}" alt="Futmundi logo">
-                            </a>
-                        </div>
-                        <div class="logo-element">
-                            <a href="{% url "administrativo:usuarios" %}">
-                                <img src="{% static 'administrativo/img/logosm.svg' %}" alt="Futmundi logo">
-                            </a>
-                        </div>
-                    </li>
-                    <li class="active">
-                        <a href="{% url "administrativo:usuarios" %}"><i class="fa fa-user"></i> <span class="nav-label">Usuários</span></a>
-                    </li>
-                    <li>
-                        <a href="#"><i class="fa fa-trophy"></i> <span class="nav-label">Campeonatos</span><span class="fa arrow"></span></a>
-                        <ul class="nav nav-second-level collapse">
-                            <li><a href="{% url "administrativo:ambitos" %}">Âmbitos</a></li>
-                            <li><a href="{% url "administrativo:campeonatos" %}">Campeonatos</a></li>
-                            <li><a href="{% url "administrativo:templates" %}">Templates</a></li>
-                            <li><a href="{% url "administrativo:times" %}">Times</a></li>
-                        </ul>
-                    </li>
-                    <li>
-                        <a href="#"><i class="fa fa-shopping-cart"></i> <span class="nav-label">Pacotes</span><span class="fa arrow"></span></a>
-                        <ul class="nav nav-second-level collapse">
-                            <li><a href="{% url "administrativo:futcoins" %}">Futcoins</a></li>
-                            <li><a href="{% url "administrativo:planos" %}">Planos</a></li>
-                        </ul>
-                    </li>
-                    <li>
-                        <a href="#"><i class="fa fa-diamond"></i> <span class="nav-label">Futligas</span><span class="fa arrow"></span></a>
-                        <ul class="nav nav-second-level collapse">
-                            <li><a href="{% url "administrativo:futligas_classicas" %}">Clássicas</a></li>
-                            <li><a href="{% url "administrativo:futligas_jogadores" %}">Jogadores</a></li>
-                        </ul>
-                    </li>
-                    <li>
-                        <a href="#"><i class="fa fa-globe"></i> <span class="nav-label">Locais</span><span class="fa arrow"></span></a>
-                        <ul class="nav nav-second-level collapse">
-                            <li><a href="{% url "administrativo:continentes" %}">Continentes</a></li>
-                            <li><a href="{% url "administrativo:paises" %}">Países</a></li>
-                            <li><a href="{% url "administrativo:estados" %}">Estados</a></li>
-                        </ul>
-                    </li>
-                    <li>
-                        <a href="#"><i class="fa fa-gear"></i> <span class="nav-label">Configurações</span><span class="fa arrow"></span></a>
-                        <ul class="nav nav-second-level collapse">
-                            <li><a href="{% url "administrativo:parametros" %}">Parâmetros</a></li>
-                            <li><a href="{% url "administrativo:termo" %}">Termo</a></li>
-                            <li><a href="{% url "administrativo:notificacoes" %}">Notificações</a></li>
-                        </ul>
-                    </li>
-                    <li>
-                        <a href="{% url "administrativo:relatorios" %}"><i class="fa fa-pie-chart"></i> <span class="nav-label">Relatórios</span></a>
-                    </li>
+{% block content %}
+<style>
+    /* Efeitos visuais para feedback */
+    .processing {
+        opacity: 0.7;
+        pointer-events: none;
+        position: relative;
+    }
+    
+    .processing::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(255, 255, 255, 0.5);
+        z-index: 1;
+    }
+    
+    .highlight {
+        animation: highlightRow 2s ease-out;
+    }
+    
+    @keyframes highlightRow {
+        0% { background-color: #fff3cd; }
+        100% { background-color: transparent; }
+    }
+    
+    /* Melhora a aparência dos botões desabilitados */
+    .btn:disabled {
+        cursor: not-allowed;
+        opacity: 0.6;
+    }
+</style>
+
+<div class="wrapper wrapper-content">
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="tabs-container">
+                <ul class="nav nav-tabs" role="tablist">
+                    <li><a class="nav-link active" data-toggle="tab" href="#requisitos">Requisitos</a></li>
+                    <li><a class="nav-link" data-toggle="tab" href="#premios">Prêmios</a></li>
+                    <li><a class="nav-link" data-toggle="tab" href="#premiacao">Premiação</a></li>
                 </ul>
-            </div>
-        </nav>
-        <div id="page-wrapper" class="gray-bg">
-            <div class="row border-bottom">
-                <nav class="navbar navbar-static-top" style="margin-bottom: 0">
-                    <div class="navbar-header">
-                        <a class="navbar-minimalize minimalize-styl-2 btn btn-success " href="#"><i class="fa fa-bars"></i> </a>
-                    </div>
-                    <ul class="nav navbar-top-links navbar-right">
-                        <li>
-                            <span class="m-r-sm text-muted welcome-message">Andrews Cristhian</span>
-                        </li>
-                        <li class="dropdown">
-                            <a class="dropdown-toggle count-info" data-toggle="dropdown" href="#">
-                                <i class="fa fa-gear"></i>
-                            </a>
-                            <ul class="dropdown-menu dropdown-alerts">
-                                <li>
-                                    <a href="{% url "administrativo:administradores" %}" class="dropdown-item">
-                                        <div>
-                                            <i class="fa fa-users"></i> Administradores
+                <div class="tab-content">
+                    <div id="requisitos" class="tab-pane active">
+                        <div class="panel-body">
+                            <div class="row">
+                                <div class="col-lg-4">
+                                    <form id="nivelForm" method="post" action="{% url 'administrativo:futliga_jogador_novo' %}" enctype="multipart/form-data" class="mt10">
+                                        {% csrf_token %}
+                                        <div class="form-group col-lg-6">
+                                            <input type="text" id="nome" name="name" class="form-control" required>
+                                            <label class="form-control-placeholder" for="nome">Nome</label>
                                         </div>
-                                    </a>
-                                </li>
-                                <li class="dropdown-divider"></li>
-                                <li>
-                                    <a href="{% url "administrativo:login" %}" class="dropdown-item">
-                                        <div>
-                                            <i class="fa fa-sign-out"></i> Sair
-                                        </div>
-                                    </a>
-                                </li>
-                            </ul>
-                        </li>
-                    </ul>
-                </nav>
-            </div>
-            <div class="row wrapper border-bottom white-bg page-heading">
-                <div class="col-lg-10">
-                    <h2>Futligas Jogadores</h2>
-                </div>
-            </div>
-            <div class="wrapper wrapper-content">
-                <div class="row">
-                    <div class="col-lg-12">
-                        <div class="tabs-container">
-                            <ul class="nav nav-tabs" role="tablist">
-                                <li><a class="nav-link active" data-toggle="tab" href="#requisitos">Requisitos</a></li>
-                                <li><a class="nav-link" data-toggle="tab" href="#premios">Prêmios</a></li>
-                                <li><a class="nav-link" data-toggle="tab" href="#premiacao">Premiação</a></li>
-                            </ul>
-                            <div class="tab-content">
-                                <div id="requisitos" class="tab-pane active">
-                                    <div class="panel-body">
-                                        <div class="row">
-                                            <div class="col-lg-4">
-                                                <form id="nivelForm" class="mt10">
-                                                    {% csrf_token %}
-                                                    <div class="form-group col-lg-6">
-                                                        <input type="text" id="nome" name="name" class="form-control" required>
-                                                        <label class="form-control-placeholder" for="nome">Nome</label>
-                                                    </div>
-                                                    <div class="card ui-card-shadow ui-widget ui-widget-content ui-corner-all card-small ml15">
-                                                        <div class="card-heading">
-                                                            <h5>Imagem</h5>
-                                                        </div>
-                                                        <div class="card-content" style="position: relative; padding: 0;">
-                                                            <div id="image-preview" style="display: flex; justify-content: center; align-items: center; min-height: 48px; margin-top: -7px;">
-                                                                <i class="fa fa-file-image-o" style="font-size: 48px; color: #ccc; cursor: pointer;" onclick="document.getElementById('image').click()"></i>
-                                                            </div>
-                                                            <input type="file" id="image" name="image" class="input-image" accept="image/*" style="display: none;">
-                                                        </div>
-                                                    </div>
-                                                    <div class="form-group mt10">
-                                                        <div class="col-lg-12">
-                                                            <div class="row">
-                                                                <div class="col-lg-6">
-                                                                    <input type="number" min="0" id="participantes" name="players" class="form-control" required>
-                                                                    <label class="form-control-placeholder" for="participantes">Qtde Participantes</label>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    <div class="form-group mt10">
-                                                        <div class="col-lg-12">
-                                                            <div class="row">
-                                                                <div class="col-lg-6">
-                                                                    <input type="number" min="0" id="craques" name="premium_players" class="form-control" required>
-                                                                    <label class="form-control-placeholder" for="craques">Qtde Craques</label>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    <div class="form-group mt20">
-                                                        <div class="col-lg-12">
-                                                            <div class="row">
-                                                                <div class="col-lg-6 mt5">
-                                                                    <div class="i-checks">
-                                                                        <label>
-                                                                            <input type="checkbox" name="owner_premium" id="owner_premium">
-                                                                            <span class="ml5">Dono Craque</span>
-                                                                        </label>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    <div class="form-group mt25">
-                                                        <div class="col-lg-12">
-                                                            <button type="submit" class="btn btn-primary" id="btnAdicionar"><i class="fa fa-plus mr5"></i> Adicionar</button>
-                                                            <button type="button" class="btn btn-primary ml20" data-toggle="modal" data-target="#modalImportar"><i class="fa fa-upload mr5"></i> Importar</button>
-                                                        </div>
-                                                    </div>
-                                                </form>
-                                                <!-- Form oculto para importação -->
-                                                <form id="importForm" style="display: none;">
-                                                    {% csrf_token %}
-                                                    <input type="file" name="file" id="importFile" accept=".xlsx,.xls">
-                                                </form>
+                                        <div class="card ui-card-shadow ui-widget ui-widget-content ui-corner-all card-small ml15">
+                                            <div class="card-heading">
+                                                <h5>Imagem</h5>
                                             </div>
-                                            <div class="col-lg-8">
-                                                <div class="group-options-right">
-                                                    <a href="{% url 'administrativo:futliga_nivel_exportar' %}" class="btn btn-default btn-sm" title="Exportar"><i class="glyphicon glyphicon-download-alt"></i></a>
+                                            <div class="card-content" style="position: relative; padding: 0;">
+                                                <div id="image-preview" style="display: flex; justify-content: center; align-items: center; min-height: 48px; margin-top: -7px;">
+                                                    <i class="fa fa-file-image-o" style="font-size: 48px; color: #ccc; cursor: pointer;" onclick="document.getElementById('image').click()"></i>
                                                 </div>
-                                                <div class="table-responsive">
-                                                    <table id="table" class="table table-bordered table-hover table-sm">
-                                                        <thead>
-                                                            <tr>
-                                                                <th class="per20">Nível</th>
-                                                                <th class="per15 center-middle">Imagem</th>
-                                                                <th class="per15">Participantes</th>
-                                                                <th class="per10">Craques</th>
-                                                                <th class="per15">Dono Craque</th>
-                                                                <th class="per15">Ações</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody>
-                                                            {% for level in levels %}
-                                                            <tr>
-                                                                <td class="align-middle">{{ level.name }}</td>
-                                                                <td class="center-middle align-middle">
-                                                                    {% if level.image %}
-                                                                        <img src="{{ level.image.url }}" style="width: 32px; height: 32px; object-fit: contain;" alt="Imagem">
-                                                                    {% endif %}
-                                                                </td>
-                                                                <td class="align-middle">{{ level.players }}</td>
-                                                                <td class="align-middle">{{ level.premium_players }}</td>
-                                                                <td class="align-middle">{% if level.owner_premium %}Sim{% else %}Não{% endif %}</td>
-                                                                <td class="align-middle">
-                                                                    <div>
-                                                                        <button type="button" class="btn btn-info btn-xs mr5 btnEditar" title="Editar" data-id="{{ level.id }}">
-                                                                            <i class="glyphicon glyphicon-pencil"></i>
-                                                                        </button>
-                                                                        <button type="button" class="btn btn-danger btn-xs mr5 btnExcluir" title="Excluir" data-id="{{ level.id }}">
-                                                                            <i class="glyphicon glyphicon-trash"></i>
-                                                                        </button>
-                                                                    </div>
-                                                                </td>
-                                                            </tr>
-                                                            {% endfor %}
-                                                        </tbody>
-                                                    </table>
-                                                </div>
+                                                <input type="file" id="image" name="image" class="input-image" accept="image/*" style="display: none;">
                                             </div>
                                         </div>
-                                    </div>
-                                </div>
-                                <div id="premios" class="tab-pane">
-                                    <div class="panel-body">
-                                        <div class="row">
+                                        <div class="form-group mt10">
                                             <div class="col-lg-12">
-                                                <button type="button" class="btn btn-success btn-sm" id="addPremioRow">
-                                                    <i class="fa fa-plus"></i> Adicionar Prêmio
-                                                </button>
-                                                <div class="table-responsive mt15">
-                                                    <table id="premiosTable" class="table table-bordered table-hover">
-                                                        <thead>
-                                                            <tr>
-                                                                <th class="per15">Posição</th>
-                                                                <th class="per15 center-middle">Imagem</th>
-                                                                <th class="per15">Iniciante</th>
-                                                                <th class="per15">Nacional</th>
-                                                                <th class="per15">Internacional</th>
-                                                                <th class="per15">Ações</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody>
-                                                            <tr class="premio-row">
-                                                                <td>
-                                                                    <input type="number" class="form-control position-input" min="1" value="1">
-                                                                </td>
-                                                                <td class="center-middle">
-                                                                    <div class="image-preview-container">
-                                                                        <input type="file" class="premio-image" accept="image/*" style="display: none;">
-                                                                        <div class="premio-image-preview">
-                                                                            <i class="fa fa-file-image-o"></i>
-                                                                        </div>
-                                                                    </div>
-                                                                </td>
-                                                                <td>
-                                                                    <input type="number" class="form-control iniciante-input" min="0">
-                                                                </td>
-                                                                <td>
-                                                                    <input type="number" class="form-control nacional-input" min="0">
-                                                                </td>
-                                                                <td>
-                                                                    <input type="number" class="form-control internacional-input" min="0">
-                                                                </td>
-                                                                <td>
-                                                                    <button type="button" class="btn btn-danger btn-xs remove-premio">
-                                                                        <i class="glyphicon glyphicon-trash"></i>
-                                                                    </button>
-                                                                </td>
-                                                            </tr>
-                                                        </tbody>
-                                                    </table>
+                                                <div class="row">
+                                                    <div class="col-lg-6">
+                                                        <input type="number" min="0" id="participantes" name="players" class="form-control" required>
+                                                        <label class="form-control-placeholder" for="participantes">Qtde Participantes</label>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
+                                        <div class="form-group mt10">
+                                            <div class="col-lg-12">
+                                                <div class="row">
+                                                    <div class="col-lg-6">
+                                                        <input type="number" min="0" id="craques" name="premium_players" class="form-control" required>
+                                                        <label class="form-control-placeholder" for="craques">Qtde Craques</label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="form-group mt20">
+                                            <div class="col-lg-12">
+                                                <div class="row">
+                                                    <div class="col-lg-6 mt5">
+                                                        <div class="i-checks">
+                                                            <label>
+                                                                <input type="checkbox" name="owner_premium" id="owner_premium">
+                                                                <span class="ml5">Dono Craque</span>
+                                                            </label>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="form-group mt25">
+                                            <div class="col-lg-12">
+                                                <button type="submit" class="btn btn-primary" id="btnAdicionar"><i class="fa fa-plus mr5"></i> Adicionar</button>
+                                                <button type="button" class="btn btn-primary ml20" data-toggle="modal" data-target="#modalImportar"><i class="fa fa-upload mr5"></i> Importar</button>
+                                            </div>
+                                        </div>
+                                    </form>
+                                    <!-- Form oculto para importação -->
+                                    <form id="importForm" style="display: none;">
+                                        {% csrf_token %}
+                                        <input type="file" name="file" id="importFile" accept=".xlsx,.xls">
+                                    </form>
                                 </div>
-                                <div id="premiacao" class="tab-pane">
-                                    <div class="panel-body">
-                                        <div class="row">
-                                            <div class="col-lg-6">
-                                                <div class="ibox-title">
-                                                    <h5>Ranking Semanal</h5>
-                                                    <form class="mt15">
-                                                        <div class="form-group col-lg-12">
-                                                            <div class="row">
-                                                                <div class="form-group col-lg-4">
-                                                                    <label class="control-label" for="dia-premiacao">Dia da Semana</label>
-                                                                    <select class="form-control js-example-basic-single"
-                                                                            id="dia-premiacao" style="width: 80%">
-                                                                        <option value="Segunda">Segunda</option>
-                                                                        <option value="Terça">Terça</option>
-                                                                        <option value="Quarta">Quarta</option>
-                                                                        <option value="Quinta">Quinta</option>
-                                                                        <option value="Sexta">Sexta</option>
-                                                                        <option value="Sábado">Sábado</option>
-                                                                        <option value="Domingo">Domingo</option>
-                                                                    </select>
-                                                                </div>
-                                                                <div class="form-group col-lg-4">
-                                                                    <label class="control-label" for="hora-premiacao">
-                                                                        Horário
-                                                                        Premiação
-                                                                    </label>
-                                                                    <div class="input-group clockpicker" data-autoclose="true" style="width: 80%">
-                                                                        <input type="text" class="form-control" id="weekly-time">
-                                                                        <span class="input-group-addon">
-                                                                            <span class="fa fa-clock-o"></span>
-                                                                        </span>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
+                                <div class="col-lg-8">
+                                    <div class="group-options-right">
+                                        <a href="{% url 'administrativo:futliga_jogador_exportar' %}" class="btn btn-default btn-sm" title="Exportar"><i class="glyphicon glyphicon-download-alt"></i></a>
+                                    </div>
+                                    <div class="table-responsive">
+                                        <table id="table" class="table table-bordered table-hover table-sm">
+                                            <thead>
+                                                <tr>
+                                                    <th class="per20">Nível</th>
+                                                    <th class="per15 center-middle">Imagem</th>
+                                                    <th class="per15">Participantes</th>
+                                                    <th class="per10">Craques</th>
+                                                    <th class="per15">Dono Craque</th>
+                                                    <th class="per15">Ações</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for level in levels %}
+                                                <tr>
+                                                    <td class="align-middle">{{ level.name }}</td>
+                                                    <td class="center-middle align-middle">
+                                                        {% if level.image %}
+                                                            <img src="{{ level.image.url }}" style="width: 32px; height: 32px; object-fit: contain;" alt="Imagem">
+                                                        {% endif %}
+                                                    </td>
+                                                    <td class="align-middle">{{ level.players }}</td>
+                                                    <td class="align-middle">{{ level.premium_players }}</td>
+                                                    <td class="align-middle">{% if level.owner_premium %}Sim{% else %}Não{% endif %}</td>
+                                                    <td class="align-middle">
+                                                        <div>
+                                                            <button type="button" class="btn btn-info btn-xs mr5 btnEditar" title="Editar" data-id="{{ level.id }}">
+                                                                <i class="glyphicon glyphicon-pencil"></i>
+                                                            </button>
+                                                            <button type="button" class="btn btn-danger btn-xs mr5 btnExcluir" title="Excluir" data-id="{{ level.id }}">
+                                                                <i class="glyphicon glyphicon-trash"></i>
+                                                            </button>
                                                         </div>
-                                                    </form>
-                                                </div>
-                                            </div>
-                                            <div class="col-lg-6">
-                                                <div class="ibox-title">
-                                                    <h5>Ranking Temporada</h5>
-                                                    <form class="mt15">
-                                                        <div class="form-group col-lg-12">
-                                                            <div class="row">
-                                                                <div class="form-group col-lg-4">
-                                                                    <label class="control-label" for="mes-ano-premiacao">Mês do Ano</label>
-                                                                    <select class="form-control js-example-basic-single"
-                                                                            id="mes-ano-premiacao" style="width: 80%">
-                                                                        <option value="Janeiro">Janeiro</option>
-                                                                        <option value="Fevereiro">Fevereiro</option>
-                                                                        <option value="Março">Março</option>
-                                                                    </select>
-                                                                </div>
-                                                                <div class="form-group col-lg-4">
-                                                                    <label class="control-label" for="dia-ano-premiacao">Dia do Ano</label>
-                                                                    <select class="form-control js-example-basic-single"
-                                                                            id="dia-ano-premiacao" style="width: 80%">
-                                                                        <option value="Um">1</option>
-                                                                        <option value="Dois">2</option>
-                                                                        <option value="Tres">3</option>
-                                                                        <option value="Quatro">4</option>
-                                                                        <option value="Cinco">5</option>
-                                                                        <option value="Seis">6</option>
-                                                                        <option value="Sete">7</option>
-                                                                    </select>
-                                                                </div>
-                                                                <div class="form-group col-lg-4">
-                                                                    <label class="control-label" for="hora-premiacao">
-                                                                        Horário
-                                                                        Premiação
-                                                                    </label>
-                                                                    <div class="input-group clockpicker" data-autoclose="true" style="width: 80%">
-                                                                        <input type="text" class="form-control" id="season-time">
-                                                                        <span class="input-group-addon">
-                                                                            <span class="fa fa-clock-o"></span>
-                                                                        </span>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </form>
-                                                </div>
-                                            </div>
-                                        </div>
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                        <div class="panel panel-default col-lg-12 mtm25 p15">
-                            <button type="button" class="btn btn-success ml20" id="successToast"><i class="glyphicon glyphicon-save mr5"></i> Salvar</button>
-                        </div>
                     </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <!-- Mainly scripts -->
-    <script src="{% static 'administrativo/js/jquery-3.4.1.min.js' %}"></script>
-    <script src="{% static 'administrativo/js/popper.min.js' %}"></script>
-    <script src="{% static 'administrativo/js/bootstrap.js' %}"></script>
-    <script src="{% static 'administrativo/js/plugins/metisMenu/jquery.metisMenu.js' %}"></script>
-    <script src="{% static 'administrativo/js/plugins/slimscroll/jquery.slimscroll.min.js' %}"></script>
-    <script src="{% static 'administrativo/js/plugins/dataTables/datatables.min.js' %}"></script>
-    <script src="{% static 'administrativo/js/plugins/dataTables/dataTables.bootstrap4.min.js' %}"></script>
-    <script src="{% static 'administrativo/js/inspinia.js' %}"></script>
-    <script src="{% static 'administrativo/js/plugins/pace/pace.min.js' %}"></script>
-    <script src="{% static 'administrativo/js/plugins/toastr/toastr.min.js' %}"></script>
-    <script src="{% static 'administrativo/js/plugins/sweetalert/sweetalert.min.js' %}"></script>
-
-    <script>
-    $(document).ready(function() {
-        // Configuração do DataTable
-        const table = $('.dataTables-example').DataTable({
-            pageLength: 25,
-            responsive: true,
-            dom: '<"html5buttons"B>lTfgitp',
-            buttons: [
-                {extend: 'copy'},
-                {extend: 'csv'},
-                {extend: 'excel', title: 'Futligas'},
-                {extend: 'pdf', title: 'Futligas'},
-                {extend: 'print',
-                 customize: function (win){
-                    $(win.document.body).addClass('white-bg');
-                    $(win.document.body).css('font-size', '10px');
-                    $(win.document.body).find('table')
-                            .addClass('compact')
-                            .css('font-size', 'inherit');
-                 }
-                }
-            ],
-            language: {
-                url: "{% static 'administrativo/js/plugins/dataTables/i18n/Portuguese-Brasil.json' %}"
-            }
-        });
-
-        // Configuração do Toastr
-        toastr.options = {
-            closeButton: true,
-            progressBar: true,
-            preventDuplicates: true,
-            positionClass: "toast-top-right",
-            timeOut: 1500
-        };
-
-        // Mensagens do Django
-        {% if messages %}
-            {% for message in messages %}
-                toastr["{{ message.tags }}"]({{ message|safe|escapejs }});
-            {% endfor %}
-        {% endif %}
-
-        // Função para mostrar o modal de sucesso
-        function showSuccessModal(message) {
-            $('#modalSuccessMessage').text(message);
-            $('#modalSuccess').modal('show');
-            setTimeout(function() {
-                $('#modalSuccess').modal('hide');
-                window.location.reload();
-            }, 2000);
-        }
-
-        // Preview de imagem com Jasny Bootstrap
-        $('.fileinput').fileinput();
-
-        // Preview da imagem
-        $('#image').on('change', function() {
-            var file = this.files[0];
-            if (file) {
-                var reader = new FileReader();
-                reader.onload = function(e) {
-                    $('#image-preview').html(`
-                        <img src="${e.target.result}" style="max-width: 50px; max-height: 50px; object-fit: contain; cursor: pointer;" onclick="document.getElementById('image').click()">
-                        <button type="button" class="btn btn-danger btn-xs" id="remove_image_btn" style="position: absolute; bottom: -7px; right: -30px;">
-                            <i class="fa fa-trash"></i>
-                        </button>
-                    `);
-                    $('#image-preview').css('margin-top', '-7px');
-                    
-                    // Adiciona handler para o botão de remover
-                    $('#remove_image_btn').on('click', function() {
-                        $('#image').val('');
-                        $('#image-preview').html('<i class="fa fa-file-image-o" style="font-size: 48px; color: #ccc; cursor: pointer;" onclick="document.getElementById(\'image\').click()"></i>');
-                    });
-                }
-                reader.readAsDataURL(file);
-            }
-        });
-
-        // Inicializa o iCheck
-        $('.i-checks').iCheck({
-            checkboxClass: 'icheckbox_square-green',
-            radioClass: 'iradio_square-green'
-        });
-
-        // Atualiza o valor do checkbox no formData quando mudar
-        $('#owner_premium').on('ifChanged', function(event) {
-            var isChecked = event.target.checked;
-            $(this).prop('checked', isChecked);
-        });
-
-        // Adicionar novo nível
-        $('#nivelForm').on('submit', function(e) {
-            e.preventDefault();
-            
-            var formData = new FormData(this);
-            formData.set('owner_premium', $('#owner_premium').prop('checked'));
-            
-            $.ajax({
-                url: '{% url "administrativo:futliga_nivel_novo" %}',
-                type: 'POST',
-                data: formData,
-                processData: false,
-                contentType: false,
-                success: function(response) {
-                    if (response.success) {
-                        showSuccessModal('Nível adicionado com sucesso!');
-                    } else {
-                        toastr.error(response.message || 'Erro ao adicionar nível', 'Erro');
-                    }
-                },
-                error: function() {
-                    toastr.error('Erro ao adicionar nível. Tente novamente.', 'Erro');
-                }
-            });
-        });
-
-        // Importar níveis
-        $('#btnImportar').click(function() {
-            $('#importFile').click();
-        });
-
-        $('#importFile').change(function() {
-            var formData = new FormData($('#importForm')[0]);
-            
-            $.ajax({
-                url: '{% url "administrativo:futliga_nivel_importar" %}',
-                type: 'POST',
-                data: formData,
-                processData: false,
-                contentType: false,
-                success: function(response) {
-                    if (response.success) {
-                        showSuccessModal('Níveis importados com sucesso!');
-                    } else {
-                        toastr.error(response.message || 'Erro ao importar níveis', 'Erro');
-                    }
-                },
-                error: function() {
-                    toastr.error('Erro ao importar níveis. Tente novamente.', 'Erro');
-                }
-            });
-        });
-
-        // Variável para armazenar ID do item a ser excluído
-        var deleteId = null;
-
-        // Editar nível
-        $('.btnEditar').click(function() {
-            var id = $(this).data('id');
-            window.location.href = '/administrativo/futligas/niveis/editar/' + id + '/';
-        });
-
-        // Excluir nível - abre modal
-        $('.btnExcluir').click(function() {
-            deleteId = $(this).data('id');
-            $('#modalConfirmDelete').modal('show');
-        });
-
-        // Confirmar exclusão
-        $('#btnConfirmDelete').click(function() {
-            if (deleteId) {
-                $.ajax({
-                    url: '/administrativo/futligas/niveis/excluir/' + deleteId + '/',
-                    type: 'POST',
-                    data: {
-                        csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]').val()
-                    },
-                    success: function(response) {
-                        $('#modalConfirmDelete').modal('hide');
-                        if (response.success) {
-                            showSuccessModal('Nível excluído com sucesso!');
-                        } else {
-                            toastr.error(response.message || 'Erro ao excluir nível', 'Erro');
-                        }
-                    },
-                    error: function() {
-                        $('#modalConfirmDelete').modal('hide');
-                        toastr.error('Erro ao excluir nível. Tente novamente.', 'Erro');
-                    }
-                });
-            }
-        });
-
-        // Limpar form após fechar modal
-        $('#modalConfirmDelete').on('hidden.bs.modal', function () {
-            deleteId = null;
-        });
-
-        // Função para adicionar nova linha de prêmio
-        $('#addPremioRow').click(function() {
-            var lastPosition = $('#premiosTable tbody tr:last .position-input').val();
-            var newPosition = lastPosition ? parseInt(lastPosition) + 1 : 1;
-            
-            var newRow = `
-                <tr class="premio-row">
-                    <td>
-                        <input type="number" class="form-control position-input" min="1" value="${newPosition}">
-                    </td>
-                    <td class="center-middle">
-                        <div class="image-preview-container">
-                            <input type="file" class="premio-image" accept="image/*" style="display: none;">
-                            <div class="premio-image-preview">
-                                <i class="fa fa-file-image-o"></i>
-                            </div>
-                        </div>
-                    </td>
-                    <td>
-                        <input type="number" class="form-control iniciante-input" min="0">
-                    </td>
-                    <td>
-                        <input type="number" class="form-control nacional-input" min="0">
-                    </td>
-                    <td>
-                        <input type="number" class="form-control internacional-input" min="0">
-                    </td>
-                    <td>
-                        <button type="button" class="btn btn-danger btn-xs remove-premio">
-                            <i class="glyphicon glyphicon-trash"></i>
-                        </button>
-                    </td>
-                </tr>
-            `;
-            
-            $('#premiosTable tbody').append(newRow);
-            initializePremioImageHandlers();
-        });
-
-        // Remover linha de prêmio
-        $(document).on('click', '.remove-premio', function() {
-            $(this).closest('tr').remove();
-            updatePremioPositions();
-        });
-
-        // Atualizar posições quando uma linha é removida
-        function updatePremioPositions() {
-            $('#premiosTable tbody tr').each(function(index) {
-                $(this).find('.position-input').val(index + 1);
-            });
-        }
-
-        // Inicializar handlers de imagem para prêmios
-        function initializePremioImageHandlers() {
-            $('.premio-image-preview').off('click').on('click', function() {
-                $(this).siblings('.premio-image').click();
-            });
-
-            $('.premio-image').off('change').on('change', function() {
-                var file = this.files[0];
-                var preview = $(this).siblings('.premio-image-preview');
-                
-                if (file) {
-                    var reader = new FileReader();
-                    reader.onload = function(e) {
-                        preview.html(`
-                            <img src="${e.target.result}" style="width: 48px; height: 48px; object-fit: contain;">
-                            <button type="button" class="btn btn-danger btn-xs remove-image">
-                                <i class="fa fa-trash"></i>
-                            </button>
-                        `);
-                    }
-                    reader.readAsDataURL(file);
-                }
-            });
-
-            $(document).on('click', '.remove-image', function(e) {
-                e.stopPropagation();
-                var container = $(this).closest('.image-preview-container');
-                container.find('.premio-image').val('');
-                container.find('.premio-image-preview').html('<i class="fa fa-file-image-o"></i>');
-            });
-        }
-
-        // Inicializar handlers para a primeira linha
-        initializePremioImageHandlers();
-
-        // Salvar configurações de premiação
-        $('#successToast').click(function() {
-            var formData = new FormData();
-            formData.append('csrfmiddlewaretoken', $('input[name=csrfmiddlewaretoken]').val());
-
-            // Ranking Semanal
-            formData.append('weekly_day', $('#dia-premiacao').val());
-            formData.append('weekly_time', $('#weekly-time').val());
-
-            // Ranking Temporada
-            formData.append('season_month', $('#mes-ano-premiacao').val());
-            formData.append('season_day', $('#dia-ano-premiacao').val());
-            formData.append('season_time', $('#season-time').val());
-
-            // Primeiro, salvar as configurações de data/hora
-            $.ajax({
-                url: '{% url "administrativo:futliga_premiacao_salvar" %}',
-                type: 'POST',
-                data: formData,
-                processData: false,
-                contentType: false,
-                success: function(response) {
-                    if (response.success) {
-                        // Após salvar as configurações, salvar cada prêmio da tabela
-                        var premiosSuccess = true;
-                        var premiosTotal = $('#premiosTable tbody tr').length;
-                        var premiosSalvos = 0;
-                        
-                        if (premiosTotal === 0) {
-                            showSuccessModal('Configurações de premiação salvas com sucesso!');
-                            return;
-                        }
-                        
-                        $('#premiosTable tbody tr').each(function(index) {
-                            var row = $(this);
-                            var premioFormData = new FormData();
-                            premioFormData.append('csrfmiddlewaretoken', $('input[name=csrfmiddlewaretoken]').val());
-                            premioFormData.append('position', row.find('.position-input').val());
-                            
-                            // Verificar se há uma imagem selecionada
-                            var imageInput = row.find('.premio-image')[0];
-                            if (imageInput && imageInput.files.length > 0) {
-                                premioFormData.append('image', imageInput.files[0]);
-                            }
-                            
-                            premioFormData.append('prize_iniciante', row.find('.iniciante-input').val() || 0);
-                            premioFormData.append('prize_nacional', row.find('.nacional-input').val() || 0);
-                            premioFormData.append('prize_internacional', row.find('.internacional-input').val() || 0);
-                            
-                            $.ajax({
-                                url: '{% url "administrativo:futliga_premio_novo" %}',
-                                type: 'POST',
-                                data: premioFormData,
-                                processData: false,
-                                contentType: false,
-                                async: false, // Para garantir que os prêmios sejam salvos em ordem
-                                success: function(premioResponse) {
-                                    if (premioResponse.success) {
-                                        premiosSalvos++;
-                                    } else {
-                                        premiosSuccess = false;
-                                        toastr.error('Erro ao salvar prêmio na posição ' + row.find('.position-input').val() + ': ' + premioResponse.message, 'Erro');
-                                    }
-                                },
-                                error: function() {
-                                    premiosSuccess = false;
-                                    toastr.error('Erro ao salvar prêmio na posição ' + row.find('.position-input').val(), 'Erro');
-                                }
-                            });
-                        });
-                        
-                        if (premiosSuccess) {
-                            showSuccessModal('Configurações de premiação e ' + premiosSalvos + ' prêmios salvos com sucesso!');
-                        } else {
-                            toastr.warning('Configurações de premiação salvas, mas alguns prêmios não puderam ser salvos.', 'Atenção');
-                        }
-                    } else {
-                        toastr.error(response.message || 'Erro ao salvar configurações de premiação', 'Erro');
-                    }
-                },
-                error: function() {
-                    toastr.error('Erro ao salvar configurações de premiação. Tente novamente.', 'Erro');
-                }
-            });
-        });
-    });
-    </script>
-    <!-- Modal de confirmação para exclusão -->
-    <div class="modal inmodal" id="modalConfirmDelete" tabindex="-1" role="dialog" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content animated bounceInRight">
-                <div class="modal-header">
-                    <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Fechar</span></button>
-                    <i class="fa fa-exclamation-triangle modal-icon"></i>
-                    <h4 class="modal-title">Confirmar Exclusão</h4>
-                </div>
-                <div class="modal-body">
-                    <p>Tem certeza que deseja excluir este nível?</p>
-                    <p><strong>Esta ação não poderá ser desfeita.</strong></p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-white" data-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-danger" id="btnConfirmDelete">Excluir</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal de sucesso -->
-    <div class="modal inmodal" id="modalSuccess" tabindex="-1" role="dialog" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content animated bounceInRight">
-                <div class="modal-header">
-                    <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Fechar</span></button>
-                    <i class="fa fa-check-circle modal-icon text-success"></i>
-                    <h4 class="modal-title">Operação Realizada</h4>
-                </div>
-                <div class="modal-body">
-                    <p id="modalSuccessMessage">Operação realizada com sucesso!</p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-success" data-dismiss="modal">OK</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal Importar -->
-    <div class="modal inmodal" id="modalImportar" tabindex="-1" role="dialog" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content animated fadeIn">
-                <div class="modal-header">
-                    <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
-                    <h4 class="modal-title">Importar Futligas</h4>
-                </div>
-                <form id="formImportar" method="POST" action="{% url 'administrativo:futliga_importar' %}" enctype="multipart/form-data">
-                    {% csrf_token %}
-                    <div class="modal-body">
-                        <div class="form-group">
-                            <label for="file">Selecione o arquivo</label>
-                            <div class="fileinput fileinput-new input-group" data-provides="fileinput">
-                                <div class="form-control" data-trigger="fileinput">
-                                    <i class="fa fa-file fileinput-exists"></i>
-                                    <span class="fileinput-filename"></span>
-                                </div>
-                                <div class="input-group-append">
-                                    <span class="input-group-text btn btn-default btn-file">
-                                        <span class="fileinput-new">Selecionar arquivo</span>
-                                        <span class="fileinput-exists">Alterar</span>
-                                        <input type="file" name="file" accept=".xlsx,.xls" required/>
-                                    </span>
+                    <div id="premios" class="tab-pane">
+                        <div class="panel-body">
+                            <div class="row">
+                                <div class="col-lg-12">
+                                    <button type="button" class="btn btn-success btn-sm" id="addPremioRow">
+                                        <i class="fa fa-plus"></i> Adicionar Prêmio
+                                    </button>
+                                    <div class="table-responsive mt15">
+                                        <table id="premiosTable" class="table table-bordered table-hover">
+                                            <thead>
+                                                <tr>
+                                                    <th class="per15">Posição</th>
+                                                    <th class="per15 center-middle">Imagem</th>
+                                                    <th class="per15">Iniciante</th>
+                                                    <th class="per15">Nacional</th>
+                                                    <th class="per15">Internacional</th>
+                                                    <th class="per15">Ações</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr class="premio-row">
+                                                    <td>
+                                                        <input type="number" class="form-control position-input" min="1" value="1">
+                                                    </td>
+                                                    <td class="center-middle">
+                                                        <div class="image-preview-container">
+                                                            <input type="file" class="premio-image" accept="image/*" style="display: none;">
+                                                            <div class="premio-image-preview">
+                                                                <i class="fa fa-file-image-o"></i>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td>
+                                                        <input type="number" class="form-control iniciante-input" min="0">
+                                                    </td>
+                                                    <td>
+                                                        <input type="number" class="form-control nacional-input" min="0">
+                                                    </td>
+                                                    <td>
+                                                        <input type="number" class="form-control internacional-input" min="0">
+                                                    </td>
+                                                    <td>
+                                                        <button type="button" class="btn btn-danger btn-xs remove-premio">
+                                                            <i class="glyphicon glyphicon-trash"></i>
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                        <div class="alert alert-info mt15">
-                            <h5>Instruções:</h5>
-                            <p>O arquivo Excel deve conter as seguintes colunas:</p>
-                            <ul>
-                                <li><strong>Nome</strong>: Nome da Futliga</li>
-                                <li><strong>Participantes</strong>: Quantidade de participantes</li>
-                                <li><strong>Craques</strong>: Quantidade de craques</li>
-                                <li><strong>Dono Craque</strong>: Se o dono é craque (Sim/Não)</li>
-                            </ul>
-                            <p class="mt10"><small>* Todos os campos são obrigatórios</small></p>
+                    </div>
+                    <div id="premiacao" class="tab-pane">
+                        <div class="panel-body">
+                            <div class="row">
+                                <div class="col-lg-6">
+                                    <div class="ibox-title">
+                                        <h5>Ranking Semanal</h5>
+                                        <form class="mt15">
+                                            <div class="form-group col-lg-12">
+                                                <div class="row">
+                                                    <div class="form-group col-lg-4">
+                                                        <label class="control-label" for="dia-premiacao">Dia da Semana</label>
+                                                        <select class="form-control js-example-basic-single"
+                                                                id="dia-premiacao" style="width: 80%">
+                                                            <option value="Segunda">Segunda</option>
+                                                            <option value="Terça">Terça</option>
+                                                            <option value="Quarta">Quarta</option>
+                                                            <option value="Quinta">Quinta</option>
+                                                            <option value="Sexta">Sexta</option>
+                                                            <option value="Sábado">Sábado</option>
+                                                            <option value="Domingo">Domingo</option>
+                                                        </select>
+                                                    </div>
+                                                    <div class="form-group col-lg-4">
+                                                        <label class="control-label" for="hora-premiacao">
+                                                            Horário
+                                                            Premiação
+                                                        </label>
+                                                        <div class="input-group clockpicker" data-autoclose="true" style="width: 80%">
+                                                            <input type="text" class="form-control" id="weekly-time">
+                                                            <span class="input-group-addon">
+                                                                <span class="fa fa-clock-o"></span>
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                                <div class="col-lg-6">
+                                    <div class="ibox-title">
+                                        <h5>Ranking Temporada</h5>
+                                        <form class="mt15">
+                                            <div class="form-group col-lg-12">
+                                                <div class="row">
+                                                    <div class="form-group col-lg-4">
+                                                        <label class="control-label" for="mes-ano-premiacao">Mês do Ano</label>
+                                                        <select class="form-control js-example-basic-single"
+                                                                id="mes-ano-premiacao" style="width: 80%">
+                                                            <option value="Janeiro">Janeiro</option>
+                                                            <option value="Fevereiro">Fevereiro</option>
+                                                            <option value="Março">Março</option>
+                                                        </select>
+                                                    </div>
+                                                    <div class="form-group col-lg-4">
+                                                        <label class="control-label" for="dia-ano-premiacao">Dia do Ano</label>
+                                                        <select class="form-control js-example-basic-single"
+                                                                id="dia-ano-premiacao" style="width: 80%">
+                                                            <option value="Um">1</option>
+                                                            <option value="Dois">2</option>
+                                                            <option value="Tres">3</option>
+                                                            <option value="Quatro">4</option>
+                                                            <option value="Cinco">5</option>
+                                                            <option value="Seis">6</option>
+                                                            <option value="Sete">7</option>
+                                                        </select>
+                                                    </div>
+                                                    <div class="form-group col-lg-4">
+                                                        <label class="control-label" for="hora-premiacao">
+                                                            Horário
+                                                            Premiação
+                                                        </label>
+                                                        <div class="input-group clockpicker" data-autoclose="true" style="width: 80%">
+                                                            <input type="text" class="form-control" id="season-time">
+                                                            <span class="input-group-addon">
+                                                                <span class="fa fa-clock-o"></span>
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn btn-primary">Importar</button>
-                    </div>
-                </form>
+                </div>
+            </div>
+            <div class="panel panel-default col-lg-12 mtm25 p15">
+                <button type="button" class="btn btn-success ml20" id="successToast"><i class="glyphicon glyphicon-save mr5"></i> Salvar</button>
             </div>
         </div>
     </div>
-    <style>
-        #table td {
-            padding: 4px 8px;
-            vertical-align: middle;
-        }
-        #table th {
-            padding: 8px;
-            vertical-align: middle;
-        }
-        #table img {
-            width: 32px;
-            height: 32px;
-            object-fit: contain;
-        }
-    </style>
-</body>
-</html>
+</div>
+
+<!-- Modal de confirmação de exclusão -->
+<div class="modal fade" id="modalConfirmDelete" tabindex="-1" role="dialog" aria-labelledby="modalConfirmDeleteLabel">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="modalConfirmDeleteLabel">Confirmar Exclusão</h4>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>Tem certeza que deseja excluir este nível?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-danger" id="btnConfirmDelete">Excluir</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de importação -->
+<div class="modal fade" id="modalImportar" tabindex="-1" role="dialog" aria-labelledby="modalImportarLabel">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="modalImportarLabel">Importar Níveis</h4>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>Selecione um arquivo Excel (.xls ou .xlsx) para importar os níveis.</p>
+                <input type="file" id="importFile" accept=".xls,.xlsx" style="display: none;">
+                <button type="button" class="btn btn-primary" onclick="$('#importFile').click()">Selecionar Arquivo</button>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'administrativo/js/futligas-niveis.js' %}"></script>
+<script src="{% static 'administrativo/js/plugins/toastr/toastr.min.js' %}"></script>
+<script src="{% static 'administrativo/js/plugins/dataTables/datatables.min.js' %}"></script>
+<script src="{% static 'administrativo/js/plugins/dataTables/dataTables.bootstrap4.min.js' %}"></script>
+<script src="{% static 'administrativo/js/futligas_jogadores.js' %}"></script>
+{% endblock %}

@@ -586,46 +586,37 @@
                     
                     var shouldAdd = true;
                     
-                    // Filtrar por tipo (times ou seleções)
-                    if (filterType === 'teams' && team.is_national_team) {
-                        shouldAdd = false;
-                    } else if (filterType === 'selections' && !team.is_national_team) {
+                    // Aplicar filtros baseados no âmbito primeiro
+                    switch(scopeName) {
+                        case 'Mundial':
+                            // Não aplica filtros geográficos
+                            break;
+                            
+                        case 'Continental':
+                            if (continentId && team.continent_id !== continentId) {
                         shouldAdd = false;
                     }
+                            break;
                     
-                    // Aplicar filtros baseados no âmbito
+                        case 'Nacional':
+                            if (countryId && team.country_id !== countryId) {
+                        shouldAdd = false;
+                    }
+                            break;
+                    
+                        case 'Estadual':
+                            if (stateId && team.state_id !== stateId) {
+                        shouldAdd = false;
+                            }
+                            break;
+                    }
+                    
+                    // Aplicar filtro por tipo apenas se o time passou no filtro de âmbito
                     if (shouldAdd) {
-                        switch(scopeName) {
-                            case 'Mundial':
-                                // Não aplica filtros geográficos
-                                break;
-                                
-                            case 'Continental':
-                                if (continentId && team.continent_id != continentId) {
-                                    shouldAdd = false;
-                                }
-                                break;
-                                
-                            case 'Nacional':
-                                if (continentId && team.continent_id != continentId) {
-                                    shouldAdd = false;
-                                }
-                                if (countryId && team.country_id != countryId) {
-                                    shouldAdd = false;
-                                }
-                                break;
-                                
-                            case 'Estadual':
-                                if (continentId && team.continent_id != continentId) {
-                                    shouldAdd = false;
-                                }
-                                if (countryId && team.country_id != countryId) {
-                                    shouldAdd = false;
-                                }
-                                if (stateId && team.state_id != stateId) {
-                                    shouldAdd = false;
-                                }
-                                break;
+                        if (filterType === 'teams' && team.is_national_team) {
+                            shouldAdd = false;
+                        } else if (filterType === 'selections' && !team.is_national_team) {
+                        shouldAdd = false;
                         }
                     }
                     
@@ -649,45 +640,35 @@
                     var $estado = $('#estado');
                     
                     // Reseta todos os campos
-                    $continente.val(null).trigger('change');
-                    $pais.val(null).trigger('change');
-                    $estado.val(null).trigger('change');
+                    $continente.val(null).trigger('change', [true]); // true indica que é uma mudança programática
+                    $pais.val(null).trigger('change', [true]);
+                    $estado.val(null).trigger('change', [true]);
                     
                     // Configura os campos baseado no âmbito
                     switch(scopeName) {
                         case 'Mundial':
-                            // Desabilita todos
                             $continente.prop('disabled', true);
                             $pais.prop('disabled', true);
                             $estado.prop('disabled', true);
                             break;
                             
                         case 'Continental':
-                            // Habilita apenas continente
                             $continente.prop('disabled', false);
                             $pais.prop('disabled', true);
                             $estado.prop('disabled', true);
                             break;
                             
                         case 'Nacional':
-                            // Habilita continente e país
                             $continente.prop('disabled', false);
                             $pais.prop('disabled', false);
                             $estado.prop('disabled', true);
                             break;
                             
                         case 'Estadual':
-                            // Habilita todos
                             $continente.prop('disabled', false);
                             $pais.prop('disabled', false);
                             $estado.prop('disabled', false);
                             break;
-                            
-                        default:
-                            // Caso padrão (nenhum selecionado)
-                            $continente.prop('disabled', true);
-                            $pais.prop('disabled', true);
-                            $estado.prop('disabled', true);
                     }
                     
                     // Atualiza o Select2 para refletir as mudanças
@@ -711,17 +692,16 @@
                     filterTeams();
                 });
 
-                // Dispara o evento change do âmbito para configurar os campos inicialmente
-                $('#ambito').trigger('change');
-
                 // Filtra países por continente
-                $('#continente').change(function() {
+                $('#continente').on('change', function(e, programmatic) {
                     var continentId = $(this).val();
                     var $pais = $('#pais');
                     
-                    // Reseta os selects dependentes
-                    $pais.val(null).trigger('change');
-                    $('#estado').val(null).trigger('change');
+                    // Reseta os selects dependentes apenas se não for uma mudança programática
+                    if (!programmatic) {
+                        $pais.val(null).trigger('change', [true]);
+                        $('#estado').val(null).trigger('change', [true]);
+                    }
                     
                     if (continentId) {
                         $.ajax({
@@ -755,12 +735,14 @@
                 });
 
                 // Filtra estados por país
-                $('#pais').change(function() {
+                $('#pais').on('change', function(e, programmatic) {
                     var countryId = $(this).val();
                     var $estado = $('#estado');
                     
-                    // Reseta o estado
-                    $estado.val(null).trigger('change');
+                    // Reseta o estado apenas se não for uma mudança programática
+                    if (!programmatic) {
+                        $estado.val(null).trigger('change', [true]);
+                    }
                     
                     if (countryId) {
                         $.ajax({
@@ -794,24 +776,22 @@
                 });
 
                 // Atualiza os times quando muda o estado
-                $('#estado').change(function() {
-                    filterTeams();
+                $('#estado').on('change', function(e, programmatic) {
+                    // Atualiza os times apenas se não for uma mudança programática
+                    if (!programmatic) {
+                        filterTeams();
+                    }
                 });
                 
                 // Associar evento ao filtro de tipos
-                $('#filtrar-por').change(function() {
+                $('#filtrar-por').on('change', function() {
                     filterTeams();
                 });
                 
                 // Associar evento à mudança de abas
                 $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
                     if ($(e.target).attr('href') === '#times') {
-                        // Se for a primeira vez que acessa a aba, define como "Times"
-                        if (!$(this).data('visited')) {
-                            $('#filtrar-por').val('teams');
-                            $(this).data('visited', true);
-                        }
-                        // Recarregar os times
+                        // Recarregar os times sempre que a aba for mostrada
                         filterTeams();
                     }
                 });

@@ -148,11 +148,11 @@
                                                                 <div class="form-group col-lg-12">
                                                                     <div class="row">
                                                                         <div class="col-lg-4">
-                                                                            <input type="number" name="day1_coins" id="dia1" class="form-control" value="{{ params.day1_coins }}" required>
+                                                                            <input type="number" min="0" name="day1_coins" id="dia1" class="form-control" value="{{ params.day1_coins }}" required>
                                                                             <label class="form-control-placeholder" for="dia1">Dia 1 (f$)</label>
                                                                         </div>
                                                                         <div class="col-lg-4">
-                                                                            <input type="number" name="day2_coins" id="dia2" class="form-control" value="{{ params.day2_coins }}" required>
+                                                                            <input type="number" min="0" name="day2_coins" id="dia2" class="form-control" value="{{ params.day2_coins }}" required>
                                                                             <label class="form-control-placeholder" for="dia2">Dia 2 (f$)</label>
                                                                         </div>
                                                                     </div>
@@ -160,11 +160,11 @@
                                                                 <div class="form-group col-lg-12">
                                                                     <div class="row">
                                                                         <div class="col-lg-4">
-                                                                            <input type="number" name="day3_coins" id="dia3" class="form-control" value="{{ params.day3_coins }}" required>
+                                                                            <input type="number" min="0" name="day3_coins" id="dia3" class="form-control" value="{{ params.day3_coins }}" required>
                                                                             <label class="form-control-placeholder" for="dia3">Dia 3 (f$)</label>
                                                                         </div>
                                                                         <div class="col-lg-4">
-                                                                            <input type="number" name="day4_coins" id="dia4" class="form-control" value="{{ params.day4_coins }}" required>
+                                                                            <input type="number" min="0" name="day4_coins" id="dia4" class="form-control" value="{{ params.day4_coins }}" required>
                                                                             <label class="form-control-placeholder" for="dia4">Dia 4 (f$)</label>
                                                                         </div>
                                                                     </div>
@@ -172,11 +172,11 @@
                                                                 <div class="form-group col-lg-12">
                                                                     <div class="row">
                                                                         <div class="col-lg-4">
-                                                                            <input type="number" name="day5_coins" id="dia5" class="form-control" value="{{ params.day5_coins }}" required>
+                                                                            <input type="number" min="0" name="day5_coins" id="dia5" class="form-control" value="{{ params.day5_coins }}" required>
                                                                             <label class="form-control-placeholder" for="dia5">Dia 5 (f$)</label>
                                                                         </div>
                                                                         <div class="col-lg-4">
-                                                                            <input type="number" name="day6_coins" id="dia6" class="form-control" value="{{ params.day6_coins }}" required>
+                                                                            <input type="number" min="0" name="day6_coins" id="dia6" class="form-control" value="{{ params.day6_coins }}" required>
                                                                             <label class="form-control-placeholder" for="dia6">Dia 6 (f$)</label>
                                                                         </div>
                                                                     </div>
@@ -184,7 +184,7 @@
                                                                 <div class="form-group col-lg-12">
                                                                     <div class="row">
                                                                         <div class="col-lg-4">
-                                                                            <input type="number" name="day7_coins" id="dia7" class="form-control" value="{{ params.day7_coins }}" required>
+                                                                            <input type="number" min="0" name="day7_coins" id="dia7" class="form-control" value="{{ params.day7_coins }}" required>
                                                                             <label class="form-control-placeholder" for="dia7">Dia 7 (f$)</label>
                                                                         </div>                                                                    
                                                                     </div>
@@ -201,7 +201,7 @@
                                                                         <div class="form-group col-lg-4">
                                                                             <label class="control-label" for="hora-premiacao">Horário Premiação </label>
                                                                             <div class="input-group clockpicker" data-autoclose="true" style="width: 80%">
-                                                                                <input type="text" name="reward_time" class="form-control">
+                                                                                <input type="text" name="reward_time" class="form-control" value="{{ params.reward_time|time:'H:i' }}">
                                                                                 <span class="input-group-addon">
                                                                                     <span class="fa fa-clock-o"></span>
                                                                                 </span>
@@ -231,9 +231,13 @@
                                                                     <label class="form-control-placeholder" for="acerto">Acerto palpites</label>
                                                                 </div>
                                                                 <div class="form-group col-lg-6">
-                                                                    <input type="number" min="0" name="following_tiktok_coins" id="curtida" class="form-control input-medium" value="{{ params.following_tiktok_coins }}" required>
-                                                                    <label class="form-control-placeholder" for="curtida">Curtida fanpage</label>
-                                                                </div>                                                           
+                                                                    <input type="number" min="0" name="following_tiktok_coins" id="tiktok" class="form-control input-medium" value="{{ params.following_tiktok_coins }}" required>
+                                                                    <label class="form-control-placeholder" for="tiktok">Seguir TikTok</label>
+                                                                </div>
+                                                                <div class="form-group col-lg-6">
+                                                                    <input type="number" min="0" name="consecutive_days_coins" id="dias-seguidos" class="form-control input-medium" value="{{ params.consecutive_days_coins }}" required>
+                                                                    <label class="form-control-placeholder" for="dias-seguidos">Dias seguidos</label>
+                                                                </div>
                                                             </div>
                                                         </div>                                                    
                                                     </div>
@@ -244,10 +248,6 @@
                                                                 <div class="form-group col-lg-6">
                                                                     <input type="number" min="0" name="premium_upgrade_coins" id="assinatura" class="form-control input-medium" value="{{ params.premium_upgrade_coins }}" required>
                                                                     <label class="form-control-placeholder" for="assinatura">Assinatura craque</label>
-                                                                </div>
-                                                                <div class="form-group col-lg-6">
-                                                                    <input type="number" min="0" name="consecutive_days_coins" id="impulsos-lv3" class="form-control input-medium" value="{{ params.consecutive_days_coins }}" required>
-                                                                    <label class="form-control-placeholder" for="impulsos-lv3">Impulsos LV3 (%)</label>
                                                                 </div>
                                                             </div>
                                                         </div>

@@ -78,48 +78,65 @@ $(document).ready(function() {
     $('#tipo').change(function() {
         var tipo = $(this).val();
         
-        // Se nenhum tipo selecionado, esconde todos os campos
-        if (!tipo) {
-            $('.label-fields').hide();
+        if (tipo === '') {
+            // Quando for Selecione, oculta todos os campos
             $('.date-fields').hide();
-            return;
-        }
-        
-        // Campos de etiqueta sempre visíveis para tipo Padrão e Promocional
-        if (tipo === 'Promocional' || tipo === 'Padrão') {
+            $('.label-fields').hide();
+            $('#etiqueta').closest('.form-group').hide();
+        } else if (tipo === 'Padrão') {
+            // Quando for Padrão, mostra etiqueta mas oculta campos de data
+            $('.date-fields').hide();
             $('.label-fields').show();
+            $('#etiqueta').closest('.form-group').show();
+        } else if (tipo === 'Promocional') {
+            // Quando for Promocional, mostra todos os campos e define valores padrão
+            $('.date-fields').show();
+            $('.label-fields').show();
+            $('#etiqueta').closest('.form-group').show();
             
-            // Define valores padrão para promoção se os campos estiverem vazios
-            if (tipo === 'Promocional') {
-                if (!$('#etiqueta').val()) {
-                    $('#etiqueta').val('OFERTA ESPECIAL');
-                }
-                if (!$('#id3 input').val()) {
-                    $('#id3 input').val('#FFFFFF');
-                }
-                if (!$('#id4 input').val()) {
-                    $('#id4 input').val('#CC000C');
-                }
-                
-                // Mostra campos de data apenas para promocional
-                $('.date-fields').show();
-            } else {
-                // Esconde campos de data para tipo padrão
-                $('.date-fields').hide();
-            }
-        } else {
-            $('.label-fields').hide();
-            $('.date-fields').hide();
+            // Define valores padrão para a etiqueta
+            $('#etiqueta').val('OFERTA ESPECIAL');
+            $('#id3 input').val('#FFFFFF');
+            $('#id4 input').val('#FF0000');
         }
-        
-        // Atualiza os colorpickers
-        $('#id3, #id4').colorpicker('update');
     });
+    
+    // Dispara o evento change do tipo para configurar visibilidade inicial
+    $('#tipo').trigger('change');
 
     // Handler para o botão Salvar
     $('.btn-success').click(function() {
         var $btn = $(this);
         var formData = new FormData();
+
+        // Função para validar e formatar cor
+        function validateColor(color) {
+            // Remove espaços e converte para minúsculas
+            color = color.trim().toLowerCase();
+            
+            // Se já estiver no formato #RRGGBB, retorna como está
+            if (/^#[0-9a-f]{6}$/.test(color)) {
+                return color;
+            }
+            
+            // Se estiver no formato RGB(r,g,b), converte para hex
+            var rgbMatch = color.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
+            if (rgbMatch) {
+                var r = parseInt(rgbMatch[1]).toString(16).padStart(2, '0');
+                var g = parseInt(rgbMatch[2]).toString(16).padStart(2, '0');
+                var b = parseInt(rgbMatch[3]).toString(16).padStart(2, '0');
+                return `#${r}${g}${b}`;
+            }
+            
+            // Se não estiver em nenhum formato válido, retorna preto
+            return '#000000';
+        }
+
+        // Função para converter data do formato DD/MM/YYYY HH:mm para YYYY-MM-DD HH:mm
+        function convertDateFormat(dateStr) {
+            if (!dateStr) return '';
+            return moment(dateStr, 'DD/MM/YYYY HH:mm').format('YYYY-MM-DD HH:mm');
+        }
 
         // Coleta os dados do formulário
         formData.append('name', $('#nome').val());
@@ -128,15 +145,15 @@ $(document).ready(function() {
         formData.append('enabled', $('#enabled').is(':checked'));
         formData.append('tipo', $('#tipo').val());
         formData.append('label', $('#etiqueta').val());
-        formData.append('color_text_label', $('#id3').colorpicker('getValue'));
-        formData.append('color_background_label', $('#id4').colorpicker('getValue'));
+        formData.append('color_text_label', validateColor($('#id3').colorpicker('getValue')));
+        formData.append('color_background_label', validateColor($('#id4').colorpicker('getValue')));
         formData.append('full_price', $('#preco-padrao').val());
         formData.append('promotional_price', $('#preco-promocional').val());
-        formData.append('color_text_billing_cycle', $('#id5').colorpicker('getValue'));
+        formData.append('color_text_billing_cycle', validateColor($('#id5').colorpicker('getValue')));
         formData.append('show_to', $('#exibir-para').val());
         formData.append('promotional_price_validity', $('#val-preco-prom').val());
-        formData.append('start_date', $('#datetimepicker').val());
-        formData.append('end_date', $('#datetimepicker2').val());
+        formData.append('start_date', convertDateFormat($('#datetimepicker').val()));
+        formData.append('end_date', convertDateFormat($('#datetimepicker2').val()));
         formData.append('android_product_code', $('#android-product-code').val());
         formData.append('ios_product_code', $('#ios-product-code').val());
         formData.append('gateway_product_code', $('#gateway-product-code').val());
@@ -156,9 +173,15 @@ $(document).ready(function() {
             toastr.error('O campo Preço Padrão é obrigatório');
             return;
         }
-        if ($('#tipo').val() === 'Promocional' && !$('#etiqueta').val()) {
-            toastr.error('O campo Etiqueta é obrigatório para pacotes promocionais');
-            return;
+        if ($('#tipo').val() === 'Promocional') {
+            if (!$('#etiqueta').val()) {
+                toastr.error('O campo Etiqueta é obrigatório para pacotes promocionais');
+                return;
+            }
+            if (!$('#preco-promocional').val()) {
+                toastr.error('O campo Preço Promocional é obrigatório para pacotes promocionais');
+                return;
+            }
         }
 
         $btn.prop('disabled', true);

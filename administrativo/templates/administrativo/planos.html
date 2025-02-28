@@ -19,6 +19,41 @@
         <link href="{% static 'administrativo/css/custom.css' %}" rel="stylesheet">
         <!-- Favicon -->
         <link rel="icon" href="{% static 'administrativo/img/futmundi.ico' %}" type="image/png">
+        
+        <style>
+            /* Efeitos visuais para feedback */
+            .processing {
+                opacity: 0.7;
+                pointer-events: none;
+                position: relative;
+            }
+            
+            .processing::after {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(255, 255, 255, 0.5);
+                z-index: 1;
+            }
+            
+            .highlight {
+                animation: highlightRow 2s ease-out;
+            }
+            
+            @keyframes highlightRow {
+                0% { background-color: #fff3cd; }
+                100% { background-color: transparent; }
+            }
+            
+            /* Melhora a aparência dos botões desabilitados */
+            .btn:disabled {
+                cursor: not-allowed;
+                opacity: 0.6;
+            }
+        </style>
     </head>
     <body>
         <div id="wrapper">
@@ -35,6 +70,7 @@
                         <div class="col-lg-12">
                             <div class="ibox">
                                 <div class="ibox-content">
+                                    {% csrf_token %}
                                     <div class="group-options-left ml5">
                                         <a href="{% url 'administrativo:pacote_plano_novo' %}" class="btn btn-success btn-sm" title="Novo"><i class="fa fa-plus"></i></a>
                                     </div>
@@ -78,8 +114,9 @@
                                                             <i class="glyphicon glyphicon-pencil"></i>
                                                         </a>
                                                         <button type="button" class="btn btn-xs btn-toggle-plan {% if plan.enabled %}btn-danger{% else %}btn-success{% endif %}" 
-                                                                title="{% if plan.enabled %}Desativar{% else %}Ativar{% endif %}" 
-                                                                data-id="{{ plan.id }}">
+                                                                data-id="{{ plan.id }}" 
+                                                                data-enabled="{{ plan.enabled|yesno:'true,false' }}"
+                                                                title="{% if plan.enabled %}Desativar{% else %}Ativar{% endif %}">
                                                             <i class="glyphicon glyphicon-{% if plan.enabled %}remove{% else %}ok{% endif %}" style="color: white;"></i>
                                                         </button>
                                                         <button type="button" class="btn btn-danger btn-xs delete-btn" title="Excluir" data-id="{{ plan.id }}">
@@ -151,192 +188,19 @@
         <script src="{% static 'administrativo/js/plugins/checkAll/checkAll.js' %}"></script>
         <script src="{% static 'administrativo/js/plugins/toastr/toastr.min.js' %}"></script>
         <script src="{% static 'administrativo/js/page-level.js' %}"></script>
-
         <script>
-            $(document).ready(function() {
-                // Setup CSRF token for AJAX requests
-                $.ajaxSetup({
-                    headers: {
-                        'X-CSRFToken': $('meta[name="csrf-token"]').attr('content')
-                    }
-                });
-
-                // Configuração do Toastr
-                toastr.options = {
-                    "closeButton": true,
-                    "debug": false,
-                    "newestOnTop": false,
-                    "progressBar": true,
-                    "positionClass": "toast-top-right",
-                    "preventDuplicates": false,
-                    "onclick": null,
-                    "showDuration": "300",
-                    "hideDuration": "500",
-                    "timeOut": "1500",
-                    "extendedTimeOut": "500",
-                    "showEasing": "swing",
-                    "hideEasing": "linear",
-                    "showMethod": "fadeIn",
-                    "hideMethod": "fadeOut"
-                };
-
-                // Inicializa DataTable
-                var table = $('.dataTables-vigencias').DataTable({
-                    pageLength: 25,
-                    responsive: true,
-                    dom: '<"html5buttons"B>lTfgitp',
-                    buttons: [],
-                    destroy: true,
-                    language: {
-                        "sEmptyTable": "Nenhum registro encontrado",
-                        "sInfo": "Mostrando de _START_ até _END_ de _TOTAL_ registros",
-                        "sInfoEmpty": "Mostrando 0 até 0 de 0 registros",
-                        "sInfoFiltered": "(Filtrados de _MAX_ registros)",
-                        "sInfoPostFix": "",
-                        "sInfoThousands": ".",
-                        "sLengthMenu": "_MENU_ resultados por página",
-                        "sLoadingRecords": "Carregando...",
-                        "sProcessing": "Processando...",
-                        "sZeroRecords": "Nenhum registro encontrado",
-                        "sSearch": "Pesquisar",
-                        "oPaginate": {
-                            "sNext": "Próximo",
-                            "sPrevious": "Anterior",
-                            "sFirst": "Primeiro",
-                            "sLast": "Último"
-                        },
-                        "oAria": {
-                            "sSortAscending": ": Ordenar colunas de forma ascendente",
-                            "sSortDescending": ": Ordenar colunas de forma descendente"
-                        }
-                    }
-                });
-
-                // Excluir plano individual
-                var planIdToDelete = null;
-                $(document).on('click', '.delete-btn', function(e) {
-                    e.stopPropagation();
-                    planIdToDelete = $(this).data('id');
-                    $('#modalAlert2').modal('show');
-                });
-
-                $('#modalAlert2 .btn-danger').off('click').on('click', function() {
-                    if (!planIdToDelete) {
-                        toastr.error('Plano não identificado');
-                        return;
-                    }
-
-                    var row = $('.delete-btn[data-id="' + planIdToDelete + '"]').closest('tr');
-                    var btn = row.find('.delete-btn');
-                    
-                    btn.prop('disabled', true);
-
-                    $.ajax({
-                        url: '{% url "administrativo:plano_excluir" 0 %}'.replace('0', planIdToDelete),
-                        type: 'POST',
-                        data: {
-                            'csrfmiddlewaretoken': '{{ csrf_token }}'
-                        },
-                        success: function(response) {
-                            $('#modalAlert2').modal('hide');
-                            if (response.success) {
-                                toastr.success('Plano excluído com sucesso!');
-                                table.row(row).remove().draw(false);
-                            } else {
-                                toastr.error(response.message);
-                                btn.prop('disabled', false);
-                            }
-                        },
-                        error: function() {
-                            $('#modalAlert2').modal('hide');
-                            toastr.error('Erro ao excluir plano');
-                            btn.prop('disabled', false);
-                        }
-                    });
-                });
-
-                // Excluir planos em massa
-                window.excluirSelecionados = function() {
-                    const ids = [];
-                    $('.check-item:checked').each(function() {
-                        ids.push($(this).val());
-                    });
-
-                    if (ids.length === 0) {
-                        toastr.warning('Selecione pelo menos um plano para excluir');
-                        return;
-                    }
-
-                    $('#modalAlert').modal('show');
-                    $('#modalAlert .btn-danger').off('click').on('click', function() {
-                        $.ajax({
-                            url: "{% url 'administrativo:plano_excluir_em_massa' %}",
-                            type: 'POST',
-                            data: {
-                                'ids[]': ids,
-                                'csrfmiddlewaretoken': '{{ csrf_token }}'
-                            },
-                            success: function(response) {
-                                $('#modalAlert').modal('hide');
-                                if (response.success) {
-                                    toastr.success('Planos excluídos com sucesso!');
-                                    ids.forEach(function(id) {
-                                        var row = $('.delete-btn[data-id="' + id + '"]').closest('tr');
-                                        table.row(row).remove().draw(false);
-                                    });
-                                    if (response.errors && response.errors.length > 0) {
-                                        response.errors.forEach(function(error) {
-                                            toastr.warning(error);
-                                        });
-                                    }
-                                } else {
-                                    toastr.error(response.message);
-                                }
-                            },
-                            error: function() {
-                                $('#modalAlert').modal('hide');
-                                toastr.error('Erro ao excluir planos');
-                            }
-                        });
-                    });
+            var toggleStatusUrl = "{% url 'administrativo:plano_toggle_status' %}";
+            var deleteUrl = "{% url 'administrativo:plano_excluir' 0 %}";
+            var deleteMassUrl = "{% url 'administrativo:plano_excluir_em_massa' %}";
+            var csrfToken = "{{ csrf_token }}";
+            
+            // Configuração global do AJAX com CSRF token
+            $.ajaxSetup({
+                headers: {
+                    'X-CSRFToken': csrfToken
                 }
-
-                // Ativar/Desativar plano
-                $('.btn-toggle-plan').off('click').on('click', function(e) {
-                    e.stopPropagation();  // Impede propagação do evento
-                    var btn = $(this);
-                    var planId = btn.data('id');
-                    
-                    $.ajax({
-                        url: "{% url 'administrativo:plano_toggle_status' %}",
-                        type: 'POST',
-                        data: {
-                            id: planId,
-                            csrfmiddlewaretoken: '{{ csrf_token }}'
-                        },
-                        success: function(response) {
-                            if (response.success) {
-                                var icon = btn.find('i');
-                                if (response.is_active) {
-                                    icon.removeClass('glyphicon-ok').addClass('glyphicon-remove');
-                                    btn.removeClass('btn-success').addClass('btn-danger');
-                                    btn.attr('title', 'Desativar');
-                                } else {
-                                    icon.removeClass('glyphicon-remove').addClass('glyphicon-ok');
-                                    btn.removeClass('btn-danger').addClass('btn-success');
-                                    btn.attr('title', 'Ativar');
-                                }
-                                toastr.success(response.message);
-                            } else {
-                                toastr.error(response.message);
-                            }
-                        },
-                        error: function() {
-                            toastr.error('Erro ao alterar status do plano');
-                        }
-                    });
-                });
             });
         </script>
+        <script src="{% static 'administrativo/js/planos.js' %}"></script>
     </body>
 </html>

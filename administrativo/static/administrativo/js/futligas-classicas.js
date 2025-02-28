@@ -69,7 +69,7 @@ $(document).ready(function() {
         
         var newRow = $('<tr>').attr('id', 'prize-row-' + prizeCounter);
         
-        // Coluna Posição - Agora readonly pois o sistema já reorganiza automaticamente
+        // Coluna Posição - readonly pois o sistema já reorganiza automaticamente
         newRow.append($('<td>').append(
             $('<input>').attr({
                 'type': 'number',
@@ -77,7 +77,8 @@ $(document).ready(function() {
                 'required': true,
                 'min': '1',
                 'value': newPosition,
-                'readonly': true
+                'readonly': true,
+                'style': 'background-color: #eee'
             })
         ));
         
@@ -147,7 +148,7 @@ $(document).ready(function() {
                         </button>
                     `);
                     
-                    // Adiciona handler para o botão de limpar imagem do prêmio
+                    // Handler para limpar a imagem
                     preview.find('.clear-prize-image').on('click', function(e) {
                         e.stopPropagation();
                         var container = $(this).closest('.prize-image-container');
@@ -223,10 +224,12 @@ $(document).ready(function() {
         if (frequencia === 'Semanal') {
             var weekday = parseInt($('#dia-premiacao').val());
             formData.append('weekday', weekday);
+            formData.append('monthday', '1'); // Valor padrão para ligas semanais
         } else if (frequencia === 'Mensal' || frequencia === 'Anual') {
             var monthday = parseInt($('#mes-premiacao').val());
             if (monthday >= 1 && monthday <= 31) {
                 formData.append('monthday', monthday);
+                formData.append('weekday', '0'); // Valor padrão para ligas mensais/anuais
             } else {
                 toastr.error('O dia do mês deve estar entre 1 e 31');
                 return;

@@ -11,13 +11,15 @@
         $('#nome').val('{{ futliga.name }}');
         
         // Preencher o campo de participantes corretamente
-        if ({{ futliga.players }} === 1) {
+        var players = {{ futliga.players }};
+        if (players === 1) {
             $('#participantes').val('Comum');
-        } else if ({{ futliga.players }} === 2) {
+        } else if (players === 2) {
             $('#participantes').val('Craque');
         } else {
             $('#participantes').val('Todos');
         }
+        $('#participantes').trigger('change');
         
         // Frequência de premiação - corrigindo mapeamento dos valores
         var frequencia = '{{ futliga.award_frequency }}';
@@ -32,16 +34,16 @@
         
         // Dia/horário de premiação
         if (frequencia === 'weekly') {
-            // Converte o dia da semana de 0-6 para 1-7
-            var weekday = {{ futliga.weekday }};
-            $('#dia-premiacao').val(weekday);
-        } else if (frequencia === 'monthly') {
+            $('#campo-dia-semana').show();
+            $('#dia-premiacao').val('{{ futliga.weekday }}');
+        } else if (frequencia === 'monthly' || frequencia === 'annual') {
+            $('#campo-dia-mes').show();
             $('#mes-premiacao').val('{{ futliga.monthday }}');
         }
         
         // Horário de premiação
         {% if futliga.award_time %}
-        $('.clockpicker input').val('{{ futliga.award_time }}');
+        $('.clockpicker input').val('{{ futliga.award_time|time:"H:i" }}');
         {% endif %}
         
         // Imagem principal

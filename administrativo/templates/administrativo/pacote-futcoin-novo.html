@@ -447,6 +447,7 @@
                 $('#successToast').click(function() {
                     // Validação dos campos obrigatórios
                     var nome = $('#nome').val();
+                    var tipo = $('#tipo').val();
                     var precoPadrao = $('#preco-padrao').val();
                     var precoPromocional = $('#preco-promocional').val();
                     var conteudo = $('#conteudo').val();
@@ -455,6 +456,11 @@
                     if (!nome) {
                         toastr.error('O campo Nome é obrigatório');
                         $('#nome').focus();
+                        return;
+                    }
+                    if (!tipo) {
+                        toastr.error('O campo Tipo é obrigatório');
+                        $('#tipo').focus();
                         return;
                     }
                     if (!precoPadrao) {
@@ -555,6 +561,14 @@
                 // Botão cancelar
                 $('.btn-danger').click(function() {
                     window.location.href = "{% url 'administrativo:futcoins' %}";
+                });
+
+                // Listener para mudança no tipo do pacote
+                $('#tipo').change(function() {
+                    if ($(this).val() === 'Promocional') {
+                        $('#id4 input').val('#CC000C');
+                        $('#id4 .input-group-addon i').css('background-color', '#CC000C');
+                    }
                 });
             });
         </script>

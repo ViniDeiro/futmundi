@@ -4,6 +4,7 @@ from django.db import models
 from django.utils import timezone
 from django.templatetags.static import static
 from django.db.models import Q
+import os
 
 class User(AbstractUser):
     # NOTA: Este modelo herda AbstractUser, mas a migração inicial não incluiu todos os campos
@@ -897,12 +898,20 @@ class StandardLeaguePrize(models.Model):
     def __str__(self):
         return f"{self.league.name} - {self.position}º Lugar"
 
+def custom_league_image_path(instance, filename):
+    # Cria o diretório se não existir
+    upload_path = 'futligas/custom'
+    full_path = os.path.join(settings.MEDIA_ROOT, upload_path)
+    os.makedirs(full_path, exist_ok=True)
+    # Retorna o caminho do arquivo
+    return os.path.join(upload_path, filename)
+
 class CustomLeague(models.Model):
     """
     Entidade que representa uma Futliga de Jogadores (Personalizada).
     """
     name = models.CharField(max_length=255, verbose_name='Nome')
-    image = models.ImageField(upload_to='futligas/custom/', null=True, blank=True, verbose_name='Imagem')
+    image = models.ImageField(upload_to=custom_league_image_path, null=True, blank=True, verbose_name='Imagem')
     privacy = models.CharField(
         max_length=20,
         choices=[
@@ -968,6 +977,25 @@ class CustomLeagueLevel(models.Model):
             self.order = (last_order or 0) + 1
         super().save(*args, **kwargs)
 
+class CustomLeaguePrizeValue(models.Model):
+    """
+    Entidade que representa o valor de um prêmio para um nível específico.
+    """
+    prize = models.ForeignKey('CustomLeaguePrize', on_delete=models.CASCADE, related_name='values', verbose_name='Prêmio')
+    level = models.ForeignKey('CustomLeagueLevel', on_delete=models.CASCADE, related_name='prize_values', verbose_name='Nível')
+    value = models.IntegerField(verbose_name='Valor')
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'custom_league_prize_values'
+        verbose_name = 'Valor de Prêmio por Nível'
+        verbose_name_plural = 'Valores de Prêmios por Nível'
+        unique_together = ['prize', 'level']
+
+    def __str__(self):
+        return f'{self.prize} - {self.level}: {self.value}'
+
 class CustomLeaguePrize(models.Model):
     """
     Entidade que representa os prêmios de uma Futliga Personalizada.
@@ -988,6 +1016,25 @@ class CustomLeaguePrize(models.Model):
 
     def __str__(self):
         return f'{self.league.name} - {self.position}º Lugar'
+
+    def set_valor_por_nivel(self, nivel, valor):
+        """
+        Define o valor do prêmio para um nível específico.
+        """
+        CustomLeaguePrizeValue.objects.update_or_create(
+            prize=self,
+            level=nivel,
+            defaults={'value': valor}
+        )
+
+    def get_valor_por_nivel(self, nivel):
+        """
+        Retorna o valor do prêmio para um nível específico.
+        """
+        try:
+            return self.values.get(level=nivel).value
+        except CustomLeaguePrizeValue.DoesNotExist:
+            return 0
 
 class LeagueInvitation(models.Model):
     """
@@ -1090,21 +1137,28 @@ class Notifications(models.Model):
     """
     Entidade que representa as notificações do sistema.
     """
+    NOTIFICATION_TYPE_CHOICES = (
+        ('generic', 'Geral'),
+        ('package_coins', 'Pacote Futcoins'),
+        ('package_plan', 'Pacote Plano'),
+    )
+
     STATUS_CHOICES = (
         ('pending', 'Pendente'),
         ('sent', 'Enviado'),
         ('not_sent', 'Não Enviado'),
     )
 
-    title = models.CharField(max_length=100)
-    message = models.TextField()
-    notification_type = models.CharField(max_length=20)
-    package = models.ForeignKey(FutcoinPackage, on_delete=models.CASCADE, null=True, blank=True)
-    send_at = models.DateTimeField(null=True, blank=True)
-    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
-    error_message = models.TextField(null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    title = models.CharField(max_length=100, verbose_name='Título')
+    message = models.TextField(verbose_name='Mensagem')
+    notification_type = models.CharField(max_length=20, choices=NOTIFICATION_TYPE_CHOICES, verbose_name='Tipo')
+    package = models.ForeignKey(FutcoinPackage, on_delete=models.CASCADE, null=True, blank=True, verbose_name='Pacote')
+    plan = models.ForeignKey(Plan, on_delete=models.CASCADE, null=True, blank=True, verbose_name='Plano')
+    send_at = models.DateTimeField(null=True, blank=True, verbose_name='Data de Envio')
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending', verbose_name='Status')
+    error_message = models.TextField(null=True, blank=True, verbose_name='Mensagem de Erro')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Data de Criação')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='Data de Atualização')
 
     def __str__(self):
         return self.title
@@ -1113,3 +1167,4 @@ class Notifications(models.Model):
         db_table = 'notifications'
         verbose_name = 'Notificação'
         verbose_name_plural = 'Notificações'
+        ordering = ['-created_at']
