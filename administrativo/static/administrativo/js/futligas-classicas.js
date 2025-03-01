@@ -289,7 +289,7 @@ $(document).ready(function() {
     $('#confirm-delete').click(function() {
         if (futligaIdToDelete) {
             $.ajax({
-                url: `/administrativo/futligas/classicas/${futligaIdToDelete}/excluir/`,
+                url: `/administrativo/futliga/classica/excluir/${futligaIdToDelete}/`,
                 type: 'POST',
                 headers: {
                     'X-CSRFToken': $('meta[name="csrf-token"]').attr('content')
@@ -298,7 +298,7 @@ $(document).ready(function() {
                     if (response.success) {
                         toastr.success('Futliga Clássica excluída com sucesso!');
                         setTimeout(function() {
-                            window.location.href = '/administrativo/futligas/classicas/';
+                            window.location.href = '/administrativo/futligas/';
                         }, 1500);
                     } else {
                         toastr.error(response.message || 'Erro ao excluir Futliga Clássica');
@@ -334,7 +334,7 @@ $(document).ready(function() {
             });
 
             $.ajax({
-                url: '/administrativo/futligas/classicas/excluir-em-massa/',
+                url: '/administrativo/futliga/classica/excluir-em-massa/',
                 type: 'POST',
                 data: formData,
                 processData: false,
@@ -343,7 +343,7 @@ $(document).ready(function() {
                     if (response.success) {
                         toastr.success('Futligas Clássicas excluídas com sucesso!');
                         setTimeout(function() {
-                            window.location.href = '/administrativo/futligas/classicas/';
+                            window.location.href = '/administrativo/futligas/';
                         }, 1500);
                     } else {
                         toastr.error(response.message || 'Erro ao excluir Futligas Clássicas');

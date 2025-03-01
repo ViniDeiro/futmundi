@@ -109,7 +109,7 @@
                         </div>
                         <ul class="nav navbar-top-links navbar-right">
                             <li>
-                                <span class="m-r-sm text-muted welcome-message">Andrews Cristhian</span>
+                                <span class="m-r-sm text-muted welcome-message">{{ request.session.admin_name }}</span>
                             </li>
                             <li class="dropdown">
                                 <a class="dropdown-toggle count-info" data-toggle="dropdown" href="#">
@@ -152,8 +152,20 @@
                                 <div class="tab-content">
                                     <div id="geral" class="tab-pane active">
                                         <div class="panel-body">
-                                            <form id="package-form" method="post" enctype="multipart/form-data">
+                                            <form id="package-form" method="post" enctype="multipart/form-data" action="{% url 'administrativo:futcoin_editar' package.id %}">
                                                 {% csrf_token %}
+                                                <!-- Campos ocultos para garantir que todos os dados sejam enviados -->
+                                                <input type="hidden" name="full_price" id="hidden_full_price">
+                                                <input type="hidden" name="promotional_price" id="hidden_promotional_price">
+                                                <input type="hidden" name="content" id="hidden_content">
+                                                <input type="hidden" name="bonus" id="hidden_bonus">
+                                                <input type="hidden" name="show_to" id="hidden_show_to">
+                                                <input type="hidden" name="start_date" id="hidden_start_date">
+                                                <input type="hidden" name="end_date" id="hidden_end_date">
+                                                <input type="hidden" name="android_product_code" id="hidden_android_product_code">
+                                                <input type="hidden" name="ios_product_code" id="hidden_ios_product_code">
+                                                <input type="hidden" name="gateway_product_code" id="hidden_gateway_product_code">
+                                                
                                                 <div class="row">
                                                     <div class="col-lg-6">
                                                         <div class="form-group col-lg-12">
@@ -199,7 +211,6 @@
                                                                 <div class="col-lg-6 mtm20">
                                                                     <label class="control-label" for="tipo">Tipo</label>
                                                                     <select class="form-control js-example-basic-single" id="tipo" name="package_type" style="width: 80%">
-                                                                        <option value="">Selecione</option>
                                                                         <option value="padrao" {% if package.package_type == 'padrao' %}selected{% endif %}>Padrão</option>
                                                                         <option value="promocional" {% if package.package_type == 'promocional' %}selected{% endif %}>Promocional</option>
                                                                     </select>
@@ -241,7 +252,7 @@
                                     </div>
                                     <div id="configuracoes" class="tab-pane">
                                         <div class="panel-body">
-                                            <form id="package-form-config" method="post" enctype="multipart/form-data">
+                                            <form id="package-form-config" method="post" enctype="multipart/form-data" action="{% url 'administrativo:futcoin_editar' package.id %}">
                                                 {% csrf_token %}
                                                 <div class="row">
                                                     <div class="col-lg-6">
@@ -252,7 +263,7 @@
                                                                            id="preco-padrao" 
                                                                            name="full_price" 
                                                                            class="form-control input-medium" 
-                                                                           value="{{ package.full_price|floatformat:2 }}" 
+                                                                           value="{{ package.full_price }}" 
                                                                            required 
                                                                            step="0.01" 
                                                                            min="0">
@@ -263,7 +274,7 @@
                                                                            id="preco-promocional" 
                                                                            name="promotional_price" 
                                                                            class="form-control input-medium" 
-                                                                           value="{{ package.promotional_price|floatformat:2 }}" 
+                                                                           value="{{ package.promotional_price }}" 
                                                                            step="0.01" 
                                                                            min="0">
                                                                     <label class="form-control-placeholder" for="preco-promocional">Preço Promocional</label>
@@ -287,9 +298,9 @@
                                                                 <div class="col-lg-4 mtm15">
                                                                     <label class="control-label" for="exibir-para">Exibir para</label>
                                                                     <select class="form-control" id="exibir-para" name="show_to">
-                                                                        <option value="Todos" {% if package.show_to == 'todos' %}selected{% endif %}>Todos</option>
-                                                                        <option value="Comum" {% if package.show_to == 'comum' %}selected{% endif %}>Comum</option>
-                                                                        <option value="Craque" {% if package.show_to == 'craque' %}selected{% endif %}>Craque</option>
+                                                                        <option value="Todos">Todos</option>
+                                                                        <option value="Comum">Comum</option>
+                                                                        <option value="Craque">Craque</option>
                                                                     </select>
                                                                 </div>
                                                             </div>
@@ -317,7 +328,15 @@
                                                                 <div class="col-lg-6">
                                                                     <label class="control-label">Data de Início</label>
                                                                     <div class="input-group date" data-target-input="nearest">
-                                                                        <input type="text" name="start_date" class="form-control datetimepicker-input" id="datetimepicker" data-toggle="datetimepicker" data-target="#datetimepicker" value="{{ package.start_date|date:'d/m/Y H:i' }}"/>
+                                                                        <input type="text" 
+                                                                               name="start_date" 
+                                                                               class="form-control datetimepicker-input" 
+                                                                               id="datetimepicker" 
+                                                                               data-toggle="datetimepicker" 
+                                                                               data-target="#datetimepicker" 
+                                                                               value="{{ package.start_date|date:'d/m/Y H:i' }}"
+                                                                               data-date="{{ package.start_date|date:'d/m/Y H:i' }}"
+                                                                               placeholder="DD/MM/AAAA HH:MM"/>
                                                                         <div class="input-group-append" data-target="#datetimepicker" data-toggle="datetimepicker">
                                                                             <div class="input-group-text"><i class="fa fa-calendar"></i></div>
                                                                         </div>
@@ -341,7 +360,7 @@
                                     </div>
                                 </div>
                                 <div class="panel panel-default col-lg-12 mtm25 p15">
-                                    <button type="button" class="btn btn-success ml20" id="btnSalvar"><i class="fa fa-save mr5"></i> Salvar</button>
+                                    <button type="button" class="btn btn-success ml20" id="btnSalvarPacote" onclick="submitForm()"><i class="fa fa-save mr5"></i> Salvar</button>
                                     <a href="{% url 'administrativo:futcoins' %}" class="btn btn-danger ml15"><i class="fa fa-ban mr5"></i> Cancelar</a>
                                 </div>
                             </div>
@@ -368,15 +387,553 @@
         <script src="{% static 'administrativo/js/settings.js' %}"></script>
 
         <script type="text/javascript">
-            // Aguarda todos os scripts serem carregados
-            window.addEventListener('load', function() {
-                console.log('Página totalmente carregada');
+            console.log('Script carregado');
+            
+            // Preenche os dados do pacote a partir do JSON
+            $(document).ready(function() {
+                // Preenche os dados do pacote
+                const packageData = JSON.parse('{{ package_data|safe }}');
+                
+                console.log('Dados do pacote recebidos do servidor:', packageData);
+                
+                // Preencher os campos do formulário com os dados do pacote
+                $('#nome').val(packageData.name);
+                $('#tipo').val(packageData.package_type);
+                $('#preco-padrao').val(packageData.full_price);
+                $('#preco-promocional').val(packageData.promotional_price || '');
+                $('#conteudo').val(packageData.content);
+                $('#bonus').val(packageData.bonus);
+                
+                // Corrigir o mapeamento do campo "Exibir para"
+                console.log('Valor original de show_to:', packageData.show_to);
+                if (packageData.show_to === 'todos') {
+                    $('#exibir-para').val('Todos');
+                } else if (packageData.show_to === 'comum') {
+                    $('#exibir-para').val('Comum');
+                } else if (packageData.show_to === 'craque') {
+                    $('#exibir-para').val('Craque');
+                }
+                console.log('Valor definido para exibir-para:', $('#exibir-para').val());
+                
+                $('#etiqueta').val(packageData.label || '');
+                $('#id3 input').val(packageData.color_text_label || '#FFFFFF');
+                $('#id4 input').val(packageData.color_background_label || '#FFFFFF');
+                $('#android-product-code').val(packageData.android_product_code || '');
+                $('#ios-product-code').val(packageData.ios_product_code || '');
+                $('#gateway-product-code').val(packageData.gateway_product_code || '');
+                $('.i-checks input[type="checkbox"]').prop('checked', packageData.enabled);
+                
+                // Atualiza os colorpickers após definir os valores
+                $('#id3, #id4').each(function() {
+                    $(this).colorpicker('setValue', $(this).find('input').val());
+                });
+                
+                // Definir as datas nos datepickers
+                if (packageData.start_date) {
+                    console.log('Definindo data de início:', packageData.start_date);
+                    $('#datetimepicker').val(packageData.start_date);
+                }
+                
+                if (packageData.end_date) {
+                    console.log('Definindo data de término:', packageData.end_date);
+                    $('#datetimepicker2').val(packageData.end_date);
+                }
+                
+                // Exibir a imagem se existir
+                if (packageData.image) {
+                    $('#image-preview').html(`
+                        <img src="${packageData.image}" style="width: 48px; height: 48px; object-fit: contain; cursor: pointer;" onclick="document.getElementById('image').click()">
+                        <button type="button" class="btn btn-danger btn-xs" id="remove_image_btn" style="position: absolute; bottom: -7px; right: -30px;">
+                            <i class="fa fa-trash"></i>
+                        </button>
+                    `);
+                    $('#image-preview').css('margin-top', '-7px');
+                    
+                    // Adiciona handler para o botão de remover
+                    $('#remove_image_btn').on('click', function() {
+                        $('#image').val('');
+                        $('#should_remove_image').val('yes');
+                        $('#image-preview').html('<i class="fa fa-file-image-o" style="font-size: 48px; color: #ccc; cursor: pointer;" onclick="document.getElementById(\'image\').click()"></i>');
+                    });
+                }
+                
+                // Dispara o evento change do tipo para ajustar a visibilidade dos campos
+                $('#tipo').trigger('change');
+            });
+            
+            console.log('Valores do pacote recebidos do servidor:');
+            console.log('package.full_price:', '{{ package.full_price }}');
+            console.log('package.promotional_price:', '{{ package.promotional_price }}');
+            console.log('package.package_type:', '{{ package.package_type }}');
+            console.log('package.start_date (raw):', '{{ package.start_date }}');
+            console.log('package.start_date (formatted):', '{{ package.start_date|date:"d/m/Y H:i" }}');
+            console.log('package.end_date (raw):', '{{ package.end_date }}');
+            console.log('package.end_date (formatted):', '{{ package.end_date|date:"d/m/Y H:i" }}');
+            
+            // Função para formatar valores decimais
+            function formatDecimal(value) {
+                if (value === null || value === undefined || value === '') {
+                    return '';
+                }
+                return parseFloat(value).toFixed(2);
+            }
+            
+            // Função para formatar datas no formato correto
+            function formatDateForDisplay(dateStr) {
+                if (!dateStr) return '';
+                
+                try {
+                    var dateMoment = moment(dateStr);
+                    if (dateMoment.isValid()) {
+                        return dateMoment.format('DD/MM/YYYY HH:mm');
+                    }
+                } catch (e) {
+                    console.log('Erro ao formatar data:', e);
+                }
+                return dateStr;
+            }
+            
+            // Função para formatar datas para o backend
+            function formatDateForBackend(dateStr) {
+                if (!dateStr) return '';
+                
+                try {
+                    var dateMoment = moment(dateStr, 'DD/MM/YYYY HH:mm');
+                    if (dateMoment.isValid()) {
+                        return dateMoment.format('DD/MM/YYYY HH:mm');
+                    }
+                } catch (e) {
+                    console.log('Erro ao formatar data para backend:', e);
+                }
+                return '';
+            }
+            
+            // Função global para submeter o formulário
+            function submitForm() {
+                console.log('Função submitForm chamada');
+                
+                // Evitar múltiplas submissões
+                if (window.isSubmitting) {
+                    console.log('Formulário já está sendo enviado, ignorando clique');
+                    return;
+                }
+                
+                window.isSubmitting = true;
+                
+                // Validar campos obrigatórios
+                var nome = $('#nome').val();
+                if (!nome) {
+                    toastr.error('O nome do pacote é obrigatório');
+                    window.isSubmitting = false;
+                    return;
+                }
+                
+                // Preencher campos ocultos antes de submeter
+                $('#hidden_full_price').val($('#preco-padrao').val());
+                $('#hidden_promotional_price').val($('#preco-promocional').val());
+                $('#hidden_content').val($('#conteudo').val());
+                $('#hidden_bonus').val($('#bonus').val());
+                $('#hidden_show_to').val($('#exibir-para').val());
+                
+                // Formatação correta das datas
+                var startDate = $('#datetimepicker').val();
+                var endDate = $('#datetimepicker2').val();
+                
+                // Validação e formatação da data de início
+                if (startDate) {
+                    try {
+                        // Verificar se a data está no formato correto
+                        if (!/^\d{2}\/\d{2}\/\d{4}\s\d{2}:\d{2}$/.test(startDate)) {
+                            // Tentar reformatar a data
+                            var reformattedStartDate = formatDateForDisplay(startDate);
+                            if (reformattedStartDate && reformattedStartDate !== startDate) {
+                                startDate = reformattedStartDate;
+                                $('#datetimepicker').val(startDate);
+                                console.log('Data de início reformatada para exibição:', startDate);
+                            } else {
+                                toastr.error('Formato de data de início inválido. Use DD/MM/YYYY HH:mm');
+                                window.isSubmitting = false;
+                                return;
+                            }
+                        }
+                        
+                        // Converter para o formato que o Django espera (YYYY-MM-DD HH:MM)
+                        var formattedStartDate = formatDateForBackend(startDate);
+                        if (formattedStartDate) {
+                            $('#hidden_start_date').val(formattedStartDate);
+                            console.log('Data de início formatada para backend:', formattedStartDate);
+                        } else {
+                            toastr.error('Data de início inválida. Use DD/MM/YYYY HH:mm');
+                            console.log('Data de início inválida:', startDate);
+                            window.isSubmitting = false;
+                            return;
+                        }
+                    } catch (e) {
+                        toastr.error('Erro ao processar data de início. Use DD/MM/YYYY HH:mm');
+                        console.log('Erro ao processar data:', e);
+                        window.isSubmitting = false;
+                        return;
+                    }
+                }
+                
+                // Validação e formatação da data de término
+                if (endDate) {
+                    try {
+                        // Verificar se a data está no formato correto
+                        if (!/^\d{2}\/\d{2}\/\d{4}\s\d{2}:\d{2}$/.test(endDate)) {
+                            // Tentar reformatar a data
+                            var reformattedEndDate = formatDateForDisplay(endDate);
+                            if (reformattedEndDate && reformattedEndDate !== endDate) {
+                                endDate = reformattedEndDate;
+                                $('#datetimepicker2').val(endDate);
+                                console.log('Data de término reformatada para exibição:', endDate);
+                            } else {
+                                toastr.error('Formato de data de término inválido. Use DD/MM/YYYY HH:mm');
+                                window.isSubmitting = false;
+                                return;
+                            }
+                        }
+                        
+                        // Converter para o formato que o Django espera (YYYY-MM-DD HH:MM)
+                        var formattedEndDate = formatDateForBackend(endDate);
+                        if (formattedEndDate) {
+                            $('#hidden_end_date').val(formattedEndDate);
+                            console.log('Data de término formatada para backend:', formattedEndDate);
+                        } else {
+                            toastr.error('Data de término inválida. Use DD/MM/YYYY HH:mm');
+                            console.log('Data de término inválida:', endDate);
+                            window.isSubmitting = false;
+                            return;
+                        }
+                    } catch (e) {
+                        toastr.error('Erro ao processar data de término. Use DD/MM/YYYY HH:mm');
+                        console.log('Erro ao processar data:', e);
+                        window.isSubmitting = false;
+                        return;
+                    }
+                }
+                
+                $('#hidden_android_product_code').val($('#android-product-code').val());
+                $('#hidden_ios_product_code').val($('#ios-product-code').val());
+                $('#hidden_gateway_product_code').val($('#gateway-product-code').val());
 
-                // Setup CSRF token para AJAX requests
+                // Cria o FormData com todos os campos do formulário
+                var formData = new FormData();
+                
+                // Adiciona o CSRF token explicitamente
+                formData.append('csrfmiddlewaretoken', $('meta[name="csrf-token"]').attr('content'));
+
+                // Adiciona campos principais explicitamente
+                formData.append('name', $('#nome').val());
+                formData.append('package_type', $('#tipo').val());
+                formData.append('full_price', $('#preco-padrao').val());
+                formData.append('promotional_price', $('#preco-promocional').val());
+                formData.append('content', $('#conteudo').val());
+                formData.append('bonus', $('#bonus').val());
+                formData.append('show_to', $('#exibir-para').val());
+                formData.append('label', $('#etiqueta').val());
+                formData.append('color_text_label', $('#id3 input').val());
+                formData.append('color_background_label', $('#id4 input').val());
+                formData.append('android_product_code', $('#android-product-code').val());
+                formData.append('ios_product_code', $('#ios-product-code').val());
+                formData.append('gateway_product_code', $('#gateway-product-code').val());
+                formData.append('enabled', $('.i-checks input[type="checkbox"]').prop('checked'));
+                
+                // Adiciona as datas formatadas
+                if ($('#hidden_start_date').val()) {
+                    // Garantir que a data está no formato DD/MM/YYYY HH:mm
+                    var startDateValue = $('#hidden_start_date').val();
+                    if (!/^\d{2}\/\d{2}\/\d{4}\s\d{2}:\d{2}$/.test(startDateValue)) {
+                        // Se não estiver no formato correto, tentar reformatar
+                        try {
+                            var dateMoment = moment(startDateValue);
+                            if (dateMoment.isValid()) {
+                                startDateValue = dateMoment.format('DD/MM/YYYY HH:mm');
+                            }
+                        } catch (e) {
+                            console.log('Erro ao reformatar data de início (beforeSend):', e);
+                        }
+                    }
+                    formData.set('start_date', startDateValue);
+                    console.log('Data de início enviada (beforeSend):', startDateValue);
+                }
+                
+                if ($('#hidden_end_date').val()) {
+                    // Garantir que a data está no formato DD/MM/YYYY HH:mm
+                    var endDateValue = $('#hidden_end_date').val();
+                    if (!/^\d{2}\/\d{2}\/\d{4}\s\d{2}:\d{2}$/.test(endDateValue)) {
+                        // Se não estiver no formato correto, tentar reformatar
+                        try {
+                            var dateMoment = moment(endDateValue);
+                            if (dateMoment.isValid()) {
+                                endDateValue = dateMoment.format('DD/MM/YYYY HH:mm');
+                            }
+                        } catch (e) {
+                            console.log('Erro ao reformatar data de término (beforeSend):', e);
+                        }
+                    }
+                    formData.set('end_date', endDateValue);
+                    console.log('Data de término enviada (beforeSend):', endDateValue);
+                }
+                
+                // Adiciona a imagem se houver
+                if ($('#image')[0].files[0]) {
+                    formData.append('image', $('#image')[0].files[0]);
+                }
+                
+                // Adiciona o flag de remoção de imagem
+                formData.append('should_remove_image', $('#should_remove_image').val());
+
+                // Adiciona todos os outros campos dos dois formulários que possam não ter sido incluídos explicitamente
+                $('#package-form, #package-form-config').each(function() {
+                    var form = $(this);
+                    form.find('input, select, textarea').each(function() {
+                        var input = $(this);
+                        var name = input.attr('name');
+                        
+                        // Pula campos que já foram adicionados explicitamente
+                        if (!name || name === 'name' || name === 'package_type' || name === 'full_price' || 
+                            name === 'promotional_price' || name === 'content' || name === 'bonus' || 
+                            name === 'show_to' || name === 'label' || name === 'color_text_label' || 
+                            name === 'color_background_label' || name === 'android_product_code' || 
+                            name === 'ios_product_code' || name === 'gateway_product_code' || 
+                            name === 'enabled' || name === 'start_date' || name === 'end_date' || 
+                            name === 'image' || name === 'should_remove_image' || 
+                            name === 'csrfmiddlewaretoken') {
+                            return;
+                        }
+
+                        if (input.attr('type') === 'file') {
+                            if (input[0].files[0]) {
+                                formData.append(name, input[0].files[0]);
+                            }
+                        } else if (input.attr('type') === 'checkbox') {
+                            formData.append(name, input.prop('checked'));
+                        } else {
+                            formData.append(name, input.val() || '');
+                        }
+                    });
+                });
+
+                // Envia os dados
+                $.ajax({
+                    url: "{% url 'administrativo:futcoin_editar' package.id %}",
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    headers: {
+                        'X-CSRFToken': $('meta[name="csrf-token"]').attr('content')
+                    },
+                    beforeSend: function() {
+                        // Adicionar explicitamente as datas formatadas ao FormData
+                        if ($('#hidden_start_date').val()) {
+                            // Garantir que a data está no formato DD/MM/YYYY HH:mm
+                            var startDateValue = $('#hidden_start_date').val();
+                            if (!/^\d{2}\/\d{2}\/\d{4}\s\d{2}:\d{2}$/.test(startDateValue)) {
+                                // Se não estiver no formato correto, tentar reformatar
+                                try {
+                                    var dateMoment = moment(startDateValue);
+                                    if (dateMoment.isValid()) {
+                                        startDateValue = dateMoment.format('DD/MM/YYYY HH:mm');
+                                    }
+                                } catch (e) {
+                                    console.log('Erro ao reformatar data de início (beforeSend):', e);
+                                }
+                            }
+                            formData.set('start_date', startDateValue);
+                            console.log('Data de início enviada (beforeSend):', startDateValue);
+                        }
+                        
+                        if ($('#hidden_end_date').val()) {
+                            // Garantir que a data está no formato DD/MM/YYYY HH:mm
+                            var endDateValue = $('#hidden_end_date').val();
+                            if (!/^\d{2}\/\d{2}\/\d{4}\s\d{2}:\d{2}$/.test(endDateValue)) {
+                                // Se não estiver no formato correto, tentar reformatar
+                                try {
+                                    var dateMoment = moment(endDateValue);
+                                    if (dateMoment.isValid()) {
+                                        endDateValue = dateMoment.format('DD/MM/YYYY HH:mm');
+                                    }
+                                } catch (e) {
+                                    console.log('Erro ao reformatar data de término (beforeSend):', e);
+                                }
+                            }
+                            formData.set('end_date', endDateValue);
+                            console.log('Data de término enviada (beforeSend):', endDateValue);
+                        }
+                        
+                        console.log('Dados finais do formulário:');
+                        for (var pair of formData.entries()) {
+                            console.log(pair[0] + ': ' + pair[1]); 
+                        }
+                    },
+                    success: function(response) {
+                        console.log('Resposta do servidor:', response);
+                        if (response.success) {
+                            toastr.success(response.message || 'Pacote atualizado com sucesso!');
+                            setTimeout(function() {
+                                window.location.href = "{% url 'administrativo:futcoins' %}";
+                            }, 1000);
+                        } else {
+                            toastr.error(response.message || 'Erro ao atualizar pacote');
+                        }
+                        window.isSubmitting = false;
+                    },
+                    error: function(xhr, status, error) {
+                        console.log('Erro:', error);
+                        console.log('Status:', status);
+                        console.log('XHR:', xhr);
+                        
+                        var errorMessage = 'Erro ao atualizar pacote';
+                        try {
+                            var response = JSON.parse(xhr.responseText);
+                            errorMessage = response.message || errorMessage;
+                        } catch (e) {
+                            console.log('Erro ao parsear resposta:', e);
+                        }
+                        toastr.error(errorMessage);
+                        window.isSubmitting = false;
+                    }
+                });
+            }
+
+            // Substituir o window.addEventListener por $(document).ready
+            $(document).ready(function() {
+                console.log('Página totalmente carregada');
+                
+                // Preencher os campos de preço com os valores formatados
+                var fullPrice = '{{ package.full_price }}';
+                var promotionalPrice = '{{ package.promotional_price }}';
+                
+                if (fullPrice) {
+                    $('#preco-padrao').val(formatDecimal(fullPrice));
+                }
+                
+                if (promotionalPrice && promotionalPrice !== 'None') {
+                    $('#preco-promocional').val(formatDecimal(promotionalPrice));
+                }
+                
+                // Garantir que as datas estejam no formato correto
+                var startDateValue = $('#datetimepicker').val();
+                var endDateValue = $('#datetimepicker2').val();
+                
+                console.log('Valores iniciais das datas:');
+                console.log('Data de início original:', startDateValue);
+                console.log('Data de término original:', endDateValue);
+                
+                // Formatar as datas para exibição
+                if (startDateValue) {
+                    var formattedStartDate = formatDateForDisplay(startDateValue);
+                    if (formattedStartDate) {
+                        $('#datetimepicker').val(formattedStartDate);
+                        console.log('Data de início formatada para exibição:', formattedStartDate);
+                    }
+                }
+                
+                if (endDateValue) {
+                    var formattedEndDate = formatDateForDisplay(endDateValue);
+                    if (formattedEndDate) {
+                        $('#datetimepicker2').val(formattedEndDate);
+                        console.log('Data de término formatada para exibição:', formattedEndDate);
+                    }
+                }
+                
+                console.log('Valores formatados:');
+                console.log('Preço padrão formatado:', $('#preco-padrao').val());
+                console.log('Preço promocional formatado:', $('#preco-promocional').val());
+                console.log('Data de início formatada:', $('#datetimepicker').val());
+                console.log('Data de término formatada:', $('#datetimepicker2').val());
+                
+                console.log('Valores iniciais dos campos:');
+                console.log('Nome:', $('#nome').val());
+                console.log('Tipo:', $('#tipo').val());
+                console.log('Preço Padrão:', $('#preco-padrao').val());
+                console.log('Preço Promocional:', $('#preco-promocional').val());
+                console.log('Conteúdo:', $('#conteudo').val());
+                console.log('Bônus:', $('#bonus').val());
+                console.log('Exibir para:', $('#exibir-para').val());
+                console.log('Data de Início:', $('#datetimepicker').val());
+                console.log('Data de Término:', $('#datetimepicker2').val());
+                console.log('Código Android:', $('#android-product-code').val());
+                console.log('Código iOS:', $('#ios-product-code').val());
+                console.log('Código Gateway:', $('#gateway-product-code').val());
+
+                // Setup CSRF token for AJAX requests
                 $.ajaxSetup({
                     headers: {
                         'X-CSRFToken': $('meta[name="csrf-token"]').attr('content')
                     }
+                });
+
+                // Adicionar event listener para o botão de salvar
+                $(document).on('click', '#btnSalvarPacote', function() {
+                    console.log('Evento de clique do botão salvar acionado via jQuery');
+                    submitForm();
+                });
+
+                // Preencher campos ocultos antes de submeter o formulário
+                $('#package-form').on('submit', function() {
+                    $('#hidden_full_price').val($('#preco-padrao').val());
+                    $('#hidden_promotional_price').val($('#preco-promocional').val());
+                    $('#hidden_content').val($('#conteudo').val());
+                    $('#hidden_bonus').val($('#bonus').val());
+                    $('#hidden_show_to').val($('#exibir-para').val());
+                    
+                    // Formatação correta das datas
+                    var startDate = $('#datetimepicker').val();
+                    var endDate = $('#datetimepicker2').val();
+                    
+                    if (startDate) {
+                        // Verificar se a data está no formato correto
+                        if (!/^\d{2}\/\d{2}\/\d{4}\s\d{2}:\d{2}$/.test(startDate)) {
+                            // Tentar reformatar a data
+                            startDate = formatDateForDisplay(startDate);
+                            if (!startDate) {
+                                console.log('Erro: Data de início inválida');
+                                return false;
+                            }
+                        }
+                        
+                        // Converter para o formato que o Django espera (YYYY-MM-DD HH:MM)
+                        var formattedStartDate = formatDateForBackend(startDate);
+                        if (formattedStartDate) {
+                            $('#hidden_start_date').val(formattedStartDate);
+                            console.log('Data de início formatada (submit):', formattedStartDate);
+                        } else {
+                            console.log('Erro: Não foi possível formatar a data de início');
+                            return false;
+                        }
+                    }
+                    
+                    if (endDate) {
+                        // Verificar se a data está no formato correto
+                        if (!/^\d{2}\/\d{2}\/\d{4}\s\d{2}:\d{2}$/.test(endDate)) {
+                            // Tentar reformatar a data
+                            endDate = formatDateForDisplay(endDate);
+                            if (!endDate) {
+                                console.log('Erro: Data de término inválida');
+                                return false;
+                            }
+                        }
+                        
+                        // Converter para o formato que o Django espera (YYYY-MM-DD HH:MM)
+                        var formattedEndDate = formatDateForBackend(endDate);
+                        if (formattedEndDate) {
+                            $('#hidden_end_date').val(formattedEndDate);
+                            console.log('Data de término formatada (submit):', formattedEndDate);
+                        } else {
+                            console.log('Erro: Não foi possível formatar a data de término');
+                            return false;
+                        }
+                    }
+                    
+                    $('#hidden_android_product_code').val($('#android-product-code').val());
+                    $('#hidden_ios_product_code').val($('#ios-product-code').val());
+                    $('#hidden_gateway_product_code').val($('#gateway-product-code').val());
+                    
+                    console.log('Formulário submetido com campos ocultos preenchidos');
+                    return true;
                 });
 
                 // Configuração do Toastr
@@ -416,8 +973,119 @@
                         clear: 'fa fa-trash',
                         close: 'fa fa-remove'
                     },
-                    sideBySide: true
+                    sideBySide: true,
+                    debug: true, // Habilita o modo de depuração para ver erros no console
+                    useCurrent: false // Impede que a data atual seja definida automaticamente
                 });
+
+                // Definir manualmente os valores iniciais dos datepickers após a inicialização
+                var startDateRaw = packageData.start_date;
+                var endDateRaw = packageData.end_date;
+                
+                console.log('Definindo valores iniciais dos datepickers:');
+                console.log('Data de início (raw):', startDateRaw);
+                console.log('Data de término (raw):', endDateRaw);
+                
+                // Definir valores iniciais
+                if (startDateRaw && startDateRaw !== 'None' && startDateRaw.trim() !== '') {
+                    console.log('Tentando definir data de início:', startDateRaw);
+                    
+                    // Primeiro, definir o valor do input diretamente
+                    $('#datetimepicker').val(startDateRaw);
+                    console.log('Data de início definida para input:', startDateRaw);
+                    
+                    // Depois, atualizar o datepicker para refletir o valor
+                    try {
+                        // Usar o método correto para definir a data no datepicker
+                        var startMoment = moment(startDateRaw, 'DD/MM/YYYY HH:mm');
+                        if (startMoment.isValid()) {
+                            $('#datetimepicker').datetimepicker('date', startMoment);
+                            console.log('Datepicker de início atualizado com sucesso usando moment');
+                        } else {
+                            console.error('Momento inválido para data de início:', startDateRaw);
+                            // Tentar método alternativo
+                            $('#datetimepicker').datetimepicker('date', startDateRaw);
+                            console.log('Tentativa alternativa de atualizar datepicker de início');
+                        }
+                    } catch (e) {
+                        console.error('Erro ao atualizar datepicker de início:', e);
+                    }
+                } else {
+                    console.log('Data de início não definida ou inválida');
+                    $('#datetimepicker').val('');
+                }
+                
+                if (endDateRaw && endDateRaw !== 'None' && endDateRaw.trim() !== '') {
+                    $('#datetimepicker2').val(endDateRaw);
+                    console.log('Data de término definida para:', endDateRaw);
+                    
+                    // Atualizar o datepicker para refletir o valor
+                    try {
+                        $('#datetimepicker2').datetimepicker('date', moment(endDateRaw, 'DD/MM/YYYY HH:mm'));
+                        console.log('Datepicker de término atualizado com sucesso');
+                    } catch (e) {
+                        console.error('Erro ao atualizar datepicker de término:', e);
+                    }
+                } else {
+                    console.log('Data de término não definida ou inválida');
+                    $('#datetimepicker2').val('');
+                }
+
+                // Verificar se as datas estão no formato correto após a inicialização
+                var startDateValue = $('#datetimepicker').val();
+                var endDateValue = $('#datetimepicker2').val();
+
+                console.log('Valor inicial da data de início após configuração:', startDateValue);
+                console.log('Valor inicial da data de término após configuração:', endDateValue);
+
+                // Garantir que os valores iniciais sejam definidos corretamente
+                if (!startDateValue || startDateValue === 'None') {
+                    console.log('Data de início não definida ou inválida, limpando campo');
+                    $('#datetimepicker').val('');
+                } else if (!/^\d{2}\/\d{2}\/\d{4}\s\d{2}:\d{2}$/.test(startDateValue)) {
+                    try {
+                        var formattedStartDate = formatDateForDisplay(startDateValue);
+                        if (formattedStartDate) {
+                            $('#datetimepicker').val(formattedStartDate);
+                            console.log('Data de início reformatada:', formattedStartDate);
+                        }
+                    } catch (e) {
+                        console.log('Erro ao reformatar data de início:', e);
+                    }
+                }
+
+                // Usar setTimeout para garantir que o datepicker seja inicializado após o carregamento completo
+                setTimeout(function() {
+                    // Tentar inicializar novamente o datepicker de início com o valor correto
+                    var startDateValue = $('#datetimepicker').val();
+                    if (startDateValue && startDateValue !== 'None') {
+                        try {
+                            var startMoment = moment(startDateValue, 'DD/MM/YYYY HH:mm');
+                            if (startMoment.isValid()) {
+                                console.log('Tentando definir data de início após timeout:', startDateValue);
+                                $('#datetimepicker').datetimepicker('date', startMoment);
+                                console.log('Datepicker de início atualizado com sucesso após timeout');
+                            }
+                        } catch (e) {
+                            console.error('Erro ao atualizar datepicker de início após timeout:', e);
+                        }
+                    }
+                }, 500);
+
+                if (!endDateValue || endDateValue === 'None') {
+                    console.log('Data de término não definida ou inválida, limpando campo');
+                    $('#datetimepicker2').val('');
+                } else if (!/^\d{2}\/\d{2}\/\d{4}\s\d{2}:\d{2}$/.test(endDateValue)) {
+                    try {
+                        var formattedEndDate = formatDateForDisplay(endDateValue);
+                        if (formattedEndDate) {
+                            $('#datetimepicker2').val(formattedEndDate);
+                            console.log('Data de término reformatada:', formattedEndDate);
+                        }
+                    } catch (e) {
+                        console.log('Erro ao reformatar data de término:', e);
+                    }
+                }
 
                 // Lógica para garantir que a data final não seja menor que a inicial
                 $("#datetimepicker").on("change.datetimepicker", function (e) {
@@ -432,6 +1100,31 @@
                     checkboxClass: 'icheckbox_square-green',
                     radioClass: 'iradio_square-green'
                 });
+
+                // Controle de visibilidade baseado no tipo
+                $('#tipo').change(function() {
+                    var tipo = $(this).val();
+                    
+                    if (tipo === '') {
+                        // Quando for Selecione, oculta todos os campos
+                        $('.date-fields').hide();
+                        $('.label-fields').hide();
+                        $('#etiqueta').closest('.form-group').hide();
+                    } else if (tipo === 'padrao') {
+                        // Quando for Padrão, mostra etiqueta mas oculta campos de data
+                        $('.date-fields').hide();
+                        $('.label-fields').show();
+                        $('#etiqueta').closest('.form-group').show();
+                    } else if (tipo === 'promocional') {
+                        // Quando for Promocional, mostra todos os campos
+                        $('.date-fields').show();
+                        $('.label-fields').show();
+                        $('#etiqueta').closest('.form-group').show();
+                    }
+                });
+                
+                // Dispara o evento change do tipo para configurar visibilidade inicial
+                $('#tipo').trigger('change');
 
                 // Preview da imagem
                 $('.input-image').change(function() {
@@ -456,85 +1149,36 @@
                     $('#should_remove_image').val('yes');
                     $('#image-preview').html('<i class="fa fa-file-image-o" style="font-size: 48px; color: #ccc; cursor: pointer;" onclick="document.getElementById(\'image\').click()"></i>');
                 });
-
-                // Handler do botão salvar
-                $('#btnSalvar').click(function() {
-                    console.log('Botão salvar clicado');
-
-                    // Validação dos campos obrigatórios
-                    var nome = $('#nome').val();
-                    var tipo = $('#tipo').val();
-                    var precoPadrao = $('#preco-padrao').val();
-                    var conteudo = $('#conteudo').val();
-
-                    if (!nome || !tipo || !precoPadrao || !conteudo) {
-                        toastr.error('Por favor, preencha todos os campos obrigatórios');
-                        return;
-                    }
-
-                    // Cria o FormData com todos os campos do formulário
-                    var formData = new FormData();
-
-                    // Adiciona todos os campos dos dois formulários
-                    $('#package-form, #package-form-config').each(function() {
-                        var form = $(this);
-                        form.find('input, select, textarea').each(function() {
-                            var input = $(this);
-                            var name = input.attr('name');
-                            
-                            if (!name) return;
-
-                            if (input.attr('type') === 'file') {
-                                if (input[0].files[0]) {
-                                    formData.append(name, input[0].files[0]);
-                                }
-                            } else if (input.attr('type') === 'checkbox') {
-                                formData.append(name, input.prop('checked'));
+                
+                // Script adicional para garantir que o datepicker seja inicializado corretamente
+                setTimeout(function() {
+                    console.log("Executando script adicional para inicializar datepicker...");
+                    var startDateRaw = '{{ package.start_date|date:"d/m/Y H:i" }}';
+                    console.log("Data de início (raw) do servidor:", startDateRaw);
+                    
+                    if (startDateRaw && startDateRaw !== 'None' && startDateRaw.trim() !== '') {
+                        console.log("Tentando definir data de início novamente:", startDateRaw);
+                        
+                        // Definir o valor diretamente no input
+                        $('#datetimepicker').val(startDateRaw);
+                        
+                        try {
+                            // Criar um objeto moment com a data
+                            var startMoment = moment(startDateRaw, 'DD/MM/YYYY HH:mm');
+                            if (startMoment.isValid()) {
+                                // Atualizar o datepicker com o objeto moment
+                                $('#datetimepicker').datetimepicker('date', startMoment);
+                                console.log("Datepicker de início atualizado com sucesso no script adicional");
                             } else {
-                                formData.append(name, input.val() || '');
+                                console.error("Momento inválido para data de início no script adicional:", startDateRaw);
                             }
-                        });
-                    });
-
-                    // Debug - mostra os dados que serão enviados
-                    for (var pair of formData.entries()) {
-                        console.log(pair[0] + ': ' + pair[1]); 
-                    }
-
-                    // Envia os dados
-                    $.ajax({
-                        url: "{% url 'administrativo:futcoin_editar' package.id %}",
-                        type: 'POST',
-                        data: formData,
-                        processData: false,
-                        contentType: false,
-                        success: function(response) {
-                            console.log('Resposta do servidor:', response);
-                            if (response.success) {
-                                toastr.success(response.message || 'Pacote atualizado com sucesso!');
-                                setTimeout(function() {
-                                    window.location.href = "{% url 'administrativo:futcoins' %}";
-                                }, 1000);
-                            } else {
-                                toastr.error(response.message || 'Erro ao atualizar pacote');
-                            }
-                        },
-                        error: function(xhr, status, error) {
-                            console.log('Erro:', error);
-                            console.log('Status:', status);
-                            console.log('XHR:', xhr);
-                            
-                            var errorMessage = 'Erro ao atualizar pacote';
-                            try {
-                                var response = JSON.parse(xhr.responseText);
-                                errorMessage = response.message || errorMessage;
-                            } catch (e) {
-                                console.log('Erro ao parsear resposta:', e);
-                            }
-                            toastr.error(errorMessage);
+                        } catch (e) {
+                            console.error("Erro ao atualizar datepicker de início no script adicional:", e);
                         }
-                    });
-                });
+                    } else {
+                        console.log("Data de início não definida ou inválida no script adicional");
+                    }
+                }, 1000);
             });
         </script>
     </body>

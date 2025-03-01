@@ -49,9 +49,9 @@ def get_packages(request):
             packages = []
             
             if package_type == 'package_coins':
-                packages = FutcoinPackage.objects.filter(enabled=True).values('id', 'name')
+                packages = FutcoinPackage.objects.filter(active=True).values('id', 'name')
             elif package_type == 'package_plan':
-                packages = Plan.objects.filter(enabled=True).values('id', 'name')
+                packages = Plan.objects.filter(active=True).values('id', 'name')
             
             return JsonResponse({
                 'success': True,
@@ -1279,8 +1279,6 @@ def futcoins(request):
     packages = FutcoinPackage.objects.all().order_by('-created_at')
     return render(request, 'administrativo/futcoins.html', {'packages': packages})
 
-@login_required
-@csrf_exempt
 def pacote_futcoin_novo(request):
     if request.method == 'POST':
         try:
@@ -1352,8 +1350,6 @@ def planos(request):
     plans = Plan.objects.all().order_by('-created_at')
     return render(request, 'administrativo/planos.html', {'plans': plans})
 
-@login_required
-@csrf_exempt
 def pacote_plano_novo(request):
     if request.method == 'POST':
         try:
@@ -2795,21 +2791,11 @@ def notificacao_novo(request):
                 status='pending'  # Status inicial como pendente
             )
 
-            if notification_type != 'Geral' and package_id:
+            if notification_type != 'generic' and package_id:
                 try:
-                    if notification_type == 'PacoteFutcoins':
-                        package = FutcoinPackage.objects.get(id=package_id)
-                    elif notification_type == 'PacotePlano':
-                        package = Plan.objects.get(id=package_id)
-                    else:
-                        return JsonResponse({
-                            'success': False,
-                            'message': 'Tipo de notificação inválido'
-                        })
-                    
-                    notification.package_id = package_id
-                    notification.package_type = notification_type
-                except (FutcoinPackage.DoesNotExist, Plan.DoesNotExist):
+                    package = FutcoinPackage.objects.get(id=package_id)
+                    notification.package = package
+                except FutcoinPackage.DoesNotExist:
                     return JsonResponse({
                         'success': False,
                         'message': 'Pacote não encontrado'
@@ -2873,26 +2859,15 @@ def notificacao_editar(request, id):
             notification.message = message
             notification.notification_type = notification_type
 
-            if notification_type != 'Geral' and package_id:
+            if notification_type != 'generic' and package_id:
                 try:
-                    if notification_type == 'PacoteFutcoins':
-                        package = FutcoinPackage.objects.get(id=package_id)
-                    elif notification_type == 'PacotePlano':
-                        package = Plan.objects.get(id=package_id)
-                    else:
-                        return JsonResponse({
-                            'success': False,
-                            'message': 'Tipo de notificação inválido'
-                        })
-                    
-                    notification.package_id = package_id
-                    notification.package_type = notification_type
-                except (FutcoinPackage.DoesNotExist, Plan.DoesNotExist):
+                    package = FutcoinPackage.objects.get(id=package_id)
+                    notification.package = package
+                except FutcoinPackage.DoesNotExist:
                     messages.error(request, 'Pacote não encontrado')
                     return redirect('administrativo:notificacao_editar', id=id)
             else:
-                notification.package_id = None
-                notification.package_type = None
+                notification.package = None
 
             if send_at:
                 try:
@@ -2916,20 +2891,10 @@ def notificacao_editar(request, id):
             messages.success(request, 'Notificação atualizada com sucesso')
             return redirect('administrativo:notificacoes')
 
-        # Carregar os pacotes baseado no tipo de notificação
-        futcoin_packages = []
-        plan_packages = []
-        
-        if notification.notification_type == 'PacoteFutcoins' or notification.notification_type != 'Geral':
-            futcoin_packages = FutcoinPackage.objects.filter(enabled=True)
-        
-        if notification.notification_type == 'PacotePlano' or notification.notification_type != 'Geral':
-            plan_packages = Plan.objects.filter(enabled=True)
-            
+        packages = FutcoinPackage.objects.filter(enabled=True)
         return render(request, 'administrativo/notificacao-editar.html', {
             'notification': notification,
-            'futcoin_packages': futcoin_packages,
-            'plan_packages': plan_packages
+            'packages': packages
         })
 
     except Notifications.DoesNotExist:
@@ -3803,7 +3768,6 @@ def calcular_pontos_palpite(pred_home, pred_away, real_home, real_away, points_v
     return 0
 
 @login_required
-@csrf_exempt
 def plano_editar(request, id):
     try:
         plan = get_object_or_404(Plan, id=id)
@@ -3936,9 +3900,7 @@ def plano_editar(request, id):
             'promotional_price_validity': plan.promotional_price_validity,
             'start_date': plan.start_date.strftime('%d/%m/%Y %H:%M') if plan.start_date else None,
             'end_date': plan.end_date.strftime('%d/%m/%Y %H:%M') if plan.end_date else None,
-            'image': plan.image.url if plan.image else None,
-            'android_product_code': plan.android_product_code,
-            'apple_product_code': plan.apple_product_code
+            'image': plan.image.url if plan.image else None
         }
         
         return render(request, 'administrativo/pacote-plano-editar.html', {
@@ -4155,25 +4117,15 @@ def notificacao_editar(request, id):
             notification.message = message
             notification.notification_type = notification_type
 
-            if notification_type != 'Geral' and package_id:
+            if notification_type != 'generic' and package_id:
                 try:
-                    if notification_type == 'PacoteFutcoins':
-                        package = FutcoinPackage.objects.get(id=package_id)
-                    elif notification_type == 'PacotePlano':
-                        package = Plan.objects.get(id=package_id)
-                    else:
-                        return JsonResponse({
-                            'success': False,
-                            'message': 'Tipo de notificação inválido'
-                        })
-                    
-                    notification.package_id = package_id
-                    notification.package_type = notification_type
-                except (FutcoinPackage.DoesNotExist, Plan.DoesNotExist):
-                    return JsonResponse({
-                        'success': False,
-                        'message': 'Pacote não encontrado'
-                    })
+                    package = FutcoinPackage.objects.get(id=package_id)
+                    notification.package = package
+                except FutcoinPackage.DoesNotExist:
+                    messages.error(request, 'Pacote não encontrado')
+                    return redirect('administrativo:notificacao_editar', id=id)
+            else:
+                notification.package = None
 
             if send_at:
                 try:
@@ -4197,20 +4149,10 @@ def notificacao_editar(request, id):
             messages.success(request, 'Notificação atualizada com sucesso')
             return redirect('administrativo:notificacoes')
 
-        # Carregar os pacotes baseado no tipo de notificação
-        futcoin_packages = []
-        plan_packages = []
-        
-        if notification.notification_type == 'PacoteFutcoins' or notification.notification_type != 'Geral':
-            futcoin_packages = FutcoinPackage.objects.filter(enabled=True)
-        
-        if notification.notification_type == 'PacotePlano' or notification.notification_type != 'Geral':
-            plan_packages = Plan.objects.filter(enabled=True)
-            
+        packages = FutcoinPackage.objects.filter(enabled=True)
         return render(request, 'administrativo/notificacao-editar.html', {
             'notification': notification,
-            'futcoin_packages': futcoin_packages,
-            'plan_packages': plan_packages
+            'packages': packages
         })
 
     except Notifications.DoesNotExist:

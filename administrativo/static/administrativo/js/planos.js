@@ -50,42 +50,49 @@ $(document).ready(function() {
     // Inicializa DataTable
     var table;
     try {
-        // Destrói a tabela se já existir
-        if ($.fn.DataTable.isDataTable('.dataTables-vigencias')) {
-            $('.dataTables-vigencias').DataTable().destroy();
+        console.log('Iniciando configuração do DataTable...');
+        
+        var $table = $('.dataTables-vigencias');
+        
+        // Destrói a instância existente se houver
+        if ($.fn.dataTable.isDataTable($table)) {
+            $table.DataTable().destroy();
         }
-
-        table = $('.dataTables-vigencias').DataTable({
+        
+        // Configuração básica do DataTable
+        table = $table.DataTable({
+            destroy: true,
+            retrieve: false,
             pageLength: 25,
             responsive: true,
             dom: '<"html5buttons"B>lTfgitp',
             buttons: [],
-            stateSave: false, // Desativa o salvamento de estado
+            processing: false,
+            serverSide: false,
+            ajax: null,
+            searching: true,
+            ordering: true,
+            info: true,
+            stateSave: false,
             language: {
-                "sEmptyTable": "Nenhum registro encontrado",
-                "sInfo": "Mostrando de _START_ até _END_ de _TOTAL_ registros",
-                "sInfoEmpty": "Mostrando 0 até 0 de 0 registros",
-                "sInfoFiltered": "(Filtrados de _MAX_ registros)",
-                "sInfoPostFix": "",
-                "sInfoThousands": ".",
-                "sLengthMenu": "_MENU_ resultados por página",
-                "sLoadingRecords": "Carregando...",
-                "sProcessing": "Processando...",
-                "sZeroRecords": "Nenhum registro encontrado",
-                "sSearch": "Pesquisar",
-                "oPaginate": {
-                    "sNext": "Próximo",
-                    "sPrevious": "Anterior",
-                    "sFirst": "Primeiro",
-                    "sLast": "Último"
-                },
-                "oAria": {
-                    "sSortAscending": ": Ordenar colunas de forma ascendente",
-                    "sSortDescending": ": Ordenar colunas de forma descendente"
-                }
+                url: "//cdn.datatables.net/plug-ins/1.10.19/i18n/Portuguese-Brasil.json",
+                emptyTable: "Não há dados disponíveis na tabela",
+                zeroRecords: "Não há dados disponíveis na tabela",
+                infoEmpty: "Mostrando 0 até 0 de 0 registros",
+                infoFiltered: "(Filtrados de _MAX_ registros)",
+                lengthMenu: "_MENU_ resultados por página"
             },
-            drawCallback: function() {
+            drawCallback: function(settings) {
                 initializeButtonHandlers();
+                
+                // Verifica se não há dados e força a mensagem
+                if (settings.aoData.length === 0) {
+                    var $body = $(table.table().body());
+                    if ($body.find('tr.odd').length === 0) {
+                        $body.html('<tr class="odd"><td valign="top" colspan="' + 
+                            settings.aoColumns.length + '" class="dataTables_empty">Não há dados disponíveis na tabela</td></tr>');
+                    }
+                }
             }
         });
 
@@ -96,10 +103,21 @@ $(document).ready(function() {
     // Inicializa os handlers quando a página carrega
     initializeButtonHandlers();
 
+    // Sobrescreve o método fnReloadAjax para prevenir chamadas AJAX
+    if ($.fn.dataTable.Api) {
+        $.fn.dataTable.Api.prototype.fnReloadAjax = function() {
+            console.log('Tentativa de reload AJAX bloqueada');
+            this.draw(false);
+        };
+    }
+
     // Re-inicializa os handlers após qualquer operação que possa modificar a tabela
     $(document).ajaxComplete(function(event, xhr, settings) {
         if (settings.url.includes('toggle_status') || 
             settings.url.includes('excluir')) {
+            if (table && typeof table.draw === 'function') {
+                table.draw(false);
+            }
             initializeButtonHandlers();
         }
     });
@@ -139,10 +157,9 @@ $(document).ready(function() {
                 $('#modalAlert2').modal('hide');
                 if (response.success) {
                     toastr.success('Plano excluído com sucesso');
-                    // Remove a linha da tabela
-                    row.fadeOut(400, function() {
-                        $(this).remove();
-                    });
+                    setTimeout(function() {
+                        window.location.reload();
+                    }, 1500);
                 } else {
                     toastr.error(response.message || 'Erro ao excluir plano');
                     btn.prop('disabled', false);
@@ -197,10 +214,17 @@ $(document).ready(function() {
             selectedRows.push(row);
         });
 
+        var formData = new FormData();
+        selectedIds.forEach(function(id) {
+            formData.append('ids[]', id);
+        });
+
         $.ajax({
             url: deleteMassUrl,
             type: 'POST',
-            data: { ids: selectedIds },
+            data: formData,
+            processData: false,
+            contentType: false,
             headers: {
                 'X-CSRFToken': csrfToken,
                 'X-Requested-With': 'XMLHttpRequest'
@@ -208,11 +232,10 @@ $(document).ready(function() {
             success: function(response) {
                 $('#modalAlert').modal('hide');
                 if (response.success) {
-                    toastr.success('Planos excluídos com sucesso');
-                    // Atualiza a tabela após exclusão em massa
-                    $('.dataTables-vigencias').DataTable().ajax.reload();
-                    // Desmarca o checkbox principal
-                    $('.checkAll').prop('checked', false);
+                    toastr.success(response.message);
+                    setTimeout(function() {
+                        window.location.reload();
+                    }, 1500);
                 } else {
                     toastr.error(response.message || 'Erro ao excluir planos');
                 }

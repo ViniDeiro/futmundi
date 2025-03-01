@@ -1,4 +1,15 @@
 $(document).ready(function() {
+    // Configuração do CSRF token para requisições AJAX
+    var csrftoken = $('meta[name="csrf-token"]').attr('content');
+    
+    $.ajaxSetup({
+        beforeSend: function(xhr, settings) {
+            if (!(/^(GET|HEAD|OPTIONS|TRACE)$/.test(settings.type)) && !this.crossDomain) {
+                xhr.setRequestHeader("X-CSRFToken", csrftoken);
+            }
+        }
+    });
+
     // Configuração do Toastr
     toastr.options = {
         "closeButton": true,
@@ -78,114 +89,158 @@ $(document).ready(function() {
     $('#tipo').change(function() {
         var tipo = $(this).val();
         
-        if (tipo === '') {
-            // Quando for Selecione, oculta todos os campos
-            $('.date-fields').hide();
-            $('.label-fields').hide();
-            $('#etiqueta').closest('.form-group').hide();
-        } else if (tipo === 'Padrão') {
-            // Quando for Padrão, mostra etiqueta mas oculta campos de data
-            $('.date-fields').hide();
-            $('.label-fields').show();
-            $('#etiqueta').closest('.form-group').show();
+        // Esconde todos os campos especiais
+        $('.label-fields, #etiqueta, .date-fields').hide();
+        
+        // Limpa os valores
+        $('#etiqueta').val('');
+        $('#id3').colorpicker('setValue', '#FFFFFF');
+        $('#id4').colorpicker('setValue', '#CC000C');
+        
+        if (tipo === 'Padrão') {
+            // Mostra campos para tipo Padrão
+            $('#etiqueta, .label-fields').show();
         } else if (tipo === 'Promocional') {
-            // Quando for Promocional, mostra todos os campos e define valores padrão
-            $('.date-fields').show();
-            $('.label-fields').show();
-            $('#etiqueta').closest('.form-group').show();
+            // Mostra campos para tipo Promocional
+            $('#etiqueta, .label-fields, .date-fields').show();
             
-            // Define valores padrão para a etiqueta
+            // Define valores padrão
             $('#etiqueta').val('OFERTA ESPECIAL');
-            $('#id3 input').val('#FFFFFF');
-            $('#id4 input').val('#FF0000');
+            $('#id3').colorpicker('setValue', '#FFFFFF');
+            $('#id4').colorpicker('setValue', '#FF0000');
         }
+        
+        // Força atualização dos campos
+        markFilledInputs();
     });
     
     // Dispara o evento change do tipo para configurar visibilidade inicial
-    $('#tipo').trigger('change');
+    $(document).ready(function() {
+        // Esconde todos os campos especiais inicialmente
+        $('.label-fields, #etiqueta, .date-fields').hide();
+        
+        // Dispara o evento change para configurar baseado no valor inicial
+        $('#tipo').trigger('change');
+    });
 
-    // Handler para o botão Salvar
-    $('.btn-success').click(function() {
+    // Função para validar e formatar cores
+    function validateColor(color) {
+        if (!color) return '#000000';
+        
+        // Remove espaços e converte para minúsculas
+        color = color.trim().toLowerCase();
+        
+        // Se já estiver no formato #RRGGBB, retorna como está
+        if (/^#[0-9a-f]{6}$/.test(color)) {
+            return color.toUpperCase();
+        }
+        
+        // Se estiver no formato RGB(r,g,b), converte para hex
+        let rgbMatch = color.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+        if (rgbMatch) {
+            let r = parseInt(rgbMatch[1]);
+            let g = parseInt(rgbMatch[2]);
+            let b = parseInt(rgbMatch[3]);
+            return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`.toUpperCase();
+        }
+        
+        // Se for rgba, remove o canal alpha e converte para hex
+        let rgbaMatch = color.match(/rgba\((\d+),\s*(\d+),\s*(\d+),\s*[\d.]+\)/);
+        if (rgbaMatch) {
+            let r = parseInt(rgbaMatch[1]);
+            let g = parseInt(rgbaMatch[2]);
+            let b = parseInt(rgbaMatch[3]);
+            return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`.toUpperCase();
+        }
+        
+        // Se não estiver em nenhum formato válido, retorna preto
+        return '#000000';
+    }
+
+    // Botão Cancelar
+    $('.btn-danger').click(function(e) {
+        e.preventDefault();
+        window.location.href = $('#cancel-url').data('url');
+    });
+
+    // Botão Salvar
+    $('#btn-salvar').on('click', function() {
+        console.log('Botão salvar clicado');
+        // Validação dos campos obrigatórios
+        var nome = $('#nome').val();
+        var precoPadrao = $('#preco-padrao').val();
+        var precoPromocional = $('#preco-promocional').val();
+
+        if (!nome) {
+            toastr.error('O campo Nome é obrigatório');
+            return;
+        }
+        if (!precoPadrao) {
+            toastr.error('O campo Preço Padrão é obrigatório');
+            return;
+        }
+
+        // Validação do preço promocional
+        if (precoPromocional && parseFloat(precoPromocional.replace(',', '.')) >= parseFloat(precoPadrao.replace(',', '.'))) {
+            toastr.error('O preço promocional deve ser menor que o preço padrão');
+            return;
+        }
+
+        // Validação das datas para planos promocionais
+        if ($('#tipo').val() === 'Promocional') {
+            var dataInicio = $('#datetimepicker').val();
+            var dataTermino = $('#datetimepicker2').val();
+            
+            if (!dataInicio) {
+                toastr.error('A data de início é obrigatória para pacotes promocionais');
+                return;
+            }
+            if (!dataTermino) {
+                toastr.error('A data de término é obrigatória para pacotes promocionais');
+                return;
+            }
+        }
+
+        // Desabilita o botão durante o envio
         var $btn = $(this);
+        $btn.prop('disabled', true);
+        
+        // Cria o FormData para envio
         var formData = new FormData();
-
-        // Função para validar e formatar cor
-        function validateColor(color) {
-            // Remove espaços e converte para minúsculas
-            color = color.trim().toLowerCase();
-            
-            // Se já estiver no formato #RRGGBB, retorna como está
-            if (/^#[0-9a-f]{6}$/.test(color)) {
-                return color;
-            }
-            
-            // Se estiver no formato RGB(r,g,b), converte para hex
-            var rgbMatch = color.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
-            if (rgbMatch) {
-                var r = parseInt(rgbMatch[1]).toString(16).padStart(2, '0');
-                var g = parseInt(rgbMatch[2]).toString(16).padStart(2, '0');
-                var b = parseInt(rgbMatch[3]).toString(16).padStart(2, '0');
-                return `#${r}${g}${b}`;
-            }
-            
-            // Se não estiver em nenhum formato válido, retorna preto
-            return '#000000';
-        }
-
-        // Função para converter data do formato DD/MM/YYYY HH:mm para YYYY-MM-DD HH:mm
-        function convertDateFormat(dateStr) {
-            if (!dateStr) return '';
-            return moment(dateStr, 'DD/MM/YYYY HH:mm').format('YYYY-MM-DD HH:mm');
-        }
-
-        // Coleta os dados do formulário
-        formData.append('name', $('#nome').val());
+        
+        // Adiciona os dados do formulário
+        formData.append('name', nome);
         formData.append('plan', $('#plano').val());
         formData.append('billing_cycle', $('#vigencia').val());
-        formData.append('enabled', $('#enabled').is(':checked'));
+        formData.append('enabled', $('#enabled').prop('checked'));
         formData.append('tipo', $('#tipo').val());
-        formData.append('label', $('#etiqueta').val());
-        formData.append('color_text_label', validateColor($('#id3').colorpicker('getValue')));
-        formData.append('color_background_label', validateColor($('#id4').colorpicker('getValue')));
-        formData.append('full_price', $('#preco-padrao').val());
-        formData.append('promotional_price', $('#preco-promocional').val());
-        formData.append('color_text_billing_cycle', validateColor($('#id5').colorpicker('getValue')));
+        formData.append('label', $('#etiqueta').val() || '');
+        
+        // Cores
+        formData.append('color_text_label', validateColor($('#id3').val() || $('#id3 input').val()));
+        formData.append('color_background_label', validateColor($('#id4').val() || $('#id4 input').val()));
+        formData.append('color_text_billing_cycle', validateColor($('#id5').val() || $('#id5 input').val()));
+        
+        // Preços
+        formData.append('full_price', precoPadrao.replace(',', '.'));
+        formData.append('promotional_price', precoPromocional ? precoPromocional.replace(',', '.') : '');
+        formData.append('promotional_price_validity', $('#val-preco-prom').val() || '');
+        
+        // Datas
+        if (dataInicio) formData.append('start_date', dataInicio);
+        if (dataTermino) formData.append('end_date', dataTermino);
+        
+        // Outros campos
         formData.append('show_to', $('#exibir-para').val());
-        formData.append('promotional_price_validity', $('#val-preco-prom').val());
-        formData.append('start_date', convertDateFormat($('#datetimepicker').val()));
-        formData.append('end_date', convertDateFormat($('#datetimepicker2').val()));
-        formData.append('android_product_code', $('#android-product-code').val());
-        formData.append('ios_product_code', $('#ios-product-code').val());
-        formData.append('gateway_product_code', $('#gateway-product-code').val());
-
-        // Adiciona a imagem se houver
+        formData.append('android_product_code', $('#codigo-android').val() || '');
+        formData.append('apple_product_code', $('#codigo-apple').val() || '');
+        
+        // Imagem
         var imageFile = $('#image')[0].files[0];
         if (imageFile) {
             formData.append('image', imageFile);
         }
-
-        // Validação dos campos obrigatórios
-        if (!$('#nome').val()) {
-            toastr.error('O campo Nome é obrigatório');
-            return;
-        }
-        if (!$('#preco-padrao').val()) {
-            toastr.error('O campo Preço Padrão é obrigatório');
-            return;
-        }
-        if ($('#tipo').val() === 'Promocional') {
-            if (!$('#etiqueta').val()) {
-                toastr.error('O campo Etiqueta é obrigatório para pacotes promocionais');
-                return;
-            }
-            if (!$('#preco-promocional').val()) {
-                toastr.error('O campo Preço Promocional é obrigatório para pacotes promocionais');
-                return;
-            }
-        }
-
-        $btn.prop('disabled', true);
-
+        
         // Envia os dados
         $.ajax({
             url: window.location.pathname,
@@ -203,21 +258,15 @@ $(document).ready(function() {
                         window.location.href = $('#cancel-url').data('url');
                     }, 1500);
                 } else {
-                    toastr.error(response.message);
+                    toastr.error(response.message || 'Erro ao salvar plano');
                     $btn.prop('disabled', false);
                 }
             },
-            error: function() {
-                toastr.error('Erro ao salvar plano');
+            error: function(xhr) {
+                toastr.error(xhr.responseJSON?.message || 'Erro ao salvar plano');
                 $btn.prop('disabled', false);
             }
         });
-    });
-
-    // Botão Cancelar
-    $('.btn-danger').click(function(e) {
-        e.preventDefault();
-        window.location.href = $('#cancel-url').data('url');
     });
 
     // Inicialização dos componentes
@@ -227,7 +276,12 @@ $(document).ready(function() {
     });
 
     // Inicialização dos colorpickers
-    $('#id3, #id4, #id5').colorpicker();
+    $('#id3, #id4, #id5').colorpicker({
+        format: 'hex'
+    }).on('colorpickerChange', function(event) {
+        // Atualiza o valor do input quando a cor mudar
+        $(this).find('input').val(event.color.toString());
+    });
 
     // Inicialização dos datepickers
     $('#datetimepicker, #datetimepicker2').datetimepicker({
@@ -244,5 +298,20 @@ $(document).ready(function() {
             clear: 'fa fa-trash',
             close: 'fa fa-remove'
         }
+    });
+
+    // Inicializa os color pickers com formato fixo
+    $('#id3, #id4, #id5').each(function() {
+        $(this).spectrum({
+            type: "component",
+            showInput: true,
+            showInitial: true,
+            showAlpha: false,
+            allowEmpty: false,
+            preferredFormat: "hex",
+            change: function(color) {
+                $(this).val(color.toHexString().toUpperCase());
+            }
+        });
     });
 }); 

@@ -8,32 +8,110 @@
 
 {% block form_data %}
 <script>
+    // Configuração do CSRF token para requisições AJAX
+    var csrftoken = jQuery("[name=csrfmiddlewaretoken]").val();
+    
+    function csrfSafeMethod(method) {
+        // Estes métodos HTTP não requerem proteção CSRF
+        return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+    }
+    
+    $.ajaxSetup({
+        beforeSend: function(xhr, settings) {
+            if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
+                xhr.setRequestHeader("X-CSRFToken", csrftoken);
+            }
+        }
+    });
+    
+    // Função para validar e formatar cores
+    function validateColor(color) {
+        if (!color) return '#000000';
+        
+        // Remove espaços e converte para minúsculas
+        color = color.trim().toLowerCase();
+        
+        // Se já estiver no formato #RRGGBB, retorna como está
+        if (/^#[0-9a-f]{6}$/.test(color)) {
+            return color.toUpperCase();
+        }
+        
+        // Se estiver no formato RGB(r,g,b), converte para hex
+        let rgbMatch = color.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+        if (rgbMatch) {
+            let r = parseInt(rgbMatch[1]);
+            let g = parseInt(rgbMatch[2]);
+            let b = parseInt(rgbMatch[3]);
+            return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`.toUpperCase();
+        }
+        
+        // Se for rgba, remove o canal alpha e converte para hex
+        let rgbaMatch = color.match(/rgba\((\d+),\s*(\d+),\s*(\d+),\s*[\d.]+\)/);
+        if (rgbaMatch) {
+            let r = parseInt(rgbaMatch[1]);
+            let g = parseInt(rgbaMatch[2]);
+            let b = parseInt(rgbaMatch[3]);
+            return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`.toUpperCase();
+        }
+        
+        // Se não estiver em nenhum formato válido, retorna preto
+        return '#000000';
+    }
+    
     $(document).ready(function() {
+        console.log('Página carregada, iniciando preenchimento do formulário');
+        
         // Preenche os dados do plano
         const planData = JSON.parse('{{ plan_data|safe }}');
+        console.log('Dados do plano recebidos:', planData);
         
-        $('#nome').val(planData.name);
-        $('#plano').val(planData.plan);
-        $('#vigencia').val(planData.billing_cycle);
+        // Preencher campos básicos
+        $('#nome').val(planData.name || '');
+        $('#plano').val(planData.plan || 'Craque');
+        $('#vigencia').val(planData.billing_cycle || 'Mensal');
         $('#enabled').prop('checked', planData.enabled);
-        $('#tipo').val(planData.package_type);
-        $('#etiqueta').val(planData.label || '');
-        $('#id3 input').val(planData.color_text_label || '#000000');
-        $('#id4 input').val(planData.color_background_label || '#FFFFFF');
-        $('#preco-padrao').val(planData.full_price);
-        $('#preco-promocional').val(planData.promotional_price || '');
-        $('#id5 input').val(planData.color_text_billing_cycle || '#192639');
-        $('#exibir-para').val(planData.show_to);
-        $('#val-preco-prom').val(planData.promotional_price_validity || '');
         
+        // Ajusta o tipo (Padrão ou Promocional)
+        $('#tipo').val(planData.package_type === 'Promocional' ? 'Promocional' : 'Padrão');
+        console.log('Tipo definido como:', $('#tipo').val());
+        
+        // Campos de etiqueta e cores
+        $('#etiqueta').val(planData.label || '');
+        $('#id3 input').val(planData.color_text_label || '#FFFFFF');
+        $('#id4 input').val(planData.color_background_label || '#CC000C');
+        $('#id5 input').val(planData.color_text_billing_cycle || '#192639');
+        
+        // Campos de preço
+        $('#preco-padrao').val(planData.full_price || '');
+        $('#preco-promocional').val(planData.promotional_price || '');
+        
+        // Outros campos
+        $('#exibir-para').val(planData.show_to || 'Todos');
+        $('#val-preco-prom').val(planData.promotional_price_validity || '');
+        $('#codigo-android').val(planData.android_product_code || '');
+        $('#codigo-apple').val(planData.apple_product_code || '');
+        
+        // Atualiza os colorpickers após definir os valores
+        $('#id3, #id4, #id5').each(function() {
+            $(this).colorpicker('setValue', $(this).find('input').val());
+        });
+        
+        // Preenche as datas se existirem
         if (planData.start_date) {
+            console.log('Definindo data de início:', planData.start_date);
             $('#datetimepicker').val(planData.start_date);
+            // Inicializa o datepicker com o valor
+            $('#datetimepicker').datetimepicker('date', moment(planData.start_date, 'DD/MM/YYYY HH:mm'));
         }
         
         if (planData.end_date) {
+            console.log('Definindo data de término:', planData.end_date);
             $('#datetimepicker2').val(planData.end_date);
+            // Inicializa o datepicker com o valor
+            $('#datetimepicker2').datetimepicker('date', moment(planData.end_date, 'DD/MM/YYYY HH:mm'));
         }
         
+        // Exibe a imagem se existir
         if (planData.image) {
             $('#image-preview').html(`
                 <img src="${planData.image}" style="width: 48px; height: 48px; object-fit: contain; cursor: pointer;" onclick="document.getElementById('image').click()">
@@ -50,16 +128,17 @@
             });
         }
         
-        // Atualiza os colorpickers
-        $('#id3, #id4, #id5').colorpicker('update');
-        
         // Dispara o evento change do tipo para ajustar a visibilidade dos campos
         $('#tipo').trigger('change');
         
         // Garante que os campos de etiqueta sejam exibidos quando o tipo for promocional
-        if (planData.package_type === 'promotional') {
-            $('.label-fields').show();
+        if (planData.package_type === 'Promocional') {
+            $('.label-fields, #etiqueta, .date-fields').show();
+        } else if (planData.package_type === 'Padrão' && planData.label) {
+            $('.label-fields, #etiqueta').show();
         }
+        
+        console.log('Formulário preenchido com sucesso');
     });
 </script>
 {% endblock %} 

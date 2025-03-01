@@ -1,0 +1,136 @@
+Pacotes Planos – Criar/Editar
+
+
+
+Criar/Editar Pacotes Planos
+1 - Na tela Novo Pacote, os seguintes campos serão obrigatórios: Nome, Preço Padrão e Preço
+Promocional.
+2 - O campo Plano deverá aparecer a lista dos planos pagos (por enquanto apenas o Craque,
+mas futuramente pode ter mais planos pagos)
+3 - Ao selecionar o plano, deverá carregar no campo Vigência a listagem das vigências
+atreladas ao plano.
+OBS: Apesar de hoje ser definido que o plano Craque será atrelada as três vigências, no
+futuro poderão ter outros planos que não necessariamente estaria atrelado a todas as
+vigências. Ex: Plano Super Craque com opção apenas para vigência Anual.
+4 - Ao clicar no botão Imagem e selecionar a imagem:
+4.1 - Deverá aparecer uma preview da imagem, indicando que a imagem a ser
+importada foi selecionada.
+4.2 - Opção de limpar a imagem. Para possibilitar salvar um pacote sem imagem.
+5 - Ao selecionar o Tipo Padrão:
+5.1 - Inicio Exibição e Fim Exibição serão ocultados
+5.2 - Etiqueta, Cor Texto Etiqueta, Cor Fundo Etiqueta serão exibidos.
+6 - Ao salvar um plano tipo Promocional:
+6.1 - O plano será gerenciado via Google, de acordo com as configurações no Google
+Play Console do preço padrão, preço promocional, em quantas renovações será pelo preço
+promocional e quando o usuário pagará o preço padrão.
+7 - A configuração do campo Exibir para deverão ser aplicadas conforme escolha:
+7.1 - Todos: exibir para todos os jogadores.
+7.2 - Comum: exibir pacote apenas para jogadores plano Comum.
+7.3 - Craque: exibir pacote apenas para jogadores plano Craque.
+8 - O campo Código do produto (Android) será o Id criado no Google Play Console para o plano
+específico. Será campo opcional.
+9 - Todas as informações poderão ser editadas.
+
+
+Pacotes Futcoins – Criar/Editar
+
+Criar/Editar Pacotes Futcoins
+1 - Na tela Novo Pacote, os seguintes campos serão obrigatórios: Nome, Preço Padrão, Preço
+Promocional e Conteúdo.
+2 - Ao clicar no botão Imagem e selecionar a imagem:
+2.1 - Deverá aparecer uma preview da imagem, indicando que a imagem a ser
+importada foi selecionada.
+2.2 - Opção de limpar a imagem. Para possibilitar salvar um pacote sem imagem.
+3 - Ao selecionar o Tipo Padrão:
+3.1 - Inicio Exibição, Fim Exibição serão ocultados
+3.2 - Etiqueta, Cor Texto Etiqueta, Cor Fundo Etiqueta e Bônus serão exibidos.
+4 - A configuração do campo Exibir para deverão ser aplicadas conforme escolha:
+4.1 - Todos: exibir para todos os jogadores.
+4.2 - Comum: exibir pacote apenas para jogadores plano Comum.
+4.3 - Craque: exibir pacote apenas para jogadores plano Craque.
+5 - O campo Código do produto (Android) será o Id criado no Google Play Console para o
+pacote específico. Será um campo opcional.
+6 - Todas as informações poderão ser editadas.
+
+
+
+
+Futligas Jogadores
+
+Configuração níveis
+1 - Ao configurar os valores e clicar em Adicionar, o nível cadastrado aparecerá na tabela a
+direita.
+2 - Apenas o Dono Craque, Imagem e as premiações são opcionais.
+3 - Poderá mudar a ordem dos níveis na tabela clicando e arrastando.
+4 - Ao clicar em editar, os campos a esquerda ficarão preenchidos com os respectivos dados
+configurados anteriormente.
+4.1 - No modo de edição, o botão Adicionar será mudado para Salvar Alterações.
+4.2 - Para finalizar a edição, precisará clicar em Salvar Alterações.
+5 - Ao clicar em Excluir, apagará o nível na listagem da tabela.
+6 - Não poderá adicionar níveis com mesmo nome.
+7 - Deverá clicar em Salvar para aplicar as alterações realizadas em ambas as abas.
+7.1 - A ordem dos níveis configuradas devem ser devidamente salvas.
+8 - Na aba Prêmios, além da Posição e imagem, carregará as colunas dos níveis cadastrados
+anteriormente (respeitando a ordenação dos níveis) para que seja possível configurar os
+prêmios das posições de cada nível.
+Importar níveis
+1 - Ao clicar em importar, abrirá a modal do Windows para selecionar arquivos:
+1.1 - Para importar, o arquivo xls precisará das seguintes informações: Nível,
+Participantes, Craques, Dono Craque e premiações das posições (respeitando a ordem
+cardinal), podendo adicionar quantas posições quiser.
+Exportar níveis
+1 - Ao clicar no botão de Exportar, será gerado um arquivo xls com as informações: Nível,
+Participantes, Craques, Dono Craque e premiações das posições (respeitando a ordem
+cardinal).
+
+
+Futligas Clássicas
+
+Listar futligas
+1 - Na Home, serão mostrados as futligas clássicas de acordo com futligas-classicas.html,
+ordenados pelo Nome (A-Z).
+Criar futliga
+1 - O campo Nome será obrigatório e a Imagem deverá ter uma preview com o ícone de fechar
+que ao clicar, limpará a seleção da imagem.
+2 - Ao clicar no botão Imagem e selecionar a imagem:
+2.1 - Deverá aparecer uma preview da imagem, indicando que a imagem a ser
+importada foi selecionada.
+2.2 - Opção de limpar a imagem. Para possibilitar salvar sem imagem.
+3 - No campo Frequência Premiação ao selecionar:
+3.1 - Semanal: habilitará o campo Dia Semana para definir qual dia da semana será
+distribuído a premiação e que o ranking da liga será reiniciado.
+3.2 - Mensal: a premiação e o reinício do ranking da liga ocorrerão todo dia 1 de cada
+mês.
+3.3 - Anual: a premiação e o reinício do ranking da liga ocorrerão todo dia 1 de cada
+ano.
+4 - Na aba Prêmios, ao clicar em Adicionar Posição, adicionará uma linha a tabela com uma
+posição a mais, colunas Imagem e Prêmio vazios para a configuração, além da opção de excluir
+4.1 - O campo posição será também editável, para possibilitar a organização das
+posições atuais, no caso de exclusão de linhas (evitando situações por exemplo, adiciono 4
+posições, elimino a posição 3, ficando a 1, 2 e 4 posições).
+4.2 - Os valores das premiações deverão ser tipo inteiros e não poderão ser negativos.
+Excluir futliga
+1 - O registro poderá ser excluído a qualquer momento.
+
+Notificações – Criar/Editar
+
+Criar/Editar notificações
+1 - Todos os campos serão de preenchimentos obrigatórios.
+2 - Os tipos de notificação serão: Geral, Pacote Futcoins e Pacote Plano.
+3 - Caso o tipo de notificação selecionada seja Geral, o campo Pacote ficará oculto.
+4 - Caso o tipo de notificação selecionada seja Pacote Futcoins:
+4.1 - Pacote será a lista dos pacotes futcoins ativos.
+4.2 - Título e Mensagem estarão desabilitados para edição
+4.3 - Título será igual a: Nome Pacote + disponível agora!!
+4.4 - Mensagem será igual a: Adquira já o pacote e impulsione seus palpites.
+5 - Caso o tipo de notificação selecionada seja Pacote Plano:
+5.1 - Pacote será a lista dos pacotes planos ativos.
+5.2 - Título e Mensagem estarão desabilitados para edição.
+5.3 - Título será igual a: Nome Pacote + disponível agora!!
+5.4 - Mensagem será igual a: Seja Craque agora e aproveite todas as vantagens.
+6 - Em relação ao envio da notificação:
+6.1 - Caso seja selecionada a opção Envio Imediato, o campo Data Envio estará oculto e
+ao salvar, a notificação será enviada de imediato.
+6.2 - Caso seja selecionada a opção Agendada, o campo Data Envio será exibido e ao
+salvar, a notificação será enviada na data selecionada.
+7 - Todas as informações poderão ser editadas caso a notificação não foi disparada ainda.

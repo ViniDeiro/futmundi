@@ -4,6 +4,7 @@ from django.db import models
 from django.utils import timezone
 from django.templatetags.static import static
 from django.db.models import Q
+from django.core.exceptions import ValidationError
 import os
 
 class User(AbstractUser):
@@ -651,11 +652,56 @@ class FutcoinPackage(models.Model):
 
     def clean(self):
         # Validações personalizadas
-        if self.promotional_price and self.promotional_price > self.full_price:
-            raise ValidationError('O preço promocional não pode ser maior que o preço padrão.')
+        errors = {}
         
+        # Validação do tipo de pacote e etiqueta
+        if self.package_type == 'promocional' and not self.label:
+            errors['label'] = 'A etiqueta é obrigatória para pacotes promocionais.'
+        
+        # Validação do preço promocional
+        if self.promotional_price is not None:
+            if self.promotional_price <= 0:
+                errors['promotional_price'] = 'O preço promocional deve ser maior que zero.'
+            if self.promotional_price >= self.full_price:
+                errors['promotional_price'] = 'O preço promocional deve ser menor que o preço padrão. Por favor, verifique os valores informados.'
+        
+        # Validação das datas para pacotes promocionais
+        if self.package_type == 'promocional':
+            if not self.start_date:
+                errors['start_date'] = 'A data de início é obrigatória para pacotes promocionais.'
+            if not self.end_date:
+                errors['end_date'] = 'A data de término é obrigatória para pacotes promocionais.'
+        
+        # Validação geral das datas
         if self.start_date and self.end_date and self.start_date > self.end_date:
-            raise ValidationError('A data de início não pode ser posterior à data de término.')
+            errors['start_date'] = 'A data de início não pode ser posterior à data de término.'
+            errors['end_date'] = 'A data de término não pode ser anterior à data de início.'
+        
+        # Validação das cores
+        for field in ['color_text_label', 'color_background_label']:
+            color = getattr(self, field)
+            # Verifica se é uma cor no formato rgba
+            if color and len(color) > 7:
+                # Tenta converter para o formato hexadecimal
+                try:
+                    # Extrai os valores RGB do formato rgba
+                    import re
+                    rgba_match = re.match(r'rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*[\d.]+)?\)', color)
+                    if rgba_match:
+                        r, g, b = map(int, rgba_match.groups())
+                        # Converte para hexadecimal
+                        hex_color = f'#{r:02x}{g:02x}{b:02x}'.upper()
+                        # Atualiza o valor do campo
+                        setattr(self, field, hex_color)
+                    else:
+                        errors[field] = 'Cor inválida. Use o formato hexadecimal (#RRGGBB).'
+                except Exception:
+                    errors[field] = 'Cor inválida. Use o formato hexadecimal (#RRGGBB).'
+            elif not color.startswith('#') or len(color) != 7 or not all(c in '0123456789ABCDEFabcdef' for c in color[1:]):
+                errors[field] = 'Cor inválida. Use o formato hexadecimal (#RRGGBB).'
+        
+        if errors:
+            raise ValidationError(errors)
 
     def save(self, *args, **kwargs):
         self.clean()
@@ -689,43 +735,150 @@ class FutcoinPackage(models.Model):
         return self.content + self.bonus
 
 class Plan(models.Model):
-    name = models.CharField(max_length=255)
-    plan = models.CharField(max_length=50)
+    BILLING_CYCLE_CHOICES = [
+        ('Mensal', 'Mensal'),
+        ('Semestral', 'Semestral'),
+        ('Anual', 'Anual')
+    ]
+    
+    PACKAGE_TYPE_CHOICES = [
+        ('Padrão', 'Padrão'),
+        ('Promocional', 'Promocional')
+    ]
+    
+    SHOW_TO_CHOICES = [
+        ('Todos', 'Todos'),
+        ('Comum', 'Comum'),
+        ('Craque', 'Craque')
+    ]
+
+    name = models.CharField(max_length=255, verbose_name='Nome')
+    plan = models.CharField(max_length=50, verbose_name='Plano')
     billing_cycle = models.CharField(
         max_length=20,
-        choices=[('Mensal', 'Mensal'), ('Semestral', 'Semestral'), ('Anual', 'Anual')]
+        choices=BILLING_CYCLE_CHOICES,
+        verbose_name='Ciclo de Cobrança'
     )
-    image = models.ImageField(upload_to='plans/', null=True, blank=True)
-    enabled = models.BooleanField(default=True)
+    image = models.ImageField(upload_to='plans/', null=True, blank=True, verbose_name='Imagem')
+    enabled = models.BooleanField(default=True, verbose_name='Ativo')
     package_type = models.CharField(
         max_length=20,
-        choices=[('Padrão', 'Padrão'), ('Promocional', 'Promocional')]
+        choices=PACKAGE_TYPE_CHOICES,
+        verbose_name='Tipo do Pacote'
     )
-    label = models.CharField(max_length=50, null=True, blank=True)
-    color_text_label = models.CharField(max_length=7, default='#000000')
-    color_background_label = models.CharField(max_length=7, default='#FFFFFF')
-    full_price = models.DecimalField(max_digits=10, decimal_places=2)
-    promotional_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    color_text_billing_cycle = models.CharField(max_length=7, default='#192639')
+    label = models.CharField(max_length=50, null=True, blank=True, verbose_name='Etiqueta')
+    color_text_label = models.CharField(max_length=7, default='#FFFFFF', verbose_name='Cor do Texto da Etiqueta')
+    color_background_label = models.CharField(max_length=7, default='#CC000C', verbose_name='Cor de Fundo da Etiqueta')
+    full_price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Preço Padrão')
+    promotional_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, verbose_name='Preço Promocional')
+    color_text_billing_cycle = models.CharField(max_length=7, default='#192639', verbose_name='Cor do Texto do Ciclo')
     show_to = models.CharField(
         max_length=20,
-        choices=[('Todos', 'Todos'), ('Comum', 'Comum'), ('Craque', 'Craque')]
+        choices=SHOW_TO_CHOICES,
+        default='Todos',
+        verbose_name='Exibir Para'
     )
-    start_date = models.DateTimeField(null=True, blank=True)
-    end_date = models.DateTimeField(null=True, blank=True)
-    created_at = models.DateTimeField(default=timezone.now)
-    updated_at = models.DateTimeField(default=timezone.now)
-    android_product_code = models.CharField(max_length=100, null=True, blank=True)
-    apple_product_code = models.CharField(max_length=100, null=True, blank=True)
-    promotional_price_validity = models.IntegerField(null=True, blank=True)
+    start_date = models.DateTimeField(null=True, blank=True, verbose_name='Data de Início')
+    end_date = models.DateTimeField(null=True, blank=True, verbose_name='Data de Término')
+    created_at = models.DateTimeField(default=timezone.now, verbose_name='Criado em')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='Atualizado em')
+    android_product_code = models.CharField(max_length=100, null=True, blank=True, verbose_name='Código do Produto (Android)')
+    apple_product_code = models.CharField(max_length=100, null=True, blank=True, verbose_name='Código do Produto (Apple)')
+    promotional_price_validity = models.IntegerField(null=True, blank=True, verbose_name='Validade do Preço Promocional')
 
     class Meta:
         db_table = 'plans'
-        verbose_name = 'Plan'
-        verbose_name_plural = 'Plans'
+        verbose_name = 'Plano'
+        verbose_name_plural = 'Planos'
+        ordering = ['-created_at']
 
     def __str__(self):
         return self.name
+
+    def clean(self):
+        # Validações personalizadas
+        errors = {}
+        
+        # Validação do tipo de pacote e etiqueta
+        if self.package_type == 'Promocional' and not self.label:
+            errors['label'] = 'A etiqueta é obrigatória para pacotes promocionais.'
+        
+        # Validação do preço promocional
+        if self.promotional_price is not None:
+            if self.promotional_price <= 0:
+                errors['promotional_price'] = 'O preço promocional deve ser maior que zero.'
+            if self.promotional_price >= self.full_price:
+                errors['promotional_price'] = 'O preço promocional deve ser menor que o preço padrão. Por favor, verifique os valores informados.'
+        
+        # Validação das datas para pacotes promocionais
+        if self.package_type == 'Promocional':
+            if not self.start_date:
+                errors['start_date'] = 'A data de início é obrigatória para pacotes promocionais.'
+            if not self.end_date:
+                errors['end_date'] = 'A data de término é obrigatória para pacotes promocionais.'
+        
+        # Validação geral das datas
+        if self.start_date and self.end_date and self.start_date > self.end_date:
+            errors['start_date'] = 'A data de início não pode ser posterior à data de término.'
+            errors['end_date'] = 'A data de término não pode ser anterior à data de início.'
+        
+        # Validação das cores
+        for field in ['color_text_label', 'color_background_label', 'color_text_billing_cycle']:
+            color = getattr(self, field)
+            # Verifica se é uma cor no formato rgba
+            if color and len(color) > 7:
+                # Tenta converter para o formato hexadecimal
+                try:
+                    # Extrai os valores RGB do formato rgba
+                    import re
+                    rgba_match = re.match(r'rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*[\d.]+)?\)', color)
+                    if rgba_match:
+                        r, g, b = map(int, rgba_match.groups())
+                        # Converte para hexadecimal
+                        hex_color = f'#{r:02x}{g:02x}{b:02x}'.upper()
+                        # Atualiza o valor do campo
+                        setattr(self, field, hex_color)
+                    else:
+                        errors[field] = 'Cor inválida. Use o formato hexadecimal (#RRGGBB).'
+                except Exception:
+                    errors[field] = 'Cor inválida. Use o formato hexadecimal (#RRGGBB).'
+            elif not color.startswith('#') or len(color) != 7 or not all(c in '0123456789ABCDEFabcdef' for c in color[1:]):
+                errors[field] = 'Cor inválida. Use o formato hexadecimal (#RRGGBB).'
+        
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args, **kwargs):
+        # Garante que as cores estejam em maiúsculas
+        self.color_text_label = self.color_text_label.upper()
+        self.color_background_label = self.color_background_label.upper()
+        self.color_text_billing_cycle = self.color_text_billing_cycle.upper()
+        
+        # Chama a validação
+        self.full_clean()
+        
+        super().save(*args, **kwargs)
+
+    def is_valid_period(self):
+        """
+        Verifica se o plano está dentro do período válido de exibição
+        """
+        now = timezone.now()
+        if self.start_date and self.end_date:
+            return self.start_date <= now <= self.end_date
+        elif self.start_date:
+            return self.start_date <= now
+        elif self.end_date:
+            return now <= self.end_date
+        return True
+
+    def get_final_price(self):
+        """
+        Retorna o preço final do plano (promocional se disponível, senão o preço padrão)
+        """
+        if self.promotional_price and self.is_valid_period():
+            return self.promotional_price
+        return self.full_price
 
 # Futligas
 class ClassicLeague(models.Model):

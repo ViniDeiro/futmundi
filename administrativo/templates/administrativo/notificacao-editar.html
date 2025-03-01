@@ -207,27 +207,34 @@
                                                     <div class="col-lg-6 mtm20">
                                                         <label class="control-label" for="tipo">Tipo</label>
                                                         <select class="form-control js-example-basic-single" name="notification_type" id="tipo" style="width: 80%">
-                                                            <option value="generic">Geral</option>
-                                                            <option value="package_coins">Pacote Futcoins</option>
-                                                            <option value="package_plan">Pacote Plano</option>
+                                                            <option value="Geral" {% if notification.notification_type == 'Geral' %}selected{% endif %}>Geral</option>
+                                                            <option value="PacoteFutcoins" {% if notification.notification_type == 'PacoteFutcoins' %}selected{% endif %}>Pacote Futcoins</option>
+                                                            <option value="PacotePlano" {% if notification.notification_type == 'PacotePlano' %}selected{% endif %}>Pacote Plano</option>
                                                         </select>
                                                     </div>
-                                                    <div class="col-lg-6 mtm20">
+                                                    <div class="col-lg-6 mtm20" id="pacote-container" {% if notification.notification_type == 'Geral' %}style="display: none;"{% endif %}>
                                                         <label class="control-label" for="pacote">Pacote</label>
                                                         <select class="form-control js-example-basic-single" name="package" id="pacote" style="width: 80%">
-                                                            {% for package in packages %}
-                                                                <option value="{{ package.id }}">{{ package.name }}</option>
-                                                            {% endfor %}
+                                                            <option value="">Selecione um pacote</option>
+                                                            {% if notification.notification_type == 'PacoteFutcoins' %}
+                                                                {% for package in futcoin_packages %}
+                                                                    <option value="{{ package.id }}" {% if notification.package_id == package.id %}selected{% endif %}>{{ package.name }}</option>
+                                                                {% endfor %}
+                                                            {% elif notification.notification_type == 'PacotePlano' %}
+                                                                {% for package in plan_packages %}
+                                                                    <option value="{{ package.id }}" {% if notification.package_id == package.id %}selected{% endif %}>{{ package.name }}</option>
+                                                                {% endfor %}
+                                                            {% endif %}
                                                         </select>
                                                     </div>
                                                 </div>
                                             </div>
                                             <div class="form-group col-lg-8">
-                                                <input type="text" id="nome" name="title" class="form-control" required>
+                                                <input type="text" id="nome" name="title" class="form-control" required value="{{ notification.title }}">
                                                 <label class="form-control-placeholder" for="nome">Título</label>
                                             </div>
                                             <div class="form-group col-lg-12 mt30">
-                                                <input type="text" id="mensagem" name="message" class="form-control" required>
+                                                <input type="text" id="mensagem" name="message" class="form-control" required value="{{ notification.message }}">
                                                 <label class="form-control-placeholder" for="mensagem">Mensagem</label>
                                             </div>
                                             <div class="form-group col-lg-12">
@@ -248,7 +255,7 @@
                                         <div class="form-group col-lg-8 mtm10">
                                             <label class="control-label">Data Envio</label>
                                             <div class="input-group date" data-target-input="nearest">
-                                                <input type="text" class="form-control datetimepicker-input" name="send_at" id="datetimepicker" data-toggle="datetimepicker" data-target="#datetimepicker"/>
+                                                <input type="text" class="form-control datetimepicker-input" name="send_at" id="datetimepicker" data-toggle="datetimepicker" data-target="#datetimepicker" value="{{ notification.send_at|date:'Y-m-d H:i'|default:'' }}">
                                                 <div class="input-group-append" data-target="#datetimepicker" data-toggle="datetimepicker">
                                                     <div class="input-group-text"><i class="fa fa-calendar"></i></div>
                                                 </div>
@@ -308,7 +315,7 @@
 
                 // Inicializa o DateTimePicker
                 $('#datetimepicker').datetimepicker({
-                    format: 'DD/MM/YYYY HH:mm',
+                    format: 'YYYY-MM-DD HH:mm',
                     icons: {
                         time: 'fa fa-clock-o',
                         date: 'fa fa-calendar',
@@ -325,10 +332,45 @@
                 // Controle do campo de pacote baseado no tipo
                 $('#tipo').on('change', function() {
                     var tipo = $(this).val();
-                    if (tipo === 'generic') {
-                        $('#pacote').prop('disabled', true);
+                    var $pacoteSelect = $('#pacote');
+                    var $pacoteContainer = $('#pacote-container');
+                    
+                    $pacoteSelect.empty().append('<option value="">Selecione um pacote</option>');
+                    
+                    if (tipo === 'Geral') {
+                        $pacoteContainer.hide();
                     } else {
-                        $('#pacote').prop('disabled', false);
+                        $pacoteContainer.show();
+                        
+                        // Determina o tipo de pacote para a API
+                        var apiType = tipo === 'PacoteFutcoins' ? 'package_coins' : 'package_plan';
+                        
+                        // Carrega os pacotes baseado no tipo selecionado
+                        $.ajax({
+                            url: '{% url "administrativo:get_packages" %}',
+                            type: 'GET',
+                            data: {
+                                type: apiType
+                            },
+                            success: function(response) {
+                                if (response.success) {
+                                    response.packages.forEach(function(package) {
+                                        $pacoteSelect.append(new Option(package.name, package.id));
+                                    });
+                                    
+                                    // Se estiver editando, seleciona o pacote atual
+                                    var currentPackageId = "{{ notification.package_id|default:'' }}";
+                                    if (currentPackageId) {
+                                        $pacoteSelect.val(currentPackageId);
+                                    }
+                                } else {
+                                    toastr.error('Erro ao carregar pacotes: ' + response.message);
+                                }
+                            },
+                            error: function() {
+                                toastr.error('Erro ao carregar pacotes. Tente novamente.');
+                            }
+                        });
                     }
                 });
 
@@ -341,9 +383,12 @@
                     }
                 });
 
+                // Trigger inicial para configurar o estado dos campos
+                $('#tipo').trigger('change');
+
                 // Carrega os dados existentes
                 var notification = {
-                    notification_type: "{{ notification.notification_type|default:'generic' }}",
+                    notification_type: "{{ notification.notification_type|default:'Geral' }}",
                     package_id: "{{ notification.package.id|default:'' }}",
                     title: "{{ notification.title|escapejs }}",
                     message: "{{ notification.message|escapejs }}",

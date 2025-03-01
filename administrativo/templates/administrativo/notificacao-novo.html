@@ -208,12 +208,10 @@
                                                             <option value="PacotePlano">Pacote Plano</option>
                                                         </select>
                                                     </div>
-                                                    <div class="col-lg-6 mtm20">
+                                                    <div class="col-lg-6 mtm20" id="pacote-container" style="display: none;">
                                                         <label class="control-label" for="pacote">Pacote</label>
                                                         <select class="form-control js-example-basic-single" id="pacote" style="width: 80%">
-                                                            <option value="PacoteAtivo1">Pacote Ativo 1</option>
-                                                            <option value="PacoteAtivo2">Pacote Ativo 2</option>
-                                                            <option value="PacoteAtivo3">Pacote Ativo 3</option>
+                                                            <option value="">Selecione um pacote</option>
                                                         </select>
                                                     </div>
                                                 </div>
@@ -317,31 +315,43 @@
             $('#tipo').on('change', function() {
                 var tipo = $(this).val();
                 var $pacoteSelect = $('#pacote');
+                var $pacoteContainer = $('#pacote-container');
                 
                 $pacoteSelect.empty().append('<option value="">Selecione um pacote</option>');
                 
-                if (tipo === 'generic') {
-                    $pacoteSelect.prop('disabled', true);
+                if (tipo === 'Geral') {
+                    $pacoteContainer.hide();
                 } else {
-                    $pacoteSelect.prop('disabled', false);
+                    $pacoteContainer.show();
+                    
+                    // Determina o tipo de pacote para a API
+                    var apiType = tipo === 'PacoteFutcoins' ? 'package_coins' : 'package_plan';
                     
                     // Carrega os pacotes baseado no tipo selecionado
                     $.ajax({
                         url: '{% url "administrativo:get_packages" %}',
                         type: 'GET',
                         data: {
-                            type: tipo
+                            type: apiType
                         },
                         success: function(response) {
                             if (response.success) {
                                 response.packages.forEach(function(package) {
                                     $pacoteSelect.append(new Option(package.name, package.id));
                                 });
+                            } else {
+                                toastr.error('Erro ao carregar pacotes: ' + response.message);
                             }
+                        },
+                        error: function() {
+                            toastr.error('Erro ao carregar pacotes. Tente novamente.');
                         }
                     });
                 }
             });
+
+            // Trigger inicial para configurar o estado dos campos
+            $('#tipo').trigger('change');
 
             // Controle do campo de data baseado no tipo de envio
             $('input[name="a"]').on('ifChecked', function(event) {
@@ -366,7 +376,7 @@
                     return;
                 }
 
-                if (tipo !== 'generic' && !pacote) {
+                if (tipo !== 'Geral' && !pacote) {
                     toastr.error('Por favor, selecione um pacote');
                     return;
                 }
@@ -381,7 +391,7 @@
                     title: titulo,
                     message: mensagem,
                     notification_type: tipo,
-                    package: tipo !== 'generic' ? pacote : null,
+                    package: tipo !== 'Geral' ? pacote : null,
                     send_at: !envioImediato ? dataEnvio : null,
                     csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val()
                 };
