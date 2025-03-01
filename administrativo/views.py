@@ -69,6 +69,22 @@ def make_aware_with_local_timezone(date_str_or_obj, format_str='%d/%m/%Y %H:%M')
     
     return compensated_date
 
+# Função utilitária para notificações que não aplica a compensação de 3 horas
+def make_aware_for_notifications(date_str_or_obj, format_str='%d/%m/%Y %H:%M'):
+    # Converte string para objeto datetime, se necessário
+    if isinstance(date_str_or_obj, str):
+        naive_date = datetime.strptime(date_str_or_obj, format_str)
+    else:
+        naive_date = date_str_or_obj
+    
+    # Se o objeto já tiver timezone, retorna-o diretamente
+    if hasattr(naive_date, 'tzinfo') and naive_date.tzinfo is not None and naive_date.tzinfo.utcoffset(naive_date) is not None:
+        return naive_date
+    
+    # Aplica o timezone local sem compensação
+    local_tz = pytz.timezone(settings.TIME_ZONE)
+    return local_tz.localize(naive_date)
+
 @login_required
 def get_packages(request):
     """
@@ -2869,7 +2885,7 @@ def notificacao_novo(request):
 
             if send_at:
                 try:
-                    notification.send_at = make_aware_with_local_timezone(send_at)
+                    notification.send_at = make_aware_for_notifications(send_at)
                 except ValueError:
                     return JsonResponse({
                         'success': False,
@@ -2948,7 +2964,7 @@ def notificacao_editar(request, id):
             if send_at:
                 try:
                     # Formato diferente para a edição de notificação
-                    notification.send_at = make_aware_with_local_timezone(send_at, '%Y-%m-%d %H:%M')
+                    notification.send_at = make_aware_for_notifications(send_at, '%Y-%m-%d %H:%M')
                     notification.status = 'pending'
                 except ValueError:
                     messages.error(request, 'Data de envio inválida')
@@ -4269,7 +4285,7 @@ def notificacao_editar(request, id):
             if send_at:
                 try:
                     # Formato diferente para a edição de notificação
-                    notification.send_at = make_aware_with_local_timezone(send_at, '%Y-%m-%d %H:%M')
+                    notification.send_at = make_aware_for_notifications(send_at, '%Y-%m-%d %H:%M')
                     notification.status = 'pending'
                 except ValueError:
                     messages.error(request, 'Data de envio inválida')
