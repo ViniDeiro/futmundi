@@ -780,11 +780,12 @@ class Plan(models.Model):
     )
     start_date = models.DateTimeField(null=True, blank=True, verbose_name='Data de Início')
     end_date = models.DateTimeField(null=True, blank=True, verbose_name='Data de Término')
-    created_at = models.DateTimeField(default=timezone.now, verbose_name='Criado em')
-    updated_at = models.DateTimeField(auto_now=True, verbose_name='Atualizado em')
     android_product_code = models.CharField(max_length=100, null=True, blank=True, verbose_name='Código do Produto (Android)')
     apple_product_code = models.CharField(max_length=100, null=True, blank=True, verbose_name='Código do Produto (Apple)')
+    gateway_product_code = models.CharField(max_length=100, null=True, blank=True, verbose_name='Código do Produto (Gateway)')
     promotional_price_validity = models.IntegerField(null=True, blank=True, verbose_name='Validade do Preço Promocional')
+    created_at = models.DateTimeField(default=timezone.now, verbose_name='Criado em')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='Atualizado em')
 
     class Meta:
         db_table = 'plans'

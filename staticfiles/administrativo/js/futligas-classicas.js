@@ -69,20 +69,16 @@ $(document).ready(function() {
         
         var newRow = $('<tr>').attr('id', 'prize-row-' + prizeCounter);
         
-        // Coluna Posição
+        // Coluna Posição - readonly pois o sistema já reorganiza automaticamente
         newRow.append($('<td>').append(
             $('<input>').attr({
                 'type': 'number',
                 'class': 'form-control position-input',
                 'required': true,
                 'min': '1',
-                'value': newPosition
-            }).on('input', function() {
-                var value = $(this).val();
-                if (!validatePositiveInteger(value)) {
-                    $(this).val(newPosition);
-                    toastr.error('A posição deve ser um número inteiro positivo');
-                }
+                'value': newPosition,
+                'readonly': true,
+                'style': 'background-color: #eee'
             })
         ));
         
@@ -147,7 +143,20 @@ $(document).ready(function() {
                 reader.onload = function(e) {
                     preview.html(`
                         <img src="${e.target.result}" style="width: 32px; height: 32px; object-fit: contain; cursor: pointer;" onclick="$(this).closest('.prize-image-container').find('.prize-image').click()">
+                        <button type="button" class="btn btn-danger btn-xs clear-prize-image" style="position: absolute; bottom: -5px; right: -5px;">
+                            <i class="fa fa-trash"></i>
+                        </button>
                     `);
+                    
+                    // Handler para limpar a imagem
+                    preview.find('.clear-prize-image').on('click', function(e) {
+                        e.stopPropagation();
+                        var container = $(this).closest('.prize-image-container');
+                        container.find('.prize-image').val('');
+                        container.find('.prize-image-preview').html(`
+                            <i class="fa fa-file-image-o" style="font-size: 24px; color: #ccc; cursor: pointer;"></i>
+                        `);
+                    });
                 }
                 reader.readAsDataURL(file);
             }
@@ -215,10 +224,12 @@ $(document).ready(function() {
         if (frequencia === 'Semanal') {
             var weekday = parseInt($('#dia-premiacao').val());
             formData.append('weekday', weekday);
+            formData.append('monthday', '1'); // Valor padrão para ligas semanais
         } else if (frequencia === 'Mensal' || frequencia === 'Anual') {
             var monthday = parseInt($('#mes-premiacao').val());
             if (monthday >= 1 && monthday <= 31) {
                 formData.append('monthday', monthday);
+                formData.append('weekday', '0'); // Valor padrão para ligas mensais/anuais
             } else {
                 toastr.error('O dia do mês deve estar entre 1 e 31');
                 return;
@@ -278,7 +289,7 @@ $(document).ready(function() {
     $('#confirm-delete').click(function() {
         if (futligaIdToDelete) {
             $.ajax({
-                url: `/administrativo/futligas/classicas/${futligaIdToDelete}/excluir/`,
+                url: `/administrativo/futliga/classica/excluir/${futligaIdToDelete}/`,
                 type: 'POST',
                 headers: {
                     'X-CSRFToken': $('meta[name="csrf-token"]').attr('content')
@@ -287,7 +298,7 @@ $(document).ready(function() {
                     if (response.success) {
                         toastr.success('Futliga Clássica excluída com sucesso!');
                         setTimeout(function() {
-                            window.location.href = '/administrativo/futligas/classicas/';
+                            window.location.href = '/administrativo/futligas/';
                         }, 1500);
                     } else {
                         toastr.error(response.message || 'Erro ao excluir Futliga Clássica');
@@ -323,7 +334,7 @@ $(document).ready(function() {
             });
 
             $.ajax({
-                url: '/administrativo/futligas/classicas/excluir-em-massa/',
+                url: '/administrativo/futliga/classica/excluir-em-massa/',
                 type: 'POST',
                 data: formData,
                 processData: false,
@@ -332,7 +343,7 @@ $(document).ready(function() {
                     if (response.success) {
                         toastr.success('Futligas Clássicas excluídas com sucesso!');
                         setTimeout(function() {
-                            window.location.href = '/administrativo/futligas/classicas/';
+                            window.location.href = '/administrativo/futligas/';
                         }, 1500);
                     } else {
                         toastr.error(response.message || 'Erro ao excluir Futligas Clássicas');

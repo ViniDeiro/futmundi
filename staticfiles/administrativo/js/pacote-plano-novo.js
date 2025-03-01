@@ -262,7 +262,6 @@ $(document).ready(function() {
         formData.append('show_to', $('#exibir-para').val());
         formData.append('android_product_code', $('#codigo-android').val() || '');
         formData.append('apple_product_code', $('#codigo-apple').val() || '');
-        formData.append('gateway_product_code', $('#codigo-gateway').val() || '');
         
         // Validação das datas para planos promocionais
         if ($('#tipo').val() === 'Promocional') {

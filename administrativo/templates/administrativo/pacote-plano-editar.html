@@ -80,6 +80,9 @@
         $('body').append('<input type="hidden" id="hidden_start_date">');
         $('body').append('<input type="hidden" id="hidden_end_date">');
         $('body').append('<input type="hidden" id="should_remove_image" name="should_remove_image" value="no">');
+        // Adiciona campos ocultos para cores da etiqueta
+        $('body').append('<input type="hidden" id="hidden_color_text_label">');
+        $('body').append('<input type="hidden" id="hidden_color_background_label">');
         
         // Configura os datepickers
         $('#datetimepicker, #datetimepicker2').datetimepicker({
@@ -95,34 +98,82 @@
                 today: 'fa fa-screenshot',
                 clear: 'fa fa-trash',
                 close: 'fa fa-remove'
-            }
+            },
+            sideBySide: true,
+            useCurrent: false,
+            allowInputToggle: true,
+            ignoreReadonly: true,
+            showOn: "both" // Garante que o calendário apareça tanto no clique no ícone quanto no campo
+        });
+        
+        // Garantir que os datepickers possam ser abertos mesmo quando já possuem um valor
+        $('#datetimepicker, #datetimepicker2').on('click', function() {
+            $(this).datetimepicker('toggle');
+        });
+
+        $('.input-group-append[data-toggle="datetimepicker"]').on('click', function() {
+            var target = $(this).data('target');
+            $(target).datetimepicker('toggle');
         });
         
         // Preenche os dados do plano
         const planData = JSON.parse('{{ plan_data|safe }}');
         console.log('Dados do plano recebidos:', planData);
+        console.log('Valor de enabled recebido:', planData.enabled);
+        console.log('Tipo do enabled:', typeof planData.enabled);
         
         // Preencher campos básicos
         $('#nome').val(planData.name || '');
         $('#plano').val(planData.plan || '');
         $('#vigencia').val(planData.billing_cycle || '');
         $('#tipo').val(planData.package_type || 'Padrão');
-        $('#etiqueta').val(planData.label || '');
         $('#preco-padrao').val(planData.full_price || '');
         $('#preco-promocional').val(planData.promotional_price || '');
         $('#exibir-para').val(planData.show_to || 'Todos');
-        $('#enabled').prop('checked', planData.enabled);
+        
+        // Configurar o checkbox de enabled - usando a mesma lógica do pacote-futcoin-editar.html
+        var isEnabled = planData.enabled === true || planData.enabled === 'true' || planData.enabled === 1;
+        console.log('Valor de enabled interpretado:', isEnabled);
+        $('#enabled').iCheck(isEnabled ? 'check' : 'uncheck');
+        
         $('#codigo-android').val(planData.android_product_code || '');
         $('#codigo-apple').val(planData.apple_product_code || '');
+        $('#codigo-gateway').val(planData.gateway_product_code || '');
         
         console.log('Código Android carregado:', planData.android_product_code);
         console.log('Código Apple carregado:', planData.apple_product_code);
+        console.log('Código Gateway carregado:', planData.gateway_product_code);
         console.log('Valor do campo código Android:', $('#codigo-android').val());
         console.log('Valor do campo código Apple:', $('#codigo-apple').val());
+        console.log('Valor do campo código Gateway:', $('#codigo-gateway').val());
         
         // Define as cores nos color pickers
         $('#id3').colorpicker('setValue', planData.color_text_label || '#FFFFFF');
         $('#id4').colorpicker('setValue', planData.color_background_label || '#CC000C');
+        
+        // Atualiza também os campos ocultos para as cores
+        $('#hidden_color_text_label').val(planData.color_text_label || '#FFFFFF');
+        $('#hidden_color_background_label').val(planData.color_background_label || '#CC000C');
+        
+        // Adiciona listeners para atualizar os campos ocultos quando as cores mudarem
+        $('#id3').on('changeColor', function(e) {
+            $('#hidden_color_text_label').val(e.color.toString('hex'));
+            console.log('Cor de texto atualizada:', e.color.toString('hex'));
+        });
+        
+        $('#id4').on('changeColor', function(e) {
+            $('#hidden_color_background_label').val(e.color.toString('hex'));
+            console.log('Cor de fundo atualizada:', e.color.toString('hex'));
+        });
+        
+        // Log para depuração das cores da etiqueta
+        console.log('Valores da etiqueta ao carregar:');
+        console.log('- Label:', planData.label);
+        console.log('- Cor de texto:', planData.color_text_label);
+        console.log('- Cor de fundo:', planData.color_background_label);
+        console.log('- Campo etiqueta:', $('#etiqueta').val());
+        console.log('- Colorpicker texto:', $('#id3').colorpicker('getValue'));
+        console.log('- Colorpicker fundo:', $('#id4').colorpicker('getValue'));
         
         // Inicializa os datepickers com moment.js para garantir o formato correto
         if (planData.start_date) {
@@ -221,6 +272,92 @@
             $('.label-fields, #etiqueta').show();
         }
         
+        // IMPORTANTE: Definimos o valor do campo etiqueta DEPOIS que a visibilidade dos campos
+        // é ajustada, para garantir que não seja sobrescrito
+        console.log('Definindo valor da etiqueta:', planData.label);
+        $('#etiqueta').val(planData.label || '');
+        
+        // Força a atualização visual dos colorpickers após mostrar os campos
+        setTimeout(function() {
+            // Reaplica os valores para garantir que sejam exibidos corretamente
+            if (planData.color_text_label) {
+                $('#id3').colorpicker('setValue', planData.color_text_label);
+                console.log('Reaplicando cor de texto:', planData.color_text_label);
+            }
+            if (planData.color_background_label) {
+                $('#id4').colorpicker('setValue', planData.color_background_label);
+                console.log('Reaplicando cor de fundo:', planData.color_background_label);
+            }
+            
+            // AQUI: Força novamente o valor do campo etiqueta para garantir que não seja limpo
+            $('#etiqueta').val(planData.label || '');
+            console.log('Forçando valor da etiqueta novamente:', planData.label);
+        }, 300);
+        
+        // Adiciona um evento para garantir que o valor da etiqueta não seja perdido
+        // mesmo após qualquer script externo tentar modificá-lo
+        setTimeout(function() {
+            // Verifica uma última vez se o campo etiqueta está com o valor correto
+            if ($('#etiqueta').val() !== planData.label && planData.label) {
+                console.log('Campo etiqueta com valor incorreto. Corrigindo...');
+                console.log('Valor atual:', $('#etiqueta').val());
+                console.log('Valor esperado:', planData.label);
+                $('#etiqueta').val(planData.label);
+            }
+        }, 500);
+        
+        // Salva o valor original da etiqueta para garantir que podemos restaurá-lo
+        const originalLabelValue = planData.label || '';
+        
+        // Sobrescreve a função atualizarCamposTipo do arquivo pacote-plano-novo.js
+        // para evitar que ela limpe o campo etiqueta na edição
+        var originalAtualizarCamposTipo = window.atualizarCamposTipo;
+        window.atualizarCamposTipo = function() {
+            var tipo = $('#tipo').val();
+            console.log('Função atualizarCamposTipo sobrescrita. Tipo:', tipo);
+            
+            // Esconde todos os campos especiais
+            $('.label-fields, #etiqueta, .date-fields, label[for="etiqueta"]').hide();
+            
+            // NÃO limpa o valor da etiqueta na edição
+            // $('#etiqueta').val('');  // <- Esta linha foi removida
+            
+            // Só mostra campos se tiver um tipo selecionado
+            if (tipo === 'Padrão') {
+                console.log('Tipo Padrão: mostrando campos de etiqueta');
+                $('#etiqueta, label[for="etiqueta"]').show();
+                $('.label-fields').show();
+                
+                // Restaura o valor original (se existir)
+                if (originalLabelValue) {
+                    $('#etiqueta').val(originalLabelValue);
+                }
+            } 
+            else if (tipo === 'Promocional') {
+                console.log('Tipo Promocional: mostrando campos de etiqueta e data');
+                $('#etiqueta, label[for="etiqueta"]').show();
+                $('.label-fields').show();
+                $('.date-fields').show();
+                
+                // Usa o valor original ou define um valor padrão apenas se estiver vazio
+                if (!$('#etiqueta').val()) {
+                    if (originalLabelValue) {
+                        $('#etiqueta').val(originalLabelValue);
+                    } else {
+                        $('#etiqueta').val('OFERTA ESPECIAL');
+                    }
+                }
+                
+                // Define valores padrão para as cores se não estiverem definidas
+                if (!$('#id3').colorpicker('getValue')) {
+                    $('#id3').colorpicker('setValue', '#FFFFFF');
+                }
+                if (!$('#id4').colorpicker('getValue')) {
+                    $('#id4').colorpicker('setValue', '#CC000C');
+                }
+            }
+        };
+        
         console.log('Formulário preenchido com sucesso');
         
         // Sobrescreve o evento de clique do botão salvar para adicionar logs
@@ -241,12 +378,22 @@
             formData.append('plan', $('#plano').val());
             formData.append('billing_cycle', $('#vigencia').val());
             formData.append('enabled', $('#enabled').prop('checked') ? 'true' : 'false');
+            console.log('Valor de enabled enviado:', $('#enabled').prop('checked') ? 'true' : 'false');
             formData.append('tipo', $('#tipo').val());
             
             // Etiqueta e cores
             formData.append('label', $('#etiqueta').val() || '');
-            formData.append('color_text_label', validateColor($('#id3').val() || $('#id3 input').val()));
-            formData.append('color_background_label', validateColor($('#id4').val() || $('#id4 input').val()));
+            
+            // Obtenha os valores dos campos ocultos para garantir que sejam os mais atualizados
+            var textColor = $('#hidden_color_text_label').val() || $('#id3').colorpicker('getValue') || '#FFFFFF';
+            var bgColor = $('#hidden_color_background_label').val() || $('#id4').colorpicker('getValue') || '#CC000C';
+            
+            formData.append('color_text_label', validateColor(textColor));
+            formData.append('color_background_label', validateColor(bgColor));
+            
+            console.log('Etiqueta a ser enviada:', $('#etiqueta').val());
+            console.log('Cor de texto a ser enviada:', validateColor(textColor));
+            console.log('Cor de fundo a ser enviada:', validateColor(bgColor));
             
             // Preços
             formData.append('full_price', $('#preco-padrao').val().replace(',', '.'));
@@ -270,11 +417,14 @@
             // Códigos de produto - Adicionando logs para depuração
             var androidCode = $('#codigo-android').val() || '';
             var appleCode = $('#codigo-apple').val() || '';
+            var gatewayCode = $('#codigo-gateway').val() || '';
             console.log('Código Android a ser enviado:', androidCode);
             console.log('Código Apple a ser enviado:', appleCode);
+            console.log('Código Gateway a ser enviado:', gatewayCode);
             
             formData.append('android_product_code', androidCode);
             formData.append('apple_product_code', appleCode);
+            formData.append('gateway_product_code', gatewayCode);
             
             // Imagem
             var imageFile = $('#image')[0].files[0];

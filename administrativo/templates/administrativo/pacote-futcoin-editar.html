@@ -912,9 +912,20 @@
                     sideBySide: true,
                     useCurrent: false,
                     allowInputToggle: true,
-                    ignoreReadonly: true
+                    ignoreReadonly: true,
+                    showOn: "both"
                 });
 
+                // Garantir que os datepickers possam ser abertos mesmo quando já possuem um valor
+                $('#datetimepicker, #datetimepicker2').on('click', function() {
+                    $(this).datetimepicker('toggle');
+                });
+
+                $('.input-group-append[data-toggle="datetimepicker"]').on('click', function() {
+                    var target = $(this).data('target');
+                    $(target).datetimepicker('toggle');
+                });
+                
                 // Definir manualmente os valores iniciais dos datepickers após a inicialização
                 var startDateRaw = packageData.start_date;
                 var endDateRaw = packageData.end_date;
@@ -951,9 +962,23 @@
                         if (formattedStartDate) {
                             $('#datetimepicker').val(formattedStartDate);
                             console.log('Data de início reformatada:', formattedStartDate);
+                            
+                            // Inicializar o datetimepicker com a data formatada
+                            var startMoment = moment(formattedStartDate, 'DD/MM/YYYY HH:mm');
+                            if (startMoment.isValid()) {
+                                $('#datetimepicker').datetimepicker('date', startMoment);
+                                console.log('Datepicker de início inicializado com data formatada:', formattedStartDate);
+                            }
                         }
                     } catch (e) {
                         console.log('Erro ao reformatar data de início:', e);
+                    }
+                } else {
+                    // Se a data já está no formato correto, ainda assim atualizar o datetimepicker
+                    var startMoment = moment(startDateValue, 'DD/MM/YYYY HH:mm');
+                    if (startMoment.isValid()) {
+                        $('#datetimepicker').datetimepicker('date', startMoment);
+                        console.log('Datepicker de início inicializado com data existente:', startDateValue);
                     }
                 }
 
@@ -984,9 +1009,23 @@
                         if (formattedEndDate) {
                             $('#datetimepicker2').val(formattedEndDate);
                             console.log('Data de término reformatada:', formattedEndDate);
+                            
+                            // Inicializar o datetimepicker2 com a data formatada
+                            var endMoment = moment(formattedEndDate, 'DD/MM/YYYY HH:mm');
+                            if (endMoment.isValid()) {
+                                $('#datetimepicker2').datetimepicker('date', endMoment);
+                                console.log('Datepicker de término inicializado com data formatada:', formattedEndDate);
+                            }
                         }
                     } catch (e) {
                         console.log('Erro ao reformatar data de término:', e);
+                    }
+                } else {
+                    // Se a data já está no formato correto, ainda assim atualizar o datetimepicker
+                    var endMoment = moment(endDateValue, 'DD/MM/YYYY HH:mm');
+                    if (endMoment.isValid()) {
+                        $('#datetimepicker2').datetimepicker('date', endMoment);
+                        console.log('Datepicker de término inicializado com data existente:', endDateValue);
                     }
                 }
 

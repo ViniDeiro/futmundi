@@ -35,8 +35,39 @@ import base64
 from django.core.files.base import ContentFile
 from decimal import Decimal, InvalidOperation
 import re
+from django.core.serializers.json import DjangoJSONEncoder
+import pytz
 
 logger = logging.getLogger(__name__)
+
+# Sobrescrever timezone.now para compensar a conversão automática para UTC
+# Isso afeta todos os campos auto_now e auto_now_add
+original_now = timezone.now
+
+def custom_now():
+    # Retorna o tempo atual com um deslocamento de -3 horas
+    return original_now() - timedelta(hours=3)
+
+# Substituir a função original pela personalizada
+timezone.now = custom_now
+
+# Função utilitária para converter strings de data para objetos datetime aware
+def make_aware_with_local_timezone(date_str_or_obj, format_str='%d/%m/%Y %H:%M'):
+    # Converte string para objeto datetime, se necessário
+    if isinstance(date_str_or_obj, str):
+        naive_date = datetime.strptime(date_str_or_obj, format_str)
+    else:
+        naive_date = date_str_or_obj
+    
+    # Se o objeto já tiver timezone, retorna-o diretamente
+    if hasattr(naive_date, 'tzinfo') and naive_date.tzinfo is not None and naive_date.tzinfo.utcoffset(naive_date) is not None:
+        return naive_date
+    
+    # Compensar a conversão automática do Django para UTC (- 3 horas)
+    # Subtrair 3 horas para que quando o Django converter para UTC, o valor final seja correto
+    compensated_date = naive_date - timedelta(hours=3)
+    
+    return compensated_date
 
 @login_required
 def get_packages(request):
@@ -48,9 +79,9 @@ def get_packages(request):
             package_type = request.GET.get('type')
             packages = []
             
-            if package_type == 'package_coins':
+            if package_type == 'package_coins' or package_type == 'PacoteFutcoins':
                 packages = FutcoinPackage.objects.filter(enabled=True).values('id', 'name')
-            elif package_type == 'package_plan':
+            elif package_type == 'package_plan' or package_type == 'PacotePlano':
                 packages = Plan.objects.filter(enabled=True).values('id', 'name')
             
             return JsonResponse({
@@ -1293,15 +1324,9 @@ def pacote_futcoin_novo(request):
             
             try:
                 if start_date:
-                    naive_date = datetime.strptime(start_date, '%d/%m/%Y %H:%M')
-                    # Adiciona informação de timezone
-                    from django.utils import timezone
-                    start_date = timezone.make_aware(naive_date)
+                    start_date = make_aware_with_local_timezone(start_date)
                 if end_date:
-                    naive_date = datetime.strptime(end_date, '%d/%m/%Y %H:%M')
-                    # Adiciona informação de timezone
-                    from django.utils import timezone
-                    end_date = timezone.make_aware(naive_date)
+                    end_date = make_aware_with_local_timezone(end_date)
             except ValueError as e:
                 return JsonResponse({
                     'success': False,
@@ -1428,15 +1453,9 @@ def pacote_plano_novo(request):
             
             try:
                 if start_date:
-                    naive_date = datetime.strptime(start_date, '%d/%m/%Y %H:%M')
-                    # Adiciona informação de timezone
-                    from django.utils import timezone
-                    start_date = timezone.make_aware(naive_date)
+                    start_date = make_aware_with_local_timezone(start_date)
                 if end_date:
-                    naive_date = datetime.strptime(end_date, '%d/%m/%Y %H:%M')
-                    # Adiciona informação de timezone
-                    from django.utils import timezone
-                    end_date = timezone.make_aware(naive_date)
+                    end_date = make_aware_with_local_timezone(end_date)
             except ValueError as e:
                 return JsonResponse({
                     'success': False,
@@ -1512,7 +1531,8 @@ def pacote_plano_novo(request):
                 start_date=start_date,
                 end_date=end_date,
                 android_product_code=data.get('android_product_code'),
-                apple_product_code=data.get('apple_product_code')
+                apple_product_code=data.get('apple_product_code'),
+                gateway_product_code=data.get('gateway_product_code')
             )
             
             # Tratamento da imagem
@@ -2788,7 +2808,9 @@ def notificacoes(request):
             # Ajustando o horário para o formato local sem ajuste de fuso
             formatted_date = None
             if notification.send_at:
-                local_date = notification.send_at
+                # Usando UTC para garantir que o horário seja o mesmo que foi configurado,
+                # sem ajuste de fuso horário do servidor
+                local_date = timezone.localtime(notification.send_at)
                 formatted_date = local_date.strftime('%d/%m/%Y %H:%M')
             
             response_data = {
@@ -2830,16 +2852,15 @@ def notificacao_novo(request):
                 try:
                     if notification_type == 'PacoteFutcoins':
                         package = FutcoinPackage.objects.get(id=package_id)
+                        notification.package = package
                     elif notification_type == 'PacotePlano':
-                        package = Plan.objects.get(id=package_id)
+                        plan = Plan.objects.get(id=package_id)
+                        notification.plan = plan
                     else:
                         return JsonResponse({
                             'success': False,
                             'message': 'Tipo de notificação inválido'
                         })
-                    
-                    notification.package_id = package_id
-                    notification.package_type = notification_type
                 except (FutcoinPackage.DoesNotExist, Plan.DoesNotExist):
                     return JsonResponse({
                         'success': False,
@@ -2848,8 +2869,7 @@ def notificacao_novo(request):
 
             if send_at:
                 try:
-                    naive_date = datetime.strptime(send_at, '%d/%m/%Y %H:%M')
-                    notification.send_at = timezone.make_aware(naive_date)
+                    notification.send_at = make_aware_with_local_timezone(send_at)
                 except ValueError:
                     return JsonResponse({
                         'success': False,
@@ -2927,8 +2947,8 @@ def notificacao_editar(request, id):
 
             if send_at:
                 try:
-                    naive_date = datetime.strptime(send_at, '%Y-%m-%d %H:%M')
-                    notification.send_at = timezone.make_aware(naive_date)
+                    # Formato diferente para a edição de notificação
+                    notification.send_at = make_aware_with_local_timezone(send_at, '%Y-%m-%d %H:%M')
                     notification.status = 'pending'
                 except ValueError:
                     messages.error(request, 'Data de envio inválida')
@@ -3176,7 +3196,7 @@ def campeonato_importar_jogos(request):
                     row['Data'],
                     datetime.strptime(str(row['Hora']), '%H:%M').time()
                 )
-                match_date = timezone.make_aware(naive_match_date)
+                match_date = make_aware_with_local_timezone(naive_match_date)
                 
                 # Verifica se o jogo já existe
                 existing_match = Match.objects.filter(
@@ -3852,7 +3872,7 @@ def plano_editar(request, id):
                 plan.package_type = data.get('tipo')  # Corrigido de package_type para tipo
                 
                 # Processamento da etiqueta e cores - Garantindo que os valores sejam processados corretamente
-                plan.label = data.get('label')
+                plan.label = data.get('label', '')
                 
                 # Validação e conversão das cores
                 def validate_color(color):
@@ -3923,18 +3943,14 @@ def plano_editar(request, id):
                 
                 try:
                     if start_date:
-                        naive_date = datetime.strptime(start_date, '%d/%m/%Y %H:%M')
-                        # Adiciona informação de timezone
-                        from django.utils import timezone
-                        plan.start_date = timezone.make_aware(naive_date)
+                        start_date = make_aware_with_local_timezone(start_date)
+                        plan.start_date = start_date
                     else:
                         plan.start_date = None
                         
                     if end_date:
-                        naive_date = datetime.strptime(end_date, '%d/%m/%Y %H:%M')
-                        # Adiciona informação de timezone
-                        from django.utils import timezone
-                        plan.end_date = timezone.make_aware(naive_date)
+                        end_date = make_aware_with_local_timezone(end_date)
+                        plan.end_date = end_date
                     else:
                         plan.end_date = None
                 except ValueError:
@@ -3946,6 +3962,7 @@ def plano_editar(request, id):
                 # Códigos de produto
                 plan.android_product_code = data.get('android_product_code')
                 plan.apple_product_code = data.get('apple_product_code')
+                plan.gateway_product_code = data.get('gateway_product_code')
                 
                 # Tratamento da imagem
                 if 'image' in files:
@@ -3972,10 +3989,18 @@ def plano_editar(request, id):
                     'message': 'Plano atualizado com sucesso!'
                 })
             except Exception as e:
-                return JsonResponse({
-                    'success': False,
-                    'message': f'Erro ao atualizar plano: {str(e)}'
-                })
+                # Verificar se é um erro específico de datas obrigatórias
+                error_str = str(e)
+                if "start_date" in error_str and "end_date" in error_str and "obrigatória" in error_str:
+                    return JsonResponse({
+                        'success': False,
+                        'message': 'Atenção: Para pacotes promocionais, é obrigatório preencher as datas de início e término.'
+                    })
+                else:
+                    return JsonResponse({
+                        'success': False,
+                        'message': f'Erro ao atualizar plano: {str(e)}'
+                    })
         
         # Preparação dos dados para o template
         plan_data = {
@@ -3983,7 +4008,7 @@ def plano_editar(request, id):
             'name': plan.name,
             'plan': plan.plan,
             'billing_cycle': plan.billing_cycle,
-            'enabled': plan.enabled,
+            'enabled': True if plan.enabled else False,  # Força ser um booleano verdadeiro
             'package_type': plan.package_type,
             'label': plan.label,
             'color_text_label': plan.color_text_label,
@@ -3993,7 +4018,12 @@ def plano_editar(request, id):
             'show_to': plan.show_to,
             'android_product_code': plan.android_product_code,
             'apple_product_code': plan.apple_product_code,
+            'gateway_product_code': plan.gateway_product_code,
         }
+        
+        # Debug do valor de enabled
+        print(f"DEBUG - Valor de enabled no banco: {plan.enabled}, tipo: {type(plan.enabled)}")
+        print(f"DEBUG - Valor de enabled no JSON: {plan_data['enabled']}, tipo: {type(plan_data['enabled'])}")
         
         # Formatação das datas para o template
         if plan.start_date:
@@ -4238,8 +4268,8 @@ def notificacao_editar(request, id):
 
             if send_at:
                 try:
-                    naive_date = datetime.strptime(send_at, '%Y-%m-%d %H:%M')
-                    notification.send_at = timezone.make_aware(naive_date)
+                    # Formato diferente para a edição de notificação
+                    notification.send_at = make_aware_with_local_timezone(send_at, '%Y-%m-%d %H:%M')
                     notification.status = 'pending'
                 except ValueError:
                     messages.error(request, 'Data de envio inválida')
@@ -4498,7 +4528,7 @@ def campeonato_importar_rodadas(request):
                             row['Data'],
                             datetime.strptime(str(row['Hora']), '%H:%M').time()
                         )
-                        match_date = timezone.make_aware(naive_match_date)
+                        match_date = make_aware_with_local_timezone(naive_match_date)
                         
                         Match.objects.create(
                             championship=championship,
@@ -4951,7 +4981,7 @@ def futcoin_editar(request, id):
             from django.utils import timezone
             # Garantir que a data tenha timezone
             if timezone.is_naive(package.start_date):
-                package.start_date = timezone.make_aware(package.start_date)
+                package.start_date = make_aware_with_local_timezone(package.start_date)
             logger.info(f"Data de início (com timezone): {package.start_date}")
             logger.info(f"Data de início formatada: {package.start_date.strftime('%d/%m/%Y %H:%M')}")
             # Usar o mesmo formato que será usado no template
@@ -4963,10 +4993,9 @@ def futcoin_editar(request, id):
         logger.info(f"Data de término (raw): {package.end_date}")
         
         if package.end_date:
-            from django.utils import timezone
             # Garantir que a data tenha timezone
             if timezone.is_naive(package.end_date):
-                package.end_date = timezone.make_aware(package.end_date)
+                package.end_date = make_aware_with_local_timezone(package.end_date)
             logger.info(f"Data de término (com timezone): {package.end_date}")
             logger.info(f"Data de término formatada: {package.end_date.strftime('%d/%m/%Y %H:%M')}")
         else:
@@ -5094,10 +5123,8 @@ def futcoin_editar(request, id):
 
                 if start_date:
                     try:
-                        naive_date = datetime.strptime(start_date, '%d/%m/%Y %H:%M')
-                        # Adiciona informação de timezone
-                        from django.utils import timezone
-                        package.start_date = timezone.make_aware(naive_date)
+                        start_date = make_aware_with_local_timezone(start_date)
+                        package.start_date = start_date
                     except ValueError:
                         return JsonResponse({
                             'success': False,
@@ -5106,15 +5133,15 @@ def futcoin_editar(request, id):
 
                 if end_date:
                     try:
-                        naive_date = datetime.strptime(end_date, '%d/%m/%Y %H:%M')
-                        # Adiciona informação de timezone
-                        from django.utils import timezone
-                        package.end_date = timezone.make_aware(naive_date)
+                        end_date = make_aware_with_local_timezone(end_date)
+                        package.end_date = end_date
                     except ValueError:
                         return JsonResponse({
                             'success': False,
                             'message': 'Formato de data de término inválido. Use DD/MM/YYYY HH:mm'
                         })
+                else:
+                    package.end_date = None
 
                 # Processa a imagem se fornecida
                 if 'image' in request.FILES:
