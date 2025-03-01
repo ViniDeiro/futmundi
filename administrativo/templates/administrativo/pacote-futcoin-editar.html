@@ -28,7 +28,7 @@
 
         <style>
             .form-control-placeholder::after {
-                content: " *";
+                content: "";
                 color: red;
             }
             .form-control-placeholder:not([for="nome"]):not([for="preco-padrao"]):not([for="preco-promocional"]):not([for="conteudo"])::after {
@@ -211,8 +211,9 @@
                                                                 <div class="col-lg-6 mtm20">
                                                                     <label class="control-label" for="tipo">Tipo</label>
                                                                     <select class="form-control js-example-basic-single" id="tipo" name="package_type" style="width: 80%">
-                                                                        <option value="padrao" {% if package.package_type == 'padrao' %}selected{% endif %}>Padrão</option>
-                                                                        <option value="promocional" {% if package.package_type == 'promocional' %}selected{% endif %}>Promocional</option>
+                                                                        <option value="">Selecione</option>
+                                                                        <option value="Padrão">Padrão</option>
+                                                                        <option value="Promocional">Promocional</option>
                                                                     </select>
                                                                 </div>
                                                             </div>
@@ -335,7 +336,6 @@
                                                                                data-toggle="datetimepicker" 
                                                                                data-target="#datetimepicker" 
                                                                                value="{{ package.start_date|date:'d/m/Y H:i' }}"
-                                                                               data-date="{{ package.start_date|date:'d/m/Y H:i' }}"
                                                                                placeholder="DD/MM/AAAA HH:MM"/>
                                                                         <div class="input-group-append" data-target="#datetimepicker" data-toggle="datetimepicker">
                                                                             <div class="input-group-text"><i class="fa fa-calendar"></i></div>
@@ -345,8 +345,15 @@
                                                                 <div class="col-lg-6">
                                                                     <label class="control-label">Data de Término</label>
                                                                     <div class="input-group date" data-target-input="nearest">
-                                                                        <input type="text" name="end_date" class="form-control datetimepicker-input" id="datetimepicker2" data-toggle="datetimepicker" data-target="#datetimepicker2" value="{{ package.end_date|date:'d/m/Y H:i' }}"/>
-                                                                        <div class="input-group-append" data-target="#datetimepicker2" data-toggle="datetimepicker2">
+                                                                        <input type="text" 
+                                                                               name="end_date" 
+                                                                               class="form-control datetimepicker-input" 
+                                                                               id="datetimepicker2" 
+                                                                               data-toggle="datetimepicker" 
+                                                                               data-target="#datetimepicker2" 
+                                                                               value="{{ package.end_date|date:'d/m/Y H:i' }}"
+                                                                               placeholder="DD/MM/AAAA HH:MM"/>
+                                                                        <div class="input-group-append" data-target="#datetimepicker2" data-toggle="datetimepicker">
                                                                             <div class="input-group-text"><i class="fa fa-calendar"></i></div>
                                                                         </div>
                                                                     </div>
@@ -398,7 +405,18 @@
                 
                 // Preencher os campos do formulário com os dados do pacote
                 $('#nome').val(packageData.name);
-                $('#tipo').val(packageData.package_type);
+                
+                // Processa o tipo para garantir compatibilidade
+                console.log('Tipo original do pacote:', packageData.package_type);
+                let tipoProcessado = '';
+                if (packageData.package_type === 'padrao' || packageData.package_type === 'Padrão' || packageData.package_type && packageData.package_type.toLowerCase() === 'padrão') {
+                    tipoProcessado = 'Padrão';
+                } else if (packageData.package_type === 'promocional' || packageData.package_type === 'Promocional' || packageData.package_type && packageData.package_type.toLowerCase() === 'promocional') {
+                    tipoProcessado = 'Promocional';
+                }
+                console.log('Tipo processado:', tipoProcessado);
+                $('#tipo').val(tipoProcessado);
+                
                 $('#preco-padrao').val(packageData.full_price);
                 $('#preco-promocional').val(packageData.promotional_price || '');
                 $('#conteudo').val(packageData.content);
@@ -497,15 +515,8 @@
             function formatDateForBackend(dateStr) {
                 if (!dateStr) return '';
                 
-                try {
-                    var dateMoment = moment(dateStr, 'DD/MM/YYYY HH:mm');
-                    if (dateMoment.isValid()) {
-                        return dateMoment.format('DD/MM/YYYY HH:mm');
-                    }
-                } catch (e) {
-                    console.log('Erro ao formatar data para backend:', e);
-                }
-                return '';
+                // Aceita o formato que o usuário inseriu
+                return dateStr;
             }
             
             // Função global para submeter o formulário
@@ -541,76 +552,16 @@
                 
                 // Validação e formatação da data de início
                 if (startDate) {
-                    try {
-                        // Verificar se a data está no formato correto
-                        if (!/^\d{2}\/\d{2}\/\d{4}\s\d{2}:\d{2}$/.test(startDate)) {
-                            // Tentar reformatar a data
-                            var reformattedStartDate = formatDateForDisplay(startDate);
-                            if (reformattedStartDate && reformattedStartDate !== startDate) {
-                                startDate = reformattedStartDate;
-                                $('#datetimepicker').val(startDate);
-                                console.log('Data de início reformatada para exibição:', startDate);
-                            } else {
-                                toastr.error('Formato de data de início inválido. Use DD/MM/YYYY HH:mm');
-                                window.isSubmitting = false;
-                                return;
-                            }
-                        }
-                        
-                        // Converter para o formato que o Django espera (YYYY-MM-DD HH:MM)
-                        var formattedStartDate = formatDateForBackend(startDate);
-                        if (formattedStartDate) {
-                            $('#hidden_start_date').val(formattedStartDate);
-                            console.log('Data de início formatada para backend:', formattedStartDate);
-                        } else {
-                            toastr.error('Data de início inválida. Use DD/MM/YYYY HH:mm');
-                            console.log('Data de início inválida:', startDate);
-                            window.isSubmitting = false;
-                            return;
-                        }
-                    } catch (e) {
-                        toastr.error('Erro ao processar data de início. Use DD/MM/YYYY HH:mm');
-                        console.log('Erro ao processar data:', e);
-                        window.isSubmitting = false;
-                        return;
-                    }
+                    // Simplificando a validação para aceitar o que o usuário inseriu
+                    $('#hidden_start_date').val(startDate);
+                    console.log('Data de início definida:', startDate);
                 }
                 
                 // Validação e formatação da data de término
                 if (endDate) {
-                    try {
-                        // Verificar se a data está no formato correto
-                        if (!/^\d{2}\/\d{2}\/\d{4}\s\d{2}:\d{2}$/.test(endDate)) {
-                            // Tentar reformatar a data
-                            var reformattedEndDate = formatDateForDisplay(endDate);
-                            if (reformattedEndDate && reformattedEndDate !== endDate) {
-                                endDate = reformattedEndDate;
-                                $('#datetimepicker2').val(endDate);
-                                console.log('Data de término reformatada para exibição:', endDate);
-                            } else {
-                                toastr.error('Formato de data de término inválido. Use DD/MM/YYYY HH:mm');
-                                window.isSubmitting = false;
-                                return;
-                            }
-                        }
-                        
-                        // Converter para o formato que o Django espera (YYYY-MM-DD HH:MM)
-                        var formattedEndDate = formatDateForBackend(endDate);
-                        if (formattedEndDate) {
-                            $('#hidden_end_date').val(formattedEndDate);
-                            console.log('Data de término formatada para backend:', formattedEndDate);
-                        } else {
-                            toastr.error('Data de término inválida. Use DD/MM/YYYY HH:mm');
-                            console.log('Data de término inválida:', endDate);
-                            window.isSubmitting = false;
-                            return;
-                        }
-                    } catch (e) {
-                        toastr.error('Erro ao processar data de término. Use DD/MM/YYYY HH:mm');
-                        console.log('Erro ao processar data:', e);
-                        window.isSubmitting = false;
-                        return;
-                    }
+                    // Simplificando a validação para aceitar o que o usuário inseriu
+                    $('#hidden_end_date').val(endDate);
+                    console.log('Data de término definida:', endDate);
                 }
                 
                 $('#hidden_android_product_code').val($('#android-product-code').val());
@@ -625,7 +576,18 @@
 
                 // Adiciona campos principais explicitamente
                 formData.append('name', $('#nome').val());
-                formData.append('package_type', $('#tipo').val());
+                
+                // Normaliza o valor do tipo
+                var tipoOriginal = $('#tipo').val();
+                var tipoNormalizado = tipoOriginal;
+                if (tipoOriginal === 'Padrão') {
+                    tipoNormalizado = 'padrao';
+                } else if (tipoOriginal === 'Promocional') {
+                    tipoNormalizado = 'promocional';
+                }
+                console.log('Tipo original:', tipoOriginal, 'Tipo normalizado:', tipoNormalizado);
+                formData.append('package_type', tipoNormalizado);
+                
                 formData.append('full_price', $('#preco-padrao').val());
                 formData.append('promotional_price', $('#preco-promocional').val());
                 formData.append('content', $('#conteudo').val());
@@ -640,40 +602,14 @@
                 formData.append('enabled', $('.i-checks input[type="checkbox"]').prop('checked'));
                 
                 // Adiciona as datas formatadas
-                if ($('#hidden_start_date').val()) {
-                    // Garantir que a data está no formato DD/MM/YYYY HH:mm
-                    var startDateValue = $('#hidden_start_date').val();
-                    if (!/^\d{2}\/\d{2}\/\d{4}\s\d{2}:\d{2}$/.test(startDateValue)) {
-                        // Se não estiver no formato correto, tentar reformatar
-                        try {
-                            var dateMoment = moment(startDateValue);
-                            if (dateMoment.isValid()) {
-                                startDateValue = dateMoment.format('DD/MM/YYYY HH:mm');
-                            }
-                        } catch (e) {
-                            console.log('Erro ao reformatar data de início (beforeSend):', e);
-                        }
-                    }
-                    formData.set('start_date', startDateValue);
-                    console.log('Data de início enviada (beforeSend):', startDateValue);
+                if ($('#datetimepicker').val()) {
+                    formData.append('start_date', $('#datetimepicker').val());
+                    console.log('Data de início enviada:', $('#datetimepicker').val());
                 }
                 
-                if ($('#hidden_end_date').val()) {
-                    // Garantir que a data está no formato DD/MM/YYYY HH:mm
-                    var endDateValue = $('#hidden_end_date').val();
-                    if (!/^\d{2}\/\d{2}\/\d{4}\s\d{2}:\d{2}$/.test(endDateValue)) {
-                        // Se não estiver no formato correto, tentar reformatar
-                        try {
-                            var dateMoment = moment(endDateValue);
-                            if (dateMoment.isValid()) {
-                                endDateValue = dateMoment.format('DD/MM/YYYY HH:mm');
-                            }
-                        } catch (e) {
-                            console.log('Erro ao reformatar data de término (beforeSend):', e);
-                        }
-                    }
-                    formData.set('end_date', endDateValue);
-                    console.log('Data de término enviada (beforeSend):', endDateValue);
+                if ($('#datetimepicker2').val()) {
+                    formData.append('end_date', $('#datetimepicker2').val());
+                    console.log('Data de término enviada:', $('#datetimepicker2').val());
                 }
                 
                 // Adiciona a imagem se houver
@@ -974,8 +910,9 @@
                         close: 'fa fa-remove'
                     },
                     sideBySide: true,
-                    debug: true, // Habilita o modo de depuração para ver erros no console
-                    useCurrent: false // Impede que a data atual seja definida automaticamente
+                    useCurrent: false,
+                    allowInputToggle: true,
+                    ignoreReadonly: true
                 });
 
                 // Definir manualmente os valores iniciais dos datepickers após a inicialização
@@ -986,49 +923,15 @@
                 console.log('Data de início (raw):', startDateRaw);
                 console.log('Data de término (raw):', endDateRaw);
                 
-                // Definir valores iniciais
-                if (startDateRaw && startDateRaw !== 'None' && startDateRaw.trim() !== '') {
-                    console.log('Tentando definir data de início:', startDateRaw);
-                    
-                    // Primeiro, definir o valor do input diretamente
+                // Definir valores iniciais de forma simples
+                if (startDateRaw) {
                     $('#datetimepicker').val(startDateRaw);
-                    console.log('Data de início definida para input:', startDateRaw);
-                    
-                    // Depois, atualizar o datepicker para refletir o valor
-                    try {
-                        // Usar o método correto para definir a data no datepicker
-                        var startMoment = moment(startDateRaw, 'DD/MM/YYYY HH:mm');
-                        if (startMoment.isValid()) {
-                            $('#datetimepicker').datetimepicker('date', startMoment);
-                            console.log('Datepicker de início atualizado com sucesso usando moment');
-                        } else {
-                            console.error('Momento inválido para data de início:', startDateRaw);
-                            // Tentar método alternativo
-                            $('#datetimepicker').datetimepicker('date', startDateRaw);
-                            console.log('Tentativa alternativa de atualizar datepicker de início');
-                        }
-                    } catch (e) {
-                        console.error('Erro ao atualizar datepicker de início:', e);
-                    }
-                } else {
-                    console.log('Data de início não definida ou inválida');
-                    $('#datetimepicker').val('');
+                    console.log('Data de início definida para:', startDateRaw);
                 }
                 
-                if (endDateRaw && endDateRaw !== 'None' && endDateRaw.trim() !== '') {
+                if (endDateRaw) {
                     $('#datetimepicker2').val(endDateRaw);
                     console.log('Data de término definida para:', endDateRaw);
-                    
-                    // Atualizar o datepicker para refletir o valor
-                    try {
-                        $('#datetimepicker2').datetimepicker('date', moment(endDateRaw, 'DD/MM/YYYY HH:mm'));
-                        console.log('Datepicker de término atualizado com sucesso');
-                    } catch (e) {
-                        console.error('Erro ao atualizar datepicker de término:', e);
-                    }
-                } else {
-                    console.log('Data de término não definida ou inválida');
-                    $('#datetimepicker2').val('');
                 }
 
                 // Verificar se as datas estão no formato correto após a inicialização
@@ -1110,12 +1013,12 @@
                         $('.date-fields').hide();
                         $('.label-fields').hide();
                         $('#etiqueta').closest('.form-group').hide();
-                    } else if (tipo === 'padrao') {
+                    } else if (tipo === 'padrao' || tipo === 'Padrão') {
                         // Quando for Padrão, mostra etiqueta mas oculta campos de data
                         $('.date-fields').hide();
                         $('.label-fields').show();
                         $('#etiqueta').closest('.form-group').show();
-                    } else if (tipo === 'promocional') {
+                    } else if (tipo === 'promocional' || tipo === 'Promocional') {
                         // Quando for Promocional, mostra todos os campos
                         $('.date-fields').show();
                         $('.label-fields').show();
@@ -1149,36 +1052,6 @@
                     $('#should_remove_image').val('yes');
                     $('#image-preview').html('<i class="fa fa-file-image-o" style="font-size: 48px; color: #ccc; cursor: pointer;" onclick="document.getElementById(\'image\').click()"></i>');
                 });
-                
-                // Script adicional para garantir que o datepicker seja inicializado corretamente
-                setTimeout(function() {
-                    console.log("Executando script adicional para inicializar datepicker...");
-                    var startDateRaw = '{{ package.start_date|date:"d/m/Y H:i" }}';
-                    console.log("Data de início (raw) do servidor:", startDateRaw);
-                    
-                    if (startDateRaw && startDateRaw !== 'None' && startDateRaw.trim() !== '') {
-                        console.log("Tentando definir data de início novamente:", startDateRaw);
-                        
-                        // Definir o valor diretamente no input
-                        $('#datetimepicker').val(startDateRaw);
-                        
-                        try {
-                            // Criar um objeto moment com a data
-                            var startMoment = moment(startDateRaw, 'DD/MM/YYYY HH:mm');
-                            if (startMoment.isValid()) {
-                                // Atualizar o datepicker com o objeto moment
-                                $('#datetimepicker').datetimepicker('date', startMoment);
-                                console.log("Datepicker de início atualizado com sucesso no script adicional");
-                            } else {
-                                console.error("Momento inválido para data de início no script adicional:", startDateRaw);
-                            }
-                        } catch (e) {
-                            console.error("Erro ao atualizar datepicker de início no script adicional:", e);
-                        }
-                    } else {
-                        console.log("Data de início não definida ou inválida no script adicional");
-                    }
-                }, 1000);
             });
         </script>
     </body>

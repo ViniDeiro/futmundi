@@ -353,6 +353,29 @@
             // Trigger inicial para configurar o estado dos campos
             $('#tipo').trigger('change');
 
+            // Preenchimento automático do título e mensagem baseado no tipo e nome do pacote
+            $('#pacote').on('change', function() {
+                var tipo = $('#tipo').val();
+                var pacoteNome = $('#pacote option:selected').text();
+                
+                if (pacoteNome && pacoteNome !== 'Selecione um pacote') {
+                    if (tipo === 'PacoteFutcoins') {
+                        $('#nome').val(pacoteNome + ' disponível agora!!');
+                        $('#mensagem').val('Adquira já o pacote e impulsione seus palpites.');
+                    } else if (tipo === 'PacotePlano') {
+                        $('#nome').val(pacoteNome + ' disponível agora!!');
+                        $('#mensagem').val('Seja Craque agora e aproveite todas as vantagens.');
+                    }
+                }
+            });
+            
+            // Garantir que a mudança de tipo também considere o pacote já selecionado
+            $('#tipo').on('change', function() {
+                setTimeout(function() {
+                    $('#pacote').trigger('change');
+                }, 500); // Pequeno delay para garantir que os pacotes foram carregados
+            });
+
             // Controle do campo de data baseado no tipo de envio
             $('input[name="a"]').on('ifChecked', function(event) {
                 if ($(this).val() === 'option1') {

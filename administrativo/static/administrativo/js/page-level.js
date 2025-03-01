@@ -74,7 +74,23 @@ $(document).ready(function() {
   if ($(".dataTables-pacotes").length) {
     $(".dataTables-pacotes").DataTable({
       ...defaultConfig,
-      columnDefs: [{ orderable: false, targets: [0, 6] }]
+      columnDefs: [
+        { orderable: false, targets: [0, 6] },
+        { 
+          // Formata a coluna de Data Criação (índice 5)
+          targets: 5,
+          render: function(data, type, row) {
+            if (type === 'display' || type === 'filter') {
+              // Verifica se a data já tem o formato com hora
+              if (data && data.indexOf(':') === -1) {
+                // Adiciona a hora se não existir
+                return data + ' 00:00';
+              }
+            }
+            return data;
+          }
+        }
+      ]
     });
   }
 
@@ -158,7 +174,23 @@ $(document).ready(function() {
   if ($(".dataTables-usuarios").length) {
     $(".dataTables-usuarios").DataTable({
       ...defaultConfig,
-      columnDefs: [{ orderable: false, targets: [0, 6] }]
+      columnDefs: [
+        { orderable: false, targets: [0, 6] },
+        { 
+          // Formata a coluna de Data Cadastro (índice 4)
+          targets: 4,
+          render: function(data, type, row) {
+            if (type === 'display' || type === 'filter') {
+              // Verifica se a data já tem o formato com hora
+              if (data && data.indexOf(':') === -1) {
+                // Adiciona a hora se não existir
+                return data + ' 00:00';
+              }
+            }
+            return data;
+          }
+        }
+      ]
     });
   }
 

@@ -126,6 +126,8 @@ $(document).ready(function() {
     function atualizarCamposTipo() {
         var tipo = $('#tipo').val();
         
+        console.log('Atualizando campos para o tipo:', tipo);
+        
         // Esconde todos os campos especiais sempre
         $('.label-fields, #etiqueta, .date-fields, label[for="etiqueta"]').hide();
         $('#etiqueta').val('');
@@ -136,16 +138,28 @@ $(document).ready(function() {
         
         // Só mostra campos se tiver um tipo selecionado
         if (tipo === 'Padrão') {
+            console.log('Tipo Padrão: mostrando campos de etiqueta');
             $('#etiqueta, label[for="etiqueta"]').show();
             $('.label-fields').show();
         } 
         else if (tipo === 'Promocional') {
+            console.log('Tipo Promocional: mostrando campos de etiqueta e data');
             $('#etiqueta, label[for="etiqueta"]').show();
             $('.label-fields').show();
             $('.date-fields').show();
             $('#etiqueta').val('OFERTA ESPECIAL');
+            
+            // Define valores padrão para as cores
             $('#id3').colorpicker('setValue', '#FFFFFF');
             $('#id4').colorpicker('setValue', '#CC000C');
+            
+            // Atualiza o visual dos colorpickers
+            $('#id3 .input-group-addon i').css('background-color', '#FFFFFF');
+            $('#id4 .input-group-addon i').css('background-color', '#CC000C');
+            
+            console.log('Valores definidos para colorpickers:');
+            console.log('Cor texto etiqueta:', $('#id3 input').val());
+            console.log('Cor fundo etiqueta:', $('#id4 input').val());
         }
     }
 
@@ -176,6 +190,7 @@ $(document).ready(function() {
     // Remover imagem
     $(document).on('click', '#remove_image_btn', function() {
         $('#image').val('');
+        $('#should_remove_image').val('yes');
         $('#image-preview').html('<i class="fa fa-file-image-o" style="font-size: 48px; color: #ccc; cursor: pointer;" onclick="document.getElementById(\'image\').click()"></i>');
     });
 
@@ -196,24 +211,44 @@ $(document).ready(function() {
         formData.append('tipo', $('#tipo').val());
         
         // Etiqueta e cores (sempre envia, independente do tipo)
-        formData.append('label', $('#etiqueta').val() || '');
+        const etiqueta = $('#etiqueta').val() || '';
+        formData.append('label', etiqueta);
+        console.log('Valor da etiqueta:', etiqueta);
+        
+        // Obter os valores diretamente dos inputs dentro dos colorpickers
+        const colorTextLabelRaw = $('#id3 input').val();
+        const colorBackgroundLabelRaw = $('#id4 input').val();
+        
+        console.log('Valores brutos dos colorpickers:');
+        console.log('Cor texto etiqueta (raw):', colorTextLabelRaw);
+        console.log('Cor fundo etiqueta (raw):', colorBackgroundLabelRaw);
         
         // Garante que as cores estejam no formato hexadecimal correto
-        var colorTextLabel = validateColor($('#id3').val() || $('#id3 input').val());
-        var colorBackgroundLabel = validateColor($('#id4').val() || $('#id4 input').val());
-        var colorTextBillingCycle = validateColor($('#id5').val() || $('#id5 input').val());
+        var colorTextLabel = validateColor(colorTextLabelRaw);
+        var colorBackgroundLabel = validateColor(colorBackgroundLabelRaw);
+        var colorTextBillingCycle = $('#id5').length ? validateColor($('#id5 input').val()) : '#192639';
+        
+        console.log('Valores dos colorpickers após validação:');
+        console.log('Cor texto etiqueta:', colorTextLabelRaw, '→', colorTextLabel);
+        console.log('Cor fundo etiqueta:', colorBackgroundLabelRaw, '→', colorBackgroundLabel);
         
         // Verifica se as cores estão no formato correto antes de enviar
         if (!/^#[0-9A-Fa-f]{6}$/.test(colorTextLabel)) {
             colorTextLabel = '#FFFFFF'; // Valor padrão se inválido
+            console.log('Cor texto etiqueta inválida, usando padrão:', colorTextLabel);
         }
         if (!/^#[0-9A-Fa-f]{6}$/.test(colorBackgroundLabel)) {
             colorBackgroundLabel = '#CC000C'; // Valor padrão se inválido
+            console.log('Cor fundo etiqueta inválida, usando padrão:', colorBackgroundLabel);
         }
         if (!/^#[0-9A-Fa-f]{6}$/.test(colorTextBillingCycle)) {
             colorTextBillingCycle = '#192639'; // Valor padrão se inválido
         }
         
+        // Adiciona o token CSRF explicitamente
+        formData.append('csrfmiddlewaretoken', $('meta[name="csrf-token"]').attr('content'));
+        
+        // Adiciona as cores ao formData
         formData.append('color_text_label', colorTextLabel);
         formData.append('color_background_label', colorBackgroundLabel);
         
@@ -263,6 +298,9 @@ $(document).ready(function() {
         if (imageFile) {
             formData.append('image', imageFile);
         }
+        
+        // Adiciona o campo para remoção de imagem
+        formData.append('should_remove_image', $('#should_remove_image').val());
 
         // Validação dos campos obrigatórios
         if (!$('#nome').val()) {
@@ -302,6 +340,7 @@ $(document).ready(function() {
             processData: false,
             contentType: false,
             success: function(response) {
+                console.log('Resposta do servidor:', response);
                 if (response.success) {
                     toastr.success(response.message);
                     setTimeout(function() {
@@ -315,6 +354,9 @@ $(document).ready(function() {
             },
             error: function(xhr) {
                 console.error('Erro na requisição:', xhr.responseJSON); // Debug
+                console.error('Status:', xhr.status);
+                console.error('Texto do status:', xhr.statusText);
+                console.error('Resposta completa:', xhr.responseText);
                 toastr.error(xhr.responseJSON?.message || 'Erro ao salvar plano');
                 btn.prop('disabled', false);
             }
@@ -323,13 +365,16 @@ $(document).ready(function() {
 
     // Função para validar e formatar cores
     function validateColor(color) {
+        console.log('Validando cor:', color);
         if (!color) return '#000000';
         
         // Remove espaços e converte para minúsculas
         color = color.trim().toLowerCase();
+        console.log('Cor após trim e lowercase:', color);
         
         // Se já estiver no formato #RRGGBB, retorna como está
         if (/^#[0-9a-f]{6}$/.test(color)) {
+            console.log('Cor já está no formato #RRGGBB:', color.toUpperCase());
             return color.toUpperCase();
         }
         
@@ -339,7 +384,12 @@ $(document).ready(function() {
             let r = parseInt(rgbMatch[1]);
             let g = parseInt(rgbMatch[2]);
             let b = parseInt(rgbMatch[3]);
-            return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`.toUpperCase();
+            let hexColor = '#' + 
+                r.toString(16).padStart(2, '0') + 
+                g.toString(16).padStart(2, '0') + 
+                b.toString(16).padStart(2, '0');
+            console.log('Cor convertida de RGB para hex:', hexColor.toUpperCase());
+            return hexColor.toUpperCase();
         }
         
         // Se for rgba, remove o canal alpha e converte para hex
@@ -348,10 +398,16 @@ $(document).ready(function() {
             let r = parseInt(rgbaMatch[1]);
             let g = parseInt(rgbaMatch[2]);
             let b = parseInt(rgbaMatch[3]);
-            return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`.toUpperCase();
+            let hexColor = '#' + 
+                r.toString(16).padStart(2, '0') + 
+                g.toString(16).padStart(2, '0') + 
+                b.toString(16).padStart(2, '0');
+            console.log('Cor convertida de RGBA para hex:', hexColor.toUpperCase());
+            return hexColor.toUpperCase();
         }
         
         // Se não estiver em nenhum formato válido, retorna preto
+        console.log('Formato de cor não reconhecido, retornando preto');
         return '#000000';
     }
 

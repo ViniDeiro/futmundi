@@ -1308,18 +1308,80 @@ def pacote_futcoin_novo(request):
                     'message': 'Formato de data inválido. Use o formato DD/MM/YYYY HH:mm'
                 })
             
+            # Conversão dos valores numéricos
+            try:
+                # Converte preço padrão para Decimal
+                full_price_str = data.get('full_price', '0').strip()
+                full_price_str = full_price_str.replace(',', '.')
+                full_price = Decimal(full_price_str)
+                
+                # Converte preço promocional para Decimal (se existir)
+                promotional_price = None
+                if data.get('promotional_price'):
+                    promotional_price_str = data.get('promotional_price', '0').strip()
+                    promotional_price_str = promotional_price_str.replace(',', '.')
+                    promotional_price = Decimal(promotional_price_str)
+                    
+                    # Verifica se o preço promocional é menor que o preço padrão
+                    if promotional_price >= full_price:
+                        return JsonResponse({
+                            'success': False,
+                            'message': 'O preço promocional deve ser menor que o preço padrão'
+                        })
+                
+                # Converte conteúdo para inteiro
+                content_str = data.get('content', '0').strip()
+                content = int(content_str)
+                
+                # Converte bônus para inteiro
+                bonus_str = data.get('bonus', '0').strip()
+                bonus = int(bonus_str) if bonus_str else 0
+                
+            except (ValueError, InvalidOperation) as e:
+                return JsonResponse({
+                    'success': False,
+                    'message': f'Erro ao converter valores numéricos: {str(e)}'
+                })
+            
+            # Validação e conversão das cores
+            def validate_color(color):
+                if not color:
+                    return '#000000'
+                
+                # Remove espaços e converte para minúsculas
+                color = color.strip().lower()
+                
+                # Se já estiver no formato #RRGGBB, retorna como está
+                if re.match(r'^#[0-9a-f]{6}$', color):
+                    return color.upper()
+                
+                # Se estiver no formato RGB(r,g,b), converte para hex
+                rgb_match = re.match(r'rgb\((\d+),\s*(\d+),\s*(\d+)\)', color)
+                if rgb_match:
+                    r, g, b = map(int, rgb_match.groups())
+                    return f'#{r:02x}{g:02x}{b:02x}'.upper()
+                
+                # Se for rgba, remove o canal alpha e converte para hex
+                rgba_match = re.match(r'rgba\((\d+),\s*(\d+),\s*(\d+),\s*[\d.]+\)', color)
+                if rgba_match:
+                    r, g, b = map(int, rgba_match.groups())
+                    return f'#{r:02x}{g:02x}{b:02x}'.upper()
+                
+                # Se não estiver em nenhum formato válido, retorna preto
+                return '#000000'
+            
             # Criação do pacote
             package = FutcoinPackage(
                 name=data.get('name'),
                 enabled=data.get('enabled', 'true') == 'true',
                 package_type=data.get('package_type'),
                 label=data.get('label'),
-                color_text_label=data.get('color_text_label', '#000000'),
-                color_background_label=data.get('color_background_label', '#FFFFFF'),
-                full_price=data.get('full_price'),
-                promotional_price=data.get('promotional_price') if data.get('promotional_price') else None,
-                content=data.get('content'),
-                bonus=data.get('bonus', 0),
+                color_text_label=validate_color(data.get('color_text_label', '#000000')),
+                color_background_label=validate_color(data.get('color_background_label', '#FFFFFF')),
+                full_price=full_price,
+                promotional_price=promotional_price,
+                content=content,
+                bonus=bonus,
                 show_to=data.get('show_to'),
                 start_date=start_date,
                 end_date=end_date,
@@ -1360,77 +1422,25 @@ def pacote_plano_novo(request):
             data = request.POST
             files = request.FILES
             
-            # Validação dos campos obrigatórios
-            field_names = {
-                'name': 'Nome',
-                'full_price': 'Preço Padrão',
-                'tipo': 'Tipo do Pacote'
-            }
-            
-            required_fields = ['name', 'full_price', 'tipo']
-            missing_fields = []
-            for field in required_fields:
-                if not data.get(field):
-                    missing_fields.append(field_names.get(field, field))
-            
-            if missing_fields:
-                return JsonResponse({
-                    'success': False,
-                    'message': f'Os seguintes campos são obrigatórios: {", ".join(missing_fields)}'
-                })
-            
-            # Validação específica para pacotes promocionais
-            if data.get('tipo') == 'Promocional' and not data.get('label'):
-                return JsonResponse({
-                    'success': False,
-                    'message': 'O campo Etiqueta é obrigatório para pacotes promocionais.'
-                })
-            
-            # Converter os formatos de data se existirem
+            # Tratamento das datas
             start_date = data.get('start_date')
             end_date = data.get('end_date')
             
             try:
-                start_date_aware = None
-                end_date_aware = None
-                
                 if start_date:
-                    # Converte de DD/MM/YYYY HH:MM para datetime timezone-aware
                     naive_date = datetime.strptime(start_date, '%d/%m/%Y %H:%M')
-                    start_date_aware = timezone.make_aware(naive_date)
-                    
+                    # Adiciona informação de timezone
+                    from django.utils import timezone
+                    start_date = timezone.make_aware(naive_date)
                 if end_date:
-                    # Converte de DD/MM/YYYY HH:MM para datetime timezone-aware
                     naive_date = datetime.strptime(end_date, '%d/%m/%Y %H:%M')
-                    end_date_aware = timezone.make_aware(naive_date)
-                    
-                # Validação das datas
-                if start_date_aware and end_date_aware and start_date_aware > end_date_aware:
-                    return JsonResponse({
-                        'success': False,
-                        'message': 'A data de início não pode ser posterior à data de término.'
-                    })
-            except ValueError:
+                    # Adiciona informação de timezone
+                    from django.utils import timezone
+                    end_date = timezone.make_aware(naive_date)
+            except ValueError as e:
                 return JsonResponse({
                     'success': False,
                     'message': 'Formato de data inválido. Use o formato DD/MM/YYYY HH:mm'
-                })
-
-            # Validação dos preços
-            try:
-                full_price = Decimal(data.get('full_price', '0').replace(',', '.'))
-                promotional_price = None
-                if data.get('promotional_price'):
-                    promotional_price = Decimal(data.get('promotional_price').replace(',', '.'))
-                    if promotional_price > full_price:
-                        return JsonResponse({
-                            'success': False,
-                            'message': 'O preço promocional não pode ser maior que o preço padrão.'
-                        })
-            except (ValueError, InvalidOperation):
-                return JsonResponse({
-                    'success': False,
-                    'message': 'Valor de preço inválido.'
                 })
             
             # Validação e conversão das cores
@@ -1439,8 +1449,7 @@ def pacote_plano_novo(request):
                     return '#000000'
                 
                 # Remove espaços e converte para minúsculas
-                color = color.strip() if hasattr(color, 'strip') else color
-                color = color.lower() if hasattr(color, 'lower') else color
+                color = color.strip().lower()
                 
                 # Se já estiver no formato #RRGGBB, retorna como está
                 if re.match(r'^#[0-9a-f]{6}$', color):
@@ -1461,10 +1470,31 @@ def pacote_plano_novo(request):
                 # Se não estiver em nenhum formato válido, retorna preto
                 return '#000000'
             
-            # Aplicar validação às cores
-            color_text_label = validate_color(data.get('color_text_label')) or '#FFFFFF'
-            color_background_label = validate_color(data.get('color_background_label')) or '#CC000C'
-            color_text_billing_cycle = validate_color(data.get('color_text_billing_cycle')) or '#192639'
+            # Obter e validar os valores de etiqueta e cores
+            label = data.get('label', '')
+            color_text_label = validate_color(data.get('color_text_label', '#000000'))
+            color_background_label = validate_color(data.get('color_background_label', '#FFFFFF'))
+            
+            # Log para debug
+            print(f"Valores recebidos - Etiqueta: {label}, Cor texto: {data.get('color_text_label')}, Cor fundo: {data.get('color_background_label')}")
+            print(f"Valores após validação - Cor texto: {color_text_label}, Cor fundo: {color_background_label}")
+            
+            # Validação dos preços
+            try:
+                full_price = Decimal(str(data.get('full_price', '0')).replace(',', '.'))
+                promotional_price = None
+                if data.get('promotional_price'):
+                    promotional_price = Decimal(str(data.get('promotional_price')).replace(',', '.'))
+                    if promotional_price >= full_price:
+                        return JsonResponse({
+                            'success': False,
+                            'message': 'O preço promocional deve ser menor que o preço padrão.'
+                        })
+            except (ValueError, InvalidOperation) as e:
+                return JsonResponse({
+                    'success': False,
+                    'message': f'Preço inválido: {str(e)}'
+                })
             
             # Criação do plano
             plan = Plan(
@@ -1473,37 +1503,33 @@ def pacote_plano_novo(request):
                 billing_cycle=data.get('billing_cycle'),
                 enabled=data.get('enabled', 'true') == 'true',
                 package_type=data.get('tipo'),
-                label=data.get('label') or None,
+                label=label,
                 color_text_label=color_text_label,
                 color_background_label=color_background_label,
-                color_text_billing_cycle=color_text_billing_cycle,
                 full_price=full_price,
                 promotional_price=promotional_price,
                 show_to=data.get('show_to'),
-                promotional_price_validity=data.get('promotional_price_validity') or None,
-                android_product_code=data.get('android_product_code') or None,
-                apple_product_code=data.get('apple_product_code') or None,
-                start_date=start_date_aware,
-                end_date=end_date_aware
+                start_date=start_date,
+                end_date=end_date,
+                android_product_code=data.get('android_product_code'),
+                apple_product_code=data.get('apple_product_code')
             )
             
             # Tratamento da imagem
             if 'image' in files:
-                plan.image = files['image']
-            
-            # Validação completa do modelo
-            try:
-                plan.full_clean()
-            except ValidationError as e:
-                error_messages = []
-                for field, errors in e.message_dict.items():
-                    field_name = field_names.get(field, field.replace('_', ' ').title())
-                    error_messages.append(f"{field_name}: {', '.join(errors)}")
-                
-                return JsonResponse({
-                    'success': False,
-                    'message': '; '.join(error_messages)
-                })
+                # Validação do tamanho da imagem
+                image = files['image']
+                if image.size > 2 * 1024 * 1024:  # 2MB
+                    return JsonResponse({
+                        'success': False,
+                        'message': 'A imagem não pode ter mais que 2MB'
+                    })
+                plan.image = image
+            elif data.get('should_remove_image') == 'yes':
+                # Se o campo should_remove_image for 'yes', remove a imagem
+                if plan.image:
+                    plan.image.delete()
+                plan.image = None
             
             plan.save()
             
@@ -1513,8 +1539,6 @@ def pacote_plano_novo(request):
             })
             
         except Exception as e:
-            import traceback
-            print(traceback.format_exc())  # Log do erro completo
             return JsonResponse({
                 'success': False,
                 'message': f'Erro ao criar plano: {str(e)}'
@@ -2760,10 +2784,17 @@ def notificacoes(request):
         notification_id = request.GET.get('id')
         try:
             notification = Notifications.objects.get(id=notification_id)
+            
+            # Ajustando o horário para o formato local sem ajuste de fuso
+            formatted_date = None
+            if notification.send_at:
+                local_date = notification.send_at
+                formatted_date = local_date.strftime('%d/%m/%Y %H:%M')
+            
             response_data = {
                 'success': True,
                 'status': notification.status,
-                'send_at': notification.send_at.strftime('%d/%m/%Y %H:%M') if notification.send_at else None,
+                'send_at': formatted_date,
                 'error_message': notification.error_message
             }
             return JsonResponse(response_data)
@@ -3819,6 +3850,8 @@ def plano_editar(request, id):
                 plan.billing_cycle = data.get('billing_cycle')
                 plan.enabled = data.get('enabled', '').lower() == 'true'
                 plan.package_type = data.get('tipo')  # Corrigido de package_type para tipo
+                
+                # Processamento da etiqueta e cores - Garantindo que os valores sejam processados corretamente
                 plan.label = data.get('label')
                 
                 # Validação e conversão das cores
@@ -3849,10 +3882,18 @@ def plano_editar(request, id):
                     # Se não estiver em nenhum formato válido, retorna preto
                     return '#000000'
                 
-                # Aplicar validação às cores
-                plan.color_text_label = validate_color(data.get('color_text_label'))
-                plan.color_background_label = validate_color(data.get('color_background_label'))
-                plan.color_text_billing_cycle = validate_color(data.get('color_text_billing_cycle'))
+                # Aplicar validação às cores - Garantindo que os valores sejam processados corretamente
+                color_text_label = data.get('color_text_label')
+                color_background_label = data.get('color_background_label')
+                
+                # Log para debug
+                print(f"Valores recebidos - Etiqueta: {plan.label}, Cor texto: {color_text_label}, Cor fundo: {color_background_label}")
+                
+                plan.color_text_label = validate_color(color_text_label)
+                plan.color_background_label = validate_color(color_background_label)
+                
+                # Log para debug após validação
+                print(f"Valores após validação - Cor texto: {plan.color_text_label}, Cor fundo: {plan.color_background_label}")
                 
                 # Validação dos preços
                 try:
@@ -3875,7 +3916,6 @@ def plano_editar(request, id):
                     })
                 
                 plan.show_to = data.get('show_to')
-                plan.promotional_price_validity = data.get('promotional_price_validity')
 
                 # Tratamento das datas
                 start_date = data.get('start_date')
@@ -3884,41 +3924,60 @@ def plano_editar(request, id):
                 try:
                     if start_date:
                         naive_date = datetime.strptime(start_date, '%d/%m/%Y %H:%M')
+                        # Adiciona informação de timezone
+                        from django.utils import timezone
                         plan.start_date = timezone.make_aware(naive_date)
                     else:
                         plan.start_date = None
                         
                     if end_date:
                         naive_date = datetime.strptime(end_date, '%d/%m/%Y %H:%M')
+                        # Adiciona informação de timezone
+                        from django.utils import timezone
                         plan.end_date = timezone.make_aware(naive_date)
                     else:
                         plan.end_date = None
                 except ValueError:
                     return JsonResponse({
                         'success': False,
-                        'message': 'Data inválida. Use o formato DD/MM/YYYY HH:mm'
+                        'message': 'Formato de data inválido. Use o formato DD/MM/YYYY HH:mm'
                     })
+                
+                # Códigos de produto
+                plan.android_product_code = data.get('android_product_code')
+                plan.apple_product_code = data.get('apple_product_code')
                 
                 # Tratamento da imagem
                 if 'image' in files:
+                    # Validação do tamanho da imagem
+                    image = files['image']
+                    if image.size > 2 * 1024 * 1024:  # 2MB
+                        return JsonResponse({
+                            'success': False,
+                            'message': 'A imagem não pode ter mais que 2MB'
+                        })
+                    
+                    plan.image = image
+                elif data.get('should_remove_image') == 'yes':
+                    # Se o campo should_remove_image for 'yes', remove a imagem
                     if plan.image:
                         plan.image.delete()
-                    plan.image = files['image']
+                    plan.image = None
                 
+                # Salva o plano
                 plan.save()
                 
                 return JsonResponse({
                     'success': True,
                     'message': 'Plano atualizado com sucesso!'
                 })
-                
             except Exception as e:
                 return JsonResponse({
                     'success': False,
                     'message': f'Erro ao atualizar plano: {str(e)}'
                 })
         
-        # Se não for POST, renderiza o template com os dados do plano
+        # Preparação dos dados para o template
         plan_data = {
             'id': plan.id,
             'name': plan.name,
@@ -3931,25 +3990,27 @@ def plano_editar(request, id):
             'color_background_label': plan.color_background_label,
             'full_price': str(plan.full_price),
             'promotional_price': str(plan.promotional_price) if plan.promotional_price else None,
-            'color_text_billing_cycle': plan.color_text_billing_cycle,
             'show_to': plan.show_to,
-            'promotional_price_validity': plan.promotional_price_validity,
-            'start_date': plan.start_date.strftime('%d/%m/%Y %H:%M') if plan.start_date else None,
-            'end_date': plan.end_date.strftime('%d/%m/%Y %H:%M') if plan.end_date else None,
-            'image': plan.image.url if plan.image else None,
             'android_product_code': plan.android_product_code,
-            'apple_product_code': plan.apple_product_code
+            'apple_product_code': plan.apple_product_code,
         }
         
+        # Formatação das datas para o template
+        if plan.start_date:
+            plan_data['start_date'] = plan.start_date.strftime('%d/%m/%Y %H:%M')
+        if plan.end_date:
+            plan_data['end_date'] = plan.end_date.strftime('%d/%m/%Y %H:%M')
+        
+        # URL da imagem
+        if plan.image:
+            plan_data['image'] = plan.image.url
+        
         return render(request, 'administrativo/pacote-plano-editar.html', {
+            'plan': plan,
             'plan_data': json.dumps(plan_data)
         })
-        
-    except Exception as e:
-        return JsonResponse({
-            'success': False,
-            'message': f'Erro ao carregar plano: {str(e)}'
-        })
+    except Plan.DoesNotExist:
+        return redirect('administrativo:planos')
 
 @login_required
 def futliga_nivel_editar(request, id):
@@ -4980,9 +5041,49 @@ def futcoin_editar(request, id):
                         'message': 'Bônus inválido'
                     })
 
+                # Processamento da etiqueta e cores - Garantindo que os valores sejam processados corretamente
                 package.label = request.POST.get('label')
-                package.color_text_label = request.POST.get('color_text_label')
-                package.color_background_label = request.POST.get('color_background_label')
+                
+                # Validação e conversão das cores
+                def validate_color(color):
+                    if not color:
+                        return '#000000'
+                    
+                    # Remove espaços e converte para minúsculas
+                    color = color.strip() if hasattr(color, 'strip') else color
+                    color = color.lower() if hasattr(color, 'lower') else color
+                    
+                    # Se já estiver no formato #RRGGBB, retorna como está
+                    if re.match(r'^#[0-9a-f]{6}$', color):
+                        return color.upper()
+                    
+                    # Se estiver no formato RGB(r,g,b), converte para hex
+                    rgb_match = re.match(r'rgb\((\d+),\s*(\d+),\s*(\d+)\)', color)
+                    if rgb_match:
+                        r, g, b = map(int, rgb_match.groups())
+                        return f'#{r:02x}{g:02x}{b:02x}'.upper()
+                    
+                    # Se for rgba, remove o canal alpha e converte para hex
+                    rgba_match = re.match(r'rgba\((\d+),\s*(\d+),\s*(\d+),\s*[\d.]+\)', color)
+                    if rgba_match:
+                        r, g, b = map(int, rgba_match.groups())
+                        return f'#{r:02x}{g:02x}{b:02x}'.upper()
+                    
+                    # Se não estiver em nenhum formato válido, retorna preto
+                    return '#000000'
+                
+                color_text_label = request.POST.get('color_text_label')
+                color_background_label = request.POST.get('color_background_label')
+                
+                # Log para debug
+                logger.info(f"Valores recebidos - Etiqueta: {package.label}, Cor texto: {color_text_label}, Cor fundo: {color_background_label}")
+                
+                package.color_text_label = validate_color(color_text_label)
+                package.color_background_label = validate_color(color_background_label)
+                
+                # Log para debug após validação
+                logger.info(f"Valores após validação - Cor texto: {package.color_text_label}, Cor fundo: {package.color_background_label}")
+                
                 package.android_product_code = request.POST.get('android_product_code')
                 package.ios_product_code = request.POST.get('ios_product_code')
                 package.gateway_product_code = request.POST.get('gateway_product_code')

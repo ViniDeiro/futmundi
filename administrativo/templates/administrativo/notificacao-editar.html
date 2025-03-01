@@ -237,9 +237,9 @@
                                                 <input type="text" id="mensagem" name="message" class="form-control" required value="{{ notification.message }}">
                                                 <label class="form-control-placeholder" for="mensagem">Mensagem</label>
                                             </div>
-                                            <div class="form-group col-lg-12">
-                                                <button type="submit" class="btn btn-success"><i class="fa fa-check"></i> Salvar</button>
-                                                <a href="{% url 'administrativo:notificacoes' %}" class="btn btn-danger"><i class="fa fa-times"></i> Cancelar</a>
+                                            <div>
+                                                <button type="submit" class="btn btn-success ml15"><i class="fa fa-check mr5"></i> Salvar</button>
+                                                <a href="{% url 'administrativo:notificacoes' %}" class="btn btn-danger ml15"><i class="fa fa-times mr5"></i> Cancelar</a>
                                             </div>
                                         </form>
                                     </div>
@@ -305,7 +305,9 @@
                 {% endif %}
 
                 // Inicializa o Select2
-                $('.js-example-basic-single').select2();
+                $('.js-example-basic-single').select2({
+                    width: '100%'
+                });
 
                 // Inicializa o iCheck
                 $('.i-checks').iCheck({
@@ -315,7 +317,7 @@
 
                 // Inicializa o DateTimePicker
                 $('#datetimepicker').datetimepicker({
-                    format: 'YYYY-MM-DD HH:mm',
+                    format: 'DD/MM/YYYY HH:mm',
                     icons: {
                         time: 'fa fa-clock-o',
                         date: 'fa fa-calendar',
@@ -329,51 +331,66 @@
                     }
                 });
 
-                // Controle do campo de pacote baseado no tipo
+                // Manipulação dos tipos de notificação e pacotes
                 $('#tipo').on('change', function() {
-                    var tipo = $(this).val();
-                    var $pacoteSelect = $('#pacote');
-                    var $pacoteContainer = $('#pacote-container');
+                    var selectedType = $(this).val();
+                    var pacoteContainer = $('#pacote-container');
+                    var pacoteSelect = $('#pacote');
                     
-                    $pacoteSelect.empty().append('<option value="">Selecione um pacote</option>');
+                    // Limpa o select de pacotes
+                    pacoteSelect.empty();
+                    pacoteSelect.append('<option value="">Selecione um pacote</option>');
                     
-                    if (tipo === 'Geral') {
-                        $pacoteContainer.hide();
+                    // Mostra ou esconde o container de pacotes dependendo do tipo
+                    if (selectedType === 'Geral') {
+                        pacoteContainer.hide();
+                        // Para notificações gerais, define mensagens padrão
+                        $('#nome').val('Futmundi - Comunicado importante');
+                        $('#mensagem').val('Temos uma novidade para você! Confira agora!');
                     } else {
-                        $pacoteContainer.show();
+                        pacoteContainer.show();
                         
-                        // Determina o tipo de pacote para a API
-                        var apiType = tipo === 'PacoteFutcoins' ? 'package_coins' : 'package_plan';
-                        
-                        // Carrega os pacotes baseado no tipo selecionado
+                        // Carrega os pacotes apropriados via AJAX
                         $.ajax({
                             url: '{% url "administrativo:get_packages" %}',
                             type: 'GET',
                             data: {
-                                type: apiType
+                                'type': selectedType
                             },
-                            success: function(response) {
-                                if (response.success) {
-                                    response.packages.forEach(function(package) {
-                                        $pacoteSelect.append(new Option(package.name, package.id));
+                            success: function(data) {
+                                if (data.packages) {
+                                    $.each(data.packages, function(index, package) {
+                                        pacoteSelect.append('<option value="' + package.id + '">' + package.name + '</option>');
                                     });
-                                    
-                                    // Se estiver editando, seleciona o pacote atual
-                                    var currentPackageId = "{{ notification.package_id|default:'' }}";
-                                    if (currentPackageId) {
-                                        $pacoteSelect.val(currentPackageId);
-                                    }
-                                } else {
-                                    toastr.error('Erro ao carregar pacotes: ' + response.message);
                                 }
-                            },
-                            error: function() {
-                                toastr.error('Erro ao carregar pacotes. Tente novamente.');
                             }
                         });
                     }
                 });
-
+                
+                // Inicializa o tipo e pacote corretos ao carregar a página
+                var initialType = '{{ notification.notification_type }}';
+                $('#tipo').val(initialType).trigger('change');
+                
+                // Preenchimento automático do título e mensagem quando um pacote é selecionado
+                $('#pacote').on('change', function() {
+                    var selectedType = $('#tipo').val();
+                    var selectedPackage = $(this).find('option:selected').text();
+                    
+                    if (selectedPackage && selectedPackage !== 'Selecione um pacote') {
+                        // Formata o título para ambos os tipos de pacote
+                        var title = selectedPackage + ' disponível agora!!';
+                        $('#nome').val(title);
+                        
+                        // Formata a mensagem dependendo do tipo de pacote
+                        if (selectedType === 'PacoteFutcoins') {
+                            $('#mensagem').val('Adquira já o pacote e impulsione seus palpites.');
+                        } else if (selectedType === 'PacotePlano') {
+                            $('#mensagem').val('Seja Craque agora e aproveite todas as vantagens.');
+                        }
+                    }
+                });
+                
                 // Controle do campo de data baseado no tipo de envio
                 $('input[name="a"]').on('ifChecked', function(event) {
                     if ($(this).val() === 'option1') {
@@ -383,26 +400,20 @@
                     }
                 });
 
-                // Trigger inicial para configurar o estado dos campos
-                $('#tipo').trigger('change');
-
-                // Carrega os dados existentes
+                // Inicializa os valores da notificação existente
                 var notification = {
                     notification_type: "{{ notification.notification_type|default:'Geral' }}",
-                    package_id: "{{ notification.package.id|default:'' }}",
+                    package_id: "{{ notification.package_id|default:'' }}",
                     title: "{{ notification.title|escapejs }}",
                     message: "{{ notification.message|escapejs }}",
                     send_at: "{{ notification.send_at|date:'Y-m-d H:i'|default:'' }}"
                 };
 
-                // Define os valores nos campos
-                $('#tipo').val(notification.notification_type).trigger('change');
-                if (notification.package_id) {
-                    $('#pacote').val(notification.package_id);
-                }
+                // Preenche os campos com os valores existentes
                 $('#nome').val(notification.title);
                 $('#mensagem').val(notification.message);
                 
+                // Define o estado do envio agendado
                 if (notification.send_at) {
                     $('input[name="a"][value="option2"]').iCheck('check');
                     $('#datetimepicker').prop('disabled', false);
@@ -412,8 +423,8 @@
                     $('#datetimepicker').prop('disabled', true);
                 }
 
-                // Validação do formulário
-                $('#notificationForm').on('submit', function(e) {
+                // Adiciona validação do formulário
+                $('form').on('submit', function(e) {
                     var titulo = $('#nome').val();
                     var mensagem = $('#mensagem').val();
 
@@ -433,14 +444,10 @@
                     }
 
                     if (!envioImediato && dataEnvio) {
-                        var sendAtInput = $('<input>').attr({
-                            type: 'hidden',
-                            name: 'send_at',
-                            value: moment(dataEnvio, 'DD/MM/YYYY HH:mm').format('YYYY-MM-DD HH:mm')
-                        });
-                        $(this).append(sendAtInput);
+                        $(this).append('<input type="hidden" name="send_at" value="' + 
+                            moment(dataEnvio, 'DD/MM/YYYY HH:mm').format('YYYY-MM-DD HH:mm') + '">');
                     }
-
+                    
                     return true;
                 });
             });

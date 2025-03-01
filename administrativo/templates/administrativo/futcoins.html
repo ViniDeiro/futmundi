@@ -188,7 +188,7 @@
                                                     <td>{{ package.package_type }}</td>
                                                     <td>R$ {{ package.full_price }}</td>
                                                     <td>{% if package.promotional_price %}R$ {{ package.promotional_price }}{% endif %}</td>
-                                                    <td>{{ package.created_at|date:"d/m/Y" }}</td>
+                                                    <td>{{ package.created_at|date:"d/m/Y H:i" }}</td>
                                                     <td>
                                                         <a href="{% url 'administrativo:futcoin_editar' package.id %}" class="btn btn-info btn-xs edit-btn" title="Editar" onclick="event.stopPropagation();">
                                                             <i class="glyphicon glyphicon-pencil"></i>

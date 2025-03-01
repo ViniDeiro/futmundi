@@ -23,7 +23,7 @@
         <link rel="icon" href="{% static 'administrativo/img/futmundi.ico' %}" type="image/png">
         <style>
             .form-control-placeholder::after {
-                content: " *";
+                content: "";
                 color: red;
             }
             .form-control-placeholder:not([for="nome"]):not([for="preco-padrao"]):not([for="preco-promocional"])::after {
@@ -93,6 +93,7 @@
                                                                                 <i class="fa fa-file-image-o" style="font-size: 48px; color: #ccc; cursor: pointer;" onclick="document.getElementById('image').click()"></i>
                                                                             </div>
                                                                             <input type="file" id="image" name="image" class="input-image" accept="image/*" style="display: none;">
+                                                                            <input type="hidden" id="should_remove_image" name="should_remove_image" value="no">
                                                                         </div>                              
                                                                     </div>
                                                                 </div>
@@ -174,23 +175,6 @@
                                                         </div>                                                            
                                                         <div class="form-group col-lg-12">
                                                             <div class="row">
-                                                               <div class="col-lg-4 mt5">
-                                                                    <label class="control-label" for="val-preco-prom">Val. Preço Prom. (dias)</label>
-                                                                    <input type="number" id="val-preco-prom" class="form-control input-medium" required>
-                                                                </div>
-                                                                <div class="col-lg-4 mtm15">
-                                                                    <label class="control-label">Cor Texto Vigência</label>
-                                                                    <div id="id5" class="input-group colorpicker-component formcolorpicker">
-                                                                        <input type="text" value="#192639" class="form-control"/>
-                                                                        <div class="input-group-append">
-                                                                            <span class="input-group-text input-group-addon"><i></i></span>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </div>   
-                                                        <div class="form-group col-lg-12">
-                                                            <div class="row">
                                                                <div class="col-lg-4 mtm15">
                                                                     <label class="control-label" for="exibir-para">Exibir para</label>
                                                                     <select class="form-control" id="exibir-para">
@@ -223,6 +207,7 @@
                                                                     <label class="control-label">Data de Início</label>
                                                                     <div class="input-group date" data-target-input="nearest">
                                                                         <input type="text" class="form-control datetimepicker-input" id="datetimepicker" data-toggle="datetimepicker" data-target="#datetimepicker"/>
+                                                                        <input type="hidden" id="hidden_start_date">
                                                                         <div class="input-group-append" data-target="#datetimepicker" data-toggle="datetimepicker">
                                                                             <div class="input-group-text"><i class="fa fa-calendar"></i></div>
                                                                         </div>
@@ -232,6 +217,7 @@
                                                                     <label class="control-label">Data de Término</label>
                                                                     <div class="input-group date" data-target-input="nearest">
                                                                         <input type="text" class="form-control datetimepicker-input" id="datetimepicker2" data-toggle="datetimepicker" data-target="#datetimepicker2"/>
+                                                                        <input type="hidden" id="hidden_end_date">
                                                                         <div class="input-group-append" data-target="#datetimepicker2" data-toggle="datetimepicker2">
                                                                             <div class="input-group-text"><i class="fa fa-calendar"></i></div>
                                                                         </div>
@@ -272,206 +258,39 @@
         <script src="{% static 'administrativo/js/plugins/moment/moment.js' %}"></script>
         <script src="{% static 'administrativo/js/plugins/tempusdominus/tempusdominus-bootstrap-4.min.js' %}"></script>
         <script src="{% static 'administrativo/js/settings.js' %}"></script>
-        <script src="{% static 'administrativo/js/pacote-plano.js' %}"></script>
+        <script src="{% static 'administrativo/js/pacote-plano-novo.js' %}"></script>
         
         {% block form_data %}{% endblock %}
-
+        
         <script>
-            // Setup CSRF token for AJAX requests
-            $.ajaxSetup({
-                headers: {
-                    'X-CSRFToken': $('meta[name="csrf-token"]').attr('content')
-                }
-            });
-            
-            // Função para validar e formatar cores
-            function validateColor(color) {
-                if (!color) return '#000000';
-                
-                // Remove espaços e converte para minúsculas
-                color = color.trim().toLowerCase();
-                
-                // Se já estiver no formato #RRGGBB, retorna como está
-                if (/^#[0-9a-f]{6}$/.test(color)) {
-                    return color.toUpperCase();
-                }
-                
-                // Se estiver no formato RGB(r,g,b), converte para hex
-                let rgbMatch = color.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
-                if (rgbMatch) {
-                    let r = parseInt(rgbMatch[1]);
-                    let g = parseInt(rgbMatch[2]);
-                    let b = parseInt(rgbMatch[3]);
-                    return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`.toUpperCase();
-                }
-                
-                // Se for rgba, remove o canal alpha e converte para hex
-                let rgbaMatch = color.match(/rgba\((\d+),\s*(\d+),\s*(\d+),\s*[\d.]+\)/);
-                if (rgbaMatch) {
-                    let r = parseInt(rgbaMatch[1]);
-                    let g = parseInt(rgbaMatch[2]);
-                    let b = parseInt(rgbaMatch[3]);
-                    return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`.toUpperCase();
-                }
-                
-                // Se não estiver em nenhum formato válido, retorna preto
-                return '#000000';
-            }
-            
-            // Expõe a função validateColor globalmente
-            window.validateColor = validateColor;
-            
+            // Script adicional para garantir que os colorpickers estejam funcionando
             $(document).ready(function() {
-                // Inicializa os color pickers com formato fixo
-                $('#id3, #id4, #id5').each(function() {
-                    $(this).spectrum({
-                        type: "component",
-                        showInput: true,
-                        showInitial: true,
-                        showAlpha: false,
-                        allowEmpty: false,
-                        preferredFormat: "hex",
-                        change: function(color) {
-                            $(this).val(color.toHexString().toUpperCase());
-                        }
-                    });
+                console.log('Inicializando colorpickers diretamente no template');
+                
+                // Inicializa os colorpickers com configurações específicas
+                $('#id3').colorpicker({
+                    format: 'hex'
+                }).on('colorpickerChange', function(event) {
+                    console.log('Cor #id3 alterada para:', event.color.toString());
+                    $(this).find('input').val(event.color.toString());
                 });
                 
-                // Ajusta a visibilidade dos campos com base no tipo selecionado
+                $('#id4').colorpicker({
+                    format: 'hex'
+                }).on('colorpickerChange', function(event) {
+                    console.log('Cor #id4 alterada para:', event.color.toString());
+                    $(this).find('input').val(event.color.toString());
+                });
+                
+                // Dispara o evento change do tipo para configurar visibilidade inicial
                 $('#tipo').trigger('change');
                 
-                // Handler para o botão Salvar
+                // Adiciona um log para verificar os valores dos colorpickers antes do envio
                 $('#btn-salvar').on('click', function() {
-                    console.log('Botão salvar clicado'); // Debug
-                    var $btn = $(this);
-                    var formData = new FormData();
-
-                    // Coleta os dados do formulário
-                    var nome = document.getElementById('nome').value;
-                    var precoPadrao = document.getElementById('preco-padrao').value;
-                    var precoPromocional = document.getElementById('preco-promocional').value;
-
-                    if (!nome) {
-                        toastr.error('O campo Nome é obrigatório');
-                        return;
-                    }
-                    if (!precoPadrao) {
-                        toastr.error('O campo Preço Padrão é obrigatório');
-                        return;
-                    }
-
-                    // Validação do preço promocional
-                    if (precoPromocional && parseFloat(precoPromocional) > parseFloat(precoPadrao)) {
-                        toastr.error('O preço promocional não pode ser maior que o preço padrão');
-                        return;
-                    }
-
-                    // Validação das datas
-                    var dataInicio = document.getElementById('datetimepicker').value;
-                    var dataTermino = document.getElementById('datetimepicker2').value;
-
-                    if (dataInicio && dataTermino) {
-                        var inicio = new Date(dataInicio.split('/').reverse().join('-'));
-                        var termino = new Date(dataTermino.split('/').reverse().join('-'));
-                        if (inicio > termino) {
-                            toastr.error('A data de início não pode ser posterior à data de término');
-                            return;
-                        }
-                    }
-
-                    // Adiciona os dados do formulário
-                    formData.append('name', nome);
-                    formData.append('plan', document.getElementById('plano').value);
-                    formData.append('billing_cycle', document.getElementById('vigencia').value);
-                    formData.append('enabled', document.getElementById('enabled').checked);
-                    formData.append('tipo', document.getElementById('tipo').value);
-                    
-                    // Campo da Etiqueta e cores
-                    var tipo = document.getElementById('tipo').value;
-                    var etiqueta = document.getElementById('etiqueta').value;
-                    
-                    // Se for tipo Promocional, a etiqueta é obrigatória
-                    if (tipo === 'Promocional' && !etiqueta) {
-                        toastr.error('O campo Etiqueta é obrigatório para pacotes promocionais');
-                        return;
-                    }
-                    
-                    formData.append('label', etiqueta);
-                    
-                    // Obtém os valores dos colorpickers
-                    var corTextoEtiqueta = $('#id3').colorpicker('getValue') || '#FFFFFF';
-                    var corFundoEtiqueta = $('#id4').colorpicker('getValue') || '#CC000C';
-                    var corTextoVigencia = $('#id5').colorpicker('getValue') || '#192639';
-                    
-                    formData.append('color_text_label', corTextoEtiqueta);
-                    formData.append('color_background_label', corFundoEtiqueta);
-                    formData.append('color_text_billing_cycle', corTextoVigencia);
-                    
-                    // Preços
-                    formData.append('full_price', precoPadrao.replace(',', '.'));
-                    if (precoPromocional) {
-                        formData.append('promotional_price', precoPromocional.replace(',', '.'));
-                    }
-                    
-                    // Datas
-                    if (dataInicio) {
-                        formData.append('start_date', dataInicio);
-                    }
-                    if (dataTermino) {
-                        formData.append('end_date', dataTermino);
-                    }
-                    
-                    formData.append('show_to', document.getElementById('exibir-para').value);
-                    formData.append('promotional_price_validity', document.getElementById('val-preco-prom').value || '');
-                    
-                    // Códigos dos produtos
-                    var androidCode = document.getElementById('codigo-android').value;
-                    var appleCode = document.getElementById('codigo-apple').value;
-                    formData.append('android_product_code', androidCode || '');
-                    formData.append('apple_product_code', appleCode || '');
-
-                    // Debug - Mostrando os valores específicos no console
-                    console.log('Dados do FormData:');
-                    for (let pair of formData.entries()) {
-                        console.log(pair[0] + ': ' + pair[1]);
-                    }
-
-                    // Adiciona a imagem se houver
-                    var imageFile = document.getElementById('image').files[0];
-                    if (imageFile) {
-                        formData.append('image', imageFile);
-                    }
-
-                    $btn.prop('disabled', true);
-
-                    // Envia os dados
-                    $.ajax({
-                        url: window.location.pathname,
-                        type: 'POST',
-                        data: formData,
-                        processData: false,
-                        contentType: false,
-                        headers: {
-                            'X-CSRFToken': $('meta[name="csrf-token"]').attr('content')
-                        },
-                        success: function(response) {
-                            if (response.success) {
-                                toastr.success(response.message);
-                                setTimeout(function() {
-                                    window.location.href = $('#cancel-url').data('url');
-                                }, 1500);
-                            } else {
-                                console.error('Erro na resposta:', response);
-                                toastr.error(response.message || 'Erro ao salvar plano');
-                                $btn.prop('disabled', false);
-                            }
-                        },
-                        error: function(xhr) {
-                            console.error('Erro na requisição:', xhr.responseJSON);
-                            toastr.error(xhr.responseJSON?.message || 'Erro ao salvar plano');
-                            $btn.prop('disabled', false);
-                        }
-                    });
+                    console.log('Valores dos colorpickers no momento do clique:');
+                    console.log('Etiqueta:', $('#etiqueta').val());
+                    console.log('Cor texto etiqueta (#id3):', $('#id3 input').val());
+                    console.log('Cor fundo etiqueta (#id4):', $('#id4 input').val());
                 });
             });
         </script>

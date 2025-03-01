@@ -108,7 +108,7 @@
                                                     <td>{{ plan.package_type }}</td>
                                                     <td>R$ {{ plan.full_price }}</td>
                                                     <td>{% if plan.promotional_price %}R$ {{ plan.promotional_price }}{% endif %}</td>
-                                                    <td>{{ plan.created_at|date:"d/m/Y" }}</td>
+                                                    <td>{{ plan.created_at|date:"d/m/Y H:i" }}</td>
                                                     <td>
                                                         <a href="{% url 'administrativo:plano_editar' plan.id %}" class="btn btn-info btn-xs" title="Editar">
                                                             <i class="glyphicon glyphicon-pencil"></i>

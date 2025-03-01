@@ -58,8 +58,45 @@
         return '#000000';
     }
     
+    // Função para formatar data para exibição (YYYY-MM-DD HH:MM:SS -> DD/MM/YYYY HH:MM)
+    function formatDateForDisplay(dateStr) {
+        if (!dateStr) return '';
+        
+        try {
+            // Tenta criar um objeto moment com a string de data
+            var dateMoment = moment(dateStr);
+            if (dateMoment.isValid()) {
+                return dateMoment.format('DD/MM/YYYY HH:mm');
+            }
+            return '';
+        } catch (e) {
+            console.error('Erro ao formatar data para exibição:', e);
+            return '';
+        }
+    }
+    
     $(document).ready(function() {
-        console.log('Página carregada, iniciando preenchimento do formulário');
+        // Adiciona campos ocultos para armazenar as datas formatadas
+        $('body').append('<input type="hidden" id="hidden_start_date">');
+        $('body').append('<input type="hidden" id="hidden_end_date">');
+        $('body').append('<input type="hidden" id="should_remove_image" name="should_remove_image" value="no">');
+        
+        // Configura os datepickers
+        $('#datetimepicker, #datetimepicker2').datetimepicker({
+            format: 'DD/MM/YYYY HH:mm',
+            locale: 'pt-br',
+            icons: {
+                time: 'fa fa-clock-o',
+                date: 'fa fa-calendar',
+                up: 'fa fa-chevron-up',
+                down: 'fa fa-chevron-down',
+                previous: 'fa fa-chevron-left',
+                next: 'fa fa-chevron-right',
+                today: 'fa fa-screenshot',
+                clear: 'fa fa-trash',
+                close: 'fa fa-remove'
+            }
+        });
         
         // Preenche os dados do plano
         const planData = JSON.parse('{{ plan_data|safe }}');
@@ -67,49 +104,69 @@
         
         // Preencher campos básicos
         $('#nome').val(planData.name || '');
-        $('#plano').val(planData.plan || 'Craque');
-        $('#vigencia').val(planData.billing_cycle || 'Mensal');
-        $('#enabled').prop('checked', planData.enabled);
-        
-        // Ajusta o tipo (Padrão ou Promocional)
-        $('#tipo').val(planData.package_type === 'Promocional' ? 'Promocional' : 'Padrão');
-        console.log('Tipo definido como:', $('#tipo').val());
-        
-        // Campos de etiqueta e cores
+        $('#plano').val(planData.plan || '');
+        $('#vigencia').val(planData.billing_cycle || '');
+        $('#tipo').val(planData.package_type || 'Padrão');
         $('#etiqueta').val(planData.label || '');
-        $('#id3 input').val(planData.color_text_label || '#FFFFFF');
-        $('#id4 input').val(planData.color_background_label || '#CC000C');
-        $('#id5 input').val(planData.color_text_billing_cycle || '#192639');
-        
-        // Campos de preço
         $('#preco-padrao').val(planData.full_price || '');
         $('#preco-promocional').val(planData.promotional_price || '');
-        
-        // Outros campos
         $('#exibir-para').val(planData.show_to || 'Todos');
-        $('#val-preco-prom').val(planData.promotional_price_validity || '');
+        $('#enabled').prop('checked', planData.enabled);
         $('#codigo-android').val(planData.android_product_code || '');
         $('#codigo-apple').val(planData.apple_product_code || '');
         
-        // Atualiza os colorpickers após definir os valores
-        $('#id3, #id4, #id5').each(function() {
-            $(this).colorpicker('setValue', $(this).find('input').val());
-        });
+        console.log('Código Android carregado:', planData.android_product_code);
+        console.log('Código Apple carregado:', planData.apple_product_code);
+        console.log('Valor do campo código Android:', $('#codigo-android').val());
+        console.log('Valor do campo código Apple:', $('#codigo-apple').val());
         
-        // Preenche as datas se existirem
+        // Define as cores nos color pickers
+        $('#id3').colorpicker('setValue', planData.color_text_label || '#FFFFFF');
+        $('#id4').colorpicker('setValue', planData.color_background_label || '#CC000C');
+        
+        // Inicializa os datepickers com moment.js para garantir o formato correto
         if (planData.start_date) {
             console.log('Definindo data de início:', planData.start_date);
             $('#datetimepicker').val(planData.start_date);
+            $('#hidden_start_date').val(planData.start_date);
+            
             // Inicializa o datepicker com o valor
-            $('#datetimepicker').datetimepicker('date', moment(planData.start_date, 'DD/MM/YYYY HH:mm'));
+            try {
+                $('#datetimepicker').datetimepicker('date', moment(planData.start_date, 'DD/MM/YYYY HH:mm'));
+                console.log('Datepicker de início inicializado com sucesso');
+            } catch (e) {
+                console.error('Erro ao inicializar datepicker de início:', e);
+            }
         }
         
         if (planData.end_date) {
             console.log('Definindo data de término:', planData.end_date);
             $('#datetimepicker2').val(planData.end_date);
+            $('#hidden_end_date').val(planData.end_date);
+            
             // Inicializa o datepicker com o valor
-            $('#datetimepicker2').datetimepicker('date', moment(planData.end_date, 'DD/MM/YYYY HH:mm'));
+            try {
+                $('#datetimepicker2').datetimepicker('date', moment(planData.end_date, 'DD/MM/YYYY HH:mm'));
+                console.log('Datepicker de término inicializado com sucesso');
+            } catch (e) {
+                console.error('Erro ao inicializar datepicker de término:', e);
+            }
         }
+        
+        // Adiciona listeners para atualizar os campos ocultos quando as datas mudarem
+        $('#datetimepicker').on('change.datetimepicker', function(e) {
+            if (e.date) {
+                $('#hidden_start_date').val(e.date.format('DD/MM/YYYY HH:mm'));
+                console.log('Data de início atualizada:', $('#hidden_start_date').val());
+            }
+        });
+        
+        $('#datetimepicker2').on('change.datetimepicker', function(e) {
+            if (e.date) {
+                $('#hidden_end_date').val(e.date.format('DD/MM/YYYY HH:mm'));
+                console.log('Data de término atualizada:', $('#hidden_end_date').val());
+            }
+        });
         
         // Exibe a imagem se existir
         if (planData.image) {
@@ -124,9 +181,35 @@
             // Adiciona handler para o botão de remover
             $('#remove_image_btn').on('click', function() {
                 $('#image').val('');
+                $('#should_remove_image').val('yes');
                 $('#image-preview').html('<i class="fa fa-file-image-o" style="font-size: 48px; color: #ccc; cursor: pointer;" onclick="document.getElementById(\'image\').click()"></i>');
             });
         }
+        
+        // Adiciona o handler para o preview da imagem quando uma nova imagem é selecionada
+        $('#image').on('change', function() {
+            var file = this.files[0];
+            if (file) {
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    $('#image-preview').html(`
+                        <img src="${e.target.result}" style="width: 48px; height: 48px; object-fit: contain; cursor: pointer;" onclick="document.getElementById('image').click()">
+                        <button type="button" class="btn btn-danger btn-xs" id="remove_image_btn" style="position: absolute; bottom: -7px; right: -30px;">
+                            <i class="fa fa-trash"></i>
+                        </button>
+                    `);
+                    $('#image-preview').css('margin-top', '-7px');
+                    
+                    // Adiciona handler para o botão de remover
+                    $('#remove_image_btn').on('click', function() {
+                        $('#image').val('');
+                        $('#should_remove_image').val('yes');
+                        $('#image-preview').html('<i class="fa fa-file-image-o" style="font-size: 48px; color: #ccc; cursor: pointer;" onclick="document.getElementById(\'image\').click()"></i>');
+                    });
+                }
+                reader.readAsDataURL(file);
+            }
+        });
         
         // Dispara o evento change do tipo para ajustar a visibilidade dos campos
         $('#tipo').trigger('change');
@@ -139,6 +222,98 @@
         }
         
         console.log('Formulário preenchido com sucesso');
+        
+        // Sobrescreve o evento de clique do botão salvar para adicionar logs
+        $('#btn-salvar').off('click').on('click', function() {
+            console.log('Botão salvar clicado na edição');
+            console.log('Valor do campo código Android antes do envio:', $('#codigo-android').val());
+            console.log('Valor do campo código Apple antes do envio:', $('#codigo-apple').val());
+            
+            // Continua com o comportamento original
+            var $btn = $(this);
+            $btn.prop('disabled', true);
+            
+            // Cria o FormData para envio
+            var formData = new FormData();
+            
+            // Adiciona os dados do formulário
+            formData.append('name', $('#nome').val());
+            formData.append('plan', $('#plano').val());
+            formData.append('billing_cycle', $('#vigencia').val());
+            formData.append('enabled', $('#enabled').prop('checked') ? 'true' : 'false');
+            formData.append('tipo', $('#tipo').val());
+            
+            // Etiqueta e cores
+            formData.append('label', $('#etiqueta').val() || '');
+            formData.append('color_text_label', validateColor($('#id3').val() || $('#id3 input').val()));
+            formData.append('color_background_label', validateColor($('#id4').val() || $('#id4 input').val()));
+            
+            // Preços
+            formData.append('full_price', $('#preco-padrao').val().replace(',', '.'));
+            if ($('#preco-promocional').val()) {
+                formData.append('promotional_price', $('#preco-promocional').val().replace(',', '.'));
+            }
+            
+            // Datas - Usa os valores dos campos ocultos se disponíveis, senão usa os valores dos datepickers
+            var startDate = $('#hidden_start_date').val() || $('#datetimepicker').val();
+            var endDate = $('#hidden_end_date').val() || $('#datetimepicker2').val();
+            
+            console.log('Data de início a ser enviada:', startDate);
+            console.log('Data de término a ser enviada:', endDate);
+            
+            if (startDate) formData.append('start_date', startDate);
+            if (endDate) formData.append('end_date', endDate);
+            
+            // Outros campos
+            formData.append('show_to', $('#exibir-para').val());
+            
+            // Códigos de produto - Adicionando logs para depuração
+            var androidCode = $('#codigo-android').val() || '';
+            var appleCode = $('#codigo-apple').val() || '';
+            console.log('Código Android a ser enviado:', androidCode);
+            console.log('Código Apple a ser enviado:', appleCode);
+            
+            formData.append('android_product_code', androidCode);
+            formData.append('apple_product_code', appleCode);
+            
+            // Imagem
+            var imageFile = $('#image')[0].files[0];
+            if (imageFile) {
+                formData.append('image', imageFile);
+            }
+            
+            // Adiciona o campo para remoção de imagem
+            formData.append('should_remove_image', $('#should_remove_image').val());
+            
+            // Envia os dados
+            $.ajax({
+                url: window.location.pathname,
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                headers: {
+                    'X-CSRFToken': $('meta[name="csrf-token"]').attr('content')
+                },
+                success: function(response) {
+                    if (response.success) {
+                        toastr.success(response.message);
+                        setTimeout(function() {
+                            window.location.href = $('#cancel-url').data('url');
+                        }, 1500);
+                    } else {
+                        toastr.error(response.message || 'Erro ao salvar plano');
+                        $btn.prop('disabled', false);
+                    }
+                },
+                error: function(xhr) {
+                    toastr.error(xhr.responseJSON?.message || 'Erro ao salvar plano');
+                    $btn.prop('disabled', false);
+                }
+            });
+            
+            return false; // Impede o comportamento padrão
+        });
     });
 </script>
 {% endblock %} 
