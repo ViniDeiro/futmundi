@@ -86,7 +86,27 @@ $(document).ready(function() {
     }
 
     // Configuração dos datetimepickers
-    $('#datetimepicker, #datetimepicker2').datetimepicker({
+    // Inicializando um de cada vez para evitar conflitos
+    $('#datetimepicker').datetimepicker({
+        format: 'DD/MM/YYYY HH:mm',
+        locale: 'pt-br',
+        icons: {
+            time: 'fa fa-clock-o',
+            date: 'fa fa-calendar',
+            up: 'fa fa-chevron-up',
+            down: 'fa fa-chevron-down',
+            previous: 'fa fa-chevron-left',
+            next: 'fa fa-chevron-right',
+            today: 'fa fa-screenshot',
+            clear: 'fa fa-trash',
+            close: 'fa fa-remove'
+        },
+        stepping: 5,
+        sideBySide: true,
+        useCurrent: false
+    });
+    
+    $('#datetimepicker2').datetimepicker({
         format: 'DD/MM/YYYY HH:mm',
         locale: 'pt-br',
         icons: {
@@ -107,18 +127,14 @@ $(document).ready(function() {
 
     // Lógica para garantir que a data final não seja menor que a inicial
     $("#datetimepicker").on("change.datetimepicker", function (e) {
-        $('#datetimepicker2').datetimepicker('minDate', e.date);
-    });
-    $("#datetimepicker2").on("change.datetimepicker", function (e) {
-        $('#datetimepicker').datetimepicker('maxDate', e.date);
-    });
-
-    // Eventos para garantir o formato correto
-    $('#datetimepicker, #datetimepicker2').on('change.datetimepicker', function(e) {
         if (e.date) {
-            const formattedDate = formatDateToBR(e.date);
-            $(this).find('input').val(formattedDate);
-            console.log('Data atualizada:', formattedDate); // Debug
+            $('#datetimepicker2').datetimepicker('minDate', e.date);
+        }
+    });
+    
+    $("#datetimepicker2").on("change.datetimepicker", function (e) {
+        if (e.date) {
+            $('#datetimepicker').datetimepicker('maxDate', e.date);
         }
     });
 
