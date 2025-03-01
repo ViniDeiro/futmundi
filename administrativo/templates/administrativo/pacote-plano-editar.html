@@ -98,22 +98,7 @@
                 today: 'fa fa-screenshot',
                 clear: 'fa fa-trash',
                 close: 'fa fa-remove'
-            },
-            sideBySide: true,
-            useCurrent: false,
-            allowInputToggle: true,
-            ignoreReadonly: true,
-            showOn: "both" // Garante que o calendário apareça tanto no clique no ícone quanto no campo
-        });
-        
-        // Garantir que os datepickers possam ser abertos mesmo quando já possuem um valor
-        $('#datetimepicker, #datetimepicker2').on('click', function() {
-            $(this).datetimepicker('toggle');
-        });
-
-        $('.input-group-append[data-toggle="datetimepicker"]').on('click', function() {
-            var target = $(this).data('target');
-            $(target).datetimepicker('toggle');
+            }
         });
         
         // Preenche os dados do plano
