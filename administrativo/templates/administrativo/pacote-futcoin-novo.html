@@ -296,7 +296,7 @@
                                                         <div class="row">
                                                             <div class="col-lg-6">
                                                                 <label class="control-label">Data de Início</label>
-                                                                <div class="input-group date" id="datetimepicker1-container" data-target-input="nearest">
+                                                                <div class="input-group date" data-target-input="nearest">
                                                                     <input type="text" class="form-control datetimepicker-input" id="datetimepicker" data-toggle="datetimepicker" data-target="#datetimepicker"/>
                                                                     <div class="input-group-append" data-target="#datetimepicker" data-toggle="datetimepicker">
                                                                         <div class="input-group-text"><i class="fa fa-calendar"></i></div>
@@ -305,7 +305,7 @@
                                                             </div>
                                                             <div class="col-lg-6">
                                                                 <label class="control-label">Data de Término</label>
-                                                                <div class="input-group date" id="datetimepicker2-container" data-target-input="nearest">
+                                                                <div class="input-group date" data-target-input="nearest">
                                                                     <input type="text" class="form-control datetimepicker-input" id="datetimepicker2" data-toggle="datetimepicker" data-target="#datetimepicker2"/>
                                                                     <div class="input-group-append" data-target="#datetimepicker2" data-toggle="datetimepicker">
                                                                         <div class="input-group-text"><i class="fa fa-calendar"></i></div>
@@ -384,83 +384,40 @@
                 });
 
                 // Inicializa o datetimepicker
-                // Destruir instâncias anteriores, caso existam
-                if ($.fn.datetimepicker) {
-                    try {
-                        $('#datetimepicker').datetimepicker('destroy');
-                        $('#datetimepicker2').datetimepicker('destroy');
-                    } catch (e) {
-                        console.warn('Erro ao destruir datetimepickers anteriores:', e);
-                    }
-                }
-
-                // Remover todos os eventos antigos
-                $(document).off('change.datetimepicker');
-                $('#datetimepicker').off('change.datetimepicker');
-                $('#datetimepicker2').off('change.datetimepicker');
-
-                // Inicializar de forma isolada
-                try {
-                    $('#datetimepicker').datetimepicker({
-                        format: 'DD/MM/YYYY HH:mm',
-                        locale: 'pt-br',
-                        icons: {
-                            time: 'fa fa-clock-o',
-                            date: 'fa fa-calendar',
-                            up: 'fa fa-chevron-up',
-                            down: 'fa fa-chevron-down',
-                            previous: 'fa fa-chevron-left',
-                            next: 'fa fa-chevron-right',
-                            today: 'fa fa-screenshot',
-                            clear: 'fa fa-trash',
-                            close: 'fa fa-remove'
-                        },
-                        sideBySide: true,
-                        useCurrent: false,
-                        allowInputToggle: true,
-                        ignoreReadonly: true
-                    });
-                    
-                    $('#datetimepicker2').datetimepicker({
-                        format: 'DD/MM/YYYY HH:mm',
-                        locale: 'pt-br',
-                        icons: {
-                            time: 'fa fa-clock-o',
-                            date: 'fa fa-calendar',
-                            up: 'fa fa-chevron-up',
-                            down: 'fa fa-chevron-down',
-                            previous: 'fa fa-chevron-left',
-                            next: 'fa fa-chevron-right',
-                            today: 'fa fa-screenshot',
-                            clear: 'fa fa-trash',
-                            close: 'fa fa-remove'
-                        },
-                        sideBySide: true,
-                        useCurrent: false,
-                        allowInputToggle: true,
-                        ignoreReadonly: true
-                    });
-                    
-                    console.log('Datetimepickers inicializados com sucesso');
-                } catch (e) {
-                    console.error('Erro ao inicializar datetimepickers:', e);
-                }
-                
-                // Eventos específicos com propagação controlada
-                $('#datetimepicker').on('change.datetimepicker', function(e) {
-                    // Impedir propagação para evitar loops
-                    e.stopPropagation();
-                    console.log('Datetimepicker 1 alterado');
+                // Inicializando cada datetimepicker separadamente para evitar loops infinitos
+                $('#datetimepicker').datetimepicker({
+                    format: 'DD/MM/YYYY HH:mm',
+                    locale: 'pt-br',
+                    icons: {
+                        time: 'fa fa-clock-o',
+                        date: 'fa fa-calendar',
+                        up: 'fa fa-chevron-up',
+                        down: 'fa fa-chevron-down',
+                        previous: 'fa fa-chevron-left',
+                        next: 'fa fa-chevron-right',
+                        today: 'fa fa-screenshot',
+                        clear: 'fa fa-trash',
+                        close: 'fa fa-remove'
+                    },
+                    sideBySide: true
                 });
                 
-                $('#datetimepicker2').on('change.datetimepicker', function(e) {
-                    // Impedir propagação para evitar loops
-                    e.stopPropagation();
-                    console.log('Datetimepicker 2 alterado');
+                $('#datetimepicker2').datetimepicker({
+                    format: 'DD/MM/YYYY HH:mm',
+                    locale: 'pt-br',
+                    icons: {
+                        time: 'fa fa-clock-o',
+                        date: 'fa fa-calendar',
+                        up: 'fa fa-chevron-up',
+                        down: 'fa fa-chevron-down',
+                        previous: 'fa fa-chevron-left',
+                        next: 'fa fa-chevron-right',
+                        today: 'fa fa-screenshot',
+                        clear: 'fa fa-trash',
+                        close: 'fa fa-remove'
+                    },
+                    sideBySide: true
                 });
-                
-                // Remover eventos que podem estar causando loops infinitos
-                $(document).off('change.datetimepicker');
 
                 // Controle de visibilidade baseado no tipo
                 $('#tipo').change(function() {

@@ -341,33 +341,29 @@
                                                             <div class="row">
                                                                 <div class="col-lg-6">
                                                                     <label class="control-label">Data de Início</label>
-                                                                    <div class="input-group date" id="datetimepicker1-container" data-target-input="nearest">
+                                                                    <div class="input-group">
                                                                         <input type="text" 
                                                                                name="start_date" 
-                                                                               class="form-control datetimepicker-input" 
-                                                                               id="datetimepicker" 
-                                                                               data-toggle="datetimepicker" 
-                                                                               data-target="#datetimepicker" 
+                                                                               class="form-control" 
+                                                                               id="start-date-input" 
                                                                                value="{{ package.start_date|date:'d/m/Y H:i' }}"
                                                                                placeholder="DD/MM/AAAA HH:MM"/>
-                                                                        <div class="input-group-append" data-target="#datetimepicker" data-toggle="datetimepicker">
-                                                                            <div class="input-group-text"><i class="fa fa-calendar"></i></div>
+                                                                        <div class="input-group-append">
+                                                                            <div class="input-group-text date-icon" id="start-date-icon"><i class="fa fa-calendar"></i></div>
                                                                         </div>
                                                                     </div>
                                                                 </div>
                                                                 <div class="col-lg-6">
                                                                     <label class="control-label">Data de Término</label>
-                                                                    <div class="input-group date" id="datetimepicker2-container" data-target-input="nearest">
+                                                                    <div class="input-group">
                                                                         <input type="text" 
                                                                                name="end_date" 
-                                                                               class="form-control datetimepicker-input" 
-                                                                               id="datetimepicker2" 
-                                                                               data-toggle="datetimepicker" 
-                                                                               data-target="#datetimepicker2" 
+                                                                               class="form-control" 
+                                                                               id="end-date-input" 
                                                                                value="{{ package.end_date|date:'d/m/Y H:i' }}"
                                                                                placeholder="DD/MM/AAAA HH:MM"/>
-                                                                        <div class="input-group-append" data-target="#datetimepicker2" data-toggle="datetimepicker">
-                                                                            <div class="input-group-text"><i class="fa fa-calendar"></i></div>
+                                                                        <div class="input-group-append">
+                                                                            <div class="input-group-text date-icon" id="end-date-icon"><i class="fa fa-calendar"></i></div>
                                                                         </div>
                                                                     </div>
                                                                 </div>
@@ -405,17 +401,25 @@
         <script src="{% static 'administrativo/js/plugins/moment/moment.js' %}"></script>
         <script src="{% static 'administrativo/js/plugins/moment/pt-br.js' %}"></script>
         <script src="{% static 'administrativo/js/plugins/tempusdominus/tempusdominus-bootstrap-4.min.js' %}"></script>
+        <!-- Adicionar biblioteca TableDnD -->
+        <script src="{% static 'administrativo/js/plugins/tablednd/jquery.tablednd.min.js' %}"></script>
         <script src="{% static 'administrativo/js/settings.js' %}"></script>
 
         <script type="text/javascript">
             console.log('Script carregado');
             
             // Preenche os dados do pacote a partir do JSON
+            var packageData; // Variável global para ser acessível em todo o script
+            
             $(document).ready(function() {
                 // Preenche os dados do pacote
-                const packageData = JSON.parse('{{ package_data|safe }}');
-                
-                console.log('Dados do pacote recebidos do servidor:', packageData);
+                try {
+                    packageData = JSON.parse('{{ package_data|safe }}');
+                    console.log('Dados do pacote recebidos do servidor:', packageData);
+                } catch (e) {
+                    console.error('Erro ao processar dados do pacote:', e);
+                    packageData = {}; // Inicializa como objeto vazio em caso de erro
+                }
                 
                 // Preencher os campos do formulário com os dados do pacote
                 $('#nome').val(packageData.name);
@@ -470,29 +474,13 @@
                 
                 // Definir valores iniciais
                 if (startDateRaw) {
-                    $('#datetimepicker').val(startDateRaw);
+                    $('#start-date-input').val(startDateRaw);
                     console.log('Data de início definida para:', startDateRaw);
-                    
-                    // Inicializar o datepicker com o valor usando moment
-                    try {
-                        $('#datetimepicker').datetimepicker('date', moment(startDateRaw, 'DD/MM/YYYY HH:mm'));
-                        console.log('Datepicker de início inicializado com sucesso');
-                    } catch (e) {
-                        console.error('Erro ao inicializar datepicker de início:', e);
-                    }
                 }
                 
                 if (endDateRaw) {
-                    $('#datetimepicker2').val(endDateRaw);
+                    $('#end-date-input').val(endDateRaw);
                     console.log('Data de término definida para:', endDateRaw);
-                    
-                    // Inicializar o datepicker com o valor usando moment
-                    try {
-                        $('#datetimepicker2').datetimepicker('date', moment(endDateRaw, 'DD/MM/YYYY HH:mm'));
-                        console.log('Datepicker de término inicializado com sucesso');
-                    } catch (e) {
-                        console.error('Erro ao inicializar datepicker de término:', e);
-                    }
                 }
                 
                 // Exibir a imagem se existir
@@ -585,8 +573,8 @@
                 $('#hidden_show_to').val($('#exibir-para').val());
                 
                 // Formatação correta das datas
-                var startDate = $('#datetimepicker').val();
-                var endDate = $('#datetimepicker2').val();
+                var startDate = $('#start-date-input').val();
+                var endDate = $('#end-date-input').val();
                 
                 // Validação e formatação da data de início
                 if (startDate) {
@@ -640,15 +628,22 @@
                 formData.append('enabled', $('.i-checks input[type="checkbox"]').prop('checked'));
                 
                 // Adiciona as datas formatadas
-                if ($('#datetimepicker').val()) {
-                    formData.append('start_date', $('#datetimepicker').val());
-                    console.log('Data de início enviada:', $('#datetimepicker').val());
+                if ($('#start-date-input').val()) {
+                    formData.append('start_date', $('#start-date-input').val());
+                    console.log('Data de início enviada:', $('#start-date-input').val());
                 }
                 
-                if ($('#datetimepicker2').val()) {
-                    formData.append('end_date', $('#datetimepicker2').val());
-                    console.log('Data de término enviada:', $('#datetimepicker2').val());
+                if ($('#end-date-input').val()) {
+                    formData.append('end_date', $('#end-date-input').val());
+                    console.log('Data de término enviada:', $('#end-date-input').val());
                 }
+                
+                // Adiciona uma mensagem para ajudar na formatação das datas
+                $('.date-icon-btn').on('click', function() {
+                    var inputId = $(this).data('target');
+                    alert('Por favor insira a data no formato DD/MM/AAAA HH:MM. Exemplo: 01/01/2023 14:30');
+                    $(inputId).focus();
+                });
                 
                 // Adiciona a imagem se houver
                 if ($('#image')[0].files[0]) {
@@ -789,8 +784,8 @@
                 }
                 
                 // Garantir que as datas estejam no formato correto
-                var startDateValue = $('#datetimepicker').val();
-                var endDateValue = $('#datetimepicker2').val();
+                var startDateValue = $('#start-date-input').val();
+                var endDateValue = $('#end-date-input').val();
                 
                 console.log('Valores iniciais das datas:');
                 console.log('Data de início original:', startDateValue);
@@ -800,7 +795,7 @@
                 if (startDateValue) {
                     var formattedStartDate = formatDateForDisplay(startDateValue);
                     if (formattedStartDate) {
-                        $('#datetimepicker').val(formattedStartDate);
+                        $('#start-date-input').val(formattedStartDate);
                         console.log('Data de início formatada para exibição:', formattedStartDate);
                     }
                 }
@@ -808,7 +803,7 @@
                 if (endDateValue) {
                     var formattedEndDate = formatDateForDisplay(endDateValue);
                     if (formattedEndDate) {
-                        $('#datetimepicker2').val(formattedEndDate);
+                        $('#end-date-input').val(formattedEndDate);
                         console.log('Data de término formatada para exibição:', formattedEndDate);
                     }
                 }
@@ -816,8 +811,8 @@
                 console.log('Valores formatados:');
                 console.log('Preço padrão formatado:', $('#preco-padrao').val());
                 console.log('Preço promocional formatado:', $('#preco-promocional').val());
-                console.log('Data de início formatada:', $('#datetimepicker').val());
-                console.log('Data de término formatada:', $('#datetimepicker2').val());
+                console.log('Data de início formatada:', $('#start-date-input').val());
+                console.log('Data de término formatada:', $('#end-date-input').val());
                 
                 console.log('Valores iniciais dos campos:');
                 console.log('Nome:', $('#nome').val());
@@ -827,8 +822,8 @@
                 console.log('Conteúdo:', $('#conteudo').val());
                 console.log('Bônus:', $('#bonus').val());
                 console.log('Exibir para:', $('#exibir-para').val());
-                console.log('Data de Início:', $('#datetimepicker').val());
-                console.log('Data de Término:', $('#datetimepicker2').val());
+                console.log('Data de Início:', $('#start-date-input').val());
+                console.log('Data de Término:', $('#end-date-input').val());
                 console.log('Código Android:', $('#android-product-code').val());
                 console.log('Código iOS:', $('#ios-product-code').val());
                 console.log('Código Gateway:', $('#gateway-product-code').val());
@@ -855,8 +850,8 @@
                     $('#hidden_show_to').val($('#exibir-para').val());
                     
                     // Formatação correta das datas
-                    var startDate = $('#datetimepicker').val();
-                    var endDate = $('#datetimepicker2').val();
+                    var startDate = $('#start-date-input').val();
+                    var endDate = $('#end-date-input').val();
                     
                     if (startDate) {
                         // Verificar se a data está no formato correto
@@ -934,113 +929,167 @@
 
                 // Inicializa os datetimepickers com a configuração correta
                 try {
-                    // Destruir instâncias anteriores, caso existam
-                    try {
-                        $('#datetimepicker').datetimepicker('destroy');
-                        $('#datetimepicker2').datetimepicker('destroy');
-                    } catch (e) {
-                        console.warn('Erro ao destruir datetimepickers anteriores:', e);
+                    // Destruir quaisquer instâncias anteriores para limpar
+                    if ($.fn.datetimepicker) {
+                        try {
+                            $('#start-date-input').closest('.input-group').datetimepicker('destroy');
+                            $('#end-date-input').closest('.input-group').datetimepicker('destroy');
+                            console.log('Instâncias anteriores de datetimepicker destruídas com sucesso');
+                        } catch (error) {
+                            console.log('Sem instâncias anteriores para destruir:', error);
+                        }
+                        
+                        // Inicializa os datetimepickers apenas uma vez
+                        var startDateContainer = $('#start-date-input').closest('.input-group');
+                        var endDateContainer = $('#end-date-input').closest('.input-group');
+                        
+                        // Adiciona listeners para atualizar os campos ocultos quando as datas mudarem
+                        $('#start-date-input').on('change', function() {
+                            var dateValue = $(this).val();
+                            if (dateValue) {
+                                $('#hidden_start_date').val(dateValue);
+                                console.log('Data de início atualizada manualmente:', dateValue);
+                            }
+                        });
+                        
+                        $('#end-date-input').on('change', function() {
+                            var dateValue = $(this).val();
+                            if (dateValue) {
+                                $('#hidden_end_date').val(dateValue);
+                                console.log('Data de término atualizada manualmente:', dateValue);
+                            }
+                        });
+                        
+                        // Inicializa o datepicker de início
+                        setTimeout(function() {
+                            try {
+                                startDateContainer.datetimepicker({
+                                    format: 'DD/MM/YYYY HH:mm',
+                                    locale: 'pt-br',
+                                    icons: {
+                                        time: 'fa fa-clock-o',
+                                        date: 'fa fa-calendar',
+                                        up: 'fa fa-chevron-up',
+                                        down: 'fa fa-chevron-down',
+                                        previous: 'fa fa-chevron-left',
+                                        next: 'fa fa-chevron-right',
+                                        today: 'fa fa-screenshot',
+                                        clear: 'fa fa-trash',
+                                        close: 'fa fa-remove'
+                                    }
+                                });
+                                console.log('Datepicker de início inicializado com sucesso');
+                                
+                                // Adicionar listener para o datetimepicker de início
+                                startDateContainer.off('change.datetimepicker').on('change.datetimepicker', function(e) {
+                                    if (e && e.date) {
+                                        var formattedDate = e.date.format('DD/MM/YYYY HH:mm');
+                                        $('#hidden_start_date').val(formattedDate);
+                                        $('#start-date-input').val(formattedDate);
+                                        console.log('Data de início via datetimepicker:', formattedDate);
+                                        
+                                        // Definir data mínima para o datetimepicker de término
+                                        try {
+                                            endDateContainer.datetimepicker('minDate', e.date);
+                                        } catch (err) {
+                                            console.log('Erro ao definir minDate:', err);
+                                        }
+                                    }
+                                });
+                            } catch (e) {
+                                console.error('Erro ao inicializar datepicker de início:', e);
+                            }
+                        }, 200);
+                        
+                        // Inicializa o datepicker de término com atraso para evitar conflitos
+                        setTimeout(function() {
+                            try {
+                                endDateContainer.datetimepicker({
+                                    format: 'DD/MM/YYYY HH:mm',
+                                    locale: 'pt-br',
+                                    icons: {
+                                        time: 'fa fa-clock-o',
+                                        date: 'fa fa-calendar',
+                                        up: 'fa fa-chevron-up',
+                                        down: 'fa fa-chevron-down',
+                                        previous: 'fa fa-chevron-left',
+                                        next: 'fa fa-chevron-right',
+                                        today: 'fa fa-screenshot',
+                                        clear: 'fa fa-trash',
+                                        close: 'fa fa-remove'
+                                    }
+                                });
+                                console.log('Datepicker de término inicializado com sucesso');
+                                
+                                // Adicionar listener para o datetimepicker de término
+                                endDateContainer.off('change.datetimepicker').on('change.datetimepicker', function(e) {
+                                    if (e && e.date) {
+                                        var formattedDate = e.date.format('DD/MM/YYYY HH:mm');
+                                        $('#hidden_end_date').val(formattedDate);
+                                        $('#end-date-input').val(formattedDate);
+                                        console.log('Data de término via datetimepicker:', formattedDate);
+                                        
+                                        // Definir data máxima para o datetimepicker de início
+                                        try {
+                                            startDateContainer.datetimepicker('maxDate', e.date);
+                                        } catch (err) {
+                                            console.log('Erro ao definir maxDate:', err);
+                                        }
+                                    }
+                                });
+                            } catch (e) {
+                                console.error('Erro ao inicializar datepicker de término:', e);
+                            }
+                        }, 400);
+                        
+                        // Define os valores iniciais com atraso para evitar problemas
+                        setTimeout(function() {
+                            if (packageData && packageData.start_date) {
+                                try {
+                                    $('#start-date-input').val(packageData.start_date);
+                                    console.log('Valor de data de início definido:', packageData.start_date);
+                                } catch (e) {
+                                    console.error('Erro ao definir data de início:', e);
+                                }
+                            }
+                            
+                            if (packageData && packageData.end_date) {
+                                try {
+                                    $('#end-date-input').val(packageData.end_date);
+                                    console.log('Valor de data de término definido:', packageData.end_date);
+                                } catch (e) {
+                                    console.error('Erro ao definir data de término:', e);
+                                }
+                            }
+                        }, 600);
+                        
+                        // Adiciona tratamento manual para abrir o datepicker ao clicar no ícone
+                        $('#start-date-icon').on('click', function() {
+                            try {
+                                startDateContainer.datetimepicker('toggle');
+                            } catch (e) {
+                                console.error('Erro ao toggle datepicker de início:', e);
+                                alert('Por favor insira a data no formato DD/MM/AAAA HH:MM. Exemplo: 01/01/2023 14:30');
+                                $('#start-date-input').focus();
+                            }
+                        });
+                        
+                        $('#end-date-icon').on('click', function() {
+                            try {
+                                endDateContainer.datetimepicker('toggle');
+                            } catch (e) {
+                                console.error('Erro ao toggle datepicker de término:', e);
+                                alert('Por favor insira a data no formato DD/MM/AAAA HH:MM. Exemplo: 01/01/2023 14:30');
+                                $('#end-date-input').focus();
+                            }
+                        });
+                    } else {
+                        console.error('Plugin datetimepicker não está disponível');
                     }
-                    
-                    // Remover todos os eventos antigos
-                    $(document).off('change.datetimepicker');
-                    $('#datetimepicker').off('change.datetimepicker');
-                    $('#datetimepicker2').off('change.datetimepicker');
-                    
-                    // Inicializar datetimepickers
-                    $('#datetimepicker').datetimepicker({
-                        format: 'DD/MM/YYYY HH:mm',
-                        locale: 'pt-br',
-                        icons: {
-                            time: 'fa fa-clock-o',
-                            date: 'fa fa-calendar',
-                            up: 'fa fa-chevron-up',
-                            down: 'fa fa-chevron-down',
-                            previous: 'fa fa-chevron-left',
-                            next: 'fa fa-chevron-right',
-                            today: 'fa fa-screenshot',
-                            clear: 'fa fa-trash',
-                            close: 'fa fa-remove'
-                        },
-                        sideBySide: true,
-                        useCurrent: false,
-                        allowInputToggle: true,
-                        ignoreReadonly: true
-                    });
-                    
-                    $('#datetimepicker2').datetimepicker({
-                        format: 'DD/MM/YYYY HH:mm',
-                        locale: 'pt-br',
-                        icons: {
-                            time: 'fa fa-clock-o',
-                            date: 'fa fa-calendar',
-                            up: 'fa fa-chevron-up',
-                            down: 'fa fa-chevron-down',
-                            previous: 'fa fa-chevron-left',
-                            next: 'fa fa-chevron-right',
-                            today: 'fa fa-screenshot',
-                            clear: 'fa fa-trash',
-                            close: 'fa fa-remove'
-                        },
-                        sideBySide: true,
-                        useCurrent: false,
-                        allowInputToggle: true,
-                        ignoreReadonly: true
-                    });
-                    
-                    console.log('Datetimepickers inicializados com sucesso');
                 } catch (e) {
-                    console.error('Erro ao inicializar datetimepickers:', e);
+                    console.error('Erro geral ao processar campos de data:', e);
+                    alert('Ocorreu um erro ao inicializar os seletores de data. Por favor, insira as datas manualmente no formato DD/MM/AAAA HH:MM');
                 }
-                
-                // Eventos específicos com propagação controlada
-                $('#datetimepicker').on('change.datetimepicker', function(e) {
-                    // Impedir propagação para evitar loops
-                    e.stopPropagation();
-                    console.log('Datetimepicker 1 alterado');
-                });
-                
-                $('#datetimepicker2').on('change.datetimepicker', function(e) {
-                    // Impedir propagação para evitar loops
-                    e.stopPropagation();
-                    console.log('Datetimepicker 2 alterado');
-                });
-                
-                // Remover eventos que podem estar causando loops infinitos
-                $(document).off('change.datetimepicker');
-                
-                // Definir valores iniciais dos datetimepickers
-                if (packageData.start_date) {
-                    console.log('Definindo data de início:', packageData.start_date);
-                    
-                    // Inicializa o datepicker com o valor
-                    try {
-                        $('#datetimepicker').datetimepicker('date', moment(packageData.start_date, 'DD/MM/YYYY HH:mm'));
-                        console.log('Datepicker de início inicializado com sucesso');
-                    } catch (e) {
-                        console.error('Erro ao inicializar datepicker de início:', e);
-                    }
-                }
-                
-                if (packageData.end_date) {
-                    console.log('Definindo data de término:', packageData.end_date);
-                    
-                    // Inicializa o datepicker com o valor
-                    try {
-                        $('#datetimepicker2').datetimepicker('date', moment(packageData.end_date, 'DD/MM/YYYY HH:mm'));
-                        console.log('Datepicker de término inicializado com sucesso');
-                    } catch (e) {
-                        console.error('Erro ao inicializar datepicker de término:', e);
-                    }
-                }
-                
-                // Lógica para garantir que a data final não seja menor que a inicial
-                $("#datetimepicker").on("change.datetimepicker", function (e) {
-                    $('#datetimepicker2').datetimepicker('minDate', e.date);
-                });
-                $("#datetimepicker2").on("change.datetimepicker", function (e) {
-                    $('#datetimepicker').datetimepicker('maxDate', e.date);
-                });
 
                 // Inicializa iCheck
                 $('.i-checks').iCheck({
