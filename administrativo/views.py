@@ -40,6 +40,17 @@ import pytz
 
 logger = logging.getLogger(__name__)
 
+# Sobrescrever timezone.now para compensar a conversão automática para UTC
+# Isso afeta todos os campos auto_now e auto_now_add
+original_now = timezone.now
+
+def custom_now():
+    # Retorna o tempo atual com um deslocamento de -3 horas
+    return original_now() - timedelta(hours=3)
+
+# Substituir a função original pela personalizada
+timezone.now = custom_now
+
 # Função utilitária para converter strings de data para objetos datetime aware
 def make_aware_with_local_timezone(date_str_or_obj, format_str='%d/%m/%Y %H:%M'):
     # Converte string para objeto datetime, se necessário
@@ -52,20 +63,27 @@ def make_aware_with_local_timezone(date_str_or_obj, format_str='%d/%m/%Y %H:%M')
     if hasattr(naive_date, 'tzinfo') and naive_date.tzinfo is not None and naive_date.tzinfo.utcoffset(naive_date) is not None:
         return naive_date
     
-    # Usa o pytz para aplicar o timezone corretamente
-    local_tz = pytz.timezone(settings.TIME_ZONE)
-    aware_date = local_tz.localize(naive_date)
+    # Compensar a conversão automática do Django para UTC (- 3 horas)
+    # Subtrair 3 horas para que quando o Django converter para UTC, o valor final seja correto
+    compensated_date = naive_date - timedelta(hours=3)
     
-    # Adiciona log para verificar o valor da data
-    logger.info(f"Data original: {naive_date}, Data com timezone: {aware_date}")
-    
-    return aware_date
+    return compensated_date
 
-# Função utilitária para notificações
+# Função utilitária para notificações que não aplica a compensação de 3 horas
 def make_aware_for_notifications(date_str_or_obj, format_str='%d/%m/%Y %H:%M'):
-    # Esta função não deve mais ser diferente de make_aware_with_local_timezone
-    # Uma vez que a sobrescrita de timezone.now foi removida
-    return make_aware_with_local_timezone(date_str_or_obj, format_str)
+    # Converte string para objeto datetime, se necessário
+    if isinstance(date_str_or_obj, str):
+        naive_date = datetime.strptime(date_str_or_obj, format_str)
+    else:
+        naive_date = date_str_or_obj
+    
+    # Se o objeto já tiver timezone, retorna-o diretamente
+    if hasattr(naive_date, 'tzinfo') and naive_date.tzinfo is not None and naive_date.tzinfo.utcoffset(naive_date) is not None:
+        return naive_date
+    
+    # Aplica o timezone local sem compensação
+    local_tz = pytz.timezone(settings.TIME_ZONE)
+    return local_tz.localize(naive_date)
 
 @login_required
 def get_packages(request):
