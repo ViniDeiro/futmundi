@@ -51,6 +51,7 @@
                                         <div class="form-group">
                                             <label for="stage">Fase</label>
                                             <select class="form-control select2" id="stage" name="stage">
+                                                <option value="">Selecione uma fase...</option>
                                                 {% for stage in stages %}
                                                 <option value="{{ stage.id }}">{{ stage.name }}</option>
                                                 {% endfor %}
@@ -61,52 +62,14 @@
                                         <div class="form-group">
                                             <label for="round">Rodada</label>
                                             <select class="form-control select2" id="round" name="round">
-                                                {% for round in rounds %}
-                                                <option value="{{ round.id }}">{{ round.name }}</option>
-                                                {% endfor %}
+                                                <option value="">Selecione uma rodada...</option>
                                             </select>
                                         </div>
                                     </div>
                                 </div>
                                 
-                                <div class="matches-container">
-                                    {% for match in matches %}
-                                    <div class="row match-row mb-3">
-                                        <div class="col-md-4">
-                                            <select class="form-control select2 team-home" name="matches[{{ forloop.counter0 }}][team_home]">
-                                                <option value="">Selecione o time mandante</option>
-                                                {% for team in teams %}
-                                                <option value="{{ team.id }}">{{ team.name }}</option>
-                                                {% endfor %}
-                                            </select>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <input type="number" class="form-control" name="matches[{{ forloop.counter0 }}][score_home]" min="0" placeholder="Placar">
-                                        </div>
-                                        <div class="col-md-2">
-                                            <input type="number" class="form-control" name="matches[{{ forloop.counter0 }}][score_away]" min="0" placeholder="Placar">
-                                        </div>
-                                        <div class="col-md-4">
-                                            <select class="form-control select2 team-away" name="matches[{{ forloop.counter0 }}][team_away]">
-                                                <option value="">Selecione o time visitante</option>
-                                                {% for team in teams %}
-                                                <option value="{{ team.id }}">{{ team.name }}</option>
-                                                {% endfor %}
-                                            </select>
-                                        </div>
-                                        <div class="col-md-4 mt-2">
-                                            <div class="input-group date" id="match_date_{{ forloop.counter0 }}" data-target-input="nearest">
-                                                <input type="text" class="form-control datetimepicker-input" 
-                                                       data-target="#match_date_{{ forloop.counter0 }}"
-                                                       name="matches[{{ forloop.counter0 }}][match_date]"
-                                                       placeholder="Data e Hora"/>
-                                                <div class="input-group-append" data-target="#match_date_{{ forloop.counter0 }}" data-toggle="datetimepicker">
-                                                    <div class="input-group-text"><i class="fa fa-calendar"></i></div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    {% endfor %}
+                                <div id="matches-container" class="matches-container">
+                                    <div class="alert alert-info">Selecione uma fase e rodada para visualizar os jogos.</div>
                                 </div>
                                 
                                 <button type="button" class="btn btn-info mt-3" id="add-match">
@@ -188,18 +151,241 @@ $(function () {
     
     bsCustomFileInput.init();
     
-    // Configura datepicker
-    $('.date').datetimepicker({
-        format: 'DD/MM/YYYY HH:mm',
-        icons: {
-            time: 'far fa-clock'
+    // Carregar rodadas ao selecionar uma fase
+    $('#stage').on('change', function() {
+        var stageId = $(this).val();
+        
+        if (stageId) {
+            console.log("Carregando rodadas para fase:", stageId);
+            
+            // Limpar o select de rodadas primeiro
+            var $roundSelect = $('#round');
+            $roundSelect.empty().append('<option value="">Carregando...</option>');
+            
+            // Buscar as rodadas desta fase
+            $.ajax({
+                url: "{% url 'administrativo:get_rounds_by_stage' %}",
+                type: 'POST',
+                data: {
+                    stage_id: stageId,
+                    csrfmiddlewaretoken: $('[name=csrfmiddlewaretoken]').val()
+                },
+                success: function(data) {
+                    $roundSelect.empty();
+                    $roundSelect.append('<option value="">Selecione uma rodada...</option>');
+                    
+                    if (data.success && data.rounds && data.rounds.length > 0) {
+                        // Adicionar as rodadas ao select
+                        $.each(data.rounds, function(i, round) {
+                            $roundSelect.append($('<option>', {
+                                value: round.id,
+                                text: 'Rodada ' + round.number
+                            }));
+                        });
+                        
+                        // Selecionar a primeira rodada e carregar os jogos
+                        $roundSelect.val($roundSelect.find('option:eq(1)').val()).trigger('change');
+                    } else {
+                        // Se não encontrou rodadas, mostrar mensagem
+                        $roundSelect.append('<option value="">Nenhuma rodada encontrada</option>');
+                        // Limpar área de jogos
+                        $('#matches-container').html('<div class="alert alert-info">Selecione uma fase e rodada para visualizar os jogos.</div>');
+                    }
+                },
+                error: function() {
+                    $roundSelect.empty().append('<option value="">Erro ao carregar rodadas</option>');
+                    toastr.error('Erro ao carregar rodadas para a fase selecionada');
+                }
+            });
+        } else {
+            $('#round').empty().append('<option value="">Selecione uma fase primeiro</option>');
+            $('#matches-container').html('<div class="alert alert-info">Selecione uma fase e rodada para visualizar os jogos.</div>');
+        }
+    });
+    
+    // Carregar jogos ao selecionar uma rodada
+    $('#round').on('change', function() {
+        var roundId = $(this).val();
+        var stageId = $('#stage').val();
+        
+        if (roundId && stageId) {
+            console.log("Carregando jogos para rodada:", roundId, "e fase:", stageId);
+            
+            // Limpar o container de jogos primeiro
+            $('#matches-container').html('<div class="text-center"><i class="fa fa-spinner fa-spin fa-2x"></i> Carregando jogos...</div>');
+            
+            // Buscar os jogos desta rodada
+            $.ajax({
+                url: "{% url 'administrativo:get_matches_by_round' %}",
+                type: 'POST',
+                data: {
+                    round_id: roundId,
+                    stage_id: stageId,
+                    csrfmiddlewaretoken: $('[name=csrfmiddlewaretoken]').val()
+                },
+                success: function(data) {
+                    if (data.success) {
+                        // Limpar container
+                        $('#matches-container').empty();
+                        
+                        if (data.matches && data.matches.length > 0) {
+                            // Para cada jogo, criar uma linha
+                            $.each(data.matches, function(index, match) {
+                                var matchHtml = `
+                                    <div class="row match-row mb-3">
+                                        <div class="col-md-4">
+                                            <select class="form-control select2 team-home" name="matches[${index}][team_home]" data-home-team="${match.home_team_id || ''}">
+                                                <option value="">Selecione o time mandante</option>
+                                                {% for team in teams %}
+                                                <option value="{{ team.id }}">{{ team.name }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <input type="number" class="form-control" name="matches[${index}][score_home]" min="0" placeholder="Placar" 
+                                                   value="${match.home_score !== null ? match.home_score : ''}">
+                                        </div>
+                                        <div class="col-md-2">
+                                            <input type="number" class="form-control" name="matches[${index}][score_away]" min="0" placeholder="Placar"
+                                                   value="${match.away_score !== null ? match.away_score : ''}">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <select class="form-control select2 team-away" name="matches[${index}][team_away]" data-away-team="${match.away_team_id || ''}">
+                                                <option value="">Selecione o time visitante</option>
+                                                {% for team in teams %}
+                                                <option value="{{ team.id }}">{{ team.name }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4 mt-2">
+                                            <div class="input-group date" id="match_date_${index}" data-target-input="nearest">
+                                                <input type="text" class="form-control datetimepicker-input" 
+                                                       data-target="#match_date_${index}"
+                                                       name="matches[${index}][match_date]"
+                                                       placeholder="Data e Hora"
+                                                       value="${match.match_date || ''}"/>
+                                                <div class="input-group-append" data-target="#match_date_${index}" data-toggle="datetimepicker">
+                                                    <div class="input-group-text"><i class="fa fa-calendar"></i></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-1 mt-2">
+                                            <button type="button" class="btn btn-danger remove-match">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                `;
+                                
+                                $('#matches-container').append(matchHtml);
+                            });
+                        } else {
+                            // Se não houver jogos, adicionar uma partida vazia
+                            var emptyMatchHtml = `
+                                <div class="row match-row mb-3">
+                                    <div class="col-md-4">
+                                        <select class="form-control select2 team-home" name="matches[0][team_home]">
+                                            <option value="">Selecione o time mandante</option>
+                                            {% for team in teams %}
+                                            <option value="{{ team.id }}">{{ team.name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <input type="number" class="form-control" name="matches[0][score_home]" min="0" placeholder="Placar">
+                                    </div>
+                                    <div class="col-md-2">
+                                        <input type="number" class="form-control" name="matches[0][score_away]" min="0" placeholder="Placar">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <select class="form-control select2 team-away" name="matches[0][team_away]">
+                                            <option value="">Selecione o time visitante</option>
+                                            {% for team in teams %}
+                                            <option value="{{ team.id }}">{{ team.name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4 mt-2">
+                                        <div class="input-group date" id="match_date_0" data-target-input="nearest">
+                                            <input type="text" class="form-control datetimepicker-input" 
+                                                   data-target="#match_date_0"
+                                                   name="matches[0][match_date]"
+                                                   placeholder="Data e Hora"/>
+                                            <div class="input-group-append" data-target="#match_date_0" data-toggle="datetimepicker">
+                                                <div class="input-group-text"><i class="fa fa-calendar"></i></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-1 mt-2">
+                                        <button type="button" class="btn btn-danger remove-match">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            `;
+                            
+                            $('#matches-container').append(emptyMatchHtml);
+                        }
+                        
+                        // Inicializar os componentes Select2
+                        $('.select2').select2({
+                            theme: 'bootstrap4'
+                        });
+                        
+                        // Atribuir os valores dos times depois de inicializar o Select2
+                        $.each(data.matches, function(index, match) {
+                            if (match.home_team_id) {
+                                $('select[name="matches[' + index + '][team_home]"]').val(match.home_team_id).trigger('change');
+                            }
+                            
+                            if (match.away_team_id) {
+                                $('select[name="matches[' + index + '][team_away]"]').val(match.away_team_id).trigger('change');
+                            }
+
+                            // Verificar valores definidos nos selects para debug
+                            console.log("Time mandante selecionado:", $('select[name="matches[' + index + '][team_home]"]').val());
+                            console.log("Time visitante selecionado:", $('select[name="matches[' + index + '][team_away]"]').val());
+                        });
+                        
+                        // Configurar datepicker
+                        $('.date').datetimepicker({
+                            format: 'DD/MM/YYYY HH:mm',
+                            icons: {
+                                time: 'far fa-clock'
+                            }
+                        });
+                        
+                        // Handler para remover partidas
+                        $('.remove-match').click(function() {
+                            $(this).closest('.match-row').remove();
+                        });
+                        
+                    } else {
+                        $('#matches-container').html('<div class="alert alert-warning">Nenhum jogo encontrado para esta rodada.</div>');
+                    }
+                },
+                error: function() {
+                    $('#matches-container').html('<div class="alert alert-danger">Erro ao carregar jogos.</div>');
+                    toastr.error('Erro ao carregar jogos para a rodada selecionada');
+                }
+            });
+        } else {
+            $('#matches-container').html('<div class="alert alert-info">Selecione uma fase e rodada para visualizar os jogos.</div>');
         }
     });
     
     // Adiciona novo jogo
     $('#add-match').click(function() {
+        var stageId = $('#stage').val();
+        var roundId = $('#round').val();
+        
+        if (!stageId || !roundId) {
+            toastr.warning('Selecione uma fase e uma rodada antes de adicionar um jogo');
+            return;
+        }
+        
         var matchCount = $('.match-row').length;
-        var template = `
+        var newMatchHtml = `
             <div class="row match-row mb-3">
                 <div class="col-md-4">
                     <select class="form-control select2 team-home" name="matches[${matchCount}][team_home]">
@@ -234,10 +420,15 @@ $(function () {
                         </div>
                     </div>
                 </div>
+                <div class="col-md-1 mt-2">
+                    <button type="button" class="btn btn-danger remove-match">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
             </div>
         `;
         
-        $('.matches-container').append(template);
+        $('#matches-container').append(newMatchHtml);
         
         // Reinicializa plugins para os novos elementos
         $('.select2').select2({
@@ -250,6 +441,11 @@ $(function () {
                 time: 'far fa-clock'
             }
         });
+        
+        // Handler para remover partidas
+        $('.remove-match').click(function() {
+            $(this).closest('.match-row').remove();
+        });
     });
     
     // Importação de jogos
@@ -259,18 +455,22 @@ $(function () {
         formData.append('championship_id', $('input[name="championship_id"]').val());
         
         $.ajax({
-            url: '{% url "administrativo:campeonato_importar_jogos" %}',
+            url: '{% url "administrativo:campeonato_importar_rodadas" %}',
             type: 'POST',
             data: formData,
             processData: false,
             contentType: false,
             success: function(response) {
-                if (response.status === 'success') {
+                if (response.success) {
                     toastr.success('Jogos importados com sucesso!');
                     $('#modal-import').modal('hide');
-                    location.reload();
+                    
+                    // Atualizar os selects com os valores da importação
+                    if (response.stage_id) {
+                        $('#stage').val(response.stage_id).trigger('change');
+                    }
                 } else {
-                    toastr.error(response.message);
+                    toastr.error(response.message || 'Erro ao importar jogos');
                 }
             },
             error: function() {
@@ -285,6 +485,11 @@ $(function () {
             toastr.{{ message.tags }}('{{ message }}');
         {% endfor %}
     {% endif %}
+    
+    // Se já tiver fases carregadas, selecionar a primeira automaticamente
+    if ($('#stage option').length > 1) {
+        $('#stage').val($('#stage option:eq(1)').val()).trigger('change');
+    }
 });
 </script>
 {% endblock %} 

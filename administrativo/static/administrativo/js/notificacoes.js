@@ -1,4 +1,13 @@
 $(document).ready(function() {
+    // Detecta o prefixo da URL dinamicamente
+    const ADMIN_URL_PREFIX = (function() {
+        const metaElement = document.querySelector('meta[name="url-prefix"]');
+        if (metaElement && metaElement.getAttribute('content')) {
+            return metaElement.getAttribute('content');
+        }
+        return '/administrativo'; // Valor padrão caso não encontre a meta tag
+    })();
+
     // Configuração do CSRF token para requisições AJAX
     function getCookie(name) {
         let cookieValue = null;
@@ -78,7 +87,7 @@ $(document).ready(function() {
     // Função para excluir uma notificação
     function deleteNotification(id) {
         $.ajax({
-            url: `/administrativo/notificacao/${id}/excluir/`,
+            url: `${ADMIN_URL_PREFIX}/notificacao/${id}/excluir/`,
             type: 'POST',
             success: function(response) {
                 if (response.success) {
@@ -99,7 +108,7 @@ $(document).ready(function() {
     // Função para excluir múltiplas notificações
     function deleteMultipleNotifications(ids) {
         $.ajax({
-            url: '/administrativo/notificacao/excluir-em-massa/',
+            url: `${ADMIN_URL_PREFIX}/notificacao/excluir-em-massa/`,
             type: 'POST',
             data: { ids: ids },
             success: function(response) {
@@ -161,7 +170,7 @@ $(document).ready(function() {
         const id = $(this).data('id');
         
         $.ajax({
-            url: '/administrativo/notificacoes/',
+            url: `${ADMIN_URL_PREFIX}/notificacoes/`,
             type: 'GET',
             data: {
                 action: 'get_info',

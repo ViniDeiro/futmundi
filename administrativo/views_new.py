@@ -229,8 +229,6 @@ def login(request):
                     
                     if remember_me:
                         request.session.set_expiry(60 * 60 * 24 * 30)  # 30 dias
-                        # Salvar explicitamente que a sessão não deve expirar ao fechar o navegador
-                        request.session['SESSION_EXPIRE_AT_BROWSER_CLOSE'] = False
                     else:
                         request.session.set_expiry(0)  # Expira ao fechar o navegador
                     
@@ -253,14 +251,2015 @@ def login(request):
             
     return render(request, 'administrativo/login.html')
 
-@login_required
 def usuarios(request):
     return render(request, 'administrativo/usuarios.html')
 
 def usuario_editar(request):
     return render(request, 'administrativo/usuario-editar.html')
 
+def ambitos(request):
+    """
+    Lista os âmbitos disponíveis.
+    """
+    # Garante que os âmbitos padrão existam
+    create_default_scopes()
+    
+    # Define a ordem personalizada para os tipos de âmbito
+    custom_order = Case(
+        When(type='estadual', then=Value(1)),
+        When(type='nacional', then=Value(2)),
+        When(type='continental', then=Value(3)),
+        When(type='mundial', then=Value(4)),
+        default=Value(5),
+        output_field=IntegerField(),
+    )
+    
+    # Obtém todos os âmbitos ordenados pela ordem personalizada
+    scopes = Scope.objects.all().annotate(
+        order=custom_order
+    ).order_by('order')
+    
+    return render(request, 'administrativo/ambitos.html', {
+        'scopes': scopes
+    })
+
+def ambito_editar(request, id=None):
+    """
+    Edita um âmbito existente.
+    """
+    scope = get_object_or_404(Scope, id=id)
+    
+    # Carrega os níveis de alavancagem e seguro
+    levels = {}
+    for level in scope.levels.all():
+        levels[f'{level.type}_{level.level}'] = level
+    
+    if request.method == 'POST':
+        try:
+            with transaction.atomic():
+                # Atualiza os dados do âmbito
+                scope.boost = max(0, int(request.POST.get('boost', 0)))
+                scope.futcoins = max(0, int(request.POST.get('futcoins', 0)))
+                scope.save()
+                
+                # Atualiza os níveis de alavancagem
+                for level in range(1, 4):
+                    leverage = levels[f'leverage_{level}']
+                    leverage.points = max(0, int(request.POST.get(f'leverage_points_{level}', 0)))
+                    leverage.futcoins = max(0, int(request.POST.get(f'leverage_futcoins_{level}', 0)))
+                    leverage.save()
+                
+                # Atualiza os níveis de seguro
+                for level in range(1, 4):
+                    insurance = levels[f'insurance_{level}']
+                    insurance.points = max(0, int(request.POST.get(f'insurance_points_{level}', 0)))
+                    insurance.futcoins = max(0, int(request.POST.get(f'insurance_futcoins_{level}', 0)))
+                    insurance.save()
+                
+                messages.success(request, 'Âmbito atualizado com sucesso!')
+                return redirect('administrativo:ambitos')
+        except Exception as e:
+            messages.error(request, f'Erro ao atualizar âmbito: {str(e)}')
+            return redirect('administrativo:ambito_editar', id=id)
+    
+    # Obtém os tipos de âmbito para o select
+    scope_types = Scope.SCOPE_TYPES
+    
+    return render(request, 'administrativo/ambito-editar.html', {
+        'scope': scope,
+        'scope_types': scope_types,
+        'levels': levels
+    })
+
+def create_default_scopes():
+    """
+    Cria os âmbitos padrão se não existirem.
+    """
+    default_scopes = [
+        {'name': 'Estadual', 'type': 'estadual'},
+        {'name': 'Nacional', 'type': 'nacional'},
+        {'name': 'Continental', 'type': 'continental'},
+        {'name': 'Mundial', 'type': 'mundial'}
+    ]
+    
+    for scope_data in default_scopes:
+        Scope.objects.get_or_create(
+            type=scope_data['type'],
+            defaults={
+                'name': scope_data['name'],
+                'is_default': True
+            }
+        )
+
+def campeonatos(request):
+    """
+    Lista todos os campeonatos cadastrados.
+    """
+    # Limpa as mensagens antigas
+    storage = messages.get_messages(request)
+    storage.used = True
+
+    # Obtém todos os campeonatos ordenados por data de criação
+    championships = Championship.objects.all().order_by('-created_at')
+
+    context = {
+        'championships': championships
+    }
+
+    return render(request, 'administrativo/campeonatos.html', context)
+
 @login_required
+def campeonato_novo(request):
+    if request.method == 'POST':
+        # Verificar se é uma requisição "Aplicar"
+        is_apply_request = request.POST.get('apply_only') == 'true'
+        print(f"Tipo de requisição: {'APLICAR' if is_apply_request else 'SALVAR NORMAL'}")
+        
+        try:
+            with transaction.atomic():
+                # Cria o campeonato com os dados básicos
+                championship = Championship.objects.create(
+                    name=request.POST.get('name'),
+                    season=request.POST.get('season'),
+                    points=int(request.POST.get('points', 0) or 0),
+                    template_id=request.POST.get('template'),
+                    scope_id=request.POST.get('scope'),
+                    continent_id=request.POST.get('continent') or None,
+                    country_id=request.POST.get('country') or None,
+                    state_id=request.POST.get('state') or None,
+                    is_active=request.POST.get('is_active') == 'on'
+                )
+
+                # Adiciona os times selecionados
+                teams = request.POST.getlist('teams')
+                if teams:
+                    # Adicionar log para depuração
+                    print(f"Times selecionados: {teams}")
+                    # Usar o método add com desempacotamento para garantir que todos os times sejam adicionados corretamente
+                    team_ids = [int(team_id) for team_id in teams]
+                    championship.teams.add(*team_ids)
+                    print(f"Times vinculados ao campeonato: {list(championship.teams.values_list('id', flat=True))}")
+                else:
+                    print("Nenhum time selecionado")
+
+                # Processa as rodadas se houver
+                matches_data = json.loads(request.POST.get('matches', '[]'))
+                if matches_data:
+                    # Agrupa partidas por fase e rodada
+                    stages = {}
+                    for match in matches_data:
+                        stage_name = match['stage']
+                        round_number = match['round']
+                        
+                        if stage_name not in stages:
+                            stages[stage_name] = {}
+                        
+                        if round_number not in stages[stage_name]:
+                            stages[stage_name][round_number] = []
+                            
+                        stages[stage_name][round_number].append(match)
+                    
+                    # Cria as fases, rodadas e partidas
+                    for stage_name, rounds in stages.items():
+                        stage = ChampionshipStage.objects.create(
+                            championship=championship,
+                            name=stage_name
+                        )
+                        
+                        for round_number, matches in rounds.items():
+                            round_obj = ChampionshipRound.objects.create(
+                                championship=championship,
+                                stage=stage,
+                                number=round_number
+                            )
+                            
+                            for match in matches:
+                                match_date = None
+                                if match.get('match_date'):
+                                    try:
+                                        match_date = datetime.strptime(match['match_date'], '%d/%m/%Y %H:%M')
+                                    except ValueError:
+                                        match_date = None
+                                        
+                                Match.objects.create(
+                                    championship=championship,
+                                    stage=stage,
+                                    round=round_obj,
+                                    home_team=Team.objects.get(name=match['home_team']),
+                                    away_team=Team.objects.get(name=match['away_team']),
+                                    home_score=match['home_score'],
+                                    away_score=match['away_score'],
+                                    match_date=match_date
+                                )
+
+                # Se for uma requisição "Aplicar", retorna JSON com ID do campeonato
+                if is_apply_request:
+                    return JsonResponse({
+                        'success': True,
+                        'message': 'Campeonato criado com sucesso!',
+                        'championship_id': championship.id
+                    })
+                else:
+                    # Para requisições normais, adiciona mensagem e redireciona
+                    messages.success(request, 'Campeonato criado com sucesso!')
+                    return redirect('administrativo:campeonatos')
+
+        except Exception as e:
+            error_msg = f'Erro ao criar campeonato: {str(e)}'
+            print(f"ERRO AO CRIAR CAMPEONATO: {error_msg}")
+            
+            if is_apply_request:
+                return JsonResponse({
+                    'success': False,
+                    'message': error_msg
+                })
+            else:
+                messages.error(request, error_msg)
+                # No caso de erro em requisição normal, recarrega o formulário
+
+    templates = Template.objects.filter(enabled=True)
+    # Define a ordem personalizada para os tipos de âmbito
+    custom_order = Case(
+        When(type='estadual', then=Value(1)),
+        When(type='nacional', then=Value(2)),
+        When(type='continental', then=Value(3)),
+        When(type='mundial', then=Value(4)),
+        default=Value(5),
+        output_field=IntegerField(),
+    )
+    
+    # Obtém todos os âmbitos ordenados pela ordem personalizada
+    scopes = Scope.objects.filter(is_active=True).annotate(
+        order=custom_order
+    ).order_by('order')
+    continents = Continent.objects.all()
+    countries = Country.objects.all()
+    states = State.objects.all()
+    teams = Team.objects.all()
+
+    context = {
+        'templates': templates,
+        'scopes': scopes,
+        'continents': continents,
+        'countries': countries,
+        'states': states,
+        'teams': teams
+    }
+
+    return render(request, 'administrativo/campeonato-novo.html', context)
+
+def campeonato_excluir(request, id):
+    """
+    Exclui um campeonato específico.
+    Só exclui se o campeonato estiver inativo.
+    """
+    if request.method == 'POST':
+        try:
+            championship = Championship.objects.get(id=id)
+            
+            if championship.is_active:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Não é possível excluir um campeonato ativo. Desative-o primeiro.'
+                })
+                
+            championship.delete()
+            return JsonResponse({
+                'success': True,
+                'message': 'Campeonato excluído com sucesso!'
+            })
+                
+        except Championship.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'message': 'Campeonato não encontrado'
+            })
+            
+    return JsonResponse({
+        'success': False,
+        'message': 'Método não permitido'
+    }, status=405)
+
+def campeonato_excluir_em_massa(request):
+    """
+    Exclui múltiplos campeonatos.
+    Só exclui os campeonatos inativos.
+    """
+    if request.method == 'POST':
+        championship_ids = request.POST.getlist('ids[]')
+        
+        if not championship_ids:
+            return JsonResponse({
+                'success': False,
+                'message': 'Nenhum campeonato selecionado'
+            })
+            
+        # Filtra apenas campeonatos inativos
+        championships_to_delete = Championship.objects.filter(
+            id__in=championship_ids,
+            is_active=False
+        )
+        
+        # Conta quantos foram excluídos
+        total_selected = len(championship_ids)
+        total_deleted = championships_to_delete.count()
+        
+        championships_to_delete.delete()
+        
+        if total_deleted == 0:
+            message = 'Nenhum campeonato foi excluído. Verifique se os campeonatos estão inativos.'
+        elif total_deleted < total_selected:
+            message = f'{total_deleted} campeonatos inativos foram excluídos. {total_selected - total_deleted} campeonatos ativos não foram excluídos.'
+        else:
+            message = 'Campeonatos excluídos com sucesso!'
+            
+        return JsonResponse({
+            'success': True,
+            'message': message
+        })
+        
+    return JsonResponse({
+        'success': False,
+        'message': 'Método não permitido'
+    })
+
+def campeonato_resultados(request, id):
+    """
+    Exibe os resultados de um campeonato específico.
+    Mostra as rodadas, jogos e placares.
+    """
+    try:
+        championship = Championship.objects.get(id=id)
+        rounds_data = []
+        
+        # Busca todas as fases
+        stages = championship.stages.all().order_by('name')
+        
+        for stage in stages:
+            # Busca todas as rodadas da fase
+            stage_rounds = stage.rounds.all().order_by('number')
+            
+            for round_obj in stage_rounds:
+                # Busca todas as partidas da rodada
+                matches = round_obj.matches.all().order_by('match_date')
+                
+                # Adiciona os dados da rodada
+                rounds_data.append({
+                    'stage': stage,
+                    'round': round_obj,
+                    'matches': matches
+                })
+        
+        context = {
+            'championship': championship,
+            'rounds': rounds_data
+        }
+        
+        return render(request, 'administrativo/campeonato-resultados.html', context)
+        
+    except Championship.DoesNotExist:
+        messages.error(request, 'Campeonato não encontrado')
+        return redirect('administrativo:campeonatos')
+
+def templates(request):
+    """
+    Lista todos os templates disponíveis.
+    """
+    templates = Template.objects.all().order_by('-created_at')
+    return render(request, 'administrativo/templates.html', {
+        'templates': templates
+    })
+
+def template_novo(request):
+    """
+    Cria um novo template.
+    """
+    if request.method == 'POST':
+        try:
+            # Verifica se já existe um template com o mesmo nome
+            name = request.POST.get('name')
+            if Template.objects.filter(name=name).exists():
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Já existe um template com este nome'
+                })
+
+            with transaction.atomic():
+                # Cria o template
+                template = Template.objects.create(
+                    name=name,
+                    enabled=request.POST.get('enabled') == 'true',  # Mudado para comparar com 'true'
+                    number_of_stages=0  # Será atualizado após criar as fases
+                )
+                
+                # Processa as fases do JSON
+                stages_data = json.loads(request.POST.get('stages', '[]'))
+                if not stages_data:
+                    template.delete()
+                    return JsonResponse({
+                        'success': False,
+                        'message': 'Adicione pelo menos uma fase ao template'
+                    })
+                
+                # Cria as fases
+                for index, stage in enumerate(stages_data):
+                    TemplateStage.objects.create(
+                        template=template,
+                        name=stage['name'],
+                        rounds=int(stage['rounds']),
+                        matches_per_round=int(stage['matches_per_round']),
+                        order=index
+                    )
+                
+                # Atualiza o número de fases
+                template.number_of_stages = len(stages_data)
+                template.save()
+                
+                return JsonResponse({
+                    'success': True,
+                    'message': 'Template criado com sucesso!'
+                })
+                
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': f'Erro ao criar template: {str(e)}'
+            })
+            
+    return render(request, 'administrativo/template-novo.html')
+
+@login_required
+def template_editar(request, id):
+    """
+    View para editar um template existente.
+    """
+    template = get_object_or_404(Template, id=id)
+    
+    if request.method == 'POST':
+        try:
+            name = request.POST.get('name')
+            enabled = request.POST.get('enabled') == 'true'  # Mudado para comparar com 'true'
+            stages_data = json.loads(request.POST.get('stages', '[]'))
+            
+            # Validações
+            if not name:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'O nome é obrigatório'
+                })
+                
+            # Verifica se já existe outro template com o mesmo nome
+            if Template.objects.filter(name=name).exclude(id=id).exists():
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Já existe um template com este nome'
+                })
+                
+            with transaction.atomic():
+                # Atualiza os dados básicos do template
+                template.name = name
+                
+                # Se o template tem campeonatos vinculados, não permite desativar
+                if template.template_championships.exists() and not enabled and template.enabled:
+                    return JsonResponse({
+                        'success': False,
+                        'message': 'Não é possível desativar um template que possui campeonatos vinculados'
+                    })
+                
+                template.enabled = enabled
+                template.save()
+                
+                # Se o template tem campeonatos vinculados, não permite alterar as fases
+                if template.template_championships.exists():
+                    return JsonResponse({
+                        'success': True,
+                        'message': 'Template atualizado com sucesso',
+                        'redirect_url': reverse('administrativo:templates')
+                    })
+                
+                # Atualiza a ordem das fases
+                for index, stage_data in enumerate(stages_data):
+                    stage = template.stages.get(id=stage_data['id'])
+                    stage.name = stage_data['name']
+                    stage.rounds = stage_data['rounds']
+                    stage.matches_per_round = stage_data['matches_per_round']
+                    stage.order = index
+                    stage.save()
+                
+                # Atualiza o número de fases
+                template.number_of_stages = len(stages_data)
+                template.save()
+                
+                return JsonResponse({
+                    'success': True,
+                    'message': 'Template atualizado com sucesso',
+                    'redirect_url': reverse('administrativo:templates')
+                })
+                
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': f'Erro ao atualizar template: {str(e)}'
+            })
+    
+    # GET: renderiza o formulário
+    return render(request, 'administrativo/template-editar.html', {
+        'template': template
+    })
+
+def template_excluir(request, id):
+    """
+    Exclui um template.
+    """
+    if request.method == 'POST':
+        template = get_object_or_404(Template, id=id)
+        
+        if not template.can_delete():
+            return JsonResponse({
+                'success': False,
+                'message': 'Não é possível excluir este template pois ele está vinculado a campeonatos.'
+            })
+            
+        try:
+            template.delete()
+            return JsonResponse({
+                'success': True,
+                'message': 'Template excluído com sucesso!'
+            })
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': f'Erro ao excluir template: {str(e)}'
+            })
+            
+    return JsonResponse({
+        'success': False,
+        'message': 'Método não permitido'
+    })
+
+def template_excluir_em_massa(request):
+    """
+    Exclui múltiplos templates.
+    """
+    if request.method == 'POST':
+        template_ids = request.POST.getlist('ids[]')
+        
+        if not template_ids:
+            return JsonResponse({
+                'success': False,
+                'message': 'Nenhum template selecionado'
+            })
+            
+        templates = Template.objects.filter(id__in=template_ids)
+        deleted_count = 0
+        errors = []
+        
+        for template in templates:
+            if template.can_delete():
+                try:
+                    template.delete()
+                    deleted_count += 1
+                except Exception as e:
+                    errors.append(f'Erro ao excluir template "{template.name}": {str(e)}')
+            else:
+                errors.append(f'Template "{template.name}" não pode ser excluído pois está vinculado a campeonatos')
+        
+        return JsonResponse({
+            'success': True,
+            'deleted': deleted_count,
+            'errors': errors,
+            'message': f'{deleted_count} template(s) excluído(s) com sucesso!'
+        })
+        
+    return JsonResponse({
+        'success': False,
+        'message': 'Método não permitido'
+    })
+
+def template_toggle_status(request):
+    """
+    Ativa/desativa um template via AJAX.
+    """
+    if request.method == 'POST':
+        template_id = request.POST.get('template_id')
+        try:
+            template = Template.objects.get(id=template_id)
+            
+            # Se estiver tentando desativar e tiver campeonatos vinculados, não permite
+            if template.enabled and template.template_championships.exists():
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Não é possível desativar um template que possui campeonatos vinculados'
+                })
+            
+            template.enabled = not template.enabled
+            template.save()
+            return JsonResponse({
+                'success': True,
+                'message': 'Status alterado com sucesso!',
+                'enabled': template.enabled
+            })
+        except Template.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'message': 'Template não encontrado'
+            })
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': str(e)
+            })
+    return JsonResponse({
+        'success': False,
+        'message': 'Método não permitido'
+    })
+
+def template_duplicar(request, id):
+    """
+    Cria uma cópia de um template existente.
+    """
+    template = get_object_or_404(Template, id=id)
+    
+    try:
+        # Gera um nome único para o template
+        base_name = template.name
+        counter = 1
+        new_name = f"Cópia de {base_name}"
+        
+        while Template.objects.filter(name=new_name).exists():
+            counter += 1
+            new_name = f"Cópia {counter} de {base_name}"
+            
+        # Cria o novo template
+        new_template = Template.objects.create(
+            name=new_name,
+            enabled=template.enabled,
+            number_of_stages=template.number_of_stages
+        )
+        
+        # Copia as fases
+        for stage in template.stages.all():
+            TemplateStage.objects.create(
+                template=new_template,
+                name=stage.name,
+                rounds=stage.rounds,
+                matches_per_round=stage.matches_per_round,
+                order=stage.order
+            )
+            
+        return JsonResponse({
+            'success': True,
+            'message': 'Template duplicado com sucesso!',
+            'redirect': reverse('administrativo:templates')
+        })
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Erro ao duplicar template: {str(e)}'
+        })
+
+def template_importar(request):
+    """
+    Importa templates de um arquivo Excel.
+    """
+    if request.method == 'POST' and request.FILES.get('file'):
+        try:
+            df = pd.read_excel(request.FILES['file'])
+            
+            required_columns = ['nome', 'fase', 'rodadas', 'jogos_por_rodada']
+            if not all(col in df.columns for col in required_columns):
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Arquivo não contém todas as colunas necessárias: ' + ', '.join(required_columns)
+                })
+                
+            with transaction.atomic():
+                templates_created = 0
+                templates_updated = 0
+                errors = []
+                
+                for template_name in df['nome'].unique():
+                    try:
+                        template_rows = df[df['nome'] == template_name]
+                        
+                        # Validação do nome do template
+                        if not template_name or len(template_name.strip()) == 0:
+                            errors.append(f'Nome do template não pode estar vazio')
+                            continue
+                            
+                        # Cria ou atualiza o template
+                        template, created = Template.objects.get_or_create(
+                            name=template_name,
+                            defaults={'enabled': True}
+                        )
+                        
+                        if created:
+                            templates_created += 1
+                        else:
+                            templates_updated += 1
+                            template.stages.all().delete()  # Remove fases existentes
+                        
+                        # Cria as fases
+                        stages_data = []
+                        for idx, row in template_rows.iterrows():
+                            try:
+                                rounds = int(row['rodadas'])
+                                matches = int(row['jogos_por_rodada'])
+                                
+                                if rounds <= 0 or matches <= 0:
+                                    errors.append(f'Template {template_name}: Rodadas e jogos por rodada devem ser maiores que zero')
+                                    continue
+                                    
+                                stages_data.append(TemplateStage(
+                                    template=template,
+                                    name=str(row['fase']),
+                                    rounds=rounds,
+                                    matches_per_round=matches,
+                                    order=idx
+                                ))
+                            except ValueError as e:
+                                errors.append(f'Template {template_name}: Erro ao processar fase {row["fase"]} - {str(e)}')
+                                
+                        # Salva as fases
+                        if stages_data:
+                            TemplateStage.objects.bulk_create(stages_data)
+                            template.number_of_stages = len(stages_data)
+                            template.save()
+                        else:
+                            template.delete()
+                            if created:
+                                templates_created -= 1
+                            else:
+                                templates_updated -= 1
+                            errors.append(f'Template {template_name}: Nenhuma fase válida encontrada')
+                            
+                    except Exception as e:
+                        errors.append(f'Erro ao processar template {template_name}: {str(e)}')
+                
+                # Mensagens de resultado
+                message = ''
+                if templates_created > 0:
+                    message += f'{templates_created} template(s) criado(s) com sucesso. '
+                if templates_updated > 0:
+                    message += f'{templates_updated} template(s) atualizado(s). '
+                if errors:
+                    message += 'Alguns erros ocorreram durante a importação: ' + ' | '.join(errors)
+
+                return JsonResponse({
+                    'success': templates_created > 0 or templates_updated > 0,
+                    'message': message.strip()
+                })
+                        
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': f'Erro ao processar arquivo: {str(e)}'
+            })
+            
+    return JsonResponse({
+        'success': False,
+        'message': 'Nenhum arquivo enviado'
+    })
+
+def template_exportar(request):
+    """
+    Exporta templates para um arquivo Excel.
+    """
+    templates = Template.objects.all().prefetch_related('stages')
+    
+    data = []
+    for template in templates:
+        for stage in template.stages.all():
+            data.append({
+                'nome': template.name,
+                'fase': stage.name,
+                'rodadas': stage.rounds,
+                'jogos_por_rodada': stage.matches_per_round
+            })
+    
+    df = pd.DataFrame(data)
+    
+    response = HttpResponse(content_type='application/vnd.ms-excel')
+    response['Content-Disposition'] = 'attachment; filename="templates.xlsx"'
+    
+    df.to_excel(response, index=False)
+    return response
+
+def times(request):
+    """
+    Lista todos os times ordenados por nome.
+    """
+    teams = Team.objects.all().select_related('continent', 'country', 'state')
+    return render(request, 'administrativo/times.html', {
+        'teams': teams
+    })
+
+def time_novo(request):
+    """
+    View para criar um novo time.
+    """
+    if request.method == 'POST':
+        try:
+            name = request.POST.get('name')
+            country_id = request.POST.get('country')
+            state_id = request.POST.get('state')
+            is_national_team = request.POST.get('is_national_team') == 'on'
+            image = request.FILES.get('image')
+
+            # Validações
+            if not name:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'O nome do time é obrigatório'
+                })
+
+            if not country_id:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'O país é obrigatório'
+                })
+
+            # Busca país 
+            country = Country.objects.get(id=country_id)
+            
+            # Verifica se o país tem estados cadastrados
+            has_states = country.state_set.exists()
+            
+            # Busca estado se informado
+            state = None
+            if state_id:
+                state = State.objects.get(id=state_id)
+
+            # Validação de estado apenas se não for seleção E o país tiver estados cadastrados
+            if not is_national_team and has_states and not state_id:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'O estado é obrigatório para times que não são seleções quando o país possui estados cadastrados'
+                })
+
+            # Verifica se já existe um time com o mesmo nome no país
+            if Team.objects.filter(name=name, country=country).exists():
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Já existe um time com este nome neste país'
+                })
+
+            # Valida a imagem se fornecida
+            if image:
+                # Verifica o tipo de arquivo
+                if not image.content_type.startswith('image/'):
+                    return JsonResponse({
+                        'success': False,
+                        'message': 'O arquivo selecionado não é uma imagem válida'
+                    })
+                    
+                # Verifica o tamanho do arquivo (max 2MB)
+                if image.size > 2 * 1024 * 1024:
+                    return JsonResponse({
+                        'success': False,
+                        'message': 'A imagem não pode ter mais que 2MB'
+                    })
+
+            # Cria o time
+            team = Team.objects.create(
+                name=name,
+                country=country,
+                state=state,
+                is_national_team=is_national_team,
+                image=image if image else None  # Imagem é opcional
+            )
+
+            return JsonResponse({
+                'success': True,
+                'message': 'Time criado com sucesso!',
+                'redirect_url': reverse('administrativo:times')
+            })
+
+        except Country.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'message': 'País não encontrado'
+            })
+        except State.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'message': 'Estado não encontrado'
+            })
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': f'Erro ao criar time: {str(e)}'
+            })
+
+    # GET - renderiza o formulário
+    countries = Country.objects.all().order_by('name')
+    return render(request, 'administrativo/time-novo.html', {
+        'countries': countries
+    })
+
+def time_editar(request, id):
+    """
+    Edita um time existente.
+    """
+    try:
+        team = Team.objects.get(id=id)
+    except Team.DoesNotExist:
+        messages.error(request, 'Time não encontrado')
+        return redirect('administrativo:times')
+
+    has_championships = team.has_championships()
+    championships = team.team_championships.all().order_by('name')
+
+    if request.method == 'POST':
+        try:
+            # Atualiza o nome
+            team.name = request.POST.get('name')
+            
+            # Só atualiza país, estado e is_national_team se não tiver campeonatos vinculados
+            if not championships.exists():
+                team.is_national_team = request.POST.get('is_national_team') == 'on'
+                team.country_id = request.POST.get('country')
+                
+                # Verifica se o time é uma seleção nacional ou se o país não tem estados cadastrados
+                if team.is_national_team or (team.country and not State.objects.filter(country_id=team.country_id).exists()):
+                    team.state = None
+                else:
+                    team.state_id = request.POST.get('state')
+            
+            # Atualiza o continente baseado no país selecionado
+            if team.country:
+                team.continent = team.country.continent
+            
+            # Verifica se é para remover a imagem existente
+            should_remove_image = request.POST.get('should_remove_image')
+            remove_image = request.POST.get('remove_image')
+            
+            if should_remove_image == 'yes' or remove_image == 'on':
+                if team.image:
+                    team.image.delete()
+                team.image = None
+            elif 'image' in request.FILES:
+                team.image = request.FILES['image']
+            
+            team.save()
+            
+            messages.success(request, 'Time atualizado com sucesso!')
+            return redirect('administrativo:times')
+            
+        except Exception as e:
+            messages.error(request, f'Erro ao atualizar time: {str(e)}')
+            return redirect('administrativo:time_editar', id=id)
+    
+    # Obtém todos os países ordenados por nome
+    countries = Country.objects.all().order_by('name')
+    
+    # Obtém os estados do país do time, se houver
+    states = []
+    if team.country:
+        states = State.objects.filter(country=team.country).order_by('name')
+    
+    return render(request, 'administrativo/time-editar.html', {
+        'team': team,
+        'countries': countries,
+        'states': states,
+        'has_championships': has_championships,
+        'championships': championships
+    })
+
+def time_exportar(request):
+    """
+    Exporta times para um arquivo Excel.
+    """
+    teams = Team.objects.all().select_related('continent', 'country', 'state').prefetch_related('team_championships')
+    
+    fields = [
+        ('name', 'Nome'),
+        ('continent__name', 'Continente'),
+        ('country__name', 'País'),
+        ('state__name', 'Estado'),
+        ('is_national_team', 'Seleção'),
+    ]
+    
+    data = []
+    for team in teams:
+        row = {}
+        for field, _ in fields:
+            if '__' in field:
+                # Lida com campos relacionados (ex: continent__name)
+                parts = field.split('__')
+                value = team
+                for part in parts:
+                    if value is None:
+                        value = ''
+                        break
+                    value = getattr(value, part, '')
+            else:
+                value = getattr(team, field, '')
+                
+            if field == 'is_national_team':
+                value = 'Sim' if value else 'Não'
+                
+            row[field] = str(value) if value else ''
+            
+        # Adiciona os campeonatos
+        row['championships'] = ', '.join(team.team_championships.values_list('name', flat=True))
+        data.append(row)
+    
+    df = pd.DataFrame(data)
+    
+    # Renomeia as colunas
+    column_names = {
+        'name': 'Nome',
+        'continent__name': 'Continente',
+        'country__name': 'País',
+        'state__name': 'Estado',
+        'is_national_team': 'Seleção',
+        'championships': 'Campeonatos'
+    }
+    df.rename(columns=column_names, inplace=True)
+    
+    response = HttpResponse(content_type='application/vnd.ms-excel')
+    response['Content-Disposition'] = 'attachment; filename="times.xlsx"'
+    
+    df.to_excel(response, index=False, engine='openpyxl')
+    return response
+
+def time_importar_imagens(request):
+    """
+    Importa imagens para os times.
+    """
+    if request.method == 'POST':
+        try:
+            # Obtém arquivos de ambos os inputs: seleção múltipla e diretório
+            files = request.FILES.getlist('images')
+            directory_files = request.FILES.getlist('directory_images')
+            
+            # Combina todos os arquivos
+            all_files = files + directory_files
+            
+            if not all_files:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Nenhuma imagem selecionada'
+                })
+            
+            # Primeiro, identifica quais times existem e quais não existem
+            times_found = []
+            times_not_found = []
+            file_mapping = {}  # Mapeia nome do time para o arquivo
+            
+            for file in all_files:
+                filename = os.path.splitext(file.name)[0]
+                # Para arquivos de diretório, remove o caminho e pega apenas o nome do arquivo
+                if hasattr(file, 'webkitRelativePath') and file.webkitRelativePath:
+                    filename = os.path.splitext(os.path.basename(file.webkitRelativePath))[0]
+                
+                team = Team.objects.filter(name__iexact=filename).first()
+                if team:
+                    times_found.append(filename)
+                    file_mapping[filename] = file
+                else:
+                    times_not_found.append(filename)
+            
+            # Se nenhum time foi encontrado, retorna mensagem de erro
+            if not times_found:
+                if len(times_not_found) > 4:
+                    message = f'Nenhum dos {len(times_not_found)} times está cadastrado. Por favor, cadastre-os primeiro.'
+                else:
+                    message = f'Os seguintes times não foram encontrados: {", ".join(times_not_found)}. Por favor, cadastre-os primeiro.'
+                return JsonResponse({
+                    'success': False,
+                    'message': message
+                })
+            
+            success_count = 0
+            errors = []
+            
+            # Processa apenas os times que existem
+            for team_name in times_found:
+                file = file_mapping[team_name]
+                team = Team.objects.filter(name__iexact=team_name).first()
+                
+                try:
+                    # Verifica o tipo de arquivo
+                    if not file.content_type.startswith('image/'):
+                        errors.append(f'Arquivo "{file.name}" não é uma imagem válida')
+                        continue
+                        
+                    # Verifica o tamanho do arquivo (max 2MB)
+                    if file.size > 2 * 1024 * 1024:
+                        errors.append(f'Imagem "{file.name}" excede o tamanho máximo de 2MB')
+                        continue
+                        
+                    # Remove imagem antiga se existir
+                    if team.image:
+                        team.image.delete(save=False)
+                        
+                    # Salva a nova imagem
+                    team.image = file
+                    team.save()
+                    success_count += 1
+                except Exception as e:
+                    errors.append(f'Erro ao processar "{file.name}": {str(e)}')
+            
+            # Mensagem de sucesso ou erro
+            message = f'{success_count} escudo(s) importado(s) com sucesso'
+            
+            # Adiciona informação sobre times não encontrados
+            if times_not_found:
+                if len(times_not_found) > 10:
+                    message += f', mas {len(times_not_found)} times não estão cadastrados'
+                else:
+                    message += f', mas os seguintes times não estão cadastrados: {", ".join(times_not_found[:10])}'
+                    if len(times_not_found) > 10:
+                        message += f' e mais {len(times_not_found) - 10}'
+            
+            # Adiciona informação sobre erros
+            if errors:
+                message += f'. Houve {len(errors)} erro(s) durante o processamento'
+                
+            return JsonResponse({
+                'success': True,
+                'message': message,
+                'found_count': len(times_found),
+                'not_found_count': len(times_not_found),
+                'success_count': success_count,
+                'error_count': len(errors),
+                'errors': errors if errors else None,
+                'not_found_sample': times_not_found[:10] if times_not_found else None
+            })
+                
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': f'Erro ao processar importação: {str(e)}'
+            })
+    
+    # Se não for POST, redireciona para a página de times
+    return redirect('administrativo:times')
+
+def futcoins(request):
+    packages = FutcoinPackage.objects.all().order_by('-created_at')
+    return render(request, 'administrativo/futcoins.html', {'packages': packages})
+
+@login_required
+@csrf_exempt
+def pacote_futcoin_novo(request):
+    if request.method == 'POST':
+        try:
+            data = request.POST
+            files = request.FILES
+            
+            # Tratamento das datas
+            start_date = data.get('start_date')
+            end_date = data.get('end_date')
+            
+            try:
+                if start_date:
+                    start_date = make_aware_with_local_timezone(start_date)
+                if end_date:
+                    end_date = make_aware_with_local_timezone(end_date)
+            except ValueError as e:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Formato de data inválido. Use o formato DD/MM/YYYY HH:mm'
+                })
+            
+            # Conversão dos valores numéricos
+            try:
+                # Converte preço padrão para Decimal
+                full_price_str = data.get('full_price', '0').strip()
+                full_price_str = full_price_str.replace(',', '.')
+                full_price = Decimal(full_price_str)
+                
+                # Converte preço promocional para Decimal (se existir)
+                promotional_price = None
+                if data.get('promotional_price'):
+                    promotional_price_str = data.get('promotional_price', '0').strip()
+                    promotional_price_str = promotional_price_str.replace(',', '.')
+                    promotional_price = Decimal(promotional_price_str)
+                    
+                    # Verifica se o preço promocional é menor que o preço padrão
+                    if promotional_price >= full_price:
+                        return JsonResponse({
+                            'success': False,
+                            'message': 'O preço promocional deve ser menor que o preço padrão'
+                        })
+                
+                # Converte conteúdo para inteiro
+                content_str = data.get('content', '0').strip()
+                content = int(content_str)
+                
+                # Converte bônus para inteiro
+                bonus_str = data.get('bonus', '0').strip()
+                bonus = int(bonus_str) if bonus_str else 0
+                
+            except (ValueError, InvalidOperation) as e:
+                return JsonResponse({
+                    'success': False,
+                    'message': f'Erro ao converter valores numéricos: {str(e)}'
+                })
+            
+            # Validação e conversão das cores
+            def validate_color(color):
+                if not color:
+                    return '#000000'
+                
+                # Remove espaços e converte para minúsculas
+                color = color.strip().lower()
+                
+                # Se já estiver no formato #RRGGBB, retorna como está
+                if re.match(r'^#[0-9a-f]{6}$', color):
+                    return color.upper()
+                
+                # Se estiver no formato RGB(r,g,b), converte para hex
+                rgb_match = re.match(r'rgb\((\d+),\s*(\d+),\s*(\d+)\)', color)
+                if rgb_match:
+                    r, g, b = map(int, rgb_match.groups())
+                    return f'#{r:02x}{g:02x}{b:02x}'.upper()
+                
+                # Se for rgba, remove o canal alpha e converte para hex
+                rgba_match = re.match(r'rgba\((\d+),\s*(\d+),\s*(\d+),\s*[\d.]+\)', color)
+                if rgba_match:
+                    r, g, b = map(int, rgba_match.groups())
+                    return f'#{r:02x}{g:02x}{b:02x}'.upper()
+                
+                # Se não estiver em nenhum formato válido, retorna preto
+                return '#000000'
+            
+            # Criação do pacote
+            package = FutcoinPackage(
+                name=data.get('name'),
+                enabled=data.get('enabled', 'true') == 'true',
+                package_type=data.get('package_type'),
+                label=data.get('label'),
+                color_text_label=validate_color(data.get('color_text_label', '#000000')),
+                color_background_label=validate_color(data.get('color_background_label', '#FFFFFF')),
+                full_price=full_price,
+                promotional_price=promotional_price,
+                content=content,
+                bonus=bonus,
+                show_to=data.get('show_to'),
+                start_date=start_date,
+                end_date=end_date,
+                android_product_code=data.get('android_product_code'),
+                ios_product_code=data.get('ios_product_code'),
+                gateway_product_code=data.get('gateway_product_code')
+            )
+            
+            # Tratamento da imagem
+            if 'image' in files:
+                package.image = files['image']
+            
+            package.save()
+            
+            return JsonResponse({
+                'success': True,
+                'message': 'Pacote criado com sucesso!'
+            })
+            
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': f'Erro ao criar pacote: {str(e)}'
+            })
+    
+    # GET - renderiza o formulário
+    return render(request, 'administrativo/pacote-futcoin-novo.html')
+
+def planos(request):
+    plans = Plan.objects.all().order_by('-created_at')
+    return render(request, 'administrativo/planos.html', {'plans': plans})
+
+@login_required
+@csrf_exempt
+def pacote_plano_novo(request):
+    if request.method == 'POST':
+        try:
+            data = request.POST
+            files = request.FILES
+            
+            # Tratamento das datas
+            start_date = data.get('start_date')
+            end_date = data.get('end_date')
+            
+            try:
+                if start_date:
+                    start_date = make_aware_with_local_timezone(start_date)
+                if end_date:
+                    end_date = make_aware_with_local_timezone(end_date)
+            except ValueError as e:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Formato de data inválido. Use o formato DD/MM/YYYY HH:mm'
+                })
+            
+            # Validação e conversão das cores
+            def validate_color(color):
+                if not color:
+                    return '#000000'
+                
+                # Remove espaços e converte para minúsculas
+                color = color.strip().lower()
+                
+                # Se já estiver no formato #RRGGBB, retorna como está
+                if re.match(r'^#[0-9a-f]{6}$', color):
+                    return color.upper()
+                
+                # Se estiver no formato RGB(r,g,b), converte para hex
+                rgb_match = re.match(r'rgb\((\d+),\s*(\d+),\s*(\d+)\)', color)
+                if rgb_match:
+                    r, g, b = map(int, rgb_match.groups())
+                    return f'#{r:02x}{g:02x}{b:02x}'.upper()
+                
+                # Se for rgba, remove o canal alpha e converte para hex
+                rgba_match = re.match(r'rgba\((\d+),\s*(\d+),\s*(\d+),\s*[\d.]+\)', color)
+                if rgba_match:
+                    r, g, b = map(int, rgba_match.groups())
+                    return f'#{r:02x}{g:02x}{b:02x}'.upper()
+                
+                # Se não estiver em nenhum formato válido, retorna preto
+                return '#000000'
+            
+            # Obter e validar os valores de etiqueta e cores
+            label = data.get('label', '')
+            color_text_label = validate_color(data.get('color_text_label', '#000000'))
+            color_background_label = validate_color(data.get('color_background_label', '#FFFFFF'))
+            
+            # Log para debug
+            print(f"Valores recebidos - Etiqueta: {label}, Cor texto: {data.get('color_text_label')}, Cor fundo: {data.get('color_background_label')}")
+            print(f"Valores após validação - Cor texto: {color_text_label}, Cor fundo: {color_background_label}")
+            
+            # Validação dos preços
+            try:
+                full_price = Decimal(str(data.get('full_price', '0')).replace(',', '.'))
+                promotional_price = None
+                if data.get('promotional_price'):
+                    promotional_price = Decimal(str(data.get('promotional_price')).replace(',', '.'))
+                    if promotional_price >= full_price:
+                        return JsonResponse({
+                            'success': False,
+                            'message': 'O preço promocional deve ser menor que o preço padrão.'
+                        })
+            except (ValueError, InvalidOperation) as e:
+                return JsonResponse({
+                    'success': False,
+                    'message': f'Preço inválido: {str(e)}'
+                })
+            
+            # Criação do plano
+            plan = Plan(
+                name=data.get('name'),
+                plan=data.get('plan'),
+                billing_cycle=data.get('billing_cycle'),
+                enabled=data.get('enabled', 'true') == 'true',
+                package_type=data.get('tipo'),
+                label=label,
+                color_text_label=color_text_label,
+                color_background_label=color_background_label,
+                full_price=full_price,
+                promotional_price=promotional_price,
+                show_to=data.get('show_to'),
+                start_date=start_date,
+                end_date=end_date,
+                android_product_code=data.get('android_product_code'),
+                apple_product_code=data.get('apple_product_code'),
+                gateway_product_code=data.get('gateway_product_code')
+            )
+            
+            # Tratamento da imagem
+            if 'image' in files:
+                # Validação do tamanho da imagem
+                image = files['image']
+                if image.size > 2 * 1024 * 1024:  # 2MB
+                    return JsonResponse({
+                        'success': False,
+                        'message': 'A imagem não pode ter mais que 2MB'
+                    })
+                plan.image = image
+            elif data.get('should_remove_image') == 'yes':
+                # Se o campo should_remove_image for 'yes', remove a imagem
+                if plan.image:
+                    plan.image.delete()
+                plan.image = None
+            
+            plan.save()
+            
+            return JsonResponse({
+                'success': True,
+                'message': 'Plano criado com sucesso!'
+            })
+            
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': f'Erro ao criar plano: {str(e)}'
+            })
+    
+    # GET - renderiza o formulário
+    return render(request, 'administrativo/pacote-plano-novo.html')
+
+@login_required
+def futligas_classicas(request):
+    """
+    View para listar todas as Futligas Clássicas
+    """
+    futligas = StandardLeague.objects.all().order_by('-created_at')
+    return render(request, 'administrativo/futligas-classicas.html', {
+        'futligas': futligas
+    })
+
+@csrf_exempt
+def futliga_classica_novo(request):
+    if request.method == 'POST':
+        # Validação básica
+        name = request.POST.get('name', '').strip()
+        players = request.POST.get('players', '')
+        award_frequency = request.POST.get('award_frequency', '')
+        award_time = request.POST.get('award_time', '')
+        
+        # Verificações de campos obrigatórios
+        if not name:
+            return JsonResponse({'success': False, 'message': 'O campo Nome é obrigatório'}, status=400)
+        if not players:
+            return JsonResponse({'success': False, 'message': 'O campo Participantes é obrigatório'}, status=400)
+        if not award_frequency:
+            return JsonResponse({'success': False, 'message': 'O campo Frequência de Premiação é obrigatório'}, status=400)
+        
+        try:
+            # Verificações específicas por frequência
+            weekday = None
+            monthday = None
+            
+            if award_frequency == 'weekly':
+                weekday = request.POST.get('weekday')
+                if not weekday:
+                    return JsonResponse({'success': False, 'message': 'O campo Dia da Semana é obrigatório para ligas semanais'}, status=400)
+                monthday = None
+                month_value = None
+            elif award_frequency == 'monthly':
+                monthday = request.POST.get('monthday')
+                if not monthday:
+                    return JsonResponse({'success': False, 'message': 'O campo Dia do Mês é obrigatório para ligas mensais'}, status=400)
+                weekday = 0  # Valor padrão para ligas mensais
+                month_value = None
+            elif award_frequency == 'annual':
+                monthday = request.POST.get('monthday')
+                month_value = request.POST.get('month_value')
+                if not monthday or not month_value:
+                    return JsonResponse({'success': False, 'message': 'Os campos Dia e Mês são obrigatórios para ligas anuais'}, status=400)
+                weekday = 0  # Valor padrão para ligas anuais
+            
+            # Mapeamento dos valores de players
+            players_map = {
+                'Comum': 1,
+                'Craque': 2,
+                'Todos': 0
+            }
+            
+            # Criação da liga
+            futliga = StandardLeague.objects.create(
+                name=name,
+                players=players_map.get(players, 0),
+                award_frequency=award_frequency,
+                weekday=weekday,
+                monthday=monthday,
+                month_value=month_value,
+                award_time=award_time
+            )
+            
+            # Imagem principal
+            if 'image' in request.FILES:
+                futliga.image = request.FILES['image']
+                futliga.save()
+            
+            # Processamento dos prêmios
+            prize_positions = request.POST.getlist('prize_positions[]', [])
+            prize_descriptions = request.POST.getlist('prize_descriptions[]', [])
+            
+            if len(prize_positions) != len(prize_descriptions):
+                return JsonResponse({'success': False, 'message': 'Dados de prêmios inválidos'}, status=400)
+            
+            # Criação dos prêmios
+            for i in range(len(prize_positions)):
+                try:
+                    position = int(prize_positions[i])
+                    prize = prize_descriptions[i]
+                    
+                    prize_obj = StandardLeaguePrize.objects.create(
+                        league=futliga,
+                        position=position,
+                        prize=prize
+                    )
+                    
+                    # Imagem do prêmio
+                    if 'prize_images[]' in request.FILES and i < len(request.FILES.getlist('prize_images[]')):
+                        prize_obj.image = request.FILES.getlist('prize_images[]')[i]
+                        prize_obj.save()
+                
+                except (ValueError, IndexError):
+                    # Se houver erro em um prêmio, pula para o próximo
+                    continue
+            
+            return JsonResponse({'success': True, 'message': 'Futliga Clássica criada com sucesso!'})
+        
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': f'Erro ao criar Futliga Clássica: {str(e)}'}, status=500)
+    
+    return render(request, 'administrativo/futliga-classica-novo.html')
+
+@login_required
+@csrf_exempt
+def futliga_classica_editar(request, futliga_id):
+    try:
+        futliga = StandardLeague.objects.get(id=futliga_id)
+    except StandardLeague.DoesNotExist:
+        return JsonResponse({'success': False, 'message': 'Liga não encontrada'}, status=404)
+    
+    if request.method == 'POST':
+        # Validação básica
+        name = request.POST.get('name', '').strip()
+        players = request.POST.get('players', '')
+        award_frequency = request.POST.get('award_frequency', '')
+        award_time = request.POST.get('award_time', '')
+        
+        # Verificações de campos obrigatórios
+        if not name:
+            return JsonResponse({'success': False, 'message': 'O campo Nome é obrigatório'}, status=400)
+        if not players:
+            return JsonResponse({'success': False, 'message': 'O campo Participantes é obrigatório'}, status=400)
+        if not award_frequency:
+            return JsonResponse({'success': False, 'message': 'O campo Frequência de Premiação é obrigatório'}, status=400)
+        
+        try:
+            # Verificações específicas por frequência
+            if award_frequency == 'weekly':
+                weekday = request.POST.get('weekday')
+                if not weekday:
+                    return JsonResponse({'success': False, 'message': 'O campo Dia de Premiação é obrigatório para ligas semanais'}, status=400)
+                monthday = None
+                month_value = None
+            elif award_frequency == 'monthly':
+                monthday = request.POST.get('monthday')
+                if not monthday:
+                    return JsonResponse({'success': False, 'message': 'O campo Dia do Mês é obrigatório para ligas mensais'}, status=400)
+                weekday = 0  # Valor padrão para ligas mensais
+                month_value = None
+            elif award_frequency == 'annual':
+                monthday = request.POST.get('monthday')
+                month_value = request.POST.get('month_value')
+                if not monthday or not month_value:
+                    return JsonResponse({'success': False, 'message': 'Os campos Dia e Mês são obrigatórios para ligas anuais'}, status=400)
+                weekday = 0  # Valor padrão para ligas anuais
+            
+            # Mapeamento dos valores de players
+            players_map = {
+                'Comum': 1,
+                'Craque': 2,
+                'Todos': 0
+            }
+            
+            # Atualização dos campos da liga
+            futliga.name = name
+            futliga.players = players_map.get(players, 0)
+            futliga.award_frequency = award_frequency
+            futliga.weekday = weekday
+            futliga.monthday = monthday
+            futliga.month_value = month_value
+            futliga.award_time = award_time
+            
+            # Imagem principal
+            if 'image' in request.FILES:
+                if futliga.image:
+                    futliga.image.delete()
+                futliga.image = request.FILES['image']
+            elif 'remove_image' in request.POST and request.POST.get('remove_image') == '1':
+                # Se solicitou remover a imagem
+                if futliga.image:
+                    futliga.image.delete()
+                    futliga.image = None
+            
+            futliga.save()
+            
+            # Lista de prêmios a serem removidos
+            prizes_to_remove = request.POST.getlist('remove_prizes[]', [])
+            
+            # Lista de índices de prêmios que devem ter as imagens removidas
+            prize_images_to_remove = set(request.POST.getlist('remove_prize_image[]', []))
+            
+            # Remover apenas os prêmios que foram marcados para exclusão, não todos
+            if prizes_to_remove:
+                for prize_id in prizes_to_remove:
+                    try:
+                        prize = StandardLeaguePrize.objects.get(id=prize_id, league=futliga)
+                        if prize.image:
+                            prize.image.delete()
+                        prize.delete()
+                    except (StandardLeaguePrize.DoesNotExist, ValueError):
+                        continue
+            
+            # Processamento dos novos prêmios e atualização dos existentes
+            prize_positions = request.POST.getlist('prize_positions[]', [])
+            prize_descriptions = request.POST.getlist('prize_descriptions[]', [])
+            
+            if len(prize_positions) != len(prize_descriptions):
+                return JsonResponse({'success': False, 'message': 'Dados de prêmios inválidos'}, status=400)
+            
+            # Obter prêmios existentes para facilitar a atualização
+            existing_prizes = {p.position: p for p in futliga.prizes.all()}
+            
+            # Criação ou atualização dos prêmios
+            for i in range(len(prize_positions)):
+                try:
+                    position = int(prize_positions[i])
+                    prize_value = int(prize_descriptions[i])
+                    
+                    # Verificar se já existe um prêmio nesta posição
+                    if position in existing_prizes:
+                        prize_obj = existing_prizes[position]
+                        prize_obj.prize = prize_value
+                        
+                        # Se este prêmio está na lista de imagens a remover
+                        if str(i) in prize_images_to_remove:
+                            if prize_obj.image:
+                                prize_obj.image.delete()
+                                prize_obj.image = None
+                    else:
+                        # Criar novo prêmio
+                        prize_obj = StandardLeaguePrize(
+                            league=futliga,
+                            position=position,
+                            prize=prize_value
+                        )
+                    
+                    # Salvar o objeto do prêmio
+                    prize_obj.save()
+                    
+                    # Atualizar imagem do prêmio se uma nova foi enviada
+                    if 'prize_images[]' in request.FILES and i < len(request.FILES.getlist('prize_images[]')):
+                        # Se já tinha imagem, remove primeiro
+                        if prize_obj.image:
+                            prize_obj.image.delete()
+                        prize_obj.image = request.FILES.getlist('prize_images[]')[i]
+                        prize_obj.save()
+                
+                except (ValueError, IndexError) as e:
+                    # Se houver erro em um prêmio, pula para o próximo
+                    continue
+            
+            return JsonResponse({'success': True, 'message': 'Futliga Clássica atualizada com sucesso!'})
+        
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': f'Erro ao atualizar Futliga Clássica: {str(e)}'}, status=500)
+    
+    return render(request, 'administrativo/futliga-classica-editar.html', {'futliga': futliga})
+
+@login_required
+def futliga_classica_excluir(request, id):
+    """
+    View para excluir uma Futliga Clássica
+    """
+    if request.method == 'POST':
+        try:
+            futliga = StandardLeague.objects.get(id=id)
+            
+            # Remove a imagem principal
+            if futliga.image:
+                futliga.image.delete()
+            
+            # Remove as imagens dos prêmios
+            for prize in futliga.prizes.all():
+                if prize.image:
+                    prize.image.delete()
+            
+            futliga.delete()
+            return JsonResponse({'success': True})
+            
+        except StandardLeague.DoesNotExist:
+            return JsonResponse({'success': False, 'message': 'Futliga Clássica não encontrada'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': str(e)})
+    
+    return JsonResponse({'success': False, 'message': 'Método não permitido'})
+
+@login_required
+def futliga_classica_excluir_em_massa(request):
+    """
+    View para excluir múltiplas Futligas Clássicas
+    """
+    if request.method == 'POST':
+        try:
+            ids = request.POST.getlist('ids[]')
+            futligas = StandardLeague.objects.filter(id__in=ids)
+            
+            for futliga in futligas:
+                # Remove a imagem principal
+                if futliga.image:
+                    futliga.image.delete()
+                
+                # Remove as imagens dos prêmios
+                for prize in futliga.prizes.all():
+                    if prize.image:
+                        prize.image.delete()
+            
+            futligas.delete()
+            return JsonResponse({'success': True})
+            
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': str(e)})
+    
+    return JsonResponse({'success': False, 'message': 'Método não permitido'})
+
+@login_required
+def futligas_jogadores(request):
+    """
+    Renderiza a página de Futligas Jogadores.
+    """
+    return render(request, 'administrativo/futligas-jogadores.html')
+
+@login_required
+@require_http_methods(["GET"])
+def futliga_jogador_dados(request):
+    """
+    Retorna os dados iniciais para a página de Futligas Jogadores.
+    """
+    try:
+        # Obtém os níveis ordenados
+        niveis = CustomLeagueLevel.objects.all().order_by('order')
+        niveis_data = [{
+            'id': nivel.id,
+            'name': nivel.name,
+            'players': nivel.players,
+            'premium_players': nivel.premium_players,
+            'owner_premium': nivel.owner_premium,
+            'image': nivel.image.url if nivel.image else None,
+            'order': nivel.order
+        } for nivel in niveis]
+
+        # Obtém os prêmios
+        premios = CustomLeaguePrize.objects.all().order_by('position')
+        premios_data = [{
+            'position': premio.position,
+            'image': premio.image.url if premio.image else None,
+            'values': {nivel.name: premio.get_valor_por_nivel(nivel) for nivel in niveis}
+        } for premio in premios]
+
+from django.shortcuts import render, get_object_or_404, redirect
+from django.http import JsonResponse, HttpResponse
+from django.contrib import messages
+from django.utils import timezone
+from django.contrib.auth.hashers import make_password, check_password
+from django.urls import reverse
+from django.db import transaction, IntegrityError
+from django.core.exceptions import ValidationError
+from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
+from django.contrib.auth.decorators import login_required
+from django.db.models import Case, When, Value, IntegerField
+from django.core.files.storage import default_storage
+from django.views.decorators.http import require_http_methods
+from django.views.decorators.csrf import csrf_exempt
+from django.core.files.base import ContentFile
+from .models import (
+    User, Scope, Championship, Template, Team,
+    FutcoinPackage, Plan, ClassicLeague, Player,
+    Continent, Country, State, Parameters, Terms, 
+    Notifications, Administrator, ScopeLevel, TemplateStage,
+    ChampionshipStage, ChampionshipRound, ChampionshipMatch as Match,
+    Prediction, StandardLeague, StandardLeaguePrize,
+    CustomLeague, CustomLeagueLevel, CustomLeaguePrize
+)
+from .utils import export_to_excel, import_from_excel
+import pandas as pd
+import csv
+import os
+from datetime import datetime, timedelta
+import json
+import logging
+import base64
+import os  # Importado para manipulação de paths de arquivos
+import base64
+import datetime
+import openpyxl
+import unicodedata
+from uuid import uuid4
+from io import BytesIO
+from decimal import Decimal
+from django.conf import settings  # Importado para acessar MEDIA_ROOT
+import re  # Adicionando o import do módulo re para expressões regulares
+import zipfile
+import tempfile
+import uuid
+from datetime import datetime, timedelta, date
+from decimal import Decimal, InvalidOperation
+from functools import wraps
+import pytz  # Adicionando o módulo de timezone para notificações
+
+from django.shortcuts import render, redirect, get_object_or_404
+from django.http import JsonResponse, HttpResponse
+from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth import logout as auth_logout
+from django.contrib.auth import get_user_model
+User = get_user_model()
+from django.utils import timezone, dateformat
+from django.utils.timezone import make_aware
+from django.views.decorators.http import require_http_methods
+from django.core import serializers
+from django.core.files import File
+from django.conf import settings
+from django.db import transaction, IntegrityError, connection
+from django.db.models import Q, Sum, Count, F, Max
+from django.template.loader import render_to_string
+
+from itertools import zip_longest
+
+# Configuração do logger
+logger = logging.getLogger(__name__)
+
+# Sobrescrever timezone.now para compensar a conversão automática para UTC
+# Isso afeta todos os campos auto_now e auto_now_add
+original_now = timezone.now
+
+def custom_now():
+    # Usar o tempo atual sem deslocamento
+    # Removemos o ajuste de -3 horas para manter a hora real
+    return original_now()
+
+# Substituir a função original pela personalizada
+timezone.now = custom_now
+
+# Função utilitária para converter strings de data para objetos datetime aware
+def make_aware_with_local_timezone(date_str_or_obj, format_str='%d/%m/%Y %H:%M'):
+    # Converte string para objeto datetime, se necessário
+    if isinstance(date_str_or_obj, str):
+        try:
+            # Registra o formato de entrada para debug
+            logger.info(f"Tentando converter data: {date_str_or_obj} usando formato {format_str}")
+            
+            # Verifica se está no formato correto MM/DD
+            parts = date_str_or_obj.split('/')
+            if len(parts) >= 2:
+                day = int(parts[0])
+                month = int(parts[1])
+                
+                # Se o dia está entre 1-12 e o mês também, e o dia não é igual ao mês
+                # isso significa que poderia haver ambiguidade
+                if 1 <= day <= 12 and 1 <= month <= 12 and day != month:
+                    logger.info(f"Possível ambiguidade de data detectada: dia={day}, mês={month}")
+                
+                # Força o formato DD/MM mesmo que o valor venha invertido
+                if 1 <= day <= 12 and 1 <= month <= 12 and day != month:
+                    # Verifica quem é maior para determinar se estão invertidos
+                    # Se month > day, é mais provável que day seja realmente o dia (formato DD/MM)
+                    # Se day > month, é mais provável que houve inversão (o user quis dizer DD/MM)
+                    if day > month:
+                        # A data já está no formato esperado (DD/MM)
+                        logger.info(f"Usando ordem original: {day}/{month} (dia/mês)")
+                    else:
+                        # Precisamos inverter para garantir o formato DD/MM
+                        # Nota: apenas logamos a detecção, o strptime abaixo tratará corretamente
+                        logger.info(f"Usando formato especificado (DD/MM) independentemente da ordem")
+            
+            # Usa o formato especificado para parsear a data
+            naive_date = datetime.strptime(date_str_or_obj, format_str)
+            logger.info(f"Data convertida com sucesso: {naive_date}")
+            
+        except ValueError as e:
+            # Se falhar, tenta um formato alternativo (por segurança)
+            logger.warning(f"Erro ao converter data {date_str_or_obj}: {str(e)}")
+            logger.warning(f"Tentando formato alternativo")
+            try:
+                # Tenta o formato alternativo MM/DD/YYYY para casos em que o dado já está invertido
+                alt_format = '%m/%d/%Y %H:%M'
+                naive_date = datetime.strptime(date_str_or_obj, alt_format)
+                logger.info(f"Data convertida com formato alternativo: {naive_date}")
+            except ValueError:
+                # Se ambos falharem, propaga o erro original
+                logger.error(f"Falha na conversão de data mesmo com formato alternativo")
+                raise
+    else:
+        naive_date = date_str_or_obj
+    
+    # Se o objeto já tiver timezone, retorna-o diretamente
+    if hasattr(naive_date, 'tzinfo') and naive_date.tzinfo is not None and naive_date.tzinfo.utcoffset(naive_date) is not None:
+        return naive_date
+    
+    # Compensar a conversão automática do Django para UTC (- 3 horas)
+    # Subtrair 3 horas para que quando o Django converter para UTC, o valor final seja correto
+    compensated_date = naive_date - timedelta(hours=3)
+    
+    logger.info(f"Data final após compensação de timezone: {compensated_date}")
+    return compensated_date
+
+# Função utilitária para notificações que não aplica a compensação de 3 horas
+def make_aware_for_notifications(date_str_or_obj, format_str='%d/%m/%Y %H:%M'):
+    # Converte string para objeto datetime, se necessário
+    if isinstance(date_str_or_obj, str):
+        naive_date = datetime.strptime(date_str_or_obj, format_str)
+    else:
+        naive_date = date_str_or_obj
+    
+    # Se o objeto já tiver timezone, retorna-o diretamente
+    if hasattr(naive_date, 'tzinfo') and naive_date.tzinfo is not None and naive_date.tzinfo.utcoffset(naive_date) is not None:
+        return naive_date
+    
+    # Aplica o timezone local sem compensação
+    local_tz = pytz.timezone(settings.TIME_ZONE)
+    return local_tz.localize(naive_date)
+
+@login_required
+def get_packages(request):
+    """
+    Retorna os pacotes disponíveis baseado no tipo selecionado.
+    """
+    if request.method == 'GET':
+        try:
+            package_type = request.GET.get('type')
+            packages = []
+            
+            if package_type == 'package_coins' or package_type == 'PacoteFutcoins':
+                packages = FutcoinPackage.objects.filter(enabled=True).values('id', 'name')
+            elif package_type == 'package_plan' or package_type == 'PacotePlano':
+                packages = Plan.objects.filter(enabled=True).values('id', 'name')
+            
+            return JsonResponse({
+                'success': True,
+                'packages': list(packages)
+            })
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': str(e)
+            })
+    
+    return JsonResponse({
+        'success': False,
+        'message': 'Método não permitido'
+    })
+
+def login(request):
+    # Limpa as mensagens antigas
+    storage = messages.get_messages(request)
+    storage.used = True
+    
+    if request.method == 'POST':
+        email = request.POST.get('email')
+        password = request.POST.get('password')
+        remember_me = request.POST.get('remember_me') == 'on'
+        
+        logger.error(f"Tentativa de login - Email: {email}")  # Usando error para garantir que apareça no log
+        
+        if not all([email, password]):
+            messages.error(request, 'Todos os campos são obrigatórios')
+            return render(request, 'administrativo/login.html')
+        
+        try:
+            # Primeiro, tenta encontrar o usuário pelo email
+            try:
+                user_obj = User.objects.get(email=email)
+                logger.error(f"Usuário encontrado - Username: {user_obj.username}, Is Staff: {user_obj.is_staff}, Is Superuser: {user_obj.is_superuser}")
+            except User.DoesNotExist:
+                logger.error(f"Nenhum usuário encontrado com o email: {email}")
+                messages.error(request, 'Email ou senha inválidos')
+                return render(request, 'administrativo/login.html')
+            
+            # Tenta autenticar com o username encontrado
+            user = authenticate(request, username=user_obj.username, password=password)
+            logger.error(f"Resultado da autenticação: {user}")
+            
+            if user is not None:
+                logger.error(f"Usuário autenticado - Is Staff: {user.is_staff}, Is Superuser: {user.is_superuser}")
+                
+                if user.is_staff or user.is_superuser:
+                    auth_login(request, user)
+                    
+                    if remember_me:
+                        request.session.set_expiry(60 * 60 * 24 * 30)  # 30 dias
+                    else:
+                        request.session.set_expiry(0)  # Expira ao fechar o navegador
+                    
+                    request.session['admin_id'] = user.id
+                    request.session['admin_name'] = user.get_full_name() or user.email
+                    request.session['is_root'] = user.is_superuser
+                    
+                    logger.error("Login bem-sucedido - Redirecionando para usuarios")
+                    return redirect('administrativo:usuarios')
+                else:
+                    logger.error("Usuário não tem permissões de staff/superuser")
+                    messages.error(request, 'Você não tem permissão para acessar esta área')
+            else:
+                logger.error("Autenticação falhou - Senha incorreta")
+                messages.error(request, 'Email ou senha inválidos')
+                
+        except Exception as e:
+            logger.error(f"Erro durante o login: {str(e)}")
+            messages.error(request, 'Erro ao realizar login')
+            
+    return render(request, 'administrativo/login.html')
+
+def usuarios(request):
+    return render(request, 'administrativo/usuarios.html')
+
 def usuario_editar(request):
     return render(request, 'administrativo/usuario-editar.html')
 
@@ -3433,14 +5432,11 @@ def administradores_excluir_massa(request):
     })
 
 def logout(request):
-    # Limpa a sessão completamente, removendo todos os dados
+    # Limpa a sessão
     request.session.flush()
     # Faz o logout do Django
     auth_logout(request)
-    # Expira o cookie da sessão ao enviá-lo com uma data de expiração no passado
-    response = redirect('administrativo:login')
-    response.delete_cookie('sessionid')
-    return response
+    return redirect('administrativo:login')
 
 def campeonato_importar_jogos(request):
     """
@@ -4803,93 +6799,27 @@ def futliga_premio_novo(request):
 @login_required
 def campeonato_importar_rodadas(request):
     """
-    Importa rodadas de um arquivo Excel.
+    Importa rodadas para um campeonato a partir de um arquivo Excel.
     """
-    if request.method == 'POST' and request.FILES.get('file'):
-        try:
-            championship_id = request.POST.get('championship_id')
-            championship = Championship.objects.get(id=championship_id)
-            
-            df = pd.read_excel(request.FILES['file'])
-            
-            required_columns = ['Fase', 'Rodada', 'Time Mandante', 'Time Visitante', 'Data', 'Hora']
-            if not all(col in df.columns for col in required_columns):
-                return JsonResponse({
-                    'success': False,
-                    'message': 'Arquivo não contém todas as colunas necessárias: ' + ', '.join(required_columns)
-                })
-                
-            with transaction.atomic():
-                matches_created = 0
-                errors = []
-                
-                for _, row in df.iterrows():
-                    try:
-                        # Obtém ou cria a fase
-                        stage, _ = ChampionshipStage.objects.get_or_create(
-                            championship=championship,
-                            name=row['Fase']
-                        )
-                        
-                        # Obtém ou cria a rodada
-                        round_obj, _ = ChampionshipRound.objects.get_or_create(
-                            championship=championship,
-                            stage=stage,
-                            number=row['Rodada']
-                        )
-                        
-                        # Obtém os times
-                        try:
-                            home_team = Team.objects.get(name=row['Time Mandante'])
-                            away_team = Team.objects.get(name=row['Time Visitante'])
-                        except Team.DoesNotExist:
-                            errors.append(f"Time não encontrado: {row['Time Mandante']} ou {row['Time Visitante']}")
-                            continue
-                        
-                        # Cria a partida
-                        naive_match_date = datetime.combine(
-                            row['Data'],
-                            datetime.strptime(str(row['Hora']), '%H:%M').time()
-                        )
-                        match_date = make_aware_with_local_timezone(naive_match_date)
-                        
-                        Match.objects.create(
-                            championship=championship,
-                            stage=stage,
-                            round=round_obj,
-                            home_team=home_team,
-                            away_team=away_team,
-                            match_date=match_date
-                        )
-                        matches_created += 1
-                        
-                    except Exception as e:
-                        errors.append(f"Erro ao processar linha: {str(e)}")
-                
-                message = f"{matches_created} partidas importadas com sucesso."
-                if errors:
-                    message += f"\nErros encontrados: {'; '.join(errors)}"
-                
-                return JsonResponse({
-                    'success': True,
-                    'message': message
-                })
-                
-        except Championship.DoesNotExist:
-            return JsonResponse({
-                'success': False,
-                'message': 'Campeonato não encontrado.'
-            })
-        except Exception as e:
-            return JsonResponse({
-                'success': False,
-                'message': f'Erro ao importar rodadas: {str(e)}'
-            })
-            
-    return JsonResponse({
-        'success': False,
-        'message': 'Método não permitido ou arquivo não fornecido.'
-    })
+    if request.method == 'POST':
+        # ... existing code ...
+    
+    # Se for uma requisição GET, renderiza a página de importação
+    templates = Template.objects.filter(enabled=True)
+    stages = ChampionshipStage.objects.all()
+    rounds = ChampionshipRound.objects.all()
+    teams = Team.objects.all().order_by('name')
+    championship_id = request.GET.get('championship_id')
+    
+    context = {
+        'templates': templates,
+        'stages': stages,
+        'rounds': rounds,
+        'teams': teams,
+        'championship_id': championship_id
+    }
+    
+    return render(request, 'administrativo/campeonato-novo-rodadas.html', context)
 
 def time_excluir(request, id):
     """
@@ -5957,71 +7887,47 @@ def get_matches_by_round(request):
         round_id = request.POST.get('round_id')
         stage_id = request.POST.get('stage_id')
         
-        print(f"DEBUG: get_matches_by_round chamado com round_id={round_id}, stage_id={stage_id}")
-        
         try:
-            # Caso seja uma rodada existente
+            # Caso seja uma rodada existente com ID numérico
             if round_id and not round_id.startswith('new_'):
-                print(f"DEBUG: Buscando rodada existente com id={round_id}")
                 round_obj = ChampionshipRound.objects.get(id=round_id)
-                print(f"DEBUG: Rodada encontrada: {round_obj}")
-                
-                # Verificar se o modelo está correto
-                matches = ChampionshipMatch.objects.filter(round=round_obj).order_by('match_date')
-                
-                print(f"DEBUG: Consulta SQL: {str(matches.query)}")
-                print(f"DEBUG: Encontradas {matches.count()} partidas para a rodada {round_id}")
+                matches = Match.objects.filter(round=round_obj).order_by('match_date')
                 
                 matches_data = []
                 for match in matches:
-                    print(f"DEBUG: Processando match id={match.id}, home={match.home_team}, away={match.away_team}")
                     match_date_str = None
                     if match.match_date:
                         match_date_str = match.match_date.strftime('%d/%m/%Y %H:%M')
                     
-                    home_team_id = match.home_team.id if match.home_team else None
-                    away_team_id = match.away_team.id if match.away_team else None
-                    
-                    print(f"DEBUG: Match data - home_id={home_team_id}, away_id={away_team_id}, date={match_date_str}")
-                    
                     matches_data.append({
                         'id': match.id,
-                        'home_team_id': home_team_id,
-                        'away_team_id': away_team_id,
+                        'home_team_id': match.home_team.id,
+                        'away_team_id': match.away_team.id,
                         'home_score': match.home_score,
                         'away_score': match.away_score,
                         'match_date': match_date_str
                     })
                 
-                print(f"DEBUG: Retornando {len(matches_data)} partidas")
-                print(f"DEBUG: Dados JSON: {json.dumps(matches_data)}")
                 return JsonResponse({
                     'success': True,
                     'matches': matches_data
                 })
             # Caso seja uma nova rodada (ID começa com 'new_')
             elif round_id and round_id.startswith('new_') and stage_id:
-                print(f"DEBUG: Nova rodada com id={round_id}, buscando template para stage_id={stage_id}")
                 # Busca o template para saber quantos jogos criar
                 stage = ChampionshipStage.objects.get(id=stage_id)
                 championship = stage.championship
                 template = championship.template
-                
-                print(f"DEBUG: Template encontrado: {template.name if template else 'Nenhum'}")
                 
                 template_stage = TemplateStage.objects.filter(
                     template=template, 
                     name=stage.name
                 ).first()
                 
-                print(f"DEBUG: Template stage encontrado: {template_stage.name if template_stage else 'Nenhum'}")
-                
                 if template_stage:
                     # Retorna jogos vazios com base no template
                     matches_data = []
                     matches_per_round = template_stage.matches_per_round
-                    
-                    print(f"DEBUG: Criando {matches_per_round} partidas vazias")
                     
                     for i in range(matches_per_round):
                         matches_data.append({
@@ -6033,32 +7939,22 @@ def get_matches_by_round(request):
                             'match_date': None
                         })
                     
-                    print(f"DEBUG: Retornando {len(matches_data)} partidas vazias")
                     return JsonResponse({
                         'success': True,
                         'matches': matches_data
                     })
             
-            print("DEBUG: Nenhum critério atendido, retornando lista vazia de partidas")
             return JsonResponse({
                 'success': True,
                 'matches': []
             })
             
         except (ChampionshipRound.DoesNotExist, ChampionshipStage.DoesNotExist) as e:
-            print(f"DEBUG: Erro ao buscar jogos: {str(e)}")
             return JsonResponse({
                 'success': False,
                 'message': f'Erro ao buscar jogos: {str(e)}'
             })
-        except Exception as e:
-            print(f"DEBUG: Erro inesperado: {str(e)}")
-            return JsonResponse({
-                'success': False,
-                'message': f'Erro inesperado: {str(e)}'
-            })
     
-    print("DEBUG: Método inválido para get_matches_by_round")
     return JsonResponse({
         'success': False,
         'message': 'Método inválido'

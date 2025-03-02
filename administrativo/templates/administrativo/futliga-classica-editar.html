@@ -1,11 +1,42 @@
 {% extends "administrativo/futliga-classica-novo.html" %}
+{% load static %}
 
 {% block title %}Editar Futliga Clássica{% endblock %}
 
 {% block heading %}Editar Futliga Clássica{% endblock %}
 
+{% block js_imports %}
+<!-- Carregar o script original para manter o layout, mas com lógica customizada -->
+<script src="{% static 'administrativo/js/futligas-classicas.js' %}"></script>
+
+<script>
+// Desativa imediatamente o handler original do futligas-classicas.js
+$(document).ready(function() {
+    // Renomeia os handlers do botão original para que eles não sejam acionados
+    $('#btn-save').attr('id', 'btn-save-original').hide();
+});
+</script>
+{% endblock %}
+
+{% block buttons %}
+<button type="button" class="btn btn-success ml20" id="btn-save-edit">
+    <i class="glyphicon glyphicon-save mr5"></i> Salvar
+</button>
+<a href="{% url 'administrativo:futligas_classicas' %}" class="btn btn-danger ml15">
+    <i class="fa fa-ban mr5"></i>
+    Cancelar
+</a>
+{% endblock %}
+
 {% block extra_js %}
 <script>
+    // Função para atualizar as posições - movida para escopo global
+    function updatePositions() {
+        $('#prizes-table tbody tr').each(function(index) {
+            $(this).find('.position-input').val(index + 1);
+        });
+    }
+    
     $(document).ready(function() {
         // Preenche os campos com os dados da Futliga
         $('#nome').val('{{ futliga.name }}');
@@ -19,6 +50,13 @@
         } else {
             $('#participantes').val('Todos');
         }
+        // Verificar se o valor foi definido corretamente, caso contrário selecionar por índice
+        if ($('#participantes').val() !== 'Comum' && players === 1) {
+            $('#participantes option').eq(1).prop('selected', true);
+        }
+        if ($('#participantes').val() !== 'Craque' && players === 2) {
+            $('#participantes option').eq(2).prop('selected', true);
+        }
         $('#participantes').trigger('change');
         
         // Frequência de premiação - corrigindo mapeamento dos valores
@@ -30,15 +68,49 @@
         } else if (frequencia === 'annual') {
             $('#frequencia').val('Anual');
         }
+        
+        // Forçar a seleção de frequência mesmo se os valores não coincidirem exatamente
+        if ($('#frequencia').val() === null) {
+            if (frequencia === 'weekly') {
+                $('#frequencia option[value="Semanal"]').prop('selected', true);
+            } else if (frequencia === 'monthly') {
+                $('#frequencia option[value="Mensal"]').prop('selected', true);
+            } else if (frequencia === 'annual') {
+                $('#frequencia option[value="Anual"]').prop('selected', true);
+            }
+        }
+        
+        // IMPORTANTE: Armazenar os valores antes de disparar o evento de mudança
+        // que irá mostrar/esconder os campos
+        var weekday = '{{ futliga.weekday }}';
+        var monthday = '{{ futliga.monthday }}';
+        var month_value = '{{ futliga.month_value }}';
+        
+        // Agora disparamos o evento change para mostrar/esconder campos apropriados
         $('#frequencia').trigger('change');
         
-        // Dia/horário de premiação
-        if (frequencia === 'weekly') {
-            $('#campo-dia-semana').show();
-            $('#dia-premiacao').val('{{ futliga.weekday }}');
-        } else if (frequencia === 'monthly' || frequencia === 'annual') {
-            $('#campo-dia-mes').show();
-            $('#mes-premiacao').val('{{ futliga.monthday }}');
+        // Após mostrar os campos correspondentes, preenchemos com os valores
+        if (frequencia === 'weekly' && weekday) {
+            $('#dia-premiacao').val(weekday);
+        } else if (frequencia === 'monthly' && monthday) {
+            $('#mes-premiacao').val(monthday);
+        } else if (frequencia === 'annual') {
+            // Para frequência anual, definimos AMBOS os campos sempre
+            if (monthday) {
+                $('#dia-ano-premiacao').val(monthday);
+            }
+            
+            // Verificamos se month_value existe E não está vazio
+            if (month_value && month_value.trim() !== '') {
+                $('#mes-ano-premiacao').val(month_value);
+            } else {
+                // Se month_value não existir, definimos um valor padrão (janeiro)
+                $('#mes-ano-premiacao').val('1');
+            }
+            
+            // Verificação adicional para garantir que os campos estejam visíveis
+            $('#campo-mes-ano').show();
+            $('#campo-dia-ano').show();
         }
         
         // Horário de premiação
@@ -48,19 +120,79 @@
         
         // Imagem principal
         {% if futliga.image %}
-        $('#image-preview').html(`
-            <img src="{{ futliga.image.url }}" style="width: 48px; height: 48px; object-fit: contain; cursor: pointer;" onclick="document.getElementById('image').click()">
-            <button type="button" class="btn btn-danger btn-xs" id="remove_image_btn" style="position: absolute; bottom: -7px; right: -30px;">
-                <i class="fa fa-trash"></i>
-            </button>
-        `);
+        $('#image-preview').html(
+            '<img src="{{ futliga.image.url }}" style="width: 48px; height: 48px; object-fit: contain; cursor: pointer;" onclick="document.getElementById(\'image\').click()">' +
+            '<button type="button" class="btn btn-danger btn-xs" id="remove_image_btn" style="position: absolute; bottom: -7px; right: -30px;">' +
+            '<i class="fa fa-trash"></i>' +
+            '</button>'
+        );
         
         // Adiciona handler para o botão de remover
         $('#remove_image_btn').on('click', function() {
             $('#image').val('');
             $('#image-preview').html('<i class="fa fa-file-image-o" style="font-size: 48px; color: #ccc; cursor: pointer;" onclick="document.getElementById(\'image\').click()"></i>');
+            // Adicionar campo hidden para indicar que a imagem deve ser removida
+            if (!$('#remove_image').length) {
+                $('form').append('<input type="hidden" id="remove_image" name="remove_image" value="1">');
+            } else {
+                $('#remove_image').val('1');
+            }
         });
         {% endif %}
+        
+        // Preview de imagem quando alterada
+        $('#image').on('change', function() {
+            var file = this.files[0];
+            if (file) {
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    $('#image-preview').html(
+                        '<img src="' + e.target.result + '" style="width: 48px; height: 48px; object-fit: contain; cursor: pointer;" onclick="document.getElementById(\'image\').click()">' +
+                        '<button type="button" class="btn btn-danger btn-xs" id="remove_image_btn" style="position: absolute; bottom: -7px; right: -30px;">' +
+                        '<i class="fa fa-trash"></i>' +
+                        '</button>'
+                    );
+                    
+                    // Adiciona handler para o botão de remover
+                    $('#remove_image_btn').on('click', function() {
+                        $('#image').val('');
+                        $('#image-preview').html('<i class="fa fa-file-image-o" style="font-size: 48px; color: #ccc; cursor: pointer;" onclick="document.getElementById(\'image\').click()"></i>');
+                        if (!$('#remove_image').length) {
+                            $('form').append('<input type="hidden" id="remove_image" name="remove_image" value="1">');
+                        } else {
+                            $('#remove_image').val('1');
+                        }
+                    });
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+        
+        // Limpar tabela de prêmios antes de adicionar os existentes
+        $('#prizes-table tbody').empty();
+        
+        // Frequência de premiação
+        $('#frequencia').change(function() {
+            var value = $(this).val();
+            
+            // Esconde todos os campos primeiro
+            $('#campo-dia-semana').hide();
+            $('#campo-dia-mes').hide();
+            $('#campo-mes-ano').hide();
+            $('#campo-dia-ano').hide();
+            
+            if (value === 'Semanal') {
+                // Mostra apenas seleção do dia da semana
+                $('#campo-dia-semana').show();
+            } else if (value === 'Mensal') {
+                // Mostra apenas seleção do dia do mês
+                $('#campo-dia-mes').show();
+            } else if (value === 'Anual') {
+                // Mostra seleção do mês e dia do ano
+                $('#campo-mes-ano').show();
+                $('#campo-dia-ano').show();
+            }
+        });
         
         // Prêmios
         {% for prize in futliga.prizes.all %}
@@ -75,7 +207,8 @@
                 'required': true,
                 'min': '1',
                 'value': '{{ prize.position }}',
-                'readonly': true
+                'readonly': true,
+                'style': 'background-color: #eee'
             })
         ));
         
@@ -94,28 +227,35 @@
         // Se já tem imagem, exibe preview
         {% if prize.image %}
         imageCell.find('.prize-image-container').append(
-            $('<div>').attr('class', 'prize-image-preview').html(`
-                <img src="{{ prize.image.url }}" style="width: 32px; height: 32px; object-fit: contain; cursor: pointer;" onclick="$(this).closest('.prize-image-container').find('.prize-image').click()">
-                <button type="button" class="btn btn-danger btn-xs clear-prize-image" style="position: absolute; bottom: -5px; right: -5px;">
-                    <i class="fa fa-trash"></i>
-                </button>
-            `)
+            $('<div>').attr('class', 'prize-image-preview').html(
+                '<div class="image-container" style="position: relative; width: 32px; height: 32px; display: inline-block;">' +
+                '<img src="{{ prize.image.url }}" height="32" width="32" alt="Imagem" style="object-fit: contain; cursor: pointer;" onclick="$(this).closest(\'.prize-image-container\').find(\'.prize-image\').click()">' +
+                '<div class="image-remove-btn" style="position: absolute; bottom: 0; right: 0; background-color: #f8f8f8; border-radius: 50%; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.2);">' +
+                '<i class="fa fa-trash" style="font-size: 10px; color: #FF5252;"></i>' +
+                '</div>' +
+                '</div>'
+            )
         );
         
         // Handler para limpar a imagem
-        imageCell.find('.clear-prize-image').on('click', function(e) {
+        imageCell.find('.image-remove-btn').on('click', function(e) {
             e.stopPropagation();
             var container = $(this).closest('.prize-image-container');
             container.find('.prize-image').val('');
-            container.find('.prize-image-preview').html(`
-                <i class="fa fa-file-image-o" style="font-size: 24px; color: #ccc; cursor: pointer;"></i>
-            `);
+            container.find('.prize-image-preview').html(
+                '<i class="fa fa-file-image-o" style="font-size: 24px; color: #ccc; cursor: pointer;" onclick="$(this).closest(\'.prize-image-container\').find(\'.prize-image\').click()"></i>'
+            );
+            // Adicionar campo hidden para indicar que a imagem do prêmio deve ser removida
+            var rowIndex = $(this).closest('tr').index();
+            if (!$('#remove_prize_image_' + rowIndex).length) {
+                $('form').append('<input type="hidden" id="remove_prize_image_' + rowIndex + '" name="remove_prize_image[]" value="' + rowIndex + '">');
+            }
         });
         {% else %}
         imageCell.find('.prize-image-container').append(
-            $('<div>').attr('class', 'prize-image-preview').html(`
-                <i class="fa fa-file-image-o" style="font-size: 24px; color: #ccc; cursor: pointer;"></i>
-            `)
+            $('<div>').attr('class', 'prize-image-preview').html(
+                '<i class="fa fa-file-image-o" style="font-size: 24px; color: #ccc; cursor: pointer;"></i>'
+            )
         );
         {% endif %}
         
@@ -134,50 +274,162 @@
         
         // Coluna Ações
         newRow.append($('<td>').append(
-            $('<button>').attr({
-                'type': 'button',
-                'class': 'btn btn-danger btn-xs remove-prize',
-                'title': 'Excluir'
-            }).html('<i class="fa fa-trash"></i>').click(function() {
-                $(this).closest('tr').remove();
-                updatePositions();
-            })
+            $('<div>').append(
+                $('<button>').attr({
+                    'type': 'button',
+                    'class': 'btn btn-danger btn-xs mr5 remove-prize',
+                    'title': 'Excluir'
+                }).append(
+                    $('<i>').attr({
+                        'class': 'glyphicon glyphicon-trash',
+                        'data-prize-id': {{ prize.id }}
+                    })
+                )
+            )
         ));
         
         $('#prizes-table tbody').append(newRow);
         
-        // Preview de imagem quando altera
-        newRow.find('.prize-image').change(function() {
+        // Handler para quando uma nova imagem é selecionada
+        imageCell.find('.prize-image').change(function() {
             var file = this.files[0];
             var preview = $(this).siblings('.prize-image-preview');
             
             if (file) {
                 var reader = new FileReader();
                 reader.onload = function(e) {
-                    preview.html(`
-                        <img src="${e.target.result}" style="width: 32px; height: 32px; object-fit: contain; cursor: pointer;" onclick="$(this).closest('.prize-image-container').find('.prize-image').click()">
-                        <button type="button" class="btn btn-danger btn-xs clear-prize-image" style="position: absolute; bottom: -5px; right: -5px;">
-                            <i class="fa fa-trash"></i>
-                        </button>
-                    `);
+                    preview.html(
+                        '<div class="image-container" style="position: relative; width: 32px; height: 32px; display: inline-block;">' +
+                        '<img src="' + e.target.result + '" height="32" width="32" alt="Imagem" style="object-fit: contain; cursor: pointer;" onclick="$(this).closest(\'.prize-image-container\').find(\'.prize-image\').click()">' +
+                        '<div class="image-remove-btn" style="position: absolute; bottom: 0; right: 0; background-color: #f8f8f8; border-radius: 50%; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.2);">' +
+                        '<i class="fa fa-trash" style="font-size: 10px; color: #FF5252;"></i>' +
+                        '</div>' +
+                        '</div>'
+                    );
                     
                     // Handler para limpar a imagem
-                    preview.find('.clear-prize-image').on('click', function(e) {
+                    preview.find('.image-remove-btn').on('click', function(e) {
+                        e.preventDefault();
                         e.stopPropagation();
                         var container = $(this).closest('.prize-image-container');
                         container.find('.prize-image').val('');
-                        container.find('.prize-image-preview').html(`
-                            <i class="fa fa-file-image-o" style="font-size: 24px; color: #ccc; cursor: pointer;"></i>
-                        `);
+                        container.find('.prize-image-preview').html(
+                            '<i class="fa fa-file-image-o" style="font-size: 24px; color: #ccc; cursor: pointer;" onclick="$(this).closest(\'.prize-image-container\').find(\'.prize-image\').click()"></i>'
+                        );
                     });
-                }
+                };
                 reader.readAsDataURL(file);
             }
         });
         {% endfor %}
         
-        // Atualiza o formulário para enviar para a URL de edição
-        $('#save-btn').click(function() {
+        // Handler do botão adicionar prêmio
+        var prizeCounter = {{ futliga.prizes.all|length }};
+        
+        $('#add-prize').click(function() {
+            prizeCounter++;
+            var newPosition = $('#prizes-table tbody tr').length + 1;
+            
+            var newRow = $('<tr>').attr('id', 'prize-row-' + prizeCounter);
+            
+            // Coluna Posição
+            newRow.append($('<td>').append(
+                $('<input>').attr({
+                    'type': 'number',
+                    'class': 'form-control position-input',
+                    'required': true,
+                    'min': '1',
+                    'value': newPosition,
+                    'readonly': true,
+                    'style': 'background-color: #eee'
+                })
+            ));
+            
+            // Coluna Imagem
+            var imageCell = $('<td>').addClass('center-middle').append(
+                $('<div>').attr('class', 'prize-image-container').append(
+                    $('<input>').attr({
+                        'type': 'file',
+                        'class': 'prize-image',
+                        'accept': 'image/*',
+                        'style': 'display: none;'
+                    }),
+                    $('<div>').attr('class', 'prize-image-preview').append(
+                        $('<i>').attr({
+                            'class': 'fa fa-file-image-o',
+                            'style': 'font-size: 24px; color: #ccc; cursor: pointer;'
+                        }).click(function() {
+                            $(this).closest('.prize-image-container').find('.prize-image').click();
+                        })
+                    )
+                )
+            );
+            
+            // Preview de imagem quando altera
+            imageCell.find('.prize-image').change(function() {
+                var file = this.files[0];
+                var preview = $(this).siblings('.prize-image-preview');
+                
+                if (file) {
+                    var reader = new FileReader();
+                    reader.onload = function(e) {
+                        preview.html(
+                            '<div class="image-container" style="position: relative; width: 32px; height: 32px; display: inline-block;">' +
+                            '<img src="' + e.target.result + '" height="32" width="32" alt="Imagem" style="object-fit: contain; cursor: pointer;" onclick="$(this).closest(\'.prize-image-container\').find(\'.prize-image\').click()">' +
+                            '<div class="image-remove-btn" style="position: absolute; bottom: 0; right: 0; background-color: #f8f8f8; border-radius: 50%; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.2);">' +
+                            '<i class="fa fa-trash" style="font-size: 10px; color: #FF5252;"></i>' +
+                            '</div>' +
+                            '</div>'
+                        );
+                        
+                        // Handler para limpar a imagem
+                        preview.find('.image-remove-btn').on('click', function(e) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            var container = $(this).closest('.prize-image-container');
+                            container.find('.prize-image').val('');
+                            container.find('.prize-image-preview').html(
+                                '<i class="fa fa-file-image-o" style="font-size: 24px; color: #ccc; cursor: pointer;" onclick="$(this).closest(\'.prize-image-container\').find(\'.prize-image\').click()"></i>'
+                            );
+                        });
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+            
+            newRow.append(imageCell);
+            
+            // Coluna Prêmio
+            newRow.append($('<td>').append(
+                $('<input>').attr({
+                    'type': 'number',
+                    'class': 'form-control prize-input',
+                    'required': true,
+                    'min': '0',
+                    'value': '10000' // Valor padrão
+                })
+            ));
+            
+            // Coluna Ações
+            newRow.append($('<td>').append(
+                $('<div>').append(
+                    $('<button>').attr({
+                        'type': 'button',
+                        'class': 'btn btn-danger btn-xs mr5 remove-prize',
+                        'title': 'Excluir'
+                    }).append(
+                        $('<i>').attr({
+                            'class': 'glyphicon glyphicon-trash'
+                        })
+                    )
+                )
+            ));
+            
+            $('#prizes-table tbody').append(newRow);
+        });
+        
+        // Novo handler para o botão de salvar da página de edição
+        $('#btn-save-edit').click(function() {
             // Validação do nome
             var nome = $('#nome').val().trim();
             if (!nome) {
@@ -190,7 +442,18 @@
             
             // Dados básicos
             formData.append('name', nome);
-            formData.append('players', $('#participantes').val());
+            
+            // Mapeia o valor de participantes para o formato esperado pelo backend
+            var participantes = $('#participantes').val();
+            // Verificar o valor ou o texto do option selecionado
+            var participantesText = $('#participantes option:selected').text().trim();
+            if (participantes === 'Comum' || participantesText === 'Comuns') {
+                formData.append('players', 'Comum');
+            } else if (participantes === 'Craque' || participantesText === 'Craques') {
+                formData.append('players', 'Craque');
+            } else {
+                formData.append('players', 'Todos'); // Todos
+            }
             
             // Converte a frequência para o formato do backend
             var frequencia = $('#frequencia').val();
@@ -199,10 +462,19 @@
                 award_frequency = 'weekly';
             } else if (frequencia === 'Mensal') {
                 award_frequency = 'monthly';
+            } else if (frequencia === 'Anual') {
+                award_frequency = 'annual';
             }
             formData.append('award_frequency', award_frequency);
             
-            // Imagem principal
+            // Imagem principal - enviar o valor "0" se o campo de remoção estiver presente
+            // para indicar que não queremos excluir a imagem existente se nenhuma nova for enviada
+            if ($('#remove_image').length && $('#remove_image').val() === '1') {
+                formData.append('remove_image', '1');
+            } else {
+                formData.append('remove_image', '0');
+            }
+            
             var mainImage = $('#image')[0].files[0];
             if (mainImage) {
                 formData.append('image', mainImage);
@@ -210,15 +482,47 @@
             
             // Dia/horário de premiação
             if (frequencia === 'Semanal') {
-                // Converte o dia da semana (1-7 para 0-6)
                 var weekday = parseInt($('#dia-premiacao').val());
-                formData.append('weekday', weekday > 0 ? weekday - 1 : 6);
+                formData.append('weekday', weekday);
             } else if (frequencia === 'Mensal') {
-                formData.append('monthday', $('#mes-premiacao').val());
+                var monthday = $('#mes-premiacao').val();
+                formData.append('monthday', monthday);
+            } else if (frequencia === 'Anual') {
+                // Para frequência anual, garantir que ambos os valores sejam enviados
+                var dayValue = $('#dia-ano-premiacao').val();
+                var monthValue = $('#mes-ano-premiacao').val();
+                
+                // Verificar e garantir que os valores não estão vazios
+                if (!dayValue || dayValue.trim() === '') {
+                    dayValue = '1'; // Valor padrão: dia 1
+                }
+                
+                if (!monthValue || monthValue.trim() === '') {
+                    monthValue = '1'; // Valor padrão: janeiro
+                }
+                
+                formData.append('monthday', dayValue);
+                formData.append('month_value', monthValue);
+                
+                // Log para debug
+                console.log('Enviando dados de premiação anual:', { 
+                    dia: dayValue, 
+                    mes: monthValue 
+                });
             }
             
             // Horário é sempre enviado
             formData.append('award_time', $('.clockpicker input').val());
+            
+            // Prêmios a serem removidos
+            $('input[name="remove_prizes[]"]').each(function() {
+                formData.append('remove_prizes[]', $(this).val());
+            });
+            
+            // Imagens de prêmios a serem removidas
+            $('input[name="remove_prize_image[]"]').each(function() {
+                formData.append('remove_prize_image[]', $(this).val());
+            });
             
             // Prêmios
             $('#prizes-table tbody tr').each(function() {
@@ -231,12 +535,18 @@
                     formData.append('prize_descriptions[]', prize);
                     if (prizeImage) {
                         formData.append('prize_images[]', prizeImage);
+                    } else {
+                        // Indica que não há nova imagem para este prêmio
+                        formData.append('prize_images_empty[]', position);
                     }
                 }
             });
 
+            // IMPORTANTE: fazer chamada apenas para a URL de edição
+            console.log('Enviando para a URL de edição: /futliga/classica/editar/{{ futliga.id }}/');
+            
             $.ajax({
-                url: '{% url "administrativo:futliga_classica_editar" futliga.id %}',
+                url: '/futliga/classica/editar/{{ futliga.id }}/',
                 type: 'POST',
                 data: formData,
                 processData: false,
@@ -257,12 +567,58 @@
             });
         });
     });
+    
+    // Variável para armazenar temporariamente a linha a ser excluída e o ID do prêmio
+    var rowToDelete = null;
+    var prizeIdToDelete = null;
+    
+    // Configurar handler para botões de excluir adicionados dinamicamente
+    $(document).on('click', '.remove-prize', function(e) {
+        e.preventDefault();
+        rowToDelete = $(this).closest('tr');
+        prizeIdToDelete = $(this).find('i').data('prize-id');
+        $('#modal-alert2').modal('show');
+    });
+    
+    // Handler para botão de confirmação de exclusão
+    $('#confirm-delete-prize').click(function() {
+        if (rowToDelete) {
+            rowToDelete.remove();
+            updatePositions();
+            
+            // Adicionar campo hidden para indicar que o prêmio deve ser removido
+            if (prizeIdToDelete) {
+                if (!$('#remove_prize_' + prizeIdToDelete).length) {
+                    $('form').append('<input type="hidden" id="remove_prize_' + prizeIdToDelete + '" name="remove_prizes[]" value="' + prizeIdToDelete + '">');
+                }
+            }
+            
+            $('#modal-alert2').modal('hide');
+            rowToDelete = null;
+            prizeIdToDelete = null;
+        }
+    });
 </script>
 {% endblock %}
 
-<div class="ibox-footer text-center">
-    <a href="{% url 'administrativo:futligas_classicas' %}" class="btn btn-danger" style="width: 120px;">Cancelar</a>
-    <button type="button" class="btn btn-success" id="btn-save" style="width: 120px;">Salvar</button>
-</div>
-
-</script> 
+<!-- Modal de confirmação para exclusão de prêmio -->
+<div class="modal inmodal" id="modal-alert2" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content animated fadeIn">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal">
+                    <span aria-hidden="true">&times;</span><span class="sr-only">Fechar</span>
+                </button>
+                <h4 class="modal-title">Confirmar exclusão</h4>
+            </div>
+            <div class="modal-body">
+                <p>Deseja realmente excluir este prêmio?</p>
+                <input type="hidden" id="prize-to-delete" value="">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-white" data-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-danger" id="confirm-delete-prize">Excluir</button>
+            </div>
+        </div>
+    </div>
+</div> 

@@ -4,6 +4,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="url-prefix" content="{% url 'administrativo:index' as index_url %}{{ index_url|slice:':-1' }}">
 
     <title>Futligas Jogadores</title>
 
@@ -18,69 +19,72 @@
     <!-- Custom -->
     <link href="{% static 'administrativo/css/custom.css' %}" rel="stylesheet">
     <!-- Favicon -->
-    <link rel="icon" href="{% static 'administrativo/img/futmundi.ico' %}" type="image/x-icon">
+    <link rel="icon" href="{% static 'administrativo/img/futmundi.ico' %}" type="image/png">
 </head>
 <body>
+    <!-- CSRF Token para requisições AJAX -->
+    {% csrf_token %}
+    
     <div id="wrapper">
         <nav class="navbar-default navbar-static-side">
             <div class="sidebar-collapse">
                 <ul class="nav metismenu" id="side-menu">
                     <li class="nav-header">
                         <div class="dropdown profile-element">
-                            <a href="{% url "administrativo:usuarios" %}">
+                            <a href="{% url 'administrativo:usuarios' %}">
                                 <img src="{% static 'administrativo/img/logo.svg' %}" alt="Futmundi logo">
                             </a>
                         </div>
                         <div class="logo-element">
-                            <a href="{% url "administrativo:usuarios" %}">
+                            <a href="{% url 'administrativo:usuarios' %}">
                                 <img src="{% static 'administrativo/img/logosm.svg' %}" alt="Futmundi logo">
                             </a>
                         </div>
                     </li>
                     <li class="active">
-                        <a href="{% url "administrativo:usuarios" %}"><i class="fa fa-user"></i> <span class="nav-label">Usuários</span></a>
+                        <a href="{% url 'administrativo:usuarios' %}"><i class="fa fa-user"></i> <span class="nav-label">Usuários</span></a>
                     </li>
                     <li>
                         <a href="#"><i class="fa fa-trophy"></i> <span class="nav-label">Campeonatos</span><span class="fa arrow"></span></a>
                         <ul class="nav nav-second-level collapse">
-                            <li><a href="{% url "administrativo:ambitos" %}">Âmbitos</a></li>
-                            <li><a href="{% url "administrativo:campeonatos" %}">Campeonatos</a></li>
-                            <li><a href="{% url "administrativo:templates" %}">Templates</a></li>
-                            <li><a href="{% url "administrativo:times" %}">Times</a></li>
+                            <li><a href="{% url 'administrativo:ambitos' %}">Âmbitos</a></li>
+                            <li><a href="{% url 'administrativo:campeonatos' %}">Campeonatos</a></li>
+                            <li><a href="{% url 'administrativo:templates' %}">Templates</a></li>
+                            <li><a href="{% url 'administrativo:times' %}">Times</a></li>
                         </ul>
                     </li>
                     <li>
                         <a href="#"><i class="fa fa-shopping-cart"></i> <span class="nav-label">Pacotes</span><span class="fa arrow"></span></a>
                         <ul class="nav nav-second-level collapse">
-                            <li><a href="{% url "administrativo:futcoins" %}">Futcoins</a></li>
-                            <li><a href="{% url "administrativo:planos" %}">Planos</a></li>
+                            <li><a href="{% url 'administrativo:futcoins' %}">Futcoins</a></li>
+                            <li><a href="{% url 'administrativo:planos' %}">Planos</a></li>
                         </ul>
                     </li>
                     <li>
                         <a href="#"><i class="fa fa-diamond"></i> <span class="nav-label">Futligas</span><span class="fa arrow"></span></a>
                         <ul class="nav nav-second-level collapse">
-                            <li><a href="{% url "administrativo:futligas_classicas" %}">Clássicas</a></li>
-                            <li><a href="{% url "administrativo:futligas_jogadores" %}">Jogadores</a></li>
+                            <li><a href="{% url 'administrativo:futligas_classicas' %}">Clássicas</a></li>
+                            <li><a href="{% url 'administrativo:futligas_jogadores' %}">Jogadores</a></li>
                         </ul>
                     </li>
                     <li>
                         <a href="#"><i class="fa fa-globe"></i> <span class="nav-label">Locais</span><span class="fa arrow"></span></a>
                         <ul class="nav nav-second-level collapse">
-                            <li><a href="{% url "administrativo:continentes" %}">Continentes</a></li>
-                            <li><a href="{% url "administrativo:paises" %}">Países</a></li>
-                            <li><a href="{% url "administrativo:estados" %}">Estados</a></li>
+                            <li><a href="{% url 'administrativo:continentes' %}">Continentes</a></li>
+                            <li><a href="{% url 'administrativo:paises' %}">Países</a></li>
+                            <li><a href="{% url 'administrativo:estados' %}">Estados</a></li>
                         </ul>
                     </li>
                     <li>
                         <a href="#"><i class="fa fa-gear"></i> <span class="nav-label">Configurações</span><span class="fa arrow"></span></a>
                         <ul class="nav nav-second-level collapse">
-                            <li><a href="{% url "administrativo:parametros" %}">Parâmetros</a></li>
-                            <li><a href="{% url "administrativo:termo" %}">Termo</a></li>
-                            <li><a href="{% url "administrativo:notificacoes" %}">Notificações</a></li>
+                            <li><a href="{% url 'administrativo:parametros' %}">Parâmetros</a></li>
+                            <li><a href="{% url 'administrativo:termo' %}">Termo</a></li>
+                            <li><a href="{% url 'administrativo:notificacoes' %}">Notificações</a></li>
                         </ul>
                     </li>
                     <li>
-                        <a href="{% url "administrativo:relatorios" %}"><i class="fa fa-pie-chart"></i> <span class="nav-label">Relatórios</span></a>
+                        <a href="{% url 'administrativo:relatorios' %}"><i class="fa fa-pie-chart"></i> <span class="nav-label">Relatórios</span></a>
                     </li>
                 </ul>
             </div>
@@ -101,7 +105,7 @@
                             </a>
                             <ul class="dropdown-menu dropdown-alerts">
                                 <li>
-                                    <a href="{% url "administrativo:administradores" %}" class="dropdown-item">
+                                    <a href="{% url 'administrativo:administradores' %}" class="dropdown-item">
                                         <div>
                                             <i class="fa fa-users"></i> Administradores
                                         </div>
@@ -109,7 +113,7 @@
                                 </li>
                                 <li class="dropdown-divider"></li>
                                 <li>
-                                    <a href="{% url "administrativo:login" %}" class="dropdown-item">
+                                    <a href="{% url 'administrativo:logout' %}" class="dropdown-item">
                                         <div>
                                             <i class="fa fa-sign-out"></i> Sair
                                         </div>
@@ -139,28 +143,28 @@
                                     <div class="panel-body">
                                         <div class="row">
                                             <div class="col-lg-4">
-                                                <form id="form-futliga" class="mt10" data-create-url="{% url 'administrativo:futliga_jogador_novo' %}" enctype="multipart/form-data">
+                                                <form id="form-futliga" class="mt10">
                                                     {% csrf_token %}
                                                     <div class="form-group col-lg-6">
-                                                        <input type="text" id="name" name="name" class="form-control" required>
+                                                        <input type="text" id="name" class="form-control" required>
                                                         <label class="form-control-placeholder" for="name">Nome</label>
                                                     </div>
                                                     <div class="card ui-card-shadow ui-widget ui-widget-content ui-corner-all card-small ml15">
                                                         <div class="card-heading">
                                                             <h5>Imagem</h5>
                                                         </div>
-                                                        <div class="card-content" id="image-preview">
-                                                            <label class="label-card label-card-small">
-                                                                <i class="fa fa-file-image-o label-content" style="cursor:pointer;"></i>
-                                                                <input accept="image/*" type="file" name="image" id="image" class="input-image">
-                                                            </label>
+                                                        <div class="card-content text-center">
+                                                            <div id="image-preview" style="display: flex; align-items: center; justify-content: center; padding: 0 10px 10px 10px; margin-top: -7px;">
+                                                                <i class="fa fa-file-image-o" style="font-size: 32px; color: #ccc; cursor: pointer;" onclick="document.getElementById('image').click()"></i>
+                                                            </div>
+                                                            <input type="file" id="image" name="image" class="input-image" accept="image/*" style="display: none;">
                                                         </div>
                                                     </div>
                                                     <div class="form-group mt10">
                                                         <div class="col-lg-12">
                                                             <div class="row">
                                                                 <div class="col-lg-6">
-                                                                    <input type="number" min="0" id="players" name="players" class="form-control" required>
+                                                                    <input type="number" min="0" id="players" class="form-control" required>
                                                                     <label class="form-control-placeholder" for="players">Qtde Participantes</label>
                                                                 </div>
                                                             </div>
@@ -170,7 +174,7 @@
                                                         <div class="col-lg-12">
                                                             <div class="row">
                                                                 <div class="col-lg-6">
-                                                                    <input type="number" min="0" id="premium_players" name="premium_players" class="form-control" required>
+                                                                    <input type="number" min="0" id="premium_players" class="form-control" required>
                                                                     <label class="form-control-placeholder" for="premium_players">Qtde Craques</label>
                                                                 </div>
                                                             </div>
@@ -180,13 +184,13 @@
                                                         <div class="col-lg-12">
                                                             <div class="row">
                                                                 <div class="col-lg-6 mt5">
-                                                                    <div class="i-checks"><label> <input type="checkbox" id="owner_premium" name="owner_premium"> Dono Craque</label></div>
+                                                                    <div class="i-checks"><label> <input type="checkbox" id="owner_premium"> Dono Craque</label></div>
                                                                 </div>
                                                             </div>
                                                         </div>
                                                         <div class="col-lg-12 mt25">
                                                             <button type="submit" id="submit-btn" class="btn btn-primary"><i class="fa fa-plus mr5"></i> Adicionar</button>
-                                                            <button type="button" class="btn btn-primary ml20"><i class="fa fa-upload mr5"></i> Importar</button>
+                                                            <button type="button" id="btn-importar" class="btn btn-primary ml20"><i class="fa fa-upload mr5"></i> Importar</button>
                                                         </div>
                                                     </div>
                                                 </form>
@@ -208,45 +212,7 @@
                                                             </tr>
                                                         </thead>
                                                         <tbody>
-                                                            <tr>
-                                                                <td>Iniciante</td>
-                                                                <td class="center-middle"><img src="{% static 'administrativo/img/Corinthians.png' %}" class="img-sm" alt="Imagem"></td>
-                                                                <td>100</td>
-                                                                <td>50</td>
-                                                                <td>Sim</td>
-                                                                <td>
-                                                                    <div>
-                                                                        <button type="button" class="btn btn-info btn-xs mr5" title="Editar"><i class="glyphicon glyphicon-pencil"></i></button>
-                                                                        <button type="button" class="btn btn-danger btn-xs mr5" title="Excluir"><i class="glyphicon glyphicon-trash"></i></button>
-                                                                    </div>
-                                                                </td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td>Nacional</td>
-                                                                <td class="center-middle"><img src="{% static 'administrativo/img/Corinthians.png' %}" class="img-sm" alt="Imagem"></td>
-                                                                <td>100</td>
-                                                                <td>50</td>
-                                                                <td>Sim</td>
-                                                                <td>
-                                                                    <div>
-                                                                        <button type="button" class="btn btn-info btn-xs mr5" title="Editar"><i class="glyphicon glyphicon-pencil"></i></button>
-                                                                        <button type="button" class="btn btn-danger btn-xs mr5" title="Excluir"><i class="glyphicon glyphicon-trash"></i></button>
-                                                                    </div>
-                                                                </td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td>Internacional</td>
-                                                                <td class="center-middle"><img src="{% static 'administrativo/img/Corinthians.png' %}" class="img-sm" alt="Imagem"></td>
-                                                                <td>100</td>
-                                                                <td>50</td>
-                                                                <td>Sim</td>
-                                                                <td>
-                                                                    <div>
-                                                                        <button type="button" class="btn btn-info btn-xs mr5" title="Editar"><i class="glyphicon glyphicon-pencil"></i></button>
-                                                                        <button type="button" class="btn btn-danger btn-xs mr5" title="Excluir"><i class="glyphicon glyphicon-trash"></i></button>
-                                                                    </div>
-                                                                </td>
-                                                            </tr>
+                                                            <!-- Os dados serão inseridos dinamicamente pelo JavaScript -->
                                                         </tbody>
                                                     </table>
                                                 </div>
@@ -257,14 +223,12 @@
                                 <div id="premios" class="tab-pane">
                                     <div class="panel-body">
                                         <div class="table-responsive">
-                                            <table class="table table-bordered table-hover">
+                                            <table class="table table-bordered table-hover" id="premiosTable">
                                                 <thead>
                                                     <tr>
                                                         <th class="per15">Posição</th>
                                                         <th class="per15 center-middle">Imagem</th>
-                                                        <th class="per15">Iniciante</th>
-                                                        <th class="per15">Nacional</th>
-                                                        <th class="per15">Internacional</th>
+                                                        <!-- As colunas de níveis serão adicionadas dinamicamente pelo JavaScript -->
                                                         <th class="per15">Ações</th>
                                                     </tr>
                                                 </thead>
@@ -272,24 +236,18 @@
                                                     <tr>
                                                         <td>1°</td>
                                                         <td class="center-middle"><img src="{% static 'administrativo/img/Corinthians.png' %}" height="32" width="32" alt="Imagem"></td>
-                                                        <td>1000</td>
-                                                        <td>1000</td>
-                                                        <td>1000</td>
                                                         <td>
                                                             <div>
-                                                                <button type="button" class="btn btn-danger btn-xs mr5" title="Excluir"><i class="glyphicon glyphicon-trash" data-toggle="modal" data-target="#modal-alert2"></i></button>
+                                                                <button type="button" class="btn btn-danger btn-xs mr5 delete-premio" title="Excluir"><i class="glyphicon glyphicon-trash"></i></button>
                                                             </div>
                                                         </td>
                                                     </tr>
                                                     <tr>
                                                         <td>2°</td>
                                                         <td class="center-middle"><img src="{% static 'administrativo/img/Corinthians.png' %}" height="32" width="32" alt="Imagem"></td>
-                                                        <td>1000</td>
-                                                        <td>1000</td>
-                                                        <td>1000</td>
                                                         <td>
                                                             <div>
-                                                                <button type="button" class="btn btn-danger btn-xs mr5" title="Excluir"><i class="glyphicon glyphicon-trash" data-toggle="modal" data-target="#modal-alert2"></i></button>
+                                                                <button type="button" class="btn btn-danger btn-xs mr5 delete-premio" title="Excluir"><i class="glyphicon glyphicon-trash"></i></button>
                                                             </div>
                                                         </td>
                                                     </tr>
@@ -297,7 +255,7 @@
                                             </table>
                                         </div>
                                         <div class="row col-lg-12 mt15 mb20">
-                                            <button type="button" class="btn btn-primary"><i class="fa fa-plus mr5"></i> Adicionar</button>
+                                            <button type="button" class="btn btn-primary btn-adicionar-premio"><i class="fa fa-plus mr5"></i> Adicionar</button>
                                         </div>
                                     </div>
                                 </div>
@@ -413,9 +371,73 @@
     <script src="{% static 'administrativo/js/plugins/tablednd/jquery.tablednd.min.js' %}"></script>
     <script src="{% static 'administrativo/js/plugins/clockpicker/clockpicker.js' %}"></script>
     <script src="{% static 'administrativo/js/settings.js' %}"></script>
-    <!-- Excel -->
+    <!-- Adiciona biblioteca XLSX para importação e exportação de Excel -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <!-- Página específica -->
+    <!-- Futligas Jogadores Script -->
     <script src="{% static 'administrativo/js/futligas-jogadores.js' %}"></script>
+    
+    <!-- Modal de Confirmação de Exclusão -->
+    <div class="modal inmodal" id="modalConfirmDelete" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content animated fadeIn">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                    <h4 class="modal-title">Tem certeza?</h4>
+                </div>
+                <div class="modal-body">
+                    <p>Tem certeza que deseja excluir o nível <strong id="levelNameToDelete"></strong>?</p>
+                    <p class="text-danger">Esta ação não poderá ser desfeita.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-danger" id="confirmDeleteButton">Excluir</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal de Importação -->
+    <div class="modal inmodal" id="modalImport" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content animated fadeIn">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                    <h4 class="modal-title">Importar Níveis</h4>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="importFile">Selecione o arquivo</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" readonly>
+                            <div class="input-group-append">
+                                <span class="input-group-text btn btn-default btn-file">
+                                    <span class="fileinput-new">Selecionar arquivo</span>
+                                    <span class="fileinput-exists">Alterar</span>
+                                    <input type="file" id="importFile" name="file" accept=".xlsx,.xls" required/>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="background-color: #d9edf7; border: 1px solid #bce8f1; border-radius: 4px; padding: 15px; margin-top: 15px; color: #31708f;">
+                        <h5><strong>Instruções:</strong></h5>
+                        <p>O arquivo Excel deve conter as seguintes colunas:</p>
+                        <ul>
+                            <li><strong>Nível</strong> - Nome do nível</li>
+                            <li><strong>Participantes</strong> - Quantidade de participantes</li>
+                            <li><strong>Craques</strong> - Quantidade de craques</li>
+                            <li><strong>Dono Craque</strong> - Valores "Sim" ou "Não"</li>
+                            <li>Colunas adicionais com posições (1, 2, 3, etc.) para prêmios</li>
+                        </ul>
+                        <p><small>Observação: Não é possível importar imagens via Excel.</small></p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="confirmImportButton">Importar</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

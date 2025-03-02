@@ -61,8 +61,13 @@ $(document).ready(function() {
 
 //TableDND
 $(document).ready(function() {
-  // Initialise the table
-  $("#table").tableDnD();
+  // Verifica se a função tableDnD existe antes de tentar chamá-la
+  if ($.fn.tableDnD) {
+    // Initialise the table
+    $("#table").tableDnD();
+  } else {
+    console.warn('Plugin TableDnD não está disponível.');
+  }
 });
 
 // Colorpicker

@@ -151,10 +151,46 @@
                 opacity: 1;
                 padding: 7px 0 0 1px;
             }
+            
+            /* Adiciona estilos para que labels dos campos flutuem automaticamente quando há valor */
+            .form-control:not(:placeholder-shown) + .form-control-placeholder {
+                font-size: 75%;
+                transform: translate3d(0, -100%, 0);
+                opacity: 1;
+                padding: 7px 0 0 1px;
+            }
             .control-label {
                 opacity: 0.9;
                 font-size: 75%;
                 margin-bottom: 5px;
+            }
+            
+            /* Estilos para os botões de rádio */
+            .radio-option {
+                display: inline-block;
+                margin-right: 20px;
+            }
+            .radio-circle {
+                display: inline-block;
+                width: 22px;
+                height: 22px;
+                border-radius: 50%;
+                border: 2px solid #d1d1d1;
+                position: relative;
+                top: 5px;
+                margin-right: 8px;
+            }
+            .radio-circle.active {
+                border-color: #1ab394;
+                background-color: #1ab394;
+                color: white;
+            }
+            .radio-circle i {
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                color: white;
             }
         </style>
     </head>
@@ -267,10 +303,12 @@
                     <div class="row">
                         <div class="col-lg-12">
                             <div class="ibox-content">
-                                <div class="row mt10">
-                                    <div class="col-lg-4">
-                                        <form method="post" class="mt10" id="notificationForm">
-                                            {% csrf_token %}
+                                <form method="post" id="notificationForm">
+                                    {% csrf_token %}
+                                    <!-- Input oculto para sinalizar se é agendado ou imediato -->
+                                    <input type="hidden" name="is_scheduled" id="is_scheduled" value="{% if notification.send_at %}true{% else %}false{% endif %}">
+                                    <div class="row mt10">
+                                        <div class="col-lg-4">
                                             <div class="form-group col-lg-12">
                                                 <div class="row">
                                                     <div class="col-lg-6 mtm20">
@@ -310,28 +348,38 @@
                                                 <button type="submit" class="btn btn-success ml15"><i class="fa fa-check mr5"></i> Salvar</button>
                                                 <a href="{% url 'administrativo:notificacoes' %}" class="btn btn-danger ml15"><i class="fa fa-times mr5"></i> Cancelar</a>
                                             </div>
-                                        </form>
-                                    </div>
-                                    <div class="col-lg-4 ml30 mt10">
-                                        <div class="row">
-                                            <div class="form-group col-lg-6 ml10">
-                                                <div class="i-checks"><label> <input type="radio" value="option1" name="a" {% if not notification.send_at %}checked{% endif %}> <i></i>Envio Imediato</label></div>
-                                            </div>
-                                            <div class="form-group col-lg-6 mlm50">
-                                                <div class="i-checks"><label> <input type="radio" value="option2" name="a" {% if notification.send_at %}checked{% endif %}> <i></i>Agendada</label></div>
-                                            </div> 
                                         </div>
-                                        <div class="form-group col-lg-8 mtm10">
-                                            <label class="control-label">Data Envio</label>
-                                            <div class="input-group date" data-target-input="nearest">
-                                                <input type="text" class="form-control datetimepicker-input" name="send_at" id="datetimepicker" data-toggle="datetimepicker" data-target="#datetimepicker" value="{{ notification.send_at|date:'d/m/Y H:i'|default:'' }}" {% if not notification.send_at %}disabled{% endif %}>
-                                                <div class="input-group-append" data-target="#datetimepicker" data-toggle="datetimepicker">
-                                                    <div class="input-group-text"><i class="fa fa-calendar"></i></div>
+                                        <div class="col-lg-4 ml30 mt10">
+                                            <div class="row">
+                                                <div class="form-group col-lg-6 ml10">
+                                                    <div class="radio-option">
+                                                        <input type="radio" value="option1" name="a" id="envio-imediato" style="display:none;" {% if not notification.send_at %}checked{% endif %}>
+                                                        <span class="radio-circle {% if not notification.send_at %}active{% endif %}"></span>
+                                                        <label for="envio-imediato">Envio Imediato</label>
+                                                    </div>
+                                                </div>
+                                                <div class="form-group col-lg-6 mlm50">
+                                                    <div class="radio-option">
+                                                        <input type="radio" value="option2" name="a" id="envio-agendado" style="display:none;" {% if notification.send_at %}checked{% endif %}>
+                                                        <span class="radio-circle {% if notification.send_at %}active{% endif %}">
+                                                            {% if notification.send_at %}<i class="fa fa-check"></i>{% endif %}
+                                                        </span>
+                                                        <label for="envio-agendado">Agendada</label>
+                                                    </div>
+                                                </div> 
+                                            </div>
+                                            <div class="form-group col-lg-8 mtm10" id="data-envio-container" {% if not notification.send_at %}style="display: none;"{% endif %}>
+                                                <label class="control-label">Data Envio</label>
+                                                <div class="input-group date" id="datetimepicker" data-target-input="nearest">
+                                                    <input type="text" class="form-control datetimepicker-input" name="send_at" data-target="#datetimepicker" value="{{ notification.send_at|date:'d/m/Y H:i'|default:'' }}" {% if not notification.send_at %}disabled{% endif %}>
+                                                    <div class="input-group-append" data-target="#datetimepicker" data-toggle="datetimepicker">
+                                                        <div class="input-group-text"><i class="fa fa-calendar"></i></div>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    </div> 
-                                </div>
+                                        </div> 
+                                    </div>
+                                </form>
                             </div>
                         </div>
                     </div>
@@ -361,7 +409,7 @@
                 closeButton: true,
                 progressBar: true,
                 showMethod: 'slideDown',
-                timeOut: 2000,
+                timeOut: 1500,
                 preventDuplicates: true,
                 positionClass: 'toast-top-right'
             };
@@ -369,6 +417,12 @@
             {% if messages %}
                 {% for message in messages %}
                     toastr.{{ message.tags }}("{{ message }}");
+                    // Se for uma mensagem de sucesso, redirecionar após 1.5 segundos
+                    {% if message.tags == 'success' %}
+                    setTimeout(function() {
+                        window.location.href = "{% url 'administrativo:notificacoes' %}";
+                    }, 1500);
+                    {% endif %}
                 {% endfor %}
             {% endif %}
 
@@ -379,6 +433,29 @@
                 minimumResultsForSearch: Infinity // Esconde a caixa de busca
             });
 
+            // Inicializa os botões de rádio personalizados
+            if ($('#envio-agendado').is(':checked')) {
+                $('.radio-option').each(function() {
+                    if ($(this).find('#envio-agendado').length) {
+                        $(this).find('.radio-circle').addClass('active').html('<i class="fa fa-check"></i>');
+                        $('#data-envio-container').show();
+                        $('.datetimepicker-input').prop('disabled', false);
+                    } else {
+                        $(this).find('.radio-circle').removeClass('active').html('');
+                    }
+                });
+            } else {
+                $('.radio-option').each(function() {
+                    if ($(this).find('#envio-imediato').length) {
+                        $(this).find('.radio-circle').addClass('active').html('');
+                        $('#data-envio-container').hide();
+                        $('.datetimepicker-input').prop('disabled', true);
+                    } else {
+                        $(this).find('.radio-circle').removeClass('active').html('');
+                    }
+                });
+            }
+
             // Inicializa o iCheck
             $('.i-checks').iCheck({
                 checkboxClass: 'icheckbox_square-green',
@@ -388,6 +465,7 @@
             // Inicializa o DateTimePicker
             $('#datetimepicker').datetimepicker({
                 format: 'DD/MM/YYYY HH:mm',
+                locale: 'pt-br',
                 icons: {
                     time: 'fa fa-clock-o',
                     date: 'fa fa-calendar',
@@ -398,6 +476,10 @@
                     today: 'fa fa-screenshot',
                     clear: 'fa fa-trash',
                     close: 'fa fa-remove'
+                },
+                buttons: {
+                    showToday: true,
+                    showClose: true
                 }
             });
 
@@ -472,12 +554,40 @@
             });
 
             // Controle do campo de data baseado no tipo de envio
-            $('input[name="a"]').on('ifChecked', function(event) {
-                if ($(this).val() === 'option1') {
-                    $('#datetimepicker').prop('disabled', true).val('');
+            $('.radio-option').on('click', function() {
+                var radioId = $(this).find('input[type="radio"]').attr('id');
+                
+                // Desativa todos os círculos
+                $('.radio-circle').removeClass('active');
+                $('.radio-circle i').remove();
+                
+                // Ativa o círculo correspondente
+                var circle = $(this).find('.radio-circle');
+                circle.addClass('active');
+                
+                // Se for o botão agendado, adiciona o ícone de check
+                if (radioId === 'envio-agendado') {
+                    circle.html('<i class="fa fa-check"></i>');
+                    $('#data-envio-container').show();
+                    $('.datetimepicker-input').prop('disabled', false);
+                    $('#is_scheduled').val('true');
+                    
+                    // Ativa o datetimepicker se não tiver uma data já selecionada
+                    if (!$('.datetimepicker-input').val()) {
+                        setTimeout(function() {
+                            $('#datetimepicker').datetimepicker('show');
+                        }, 200);
+                    }
                 } else {
-                    $('#datetimepicker').prop('disabled', false);
+                    circle.html('');
+                    $('#data-envio-container').hide();
+                    $('.datetimepicker-input').prop('disabled', true).val('');
+                    $('#datetimepicker').datetimepicker('clear');
+                    $('#is_scheduled').val('false');
                 }
+                
+                // Marca o botão de rádio real como selecionado
+                $(this).find('input[type="radio"]').prop('checked', true);
             });
 
             // Adiciona validação do formulário
@@ -486,9 +596,9 @@
                 var mensagem = $('#mensagem').val();
                 var tipo = $('#tipo').val();
                 var pacote = $('#pacote').val();
-                var envioImediato = $('input[name="a"][value="option1"]').is(':checked');
-                var dataEnvio = $('#datetimepicker').val();
-
+                var envioAgendado = $('#envio-agendado').is(':checked');
+                var dataEnvio = $('.datetimepicker-input').val();
+                
                 if (!titulo || !mensagem) {
                     e.preventDefault();
                     toastr.error('Por favor, preencha todos os campos obrigatórios');
@@ -501,12 +611,32 @@
                     return false;
                 }
 
-                if (!envioImediato && !dataEnvio) {
+                if (envioAgendado && !dataEnvio) {
                     e.preventDefault();
                     toastr.error('Por favor, selecione uma data de envio');
                     return false;
                 }
+                
+                // Certifica-se de que o campo de data/hora está habilitado para envio
+                if (envioAgendado) {
+                    $('.datetimepicker-input').prop('disabled', false);
+                }
 
+                // Adiciona um campo hidden para indicar que estamos salvando
+                $(this).append('<input type="hidden" name="show_success_toast" value="true">');
+                
+                // Altera o visual do botão para mostrar que está salvando
+                var $submitBtn = $('button[type="submit"]');
+                $submitBtn.html('<i class="fa fa-spinner fa-spin mr5"></i> Salvando...').prop('disabled', true);
+                
+                // Adiciona um parâmetro à URL de redirecionamento
+                $(this).attr('action', $(this).attr('action') || window.location.href);
+                if ($(this).attr('action').indexOf('?') === -1) {
+                    $(this).attr('action', $(this).attr('action') + '?success=true');
+                } else {
+                    $(this).attr('action', $(this).attr('action') + '&success=true');
+                }
+                
                 return true;
             });
         });

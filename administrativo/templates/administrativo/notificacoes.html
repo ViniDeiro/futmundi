@@ -332,6 +332,23 @@
                 timeOut: 1500
             };
 
+            {% if messages %}
+                {% for message in messages %}
+                    toastr.{{ message.tags }}("{{ message }}");
+                {% endfor %}
+            {% endif %}
+
+            // Verifica se o usuário veio de uma operação de salvamento
+            var urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('success') === 'true') {
+                // Mostra o toast de sucesso
+                toastr.success('Notificação atualizada com sucesso!');
+                
+                // Remove o parâmetro success da URL para não mostrar o toast ao recarregar
+                var newUrl = window.location.protocol + '//' + window.location.host + window.location.pathname;
+                window.history.replaceState({}, document.title, newUrl);
+            }
+
             // Checkbox "Selecionar todos"
             $('.checkAll').on('change', function() {
                 $('.checkItem').prop('checked', $(this).prop('checked'));

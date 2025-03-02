@@ -113,7 +113,7 @@
                     </div>
                     <ul class="nav navbar-top-links navbar-right">
                         <li>
-                            <span class="m-r-sm text-muted welcome-message">Andrews Cristhian</span>
+                            <span class="m-r-sm text-muted welcome-message">{{ request.session.admin_name }}</span>
                         </li>
                         <li class="dropdown">
                             <a class="dropdown-toggle count-info" data-toggle="dropdown" href="#">
@@ -300,13 +300,15 @@
                             </div>
                         </div>
                         <div class="panel panel-default col-lg-12 mtm25 p15">
+                            {% block buttons %}
                             <button type="button" class="btn btn-success ml20" id="btn-save">
                                 <i class="glyphicon glyphicon-save mr5"></i> Salvar
                             </button>
-                            <button type="button" class="btn btn-danger ml15" onclick="window.location.href='{% url 'administrativo:futligas_classicas' %}'">
+                            <a href="{% url 'administrativo:futligas_classicas' %}" class="btn btn-danger ml15">
                                 <i class="fa fa-ban mr5"></i>
                                 Cancelar
-                            </button>
+                            </a>
+                            {% endblock %}
                         </div>
                     </div>
                 </div>
@@ -398,6 +400,27 @@
             </div>
         </div>
     </div>
+    <!-- Modal de confirmação para exclusão de prêmio -->
+    <div class="modal inmodal" id="modal-alert2" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content animated fadeIn">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal">
+                        <span aria-hidden="true">&times;</span><span class="sr-only">Fechar</span>
+                    </button>
+                    <h4 class="modal-title">Confirmar exclusão</h4>
+                </div>
+                <div class="modal-body">
+                    <p>Deseja realmente excluir este prêmio?</p>
+                    <input type="hidden" id="prize-to-delete" value="">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-white" data-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-danger" id="confirm-delete-prize">Excluir</button>
+                </div>
+            </div>
+        </div>
+    </div>
     <!-- Mainly scripts -->
     <script src="{% static 'administrativo/js/jquery-3.4.1.min.js' %}"></script>
     <script src="{% static 'administrativo/js/popper.min.js' %}"></script>
@@ -412,7 +435,10 @@
     <script src="{% static 'administrativo/js/plugins/iCheck/icheck.min.js' %}"></script>
     <script src="{% static 'administrativo/js/plugins/clockpicker/clockpicker.js' %}"></script>
     <script src="{% static 'administrativo/js/settings.js' %}"></script>
+    
+    {% block js_imports %}
     <script src="{% static 'administrativo/js/futligas-classicas.js' %}"></script>
+    {% endblock %}
 
     <script>
         $(document).ready(function() {
@@ -429,6 +455,33 @@
 
             // Trigger inicial para mostrar/esconder campos de acordo com a frequência
             $('#frequencia').trigger('change');
+            
+            // Variável para armazenar temporariamente a linha a ser excluída
+            var rowToDelete = null;
+            
+            // Configurar handler para botões de excluir adicionados dinamicamente
+            $(document).on('click', '.remove-prize', function(e) {
+                e.preventDefault();
+                rowToDelete = $(this).closest('tr');
+                $('#modal-alert2').modal('show');
+            });
+            
+            // Handler para botão de confirmação de exclusão
+            $('#confirm-delete-prize').click(function() {
+                if (rowToDelete) {
+                    rowToDelete.remove();
+                    updatePositions();
+                    $('#modal-alert2').modal('hide');
+                    rowToDelete = null;
+                }
+            });
+            
+            // Função para atualizar as posições
+            function updatePositions() {
+                $('#prizes-table tbody tr').each(function(index) {
+                    $(this).find('.position-input').val(index + 1);
+                });
+            }
         });
     </script>
     {% block extra_js %}{% endblock %}

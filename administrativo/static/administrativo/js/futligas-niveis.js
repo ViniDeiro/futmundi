@@ -1,4 +1,13 @@
 $(document).ready(function() {
+    // Detecta o prefixo da URL dinamicamente
+    const ADMIN_URL_PREFIX = (function() {
+        const metaElement = document.querySelector('meta[name="url-prefix"]');
+        if (metaElement && metaElement.getAttribute('content')) {
+            return metaElement.getAttribute('content');
+        }
+        return '/administrativo'; // Valor padrão caso não encontre a meta tag
+    })();
+
     // Referência à tabela
     var table = $('#table');
 
@@ -96,8 +105,8 @@ $(document).ready(function() {
         formData.set('owner_premium', $('#owner_premium').prop('checked'));
         
         var url = isEditing ? 
-            '/administrativo/futligas/niveis/editar/' + editingId + '/' :
-            '/administrativo/futligas/niveis/novo/';
+            ADMIN_URL_PREFIX + '/futligas/niveis/editar/' + editingId + '/' :
+            ADMIN_URL_PREFIX + '/futligas/niveis/novo/';
 
         $.ajax({
             url: url,
@@ -154,7 +163,7 @@ $(document).ready(function() {
         var id = $(this).data('id');
 
         $.ajax({
-            url: '/administrativo/futligas/niveis/excluir/' + id + '/',
+            url: ADMIN_URL_PREFIX + '/futligas/niveis/excluir/' + id + '/',
             type: 'POST',
             data: {
                 csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]').val()
@@ -178,7 +187,7 @@ $(document).ready(function() {
         var formData = new FormData($('#importForm')[0]);
         
         $.ajax({
-            url: '/administrativo/futligas/niveis/importar/',
+            url: ADMIN_URL_PREFIX + '/futligas/niveis/importar/',
             type: 'POST',
             data: formData,
             processData: false,
@@ -199,7 +208,7 @@ $(document).ready(function() {
 
     // Exportar níveis
     $("#export-levels").click(function() {
-        window.location.href = '/administrativo/futligas/niveis/exportar/';
+        window.location.href = ADMIN_URL_PREFIX + '/futligas/niveis/exportar/';
     });
 
     // Salvar todas as alterações
@@ -213,7 +222,7 @@ $(document).ready(function() {
         });
 
         $.ajax({
-            url: '/administrativo/futligas/niveis/salvar/',
+            url: ADMIN_URL_PREFIX + '/futligas/niveis/salvar/',
             type: 'POST',
             data: JSON.stringify({ levels: levels }),
             contentType: 'application/json',

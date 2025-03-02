@@ -8,6 +8,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
+    <meta name="url-prefix" content="{% url 'administrativo:index' as index_url %}{{ index_url|slice:':-1' }}">
 
     <title>{% block title %}Futmundi{% endblock %}</title>
 

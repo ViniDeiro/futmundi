@@ -5,47 +5,70 @@ $.ajaxSetup({
     }
 });
 
-// Configuração do Toastr
-toastr.options = {
-    "closeButton": true,
-    "debug": false,
-    "newestOnTop": false,
-    "progressBar": true,
-    "positionClass": "toast-top-right",
-    "preventDuplicates": false,
-    "onclick": null,
-    "showDuration": "300",
-    "hideDuration": "500",
-    "timeOut": "1500",
-    "extendedTimeOut": "500",
-    "showEasing": "swing",
-    "hideEasing": "linear",
-    "showMethod": "fadeIn",
-    "hideMethod": "fadeOut"
-};
-
+// Configuração do Toastr - agora garantindo que seja aplicada antes de qualquer uso
 $(document).ready(function() {
+    toastr.options = {
+        "closeButton": true,
+        "debug": false,
+        "newestOnTop": true,
+        "progressBar": true,
+        "positionClass": "toast-top-right",
+        "preventDuplicates": false,
+        "onclick": null,
+        "showDuration": "300",
+        "hideDuration": "1000",
+        "timeOut": "5000",
+        "extendedTimeOut": "1000",
+        "showEasing": "swing",
+        "hideEasing": "linear",
+        "showMethod": "fadeIn",
+        "hideMethod": "fadeOut"
+    };
+
+    // Detecta o prefixo da URL dinamicamente
+    const ADMIN_URL_PREFIX = (function() {
+        const metaElement = document.querySelector('meta[name="url-prefix"]');
+        if (metaElement && metaElement.getAttribute('content')) {
+            return metaElement.getAttribute('content');
+        }
+        return '/administrativo'; // Valor padrão caso não encontre a meta tag
+    })();
+
     // Preview de imagem
     $('#image').on('change', function() {
         var file = this.files[0];
         if (file) {
             var reader = new FileReader();
             reader.onload = function(e) {
-                $('#image-preview').html(`
-                    <img src="${e.target.result}" style="width: 48px; height: 48px; object-fit: contain; cursor: pointer;" onclick="document.getElementById('image').click()">
-                    <button type="button" class="btn btn-danger btn-xs" id="remove_image_btn" style="position: absolute; bottom: -7px; right: -30px;">
-                        <i class="fa fa-trash"></i>
-                    </button>
-                `);
+                $('#image-preview').html(
+                    '<img src="' + e.target.result + '" style="width: 48px; height: 48px; object-fit: contain; cursor: pointer;" onclick="document.getElementById(\'image\').click()">' +
+                    '<button type="button" class="btn btn-danger btn-xs" id="remove_image_btn" style="position: absolute; bottom: -7px; right: -30px;">' +
+                    '<i class="fa fa-trash"></i>' +
+                    '</button>'
+                );
                 
                 // Adiciona handler para o botão de remover
                 $('#remove_image_btn').on('click', function() {
                     $('#image').val('');
                     $('#image-preview').html('<i class="fa fa-file-image-o" style="font-size: 48px; color: #ccc; cursor: pointer;" onclick="document.getElementById(\'image\').click()"></i>');
+                    if (!$('#remove_image').length) {
+                        $('form').append('<input type="hidden" id="remove_image" name="remove_image" value="1">');
+                    } else {
+                        $('#remove_image').val('1');
+                    }
                 });
-            }
+            };
             reader.readAsDataURL(file);
         }
+    });
+
+    // Remove imagem (delegate event para funcionar com elementos criados dinamicamente)
+    $(document).on('click', '.remove-image, .image-remove-btn, #remove_image_btn', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        $("#image").val('');
+        $("#image-preview").html('<i class="fa fa-file-image-o" style="font-size: 48px; color: #ccc; cursor: pointer;" onclick="document.getElementById(\'image\').click()"></i>');
+        return false;
     });
 
     // Gerenciamento de prêmios
@@ -69,7 +92,7 @@ $(document).ready(function() {
         
         var newRow = $('<tr>').attr('id', 'prize-row-' + prizeCounter);
         
-        // Coluna Posição - readonly pois o sistema já reorganiza automaticamente
+        // Coluna Posição
         newRow.append($('<td>').append(
             $('<input>').attr({
                 'type': 'number',
@@ -101,6 +124,39 @@ $(document).ready(function() {
                 )
             )
         );
+        
+        // Preview de imagem quando altera
+        imageCell.find('.prize-image').change(function() {
+            var file = this.files[0];
+            var preview = $(this).siblings('.prize-image-preview');
+            
+            if (file) {
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.html(
+                        '<div class="image-container" style="position: relative; width: 32px; height: 32px; display: inline-block;">' +
+                        '<img src="' + e.target.result + '" height="32" width="32" alt="Imagem" style="object-fit: contain; cursor: pointer;" onclick="$(this).closest(\'.prize-image-container\').find(\'.prize-image\').click()">' +
+                        '<div class="image-remove-btn" style="position: absolute; bottom: 0; right: 0; background-color: #f8f8f8; border-radius: 50%; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.2);">' +
+                        '<i class="fa fa-trash" style="font-size: 10px; color: #FF5252;"></i>' +
+                        '</div>' +
+                        '</div>'
+                    );
+                    
+                    // Handler para limpar a imagem
+                    preview.find('.image-remove-btn').on('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        var container = $(this).closest('.prize-image-container');
+                        container.find('.prize-image').val('');
+                        container.find('.prize-image-preview').html(
+                            '<i class="fa fa-file-image-o" style="font-size: 24px; color: #ccc; cursor: pointer;" onclick="$(this).closest(\'.prize-image-container\').find(\'.prize-image\').click()"></i>'
+                        );
+                    });
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+        
         newRow.append(imageCell);
         
         // Coluna Prêmio
@@ -132,35 +188,28 @@ $(document).ready(function() {
         ));
         
         $('#prizes-table tbody').append(newRow);
+    });
+
+    // Configurar handler para todos os elementos image-remove-btn que possam ser adicionados dinamicamente
+    $(document).on('click', '.image-remove-btn', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var container = $(this).closest('.prize-image-container');
+        container.find('.prize-image').val('');
+        container.find('.prize-image-preview').html(
+            '<i class="fa fa-file-image-o" style="font-size: 24px; color: #ccc; cursor: pointer;" onclick="$(this).closest(\'.prize-image-container\').find(\'.prize-image\').click()"></i>'
+        );
         
-        // Preview da imagem do prêmio
-        newRow.find('.prize-image').change(function() {
-            var file = this.files[0];
-            var preview = $(this).siblings('.prize-image-preview');
-            
-            if (file) {
-                var reader = new FileReader();
-                reader.onload = function(e) {
-                    preview.html(`
-                        <img src="${e.target.result}" style="width: 32px; height: 32px; object-fit: contain; cursor: pointer;" onclick="$(this).closest('.prize-image-container').find('.prize-image').click()">
-                        <button type="button" class="btn btn-danger btn-xs clear-prize-image" style="position: absolute; bottom: -5px; right: -5px;">
-                            <i class="fa fa-trash"></i>
-                        </button>
-                    `);
-                    
-                    // Handler para limpar a imagem
-                    preview.find('.clear-prize-image').on('click', function(e) {
-                        e.stopPropagation();
-                        var container = $(this).closest('.prize-image-container');
-                        container.find('.prize-image').val('');
-                        container.find('.prize-image-preview').html(`
-                            <i class="fa fa-file-image-o" style="font-size: 24px; color: #ccc; cursor: pointer;"></i>
-                        `);
-                    });
+        // Se estiver na página de edição, adicione o campo hidden para remoção
+        var tr = $(this).closest('tr');
+        if (tr.length) {
+            var rowIndex = tr.index();
+            if (window.location.href.indexOf('editar') > -1) {
+                if (!$('#remove_prize_image_' + rowIndex).length) {
+                    $('form').append('<input type="hidden" id="remove_prize_image_' + rowIndex + '" name="remove_prize_image[]" value="' + rowIndex + '">');
                 }
-                reader.readAsDataURL(file);
             }
-        });
+        }
     });
 
     // Frequência de premiação
@@ -195,6 +244,7 @@ $(document).ready(function() {
         // Nome é obrigatório
         var nome = $('#nome').val();
         if (!nome) {
+            toastr.remove(); // Limpa mensagens anteriores
             toastr.error('O nome é obrigatório');
             return;
         }
@@ -203,16 +253,24 @@ $(document).ready(function() {
         // Participantes
         var participantes = $('#participantes').val();
         if (participantes === 'Comum') {
-            formData.append('players', 1);
+            formData.append('players', 'Comum');
         } else if (participantes === 'Craque') {
-            formData.append('players', 2);
+            formData.append('players', 'Craque');
         } else {
-            formData.append('players', 0); // Todos
+            formData.append('players', 'Todos'); // Todos
         }
         
         // Converte a frequência para o formato do backend
         var frequencia = $('#frequencia').val();
-        formData.append('award_frequency', frequencia);
+        
+        // Mapeia os valores de frequência para o formato do backend
+        var frequencyMap = {
+            'Semanal': 'weekly',
+            'Mensal': 'monthly',
+            'Anual': 'annual'
+        };
+        
+        formData.append('award_frequency', frequencyMap[frequencia]);
         
         // Imagem principal
         var mainImage = $('#image')[0].files[0];
@@ -224,16 +282,26 @@ $(document).ready(function() {
         if (frequencia === 'Semanal') {
             var weekday = parseInt($('#dia-premiacao').val());
             formData.append('weekday', weekday);
-            formData.append('monthday', '1'); // Valor padrão para ligas semanais
-        } else if (frequencia === 'Mensal' || frequencia === 'Anual') {
+        } else if (frequencia === 'Mensal') {
             var monthday = parseInt($('#mes-premiacao').val());
             if (monthday >= 1 && monthday <= 31) {
                 formData.append('monthday', monthday);
-                formData.append('weekday', '0'); // Valor padrão para ligas mensais/anuais
             } else {
                 toastr.error('O dia do mês deve estar entre 1 e 31');
                 return;
             }
+        } else if (frequencia === 'Anual') {
+            var monthYearValue = parseInt($('#mes-ano-premiacao').val());
+            var dayYearValue = parseInt($('#dia-ano-premiacao').val());
+            
+            if (dayYearValue >= 1 && dayYearValue <= 31) {
+                formData.append('monthday', dayYearValue);
+            } else {
+                toastr.error('O dia do ano deve estar entre 1 e 31');
+                return;
+            }
+            // Também enviamos o mês do ano (não usado no modelo atual, mas pode ser útil)
+            formData.append('month_value', monthYearValue);
         }
         
         // Horário é sempre enviado
@@ -265,13 +333,18 @@ $(document).ready(function() {
             },
             success: function(response) {
                 if (response.success) {
+                    toastr.remove();
                     toastr.success('Futliga clássica criada com sucesso!');
-                    window.location.href = $('#form-futliga').data('list-url');
+                    setTimeout(function() {
+                        window.location.href = $('#form-futliga').data('list-url');
+                    }, 2000);
                 } else {
+                    toastr.remove();
                     toastr.error(response.message || 'Erro ao criar futliga clássica');
                 }
             },
             error: function(xhr, status, error) {
+                toastr.remove();
                 var errorMessage = xhr.responseJSON ? xhr.responseJSON.message : 'Erro ao criar futliga clássica';
                 toastr.error(errorMessage);
             }
@@ -289,27 +362,31 @@ $(document).ready(function() {
     $('#confirm-delete').click(function() {
         if (futligaIdToDelete) {
             $.ajax({
-                url: `/administrativo/futliga/classica/excluir/${futligaIdToDelete}/`,
+                url: `${ADMIN_URL_PREFIX}/futliga/classica/excluir/${futligaIdToDelete}/`,
                 type: 'POST',
                 headers: {
                     'X-CSRFToken': $('meta[name="csrf-token"]').attr('content')
                 },
                 success: function(response) {
+                    $('#modalAlert2').modal('hide');
                     if (response.success) {
+                        toastr.remove();
                         toastr.success('Futliga Clássica excluída com sucesso!');
                         setTimeout(function() {
-                            window.location.href = '/administrativo/futligas/';
-                        }, 1500);
+                            window.location.reload();
+                        }, 2000);
                     } else {
+                        toastr.remove();
                         toastr.error(response.message || 'Erro ao excluir Futliga Clássica');
                     }
                 },
                 error: function(xhr) {
+                    $('#modalAlert2').modal('hide');
+                    toastr.remove();
                     toastr.error(xhr.responseJSON?.message || 'Erro ao excluir Futliga Clássica');
                 }
             });
         }
-        $('#modalAlert2').modal('hide');
     });
 
     // Exclusão em massa
@@ -317,6 +394,7 @@ $(document).ready(function() {
         if ($('.check-item:checked').length > 0) {
             $('#modalAlert').modal('show');
         } else {
+            toastr.remove();
             toastr.warning('Selecione pelo menos uma Futliga Clássica para excluir');
         }
     });
@@ -334,27 +412,31 @@ $(document).ready(function() {
             });
 
             $.ajax({
-                url: '/administrativo/futliga/classica/excluir-em-massa/',
+                url: `${ADMIN_URL_PREFIX}/futliga/classica/excluir-em-massa/`,
                 type: 'POST',
                 data: formData,
                 processData: false,
                 contentType: false,
                 success: function(response) {
+                    $('#modalAlert').modal('hide');
                     if (response.success) {
+                        toastr.remove();
                         toastr.success('Futligas Clássicas excluídas com sucesso!');
                         setTimeout(function() {
-                            window.location.href = '/administrativo/futligas/';
-                        }, 1500);
+                            window.location.reload();
+                        }, 2000);
                     } else {
+                        toastr.remove();
                         toastr.error(response.message || 'Erro ao excluir Futligas Clássicas');
                     }
                 },
                 error: function(xhr) {
+                    $('#modalAlert').modal('hide');
+                    toastr.remove();
                     toastr.error(xhr.responseJSON?.message || 'Erro ao excluir Futligas Clássicas');
                 }
             });
         }
-        $('#modalAlert').modal('hide');
     });
 
     // Checkbox "Selecionar todos"

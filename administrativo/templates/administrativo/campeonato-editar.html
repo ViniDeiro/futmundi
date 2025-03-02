@@ -238,7 +238,7 @@
                                             <div class="panel-body">
                                                 <div class="col-lg-2">
                                                     <label class="control-label" for="filtrar-por">Filtrar por</label>
-                                                    <select class="form-control select2" id="filtrar-por" style="width: 200px;">
+                                                    <select class="form-control" id="filtrar-por">
                                                         <option value="all">Todos</option>
                                                         <option value="teams">Times</option>
                                                         <option value="selections">Seleções</option>
@@ -247,11 +247,7 @@
                                                 <div class="col-lg-12 mt20">
                                                     <select class="form-control dual_select" name="teams" multiple>
                                                         {% for team in teams %}
-                                                        <option value="{{ team.id }}" 
-                                                                data-image="{{ team.get_image_url }}"
-                                                                {% if team in championship.teams.all %}selected{% endif %}>
-                                                            {{ team.name }}
-                                                        </option>
+                                                        <option value="{{ team.id }}" data-image="{{ team.get_image_url }}" {% if team in championship.teams.all %}selected{% endif %}>{{ team.name }}</option>
                                                         {% endfor %}
                                                     </select>
                                                 </div>                                            
@@ -524,10 +520,6 @@
                 // Inicializa o Dual Listbox para seleção de times
                 $('.dual_select').bootstrapDualListbox({
                     selectorMinimalHeight: 160,
-                    nonSelectedListLabel: 'Times Disponíveis',
-                    selectedListLabel: 'Times Selecionados',
-                    preserveSelectionOnMove: 'moved',
-                    moveOnSelect: false,
                     filterTextClear: 'mostrar todos',
                     filterPlaceHolder: 'Filtrar',
                     moveSelectedLabel: 'Mover selecionados',
@@ -536,8 +528,17 @@
                     removeAllLabel: 'Remover todos',
                     infoText: 'Mostrando {0}',
                     infoTextFiltered: '<span class="label label-warning">Filtrado</span> {0} de {1}',
-                    infoTextEmpty: 'Lista vazia'
+                    infoTextEmpty: 'Lista vazia',
+                    moveOnSelect: false
                 });
+                
+                // Adiciona log para depuração
+                console.log("DualListbox configurado");
+                setTimeout(function() {
+                    console.log("Estrutura dos botões:");
+                    console.log($('.box1 .btn-group').html());
+                    console.log($('.box2 .btn-group').html());
+                }, 1000);
 
                 // Função para formatar a opção do select com imagem
                 function formatTeamOption(team) {
@@ -784,7 +785,7 @@
                 });
                 
                 // Associar evento ao filtro de tipos
-                $('#filtrar-por').on('change', function() {
+                $('#filtrar-por').change(function() {
                     filterTeams();
                 });
                 

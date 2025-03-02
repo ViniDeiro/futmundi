@@ -1000,7 +1000,8 @@ class StandardLeague(models.Model):
         choices=[
             ('daily', 'Diária'),
             ('weekly', 'Semanal'),
-            ('monthly', 'Mensal')
+            ('monthly', 'Mensal'),
+            ('annual', 'Anual')
         ],
         verbose_name='Frequência de Premiação'
     )
@@ -1014,8 +1015,13 @@ class StandardLeague(models.Model):
             (5, 'Sábado'),
             (6, 'Domingo')
         ],
-        verbose_name='Dia da Semana'
+        verbose_name='Dia da Semana',
+        null=True,
+        blank=True
     )
+    monthday = models.IntegerField(verbose_name='Dia do Mês', null=True, blank=True)
+    month_value = models.IntegerField(verbose_name='Mês do Ano', null=True, blank=True)
+    award_time = models.TimeField(verbose_name='Horário de Premiação', null=True, blank=True)
     plans = models.ManyToManyField('Plan', verbose_name='Planos')
     players = models.IntegerField(verbose_name='Quantidade de Participantes')
     created_at = models.DateTimeField(default=timezone.now)

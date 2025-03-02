@@ -14,10 +14,33 @@
         <link href="{% static 'administrativo/css/animate.css' %}" rel="stylesheet">
         <link href="{% static 'administrativo/css/style.css' %}" rel="stylesheet">          
         <link href="{% static 'administrativo/css/plugins/awesome-bootstrap-checkbox/awesome-bootstrap-checkbox.css' %}" rel="stylesheet">   
+        <!-- Toastr style -->
+        <link href="{% static 'administrativo/css/plugins/toastr/toastr.min.css' %}" rel="stylesheet">
         <!-- Custom -->      
         <link href="{% static 'administrativo/css/custom.css' %}" rel="stylesheet">
         <!-- Favicon -->
         <link rel="icon" href="img/futmundi.ico" type="image/png">
+        
+        <style>
+            /* Estilos personalizados para o toast */
+            #toast-container.toast-top-right {
+                top: 12px;
+                right: 12px;
+            }
+            
+            #toast-container > div {
+                border-radius: 3px;
+                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            }
+            
+            .toast-success {
+                background-color: #1ab394 !important;
+            }
+            
+            .toast-error {
+                background-color: #ed5565 !important;
+            }
+        </style>
     </head>
     <body>
         <div id="wrapper">
@@ -92,7 +115,7 @@
                         </div>
                         <ul class="nav navbar-top-links navbar-right">
                             <li>
-                                <span class="m-r-sm text-muted welcome-message">Andrews Cristhian</span>
+                                <span class="m-r-sm text-muted welcome-message">{{ request.session.admin_name }}</span>
                             </li>
                             <li class="dropdown">
                                 <a class="dropdown-toggle count-info" data-toggle="dropdown" href="#">
@@ -172,7 +195,7 @@
                                                         {% endif %}
                                                     </td>
                                                     <td>{{ futliga.participants }}</td>
-                                                    <td>{{ futliga.created_at|date:"d/m/Y" }}</td>
+                                                    <td>{{ futliga.created_at|date:"d/m/Y H:i" }}</td>
                                                     <td>
                                                         <a href="{% url 'administrativo:futliga_classica_editar' futliga.id %}" class="btn btn-info btn-xs" title="Editar">
                                                             <i class="glyphicon glyphicon-pencil"></i>
