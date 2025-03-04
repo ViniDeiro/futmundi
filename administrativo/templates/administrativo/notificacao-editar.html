@@ -371,7 +371,7 @@
                                             <div class="form-group col-lg-8 mtm10" id="data-envio-container" {% if not notification.send_at %}style="display: none;"{% endif %}>
                                                 <label class="control-label">Data Envio</label>
                                                 <div class="input-group date" id="datetimepicker" data-target-input="nearest">
-                                                    <input type="text" class="form-control datetimepicker-input" name="send_at" data-target="#datetimepicker" value="{{ notification.send_at|date:'d/m/Y H:i'|default:'' }}" {% if not notification.send_at %}disabled{% endif %}>
+                                                    <input type="text" class="form-control datetimepicker-input" name="send_at" data-target="#datetimepicker" data-toggle="datetimepicker" value="{{ notification.send_at|date:'d/m/Y H:i' }}" {% if not notification.send_at %}disabled{% endif %}>
                                                     <div class="input-group-append" data-target="#datetimepicker" data-toggle="datetimepicker">
                                                         <div class="input-group-text"><i class="fa fa-calendar"></i></div>
                                                     </div>
