@@ -228,7 +228,7 @@ $(document).ready(function() {
         
         // Envia solicitação AJAX para excluir o nível
         $.ajax({
-            url: "/futligas/jogadores/excluir/",
+            url: ADMIN_URL_PREFIX + "/futligas/jogadores/excluir/",
             method: 'POST',
             headers: {
                 'X-CSRFToken': $('[name=csrfmiddlewaretoken]').val()
@@ -249,15 +249,8 @@ $(document).ready(function() {
                     // Restaura o botão antes de fechar o modal
                     $btn.html(originalText).prop('disabled', false);
                     
-                    // Fecha o modal
+                    // Fecha o modal de forma segura
                     $('#modalConfirmDelete').modal('hide');
-                    
-                    // Limpa o modal corretamente
-                    setTimeout(function() {
-                        $('.modal-backdrop').remove();
-                        $('body').removeClass('modal-open');
-                        resetModalState();
-                    }, 300);
                     
                     // Notifica o usuário
                     toastr.success('Nível excluído com sucesso!');
@@ -299,8 +292,6 @@ $(document).ready(function() {
                 
                 // Fecha o modal se houve erro
                 $('#modalConfirmDelete').modal('hide');
-                $('.modal-backdrop').remove();
-                $('body').removeClass('modal-open');
             }
         });
     });
@@ -520,7 +511,7 @@ $(document).ready(function() {
                 
                 // Atualiza as posições dos prêmios
                 $('#premiosTable tbody tr').each(function(index) {
-                    $(this).find('td:first').text((index + 1) + '°');
+                    $(this).find('.position-input').val(index + 1);
                 });
             }
         });
@@ -536,7 +527,7 @@ $(document).ready(function() {
             
             // Atualiza as posições das linhas restantes
             $('#premiosTable tbody tr').each(function(index) {
-                $(this).find('.position-input').val(index + 1);
+                $(this).find('td:first').text((index + 1) + '°');
             });
             
             toastr.success(`Prêmio da posição ${position} excluído com sucesso!`);
@@ -584,8 +575,8 @@ $(document).ready(function() {
                 id: id,
                 name: name,
                 image: image,
-                players: parseInt($row.find('td:eq(2)').text()),
-                premium_players: parseInt($row.find('td:eq(3)').text()),
+                players: parseInt($row.find('td:eq(2)').text()) || 0,
+                premium_players: parseInt($row.find('td:eq(3)').text()) || 0,
                 owner_premium: $row.find('td:eq(4)').text() === 'Sim',
                 order: index + 1
             });
@@ -614,7 +605,7 @@ $(document).ready(function() {
             
             // Se não encontrar, tenta encontrar a imagem dentro de qualquer container
             if (!$img.length) {
-                $img = $row.find('td:eq(1) img');
+                $img = $row.find('td:eq(1) .premio-image-preview img');
             }
             
             if ($img.length) {
@@ -636,13 +627,13 @@ $(document).ready(function() {
         // Obtém as configurações de premiação
         const premiacao = {
             weekly: {
-                day: $('#dia-premiacao').val(),
-                time: $('.clockpicker:eq(0) input').val()
+                day: $('#dia-premiacao').val() || 'Segunda',
+                time: $('.clockpicker:eq(0) input').val() || '12:00'
             },
             season: {
-                month: $('#mes-ano-premiacao').val(),
-                day: $('#dia-ano-premiacao').val(),
-                time: $('.clockpicker:eq(1) input').val()
+                month: $('#mes-ano-premiacao').val() || 'Janeiro',
+                day: $('#dia-ano-premiacao').val() || '1',
+                time: $('.clockpicker:eq(1) input').val() || '12:00'
             }
         };
         
@@ -666,86 +657,90 @@ $(document).ready(function() {
         
         $btn.html('<i class="fa fa-spinner fa-spin"></i> Salvando...').prop('disabled', true);
 
-        $.ajax({
-            url: "/futligas/jogadores/salvar/",
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': $('[name=csrfmiddlewaretoken]').val()
-            },
-            data: JSON.stringify({
-                levels: niveis,
-                prizes: premios,
-                award_config: premiacao
-            }),
-            contentType: 'application/json',
-            success: function(response) {
-                console.log("Resposta do servidor:", response);
-                
-                // Verificação detalhada da resposta do servidor
-                if (response.success && response.data) {
-                    console.log("Verificação da resposta do servidor após salvamento:");
+        // Adiciona um timeout para garantir que o console.log seja exibido antes da requisição
+        setTimeout(function() {
+            $.ajax({
+                url: ADMIN_URL_PREFIX + "/futligas/jogadores/salvar/",
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': $('[name=csrfmiddlewaretoken]').val()
+                },
+                data: JSON.stringify({
+                    levels: niveis,
+                    prizes: premios,
+                    award_config: premiacao
+                }),
+                contentType: 'application/json',
+                success: function(response) {
+                    console.log("Resposta do servidor:", response);
                     
-                    if (response.data.levels) {
-                        console.log(`Níveis retornados pelo servidor: ${response.data.levels.length}`);
-                        response.data.levels.forEach((nivel, index) => {
-                            console.log(`Nível ${index + 1} - ${nivel.name}: Tem imagem? ${nivel.image ? 'Sim' : 'Não'}`);
-                            if (nivel.image) {
-                                console.log(`Imagem URL: ${nivel.image.substring(0, 50)}...`);
-                            }
-                        });
+                    // Verificação detalhada da resposta do servidor
+                    if (response.success && response.data) {
+                        console.log("Verificação da resposta do servidor após salvamento:");
+                        
+                        if (response.data.levels) {
+                            console.log(`Níveis retornados pelo servidor: ${response.data.levels.length}`);
+                            response.data.levels.forEach((nivel, index) => {
+                                console.log(`Nível ${index + 1} - ${nivel.name}: Tem imagem? ${nivel.image ? 'Sim' : 'Não'}`);
+                                if (nivel.image) {
+                                    console.log(`Imagem URL: ${nivel.image.substring(0, 50)}...`);
+                                }
+                            });
+                        }
                     }
-                }
-                
-                if (response.success) {
-                    toastr.success('Alterações salvas com sucesso!');
-                    // Não recarregamos a página para evitar perder as imagens
-                    // Os dados já estão atualizados na interface
                     
-                    // Aviso para não recarregar a página
-                    setTimeout(function() {
-                        toastr.info('Não recarregue a página (F5) para evitar perder as imagens. As alterações já foram salvas.');
-                    }, 1000);
-                } else {
-                    toastr.error(response.message || response.error || 'Erro ao salvar alterações!');
-                    console.error("Erro ao salvar (sucesso=false):", response);
-                    
-                    // Se há detalhes específicos do erro, mostrá-los no console
-                    if (response.details) {
-                        console.error("Detalhes do erro:", response.details);
-                    }
-                }
-                $btn.html(originalText).prop('disabled', false);
-            },
-            error: function(xhr, status, error) {
-                console.error("Erro na requisição AJAX:", {status: status, error: error, response: xhr.responseText});
-                
-                let errorMsg = 'Erro ao salvar dados';
-                
-                try {
-                    const errorResponse = JSON.parse(xhr.responseText);
-                    if (errorResponse && errorResponse.error) {
-                        errorMsg += ': ' + errorResponse.error;
+                    if (response.success) {
+                        toastr.success('Alterações salvas com sucesso!');
+                        
+                        // Não recarregamos a página para evitar perder as imagens
+                        // Os dados já estão atualizados na interface
+                        
+                        // Aviso para não recarregar a página
+                        setTimeout(function() {
+                            toastr.info('Não recarregue a página (F5) para evitar perder as imagens. As alterações já foram salvas.');
+                        }, 1000);
+                    } else {
+                        toastr.error(response.message || response.error || 'Erro ao salvar alterações!');
+                        console.error("Erro ao salvar (sucesso=false):", response);
                         
                         // Se há detalhes específicos do erro, mostrá-los no console
-                        if (errorResponse.details) {
-                            console.error("Detalhes do erro:", errorResponse.details);
+                        if (response.details) {
+                            console.error("Detalhes do erro:", response.details);
                         }
-                    } else if (errorResponse && errorResponse.message) {
-                        errorMsg += ': ' + errorResponse.message;
-                    } else {
+                    }
+                    $btn.html(originalText).prop('disabled', false);
+                },
+                error: function(xhr, status, error) {
+                    console.error("Erro na requisição AJAX:", {status: status, error: error, response: xhr.responseText});
+                    
+                    let errorMsg = 'Erro ao salvar dados';
+                    
+                    try {
+                        const errorResponse = JSON.parse(xhr.responseText);
+                        if (errorResponse && errorResponse.error) {
+                            errorMsg += ': ' + errorResponse.error;
+                            
+                            // Se há detalhes específicos do erro, mostrá-los no console
+                            if (errorResponse.details) {
+                                console.error("Detalhes do erro:", errorResponse.details);
+                            }
+                        } else if (errorResponse && errorResponse.message) {
+                            errorMsg += ': ' + errorResponse.message;
+                        } else {
+                            errorMsg += ': ' + error;
+                        }
+                    } catch (e) {
                         errorMsg += ': ' + error;
+                        if (xhr.status) {
+                            errorMsg += ' (Status ' + xhr.status + ')';
+                        }
                     }
-                } catch (e) {
-                    errorMsg += ': ' + error;
-                    if (xhr.status) {
-                        errorMsg += ' (Status ' + xhr.status + ')';
-                    }
+                    
+                    toastr.error(errorMsg);
+                    $btn.html(originalText).prop('disabled', false);
                 }
-                
-                toastr.error(errorMsg);
-                $btn.html(originalText).prop('disabled', false);
-            }
-        });
+            });
+        }, 100);
     });
 
     // Funções auxiliares
@@ -1069,7 +1064,7 @@ $(document).ready(function() {
 
     // Carrega dados iniciais
     $.ajax({
-        url: "/futligas/jogadores/dados/",
+        url: ADMIN_URL_PREFIX + "/futligas/jogadores/dados/",
         method: 'GET',
         success: function(data) {
             if (data.success === false) {
@@ -1123,11 +1118,55 @@ $(document).ready(function() {
                 );
             });
 
-            $("#dia-premiacao").val(data.award_config.weekly.day);
-            $(".clockpicker:eq(0) input").val(data.award_config.weekly.time);
-            $("#mes-ano-premiacao").val(data.award_config.season.month);
-            $("#dia-ano-premiacao").val(data.award_config.season.day);
-            $(".clockpicker:eq(1) input").val(data.award_config.season.time);
+            // Configuração de premiação semanal e por temporada
+            console.log("Configuração de premiação recebida:", data.award_config);
+            
+            // Configuração semanal
+            if (data.award_config && data.award_config.weekly) {
+                const weekly = data.award_config.weekly;
+                
+                // Seleciona o dia da semana
+                if (weekly.day) {
+                    $("#dia-premiacao").val(weekly.day);
+                    console.log(`Dia da semana selecionado: ${weekly.day}`);
+                }
+                
+                // Define o horário
+                if (weekly.time) {
+                    $(".clockpicker:eq(0) input").val(weekly.time);
+                    console.log(`Horário semanal definido: ${weekly.time}`);
+                }
+            }
+            
+            // Configuração por temporada
+            if (data.award_config && data.award_config.season) {
+                const season = data.award_config.season;
+                
+                // Seleciona o mês
+                if (season.month) {
+                    $("#mes-ano-premiacao").val(season.month);
+                    console.log(`Mês selecionado: ${season.month}`);
+                }
+                
+                // Seleciona o dia
+                if (season.day) {
+                    $("#dia-ano-premiacao").val(season.day);
+                    console.log(`Dia do mês selecionado: ${season.day}`);
+                }
+                
+                // Define o horário
+                if (season.time) {
+                    $(".clockpicker:eq(1) input").val(season.time);
+                    console.log(`Horário da temporada definido: ${season.time}`);
+                }
+            }
+            
+            // Reinicializa os clockpickers para garantir que os valores sejam exibidos corretamente
+            $('.clockpicker').clockpicker('remove').clockpicker({
+                placement: 'bottom',
+                align: 'left',
+                autoclose: true
+            });
             
             // Atualizamos a tabela de prêmios
             updatePremiosTable();
@@ -1239,15 +1278,17 @@ $(document).ready(function() {
     // Ajuste do problema de AJAX - garante que as URLs são redirecionadas corretamente
     $.ajaxPrefilter(function(options, originalOptions, jqXHR) {
         // Evitando loops de redirecionamento de URLs e garantindo formatos corretos
-        if (options.url === '/futligas/jogadores/dados/') {
-            options.url = "/futligas/jogadores/dados/";
-        } else if (options.url === '/futligas/jogadores/salvar/') {
-            options.url = "/futligas/jogadores/salvar/";
+        if (options.url.indexOf('/administrativo/futligas/jogadores/dados/') !== -1) {
+            options.url = ADMIN_URL_PREFIX + "/futligas/jogadores/dados/";
+        } else if (options.url.indexOf('/administrativo/futligas/jogadores/salvar/') !== -1) {
+            options.url = ADMIN_URL_PREFIX + "/futligas/jogadores/salvar/";
+        } else if (options.url.indexOf('/administrativo/futligas/jogadores/excluir/') !== -1) {
+            options.url = ADMIN_URL_PREFIX + "/futligas/jogadores/excluir/";
         }
         
         // Evitando duplicação de prefixos quando ADMIN_URL_PREFIX já foi adicionado
         if (options.url.includes("/administrativo/administrativo/")) {
-            options.url = options.url.replace("/administrativo/administrativo/", "/futligas/");
+            options.url = options.url.replace("/administrativo/administrativo/", "/administrativo/");
         }
     });
     
@@ -1324,6 +1365,16 @@ $(document).ready(function() {
     // Quando o modal é fechado, reinicia seu estado
     $('#modalConfirmDelete').on('hidden.bs.modal', function() {
         resetModalState();
+        
+        // Verifica se há backdrop residual e remove
+        if ($('.modal-backdrop').length) {
+            $('.modal-backdrop').remove();
+        }
+        
+        // Garante que o body não tenha a classe modal-open se não houver modais abertos
+        if ($('.modal.in').length === 0) {
+            $('body').removeClass('modal-open');
+        }
     });
 
     // Função para criar o html do botão de remoção de imagem

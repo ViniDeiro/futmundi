@@ -257,6 +257,11 @@ $(document).ready(function() {
                 '<i class="fa fa-file-image-o" style="font-size: 24px; color: #ccc; cursor: pointer;"></i>'
             )
         );
+        
+        // Adicionar evento de clique no ícone para prêmios sem imagem
+        imageCell.find('.prize-image-preview').on('click', function() {
+            $(this).closest('.prize-image-container').find('.prize-image').click();
+        });
         {% endif %}
         
         newRow.append(imageCell);

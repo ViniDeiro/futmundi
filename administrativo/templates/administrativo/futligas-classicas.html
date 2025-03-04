@@ -156,7 +156,9 @@
                                         <a href="{% url "administrativo:futliga_classica_novo" %}" class="btn btn-success btn-sm" title="Novo"><i class="fa fa-plus"></i></a>
                                     </div>
                                     <div class="group-options-right mr10">
-                                        <button type="button" class="btn btn-default btn-sm" id="delete-selected" title="Excluir em Massa">
+                                        <button type="button" class="btn btn-default btn-sm" id="delete-selected" 
+                                                data-url="{% url 'administrativo:futliga_classica_excluir_em_massa' %}"
+                                                title="Excluir em Massa">
                                             <i class="glyphicon glyphicon-trash"></i>
                                         </button>
                                     </div>
@@ -200,8 +202,13 @@
                                                         <a href="{% url 'administrativo:futliga_classica_editar' futliga.id %}" class="btn btn-info btn-xs" title="Editar">
                                                             <i class="glyphicon glyphicon-pencil"></i>
                                                         </a>
-                                                        <button type="button" class="btn btn-danger btn-xs delete-btn" title="Excluir" data-id="{{ futliga.id }}">
-                                                            <i class="glyphicon glyphicon-trash"></i>
+                                                        <button type="button" class="btn btn-danger btn-xs delete-btn" 
+                                                                data-id="{{ futliga.id }}"
+                                                                data-url="{% url 'administrativo:futliga_classica_excluir' futliga.id %}"
+                                                                data-toggle="modal" 
+                                                                data-target="#modalAlert2" 
+                                                                title="Excluir">
+                                                            <i class="fa fa-trash"></i>
                                                         </button>
                                                     </td>
                                                 </tr>

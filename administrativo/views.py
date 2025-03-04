@@ -1904,11 +1904,20 @@ def futliga_classica_editar(request, futliga_id):
                     
                     # Atualizar imagem do prêmio se uma nova foi enviada
                     if 'prize_images[]' in request.FILES and i < len(request.FILES.getlist('prize_images[]')):
+                        # Verificar se esta imagem não é vazia (alguns navegadores podem enviar arquivos vazios)
+                        prize_image = request.FILES.getlist('prize_images[]')[i]
+                        print(f"[DEBUG] Processando imagem para prêmio na posição {position}. Arquivo: {prize_image.name}, tamanho: {prize_image.size}")
+                        
                         # Se já tinha imagem, remove primeiro
                         if prize_obj.image:
+                            print(f"[DEBUG] Removendo imagem existente: {prize_obj.image.path}")
                             prize_obj.image.delete()
-                        prize_obj.image = request.FILES.getlist('prize_images[]')[i]
+                        
+                        # Salvar nova imagem
+                        prize_obj.image = prize_image
+                        print(f"[DEBUG] Nova imagem atribuída ao prêmio ID {prize_obj.id}, posição {position}")
                         prize_obj.save()
+                        print(f"[DEBUG] Prêmio salvo com nova imagem: {prize_obj.image.url if prize_obj.image else 'Sem imagem'}")
                 
                 except (ValueError, IndexError) as e:
                     # Se houver erro em um prêmio, pula para o próximo
@@ -1922,58 +1931,152 @@ def futliga_classica_editar(request, futliga_id):
     return render(request, 'administrativo/futliga-classica-editar.html', {'futliga': futliga})
 
 @login_required
+@csrf_exempt
 def futliga_classica_excluir(request, id):
     """
     View para excluir uma Futliga Clássica
     """
     if request.method == 'POST':
         try:
+            # Adicionando logs para depuração
+            print(f"[DEBUG] Iniciando exclusão da futliga com ID: {id}")
+            print(f"[DEBUG] Método da requisição: {request.method}")
+            print(f"[DEBUG] Headers da requisição: {request.headers}")
+            print(f"[DEBUG] Corpo da requisição: {request.body}")
+            
             futliga = StandardLeague.objects.get(id=id)
+            print(f"[DEBUG] Futliga encontrada: {futliga.name}")
             
             # Remove a imagem principal
             if futliga.image:
-                futliga.image.delete()
+                try:
+                    print(f"[DEBUG] Excluindo imagem principal: {futliga.image.path}")
+                    futliga.image.delete(save=False)  # Não salva ainda para evitar problemas de referência
+                    print("[DEBUG] Imagem principal excluída com sucesso")
+                except Exception as img_error:
+                    print(f"[DEBUG] Erro ao excluir imagem principal: {str(img_error)}")
+                    # Continua a execução mesmo se falhar ao excluir a imagem
             
             # Remove as imagens dos prêmios
-            for prize in futliga.prizes.all():
-                if prize.image:
-                    prize.image.delete()
+            print(f"[DEBUG] Procurando prêmios da futliga: {futliga.id}")
+            prizes = futliga.prizes.all()
+            print(f"[DEBUG] Quantidade de prêmios encontrados: {prizes.count()}")
             
+            for prize in prizes:
+                try:
+                    if prize.image:
+                        print(f"[DEBUG] Excluindo imagem do prêmio {prize.id}: {prize.image.path}")
+                        prize.image.delete(save=False)  # Não salva ainda para evitar problemas de referência
+                        print(f"[DEBUG] Imagem do prêmio {prize.id} excluída com sucesso")
+                except Exception as prize_img_error:
+                    print(f"[DEBUG] Erro ao excluir imagem do prêmio {prize.id}: {str(prize_img_error)}")
+                    # Continua a execução mesmo se falhar ao excluir a imagem do prêmio
+            
+            # Excluindo os prêmios primeiro para evitar problemas de referência
+            try:
+                print(f"[DEBUG] Excluindo prêmios da futliga {futliga.id}")
+                prizes.delete()
+                print(f"[DEBUG] Prêmios excluídos com sucesso")
+            except Exception as prizes_error:
+                print(f"[DEBUG] Erro ao excluir prêmios: {str(prizes_error)}")
+                # Se a exclusão dos prêmios falhar, tenta excluir a futliga de qualquer forma
+            
+            # Agora exclui a futliga
+            print(f"[DEBUG] Excluindo futliga {futliga.id}")
             futliga.delete()
+            print(f"[DEBUG] Futliga {futliga.id} excluída com sucesso")
+            
             return JsonResponse({'success': True})
             
         except StandardLeague.DoesNotExist:
-            return JsonResponse({'success': False, 'message': 'Futliga Clássica não encontrada'})
+            print(f"[DEBUG] Futliga com ID {id} não encontrada")
+            return JsonResponse({'success': False, 'message': 'Futliga Clássica não encontrada'}, status=404)
         except Exception as e:
-            return JsonResponse({'success': False, 'message': str(e)})
+            print(f"[DEBUG] Erro ao excluir futliga: {str(e)}")
+            print(f"[DEBUG] Tipo do erro: {type(e).__name__}")
+            import traceback
+            traceback.print_exc()
+            return JsonResponse({'success': False, 'message': f'Erro ao excluir futliga: {str(e)}'}, status=500)
     
-    return JsonResponse({'success': False, 'message': 'Método não permitido'})
+    return JsonResponse({'success': False, 'message': 'Método não permitido'}, status=405)
 
 @login_required
+@csrf_exempt
 def futliga_classica_excluir_em_massa(request):
     """
     View para excluir múltiplas Futligas Clássicas
     """
     if request.method == 'POST':
         try:
-            ids = request.POST.getlist('ids[]')
+            # Obtém os dados do corpo da requisição JSON
+            import json
+            data = json.loads(request.body)
+            ids = data.get('ids', [])
+            
+            print(f"[DEBUG] Iniciando exclusão em massa de futligas. IDs: {ids}")
+            
+            if not ids:
+                return JsonResponse({'success': False, 'message': 'Nenhum ID fornecido para exclusão'})
+            
             futligas = StandardLeague.objects.filter(id__in=ids)
+            print(f"[DEBUG] Futligas encontradas: {futligas.count()}")
+            
+            if not futligas.exists():
+                return JsonResponse({'success': False, 'message': 'Nenhuma Futliga encontrada com os IDs fornecidos'})
             
             for futliga in futligas:
+                print(f"[DEBUG] Processando futliga: {futliga.id} - {futliga.name}")
+                
                 # Remove a imagem principal
                 if futliga.image:
-                    futliga.image.delete()
+                    try:
+                        print(f"[DEBUG] Excluindo imagem principal da futliga {futliga.id}: {futliga.image.path}")
+                        futliga.image.delete()
+                        print(f"[DEBUG] Imagem principal da futliga {futliga.id} excluída com sucesso")
+                    except Exception as img_error:
+                        print(f"[DEBUG] Erro ao excluir imagem principal da futliga {futliga.id}: {str(img_error)}")
+                        # Continua a execução mesmo se falhar ao excluir a imagem
                 
                 # Remove as imagens dos prêmios
-                for prize in futliga.prizes.all():
-                    if prize.image:
-                        prize.image.delete()
+                print(f"[DEBUG] Procurando prêmios da futliga: {futliga.id}")
+                prizes = futliga.prizes.all()
+                print(f"[DEBUG] Quantidade de prêmios encontrados para futliga {futliga.id}: {prizes.count()}")
+                
+                for prize in prizes:
+                    try:
+                        if prize.image:
+                            print(f"[DEBUG] Excluindo imagem do prêmio {prize.id} da futliga {futliga.id}: {prize.image.path}")
+                            prize.image.delete()
+                            print(f"[DEBUG] Imagem do prêmio {prize.id} excluída com sucesso")
+                    except Exception as prize_img_error:
+                        print(f"[DEBUG] Erro ao excluir imagem do prêmio {prize.id} da futliga {futliga.id}: {str(prize_img_error)}")
+                        # Continua a execução mesmo se falhar ao excluir a imagem do prêmio
+                
+                # Excluindo os prêmios primeiro para evitar problemas de referência
+                try:
+                    print(f"[DEBUG] Excluindo prêmios da futliga {futliga.id}")
+                    prizes.delete()
+                    print(f"[DEBUG] Prêmios da futliga {futliga.id} excluídos com sucesso")
+                except Exception as prizes_error:
+                    print(f"[DEBUG] Erro ao excluir prêmios da futliga {futliga.id}: {str(prizes_error)}")
+                    # Se a exclusão dos prêmios falhar, tenta continuar a execução
             
+            # Excluindo todas as futligas
+            print(f"[DEBUG] Excluindo todas as futligas selecionadas")
             futligas.delete()
+            print(f"[DEBUG] Todas as futligas selecionadas foram excluídas com sucesso")
+            
             return JsonResponse({'success': True})
             
+        except json.JSONDecodeError:
+            print("[DEBUG] Erro ao decodificar JSON da requisição")
+            return JsonResponse({'success': False, 'message': 'Formato de dados inválido'})
         except Exception as e:
-            return JsonResponse({'success': False, 'message': str(e)})
+            print(f"[DEBUG] Erro ao excluir futligas em massa: {str(e)}")
+            print(f"[DEBUG] Tipo do erro: {type(e).__name__}")
+            import traceback
+            traceback.print_exc()
+            return JsonResponse({'success': False, 'message': f'Erro ao excluir futligas: {str(e)}'})
     
     return JsonResponse({'success': False, 'message': 'Método não permitido'})
 
@@ -1999,7 +2102,7 @@ def futliga_jogador_dados(request):
             'players': nivel.players,
             'premium_players': nivel.premium_players,
             'owner_premium': nivel.owner_premium,
-            'image': nivel.image.url if nivel.image else None,
+            'image': nivel.image.url if nivel.image and hasattr(nivel.image, 'url') else None,
             'order': nivel.order
         } for nivel in niveis]
 
@@ -2007,7 +2110,7 @@ def futliga_jogador_dados(request):
         premios = CustomLeaguePrize.objects.all().order_by('position')
         premios_data = [{
             'position': premio.position,
-            'image': premio.image.url if premio.image else None,
+            'image': premio.image.url if premio.image and hasattr(premio.image, 'url') else None,
             'values': {nivel.name: premio.get_valor_por_nivel(nivel) for nivel in niveis}
         } for premio in premios]
 

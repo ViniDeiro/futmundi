@@ -6872,25 +6872,25 @@ def time_excluir_em_massa(request):
                 'message': 'Nenhum time selecionado'
             })
             
-    try:
-        # Filtra apenas times sem campeonatos
-        teams = Team.objects.filter(id__in=team_ids)
-        teams_to_delete = []
-        teams_with_championships = []
-        
-        for team in teams:
-            if team.has_championships():
-                teams_with_championships.append(team.name)
-            else:
-                teams_to_delete.append(team)
-        
-        # Remove as imagens e exclui os times
-        for team in teams_to_delete:
-            if team.image:
-                team.image.delete()
-            team.delete()
-        
-        # Monta a mensagem de retorno
+        try:
+            # Filtra apenas times sem campeonatos
+            teams = Team.objects.filter(id__in=team_ids)
+            teams_to_delete = []
+            teams_with_championships = []
+            
+            for team in teams:
+                if team.has_championships():
+                    teams_with_championships.append(team.name)
+                else:
+                    teams_to_delete.append(team)
+            
+            # Remove as imagens e exclui os times
+            for team in teams_to_delete:
+                if team.image:
+                    team.image.delete()
+                team.delete()
+            
+            # Monta a mensagem de retorno
             deleted_count = len(teams_to_delete)
             non_deleted_count = len(teams_with_championships)
             
@@ -6910,8 +6910,8 @@ def time_excluir_em_massa(request):
                 'deleted': deleted_count,
                 'errors': [message] if non_deleted_count > 0 else []
             })
-            
-    except Exception as e:
+                
+        except Exception as e:
             return JsonResponse({
                 'success': False,
                 'message': f'Erro ao excluir times: {str(e)}'

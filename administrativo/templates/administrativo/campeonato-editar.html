@@ -425,7 +425,61 @@
         <script src="{% static 'administrativo/js/settings.js' %}"></script>
         <script>
             $(document).ready(function() {
-                console.log("DOM pronto para edição de campeonato");
+                console.log("Inicializando tela de edição de campeonato");
+                
+                // Armazenar valores iniciais
+                var valoresIniciais = {
+                    ambito: $('#ambito').val(),
+                    continente: $('#continente').val(),
+                    pais: $('#pais').val(),
+                    estado: $('#estado').val()
+                };
+                
+                console.log("Valores iniciais:", valoresIniciais);
+                
+                // Garantir que os campos estejam corretamente habilitados/desabilitados conforme o âmbito
+                var scopeName = $('#ambito option:selected').text().trim();
+                var $continente = $('#continente');
+                var $pais = $('#pais');
+                var $estado = $('#estado');
+                
+                console.log("Âmbito selecionado:", scopeName);
+                
+                // Configurar habilidades dos campos sem limpar valores
+                switch(scopeName) {
+                    case 'Mundial':
+                        $continente.prop('disabled', true);
+                        $pais.prop('disabled', true);
+                        $estado.prop('disabled', true);
+                        break;
+                        
+                    case 'Continental':
+                        $continente.prop('disabled', false);
+                        $pais.prop('disabled', true);
+                        $estado.prop('disabled', true);
+                        break;
+                        
+                    case 'Nacional':
+                        $continente.prop('disabled', false);
+                        $pais.prop('disabled', false);
+                        $estado.prop('disabled', true);
+                        break;
+                        
+                    case 'Estadual':
+                        $continente.prop('disabled', false);
+                        $pais.prop('disabled', false);
+                        $estado.prop('disabled', false);
+                        break;
+                }
+                
+                // Atualizar Select2 para todos os campos
+                $('#ambito, #continente, #pais, #estado').each(function() {
+                    $(this).select2({
+                        width: '100%',
+                        placeholder: 'Selecione...',
+                        allowClear: true
+                    });
+                });
                 
                 // Remover classes de formulário AJAX anteriores
                 $('#form-campeonato').removeClass('ajax-form');
@@ -640,36 +694,82 @@
                     var $pais = $('#pais');
                     var $estado = $('#estado');
                     
-                    // Reseta todos os campos
-                    $continente.val(null).trigger('change', [true]); // true indica que é uma mudança programática
-                    $pais.val(null).trigger('change', [true]);
-                    $estado.val(null).trigger('change', [true]);
+                    // Armazenar valores atuais antes de resetar
+                    var valoresAtuais = {
+                        continente: $continente.val(),
+                        pais: $pais.val(),
+                        estado: $estado.val()
+                    };
                     
-                    // Configura os campos baseado no âmbito
-                    switch(scopeName) {
-                        case 'Mundial':
-                            $continente.prop('disabled', true);
-                            $pais.prop('disabled', true);
-                            $estado.prop('disabled', true);
-                            break;
-                            
-                        case 'Continental':
-                            $continente.prop('disabled', false);
-                            $pais.prop('disabled', true);
-                            $estado.prop('disabled', true);
-                            break;
-                            
-                        case 'Nacional':
-                            $continente.prop('disabled', false);
-                            $pais.prop('disabled', false);
-                            $estado.prop('disabled', true);
-                            break;
-                            
-                        case 'Estadual':
-                            $continente.prop('disabled', false);
-                            $pais.prop('disabled', false);
-                            $estado.prop('disabled', false);
-                            break;
+                    // Verificar se é a primeira mudança (carregamento da página)
+                    var isFirstChange = !$(this).data('changed');
+                    $(this).data('changed', true);
+                    
+                    // Se for a primeira execução, preservar os valores iniciais
+                    if (isFirstChange) {
+                        console.log("Primeira execução do change do âmbito - preservando valores", valoresAtuais);
+                        
+                        // Configura os campos baseado no âmbito sem limpar valores
+                        switch(scopeName) {
+                            case 'Mundial':
+                                $continente.prop('disabled', true);
+                                $pais.prop('disabled', true);
+                                $estado.prop('disabled', true);
+                                break;
+                                
+                            case 'Continental':
+                                $continente.prop('disabled', false);
+                                $pais.prop('disabled', true);
+                                $estado.prop('disabled', true);
+                                break;
+                                
+                            case 'Nacional':
+                                $continente.prop('disabled', false);
+                                $pais.prop('disabled', false);
+                                $estado.prop('disabled', true);
+                                break;
+                                
+                            case 'Estadual':
+                                $continente.prop('disabled', false);
+                                $pais.prop('disabled', false);
+                                $estado.prop('disabled', false);
+                                break;
+                        }
+                    } else {
+                        // Para mudanças subsequentes feitas pelo usuário, limpar campos
+                        console.log("Mudança subsequente do âmbito - resetando campos");
+                        
+                        // Reseta todos os campos
+                        $continente.val(null).trigger('change', [true]);
+                        $pais.val(null).trigger('change', [true]);
+                        $estado.val(null).trigger('change', [true]);
+                        
+                        // Configura os campos baseado no âmbito
+                        switch(scopeName) {
+                            case 'Mundial':
+                                $continente.prop('disabled', true);
+                                $pais.prop('disabled', true);
+                                $estado.prop('disabled', true);
+                                break;
+                                
+                            case 'Continental':
+                                $continente.prop('disabled', false);
+                                $pais.prop('disabled', true);
+                                $estado.prop('disabled', true);
+                                break;
+                                
+                            case 'Nacional':
+                                $continente.prop('disabled', false);
+                                $pais.prop('disabled', false);
+                                $estado.prop('disabled', true);
+                                break;
+                                
+                            case 'Estadual':
+                                $continente.prop('disabled', false);
+                                $pais.prop('disabled', false);
+                                $estado.prop('disabled', false);
+                                break;
+                        }
                     }
                     
                     // Atualiza o Select2 para refletir as mudanças

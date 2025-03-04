@@ -229,13 +229,15 @@
                                                         <option value="selections">Seleções</option>
                                                     </select>   
                                                 </div> 
-                                                <div class="col-lg-12 mt20">
-                                                    <select class="form-control dual_select" name="teams" multiple>
-                                                        {% for team in teams %}
-                                                        <option value="{{ team.id }}" data-image="{{ team.get_image_url }}">{{ team.name }}</option>
-                                                        {% endfor %}
-                                                    </select>
-                                                </div>                                            
+                                                <div class="row mt-4">
+                                                    <div class="col-md-12">
+                                                        <select class="duallistbox" multiple="multiple" name="teams[]">
+                                                            {% for team in teams %}
+                                                            <option value="{{ team.id }}" data-type="{{ team.is_national_team|yesno:"selection,team" }}">{{ team.name }}</option>
+                                                            {% endfor %}
+                                                        </select>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                         <div id="rodadas" class="tab-pane">
@@ -389,9 +391,187 @@
                     allowClear: true
                 });
 
-                // Garante que os campos de localização comecem vazios
-                $('#continente, #pais, #estado').val(null).trigger('change');
-
+                // Verifica se estamos em modo de edição (se há um ID na URL)
+                var isEditMode = window.location.href.indexOf('editar') > -1;
+                console.log("Modo de edição: ", isEditMode);
+                
+                // Armazenar valores iniciais dos campos principais
+                var initialValues = {
+                    template: isEditMode ? $('#template').val() : null,
+                    ambito: isEditMode ? $('#ambito').val() : null,
+                    continente: isEditMode ? $('#continente').val() : null,
+                    pais: isEditMode ? $('#pais').val() : null,
+                    estado: isEditMode ? $('#estado').val() : null,
+                };
+                
+                console.log("Valores iniciais:", initialValues);
+                
+                // Desativar temporariamente certos eventos para evitar limpeza de campos durante o carregamento
+                var originalEvents = {};
+                if (isEditMode) {
+                    // Guardar e desativar o evento original do âmbito
+                    originalEvents.ambito = $('#ambito').data('events');
+                    $('#ambito').off('change');
+                }
+                
+                // Função para restabelecer os valores iniciais em modo de edição
+                function restoreInitialValues() {
+                    if (!isEditMode) return;
+                    
+                    console.log("Restaurando valores iniciais");
+                    
+                    // Restaurar valores na ordem correta considerando dependências
+                    // 1. Primeiro restaurar o âmbito pois ele afeta a habilitação dos outros campos
+                    if (initialValues.ambito) {
+                        $('#ambito').val(initialValues.ambito);
+                        
+                        // Configurar habilitação de campos conforme o âmbito
+                        var scopeName = $('#ambito option:selected').text().trim();
+                        console.log("Restaurando âmbito:", scopeName);
+                        
+                        switch(scopeName) {
+                            case 'Mundial':
+                                $('#continente, #pais, #estado').prop('disabled', true);
+                                break;
+                            case 'Continental':
+                                $('#continente').prop('disabled', false);
+                                $('#pais, #estado').prop('disabled', true);
+                                break;
+                            case 'Nacional':
+                                $('#continente, #pais').prop('disabled', false);
+                                $('#estado').prop('disabled', true);
+                                break;
+                            case 'Estadual':
+                                $('#continente, #pais, #estado').prop('disabled', false);
+                                break;
+                        }
+                    }
+                    
+                    // 2. Restaurar template
+                    if (initialValues.template) {
+                        console.log("Restaurando template:", initialValues.template);
+                        $('#template').val(initialValues.template).trigger('change.select2');
+                    }
+                    
+                    // 3. Restaurar continente, país e estado em sequência com atrasos
+                    setTimeout(function() {
+                        if (initialValues.continente) {
+                            console.log("Restaurando continente:", initialValues.continente);
+                            $('#continente').prop('disabled', false);
+                            $('#continente').val(initialValues.continente).trigger('change.select2');
+                        }
+                        
+                        // Aguardar para restaurar país após continente
+                        setTimeout(function() {
+                            if (initialValues.pais) {
+                                console.log("Restaurando país:", initialValues.pais);
+                                $('#pais').prop('disabled', false);
+                                $('#pais').val(initialValues.pais).trigger('change.select2');
+                            }
+                            
+                            // Aguardar para restaurar estado após país
+                            setTimeout(function() {
+                                if (initialValues.estado) {
+                                    console.log("Restaurando estado:", initialValues.estado);
+                                    $('#estado').prop('disabled', false);
+                                    $('#estado').val(initialValues.estado).trigger('change.select2');
+                                }
+                            }, 300);
+                        }, 300);
+                    }, 300);
+                }
+                
+                // Configurar comportamento normal do campo âmbito APÓS restaurar valores iniciais
+                setTimeout(function() {
+                    // Se estivermos em modo de edição, restaurar valores iniciais
+                    if (isEditMode) {
+                        restoreInitialValues();
+                        
+                        // Após restaurar os valores, configurar o comportamento normal para mudanças subsequentes
+                        setTimeout(function() {
+                            // Evitar dupla configuração do evento
+                            $('#ambito').off('change');
+                            
+                            // Configurar evento de change do âmbito para mudanças subsequentes
+                            $('#ambito').on('change', function() {
+                                // Apenas limpar os campos se a mudança não for parte da inicialização
+                                var firstRun = $(this).data('first-run');
+                                if (!firstRun) {
+                                    console.log("Evento change do âmbito - limpando campos");
+                                    $('#continente, #pais, #estado').val(null).trigger('change.select2');
+                                }
+                                
+                                // Marcar que o evento foi executado pelo menos uma vez
+                                $(this).data('first-run', true);
+                                
+                                // Configurar habilitação dos campos com base no âmbito
+                                var scopeName = $(this).find('option:selected').text().trim();
+                                switch(scopeName) {
+                                    case 'Mundial':
+                                        $('#continente, #pais, #estado').prop('disabled', true);
+                                        break;
+                                    case 'Continental':
+                                        $('#continente').prop('disabled', false);
+                                        $('#pais, #estado').prop('disabled', true);
+                                        break;
+                                    case 'Nacional':
+                                        $('#continente, #pais').prop('disabled', false);
+                                        $('#estado').prop('disabled', true);
+                                        break;
+                                    case 'Estadual':
+                                        $('#continente, #pais, #estado').prop('disabled', false);
+                                        break;
+                                }
+                                
+                                // Atualizar o Select2
+                                $('#continente, #pais, #estado').each(function() {
+                                    $(this).select2({
+                                        width: '100%',
+                                        placeholder: 'Selecione...',
+                                        allowClear: true
+                                    });
+                                });
+                            });
+                        }, 1000);
+                    } else {
+                        // Em modo de criação, basta garantir que os campos estejam vazios
+                        $('#continente, #pais, #estado').val(null).trigger('change');
+                        
+                        // Configurar o evento de change do âmbito normalmente
+                        $('#ambito').on('change', function() {
+                            var scopeName = $(this).find('option:selected').text().trim();
+                            $('#continente, #pais, #estado').val(null).trigger('change');
+                            
+                            // Configuração de habilitação de campos
+                            switch(scopeName) {
+                                case 'Mundial':
+                                    $('#continente, #pais, #estado').prop('disabled', true);
+                                    break;
+                                case 'Continental':
+                                    $('#continente').prop('disabled', false);
+                                    $('#pais, #estado').prop('disabled', true);
+                                    break;
+                                case 'Nacional':
+                                    $('#continente, #pais').prop('disabled', false);
+                                    $('#estado').prop('disabled', true);
+                                    break;
+                                case 'Estadual':
+                                    $('#continente, #pais, #estado').prop('disabled', false);
+                                    break;
+                            }
+                            
+                            // Atualizar o Select2
+                            $('#continente, #pais, #estado').each(function() {
+                                $(this).select2({
+                                    width: '100%',
+                                    placeholder: 'Selecione...',
+                                    allowClear: true
+                                });
+                            });
+                        });
+                    }
+                }, 500);
+                
                 // Inicializa o iCheck para checkboxes
                 $('.i-checks').iCheck({
                     checkboxClass: 'icheckbox_square-green',
@@ -399,7 +579,7 @@
                 });
 
                 // Inicializa o Dual Listbox para seleção de times
-                $('.dual_select').bootstrapDualListbox({
+                $('.duallistbox').bootstrapDualListbox({
                     selectorMinimalHeight: 160,
                     filterTextClear: 'mostrar todos',
                     filterPlaceHolder: 'Filtrar',
@@ -494,19 +674,44 @@
                 
                 // Variável para rastrear mudanças nos filtros geográficos
                 var needsRefreshTeams = false;
+                var lastScopeId = null;
+                var lastContinentId = null;
+                var lastCountryId = null;
+                var lastStateId = null;
                 
                 // Função para filtrar times com base nas seleções de continente, país e estado
-                function filterTeams() {
+                function filterTeams(forceRefresh) {
                     var continentId = $('#continente').val();
                     var countryId = $('#pais').val();
                     var stateId = $('#estado').val();
                     var filterType = $('#filtrar-por').val();
+                    var scopeId = $('#ambito').val();
                     var scopeName = $('#ambito').find('option:selected').text().trim();
+                    
+                    // Verificar se houve mudança nos filtros geográficos
+                    var geographicChanged = (
+                        scopeId !== lastScopeId || 
+                        continentId !== lastContinentId || 
+                        countryId !== lastCountryId || 
+                        stateId !== lastStateId || 
+                        forceRefresh === true
+                    );
+                    
+                    // Atualizar valores para próxima verificação
+                    lastScopeId = scopeId;
+                    lastContinentId = continentId;
+                    lastCountryId = countryId;
+                    lastStateId = stateId;
+                    
+                    // Se não houve mudança geográfica e não é um refresh forçado, não precisa atualizar
+                    if (!geographicChanged && !needsRefreshTeams && forceRefresh !== true) {
+                        return;
+                    }
                     
                     console.log("Filtrando times. Âmbito:", scopeName, "Continente:", continentId, "País:", countryId, "Estado:", stateId, "Tipo:", filterType);
                     
                     // Obter o select e a DualListbox 
-                    var $select = $('.dual_select');
+                    var $select = $('.duallistbox');
                     var dualListbox = $select.data('bootstrapDualListbox');
                     
                     // Guardar os times já selecionados para preservá-los
@@ -554,21 +759,22 @@
                     }
                     
                     // 2. FILTRO DE TIPO: Verificar se corresponde ao tipo selecionado (times/seleções)
-                    if (filterType === 'teams' && team.is_national_team) {
+                    var isSelection = team.is_national_team;
+                    if (filterType === 'teams' && isSelection) {
                         passouFiltroTipo = false;
-                    } else if (filterType === 'selections' && !team.is_national_team) {
+                    } else if (filterType === 'selections' && !isSelection) {
                         passouFiltroTipo = false;
                     }
                     
                     // 3. REGRA ESPECIAL: Nunca mostrar seleções no âmbito estadual
-                    if (scopeName === 'Estadual' && team.is_national_team) {
+                    if (scopeName === 'Estadual' && isSelection) {
                         passouFiltroTipo = false;
                     }
                     
                     // Adicionar o time se passou em todos os filtros
                     if (passouFiltroGeografico && passouFiltroTipo) {
                         var selected = selectedTeams.includes("{{ team.id }}");
-                        $select.append('<option value="{{ team.id }}" data-image="{{ team.get_image_url }}" ' + 
+                        $select.append('<option value="{{ team.id }}" data-type="{{ team.is_national_team|yesno:"selection,team" }}" ' + 
                             (selected ? 'selected' : '') + '>{{ team.name }}</option>');
                     }
                     {% endfor %}
@@ -584,24 +790,24 @@
                 $('#ambito, #continente, #pais, #estado').change(function() {
                     // Marcar que os times precisam ser atualizados
                     needsRefreshTeams = true;
-                    filterTeams();
+                    filterTeams(); // Aplicar filtro imediatamente para manter o estado atualizado
                 });
                 
                 // Associar evento ao filtro de tipos
                 $('#filtrar-por').change(function() {
-                    filterTeams();
+                    filterTeams(true); // Forçar atualização quando mudar o tipo de filtro
                 });
                 
                 // Associar evento à mudança de abas
                 $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
                     // Se estamos entrando na aba Times, forçar atualização dos filtros
                     if ($(e.target).attr('href') === '#times') {
-                        filterTeams();
+                        filterTeams(true); // Forçar atualização ao entrar na aba Times
                     }
                 });
                 
                 // Aplicar o filtro inicial
-                filterTeams();
+                filterTeams(true);
 
                 // Função para processar o arquivo Excel
                 function processExcelFile(file) {
@@ -1169,19 +1375,6 @@
                     } else {
                         $('#matches-container').html('<div class="alert alert-info">Selecione uma fase e rodada para visualizar os jogos.</div>');
                     }
-                });
-
-                $('.dual_select').bootstrapDualListbox({
-                    selectorMinimalHeight: 160,
-                    filterTextClear: 'mostrar todos',
-                    filterPlaceHolder: 'Filtrar',
-                    moveSelectedLabel: 'Mover selecionados',
-                    moveAllLabel: 'Mover todos',
-                    removeSelectedLabel: 'Remover selecionados',
-                    removeAllLabel: 'Remover todos',
-                    infoText: 'Mostrando {0}',
-                    infoTextFiltered: '<span class="label label-warning">Filtrado</span> {0} de {1}',
-                    infoTextEmpty: 'Lista vazia'
                 });
             });
         </script>
