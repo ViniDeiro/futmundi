@@ -2,15 +2,7 @@ $(document).ready(function() {
     let isEditing = false;
     let editingId = null;
     let niveisData = [];
-    
-    // Detecta o prefixo da URL dinamicamente
-    const ADMIN_URL_PREFIX = (function() {
-        const metaElement = document.querySelector('meta[name="url-prefix"]');
-        if (metaElement && metaElement.getAttribute('content')) {
-            return metaElement.getAttribute('content');
-        }
-        return '/administrativo'; // Valor padrão caso não encontre a meta tag
-    })();
+    let imageWasRemoved = false;
     
     // Atualiza o nome do arquivo selecionado
     $('input[type="file"]').change(function(e) {
@@ -49,6 +41,235 @@ $(document).ready(function() {
 
     // Inicializa o plugin Jasny Bootstrap para o upload de imagem
     $('.fileinput').fileinput();
+
+    // Função para carregar dados iniciais
+    function carregarDadosIniciais() {
+        // Adiciona um indicador de carregamento na tabela
+        $('#table tbody').html('<tr><td colspan="6" class="text-center"><i class="fa fa-spinner fa-spin"></i> Carregando dados...</td></tr>');
+        
+        // Cria uma cópia de backup dos níveis atuais (se existirem)
+        const niveisDataBackup = [...niveisData];
+        console.log("Backup de dados antes da carga:", JSON.stringify(niveisDataBackup));
+        
+        // Sistema para salvar as imagens no localStorage como backup
+        let imagensLocais = {};
+        try {
+            const imagensLocaisStr = localStorage.getItem('niveisImagens');
+            if (imagensLocaisStr) {
+                imagensLocais = JSON.parse(imagensLocaisStr);
+                console.log("Imagens recuperadas do localStorage:", Object.keys(imagensLocais).length);
+            }
+        } catch (e) {
+            console.error("Erro ao recuperar imagens do localStorage:", e);
+        }
+        
+        // Faz a requisição AJAX para carregar os dados
+        $.ajax({
+            url: '/futligas/jogadores/dados/',
+            method: 'GET',
+            success: function(response) {
+                console.log("Dados carregados com sucesso:", response);
+                if (response && response.levels) {
+                    // Se já temos dados, vamos mesclar preservando as imagens
+                    if (niveisDataBackup.length > 0) {
+                        console.log("Mesclando dados existentes com dados do servidor");
+                        
+                        // Para cada nível carregado do servidor
+                        response.levels.forEach(novoNivel => {
+                            // Verifica se já existe um nível com o mesmo ID
+                            const nivelExistente = niveisDataBackup.find(n => n.id === novoNivel.id);
+                            if (nivelExistente) {
+                                console.log(`Nível ID ${novoNivel.id} já existe, verificando imagem`);
+                                
+                                // Se o nível do servidor não tiver imagem mas o nível existente tiver,
+                                // mantém a imagem do nível existente
+                                if (!novoNivel.image && nivelExistente.image) {
+                                    console.log(`Mantendo imagem existente para nível ID ${novoNivel.id}`);
+                                    novoNivel.image = nivelExistente.image;
+                                }
+                            } else {
+                                console.log(`Novo nível ID ${novoNivel.id} adicionado dos dados do servidor`);
+                            }
+                            
+                            // Verifica se temos esta imagem no localStorage
+                            if (!novoNivel.image && imagensLocais[novoNivel.id]) {
+                                console.log(`Recuperando imagem do localStorage para nível ID ${novoNivel.id}`);
+                                novoNivel.image = imagensLocais[novoNivel.id];
+                            }
+                        });
+                    } else if (Object.keys(imagensLocais).length > 0) {
+                        // Se não temos dados em memória mas temos no localStorage
+                        response.levels.forEach(nivel => {
+                            if (!nivel.image && imagensLocais[nivel.id]) {
+                                console.log(`Recuperando imagem do localStorage para nível ID ${nivel.id}`);
+                                nivel.image = imagensLocais[nivel.id];
+                            }
+                        });
+                    }
+                    
+                    // Atualiza os dados armazenados
+                    niveisData = response.levels;
+                    
+                    // Garante que não haja valores undefined nas imagens
+                    niveisData.forEach(nivel => {
+                        if (nivel.image === undefined) {
+                            nivel.image = null;
+                        }
+                        console.log(`Nível carregado: ${nivel.name}, ID: ${nivel.id}, Imagem: ${nivel.image || 'Nenhuma'}`);
+                    });
+                    
+                    // Preenche a tabela de níveis
+                    renderNiveisTable();
+                    
+                    // Preenche a tabela de prêmios
+                    updatePremiosTableWithoutReset();
+                    
+                    // Configura formulário de premiação
+                    if (response.award_config) {
+                        const weekly = response.award_config.weekly || {};
+                        const season = response.award_config.season || {};
+                        
+                        // Semanal
+                        if (weekly.day) {
+                            $('#dia-premiacao').val(weekly.day);
+                        }
+                        if (weekly.time) {
+                            $('.clockpicker:eq(0) input').val(weekly.time);
+                        }
+                        
+                        // Temporada
+                        if (season.month) {
+                            $('#mes-ano-premiacao').val(season.month);
+                        }
+                        if (season.day) {
+                            $('#dia-ano-premiacao').val(season.day);
+                        }
+                        if (season.time) {
+                            $('.clockpicker:eq(1) input').val(season.time);
+                        }
+                    }
+                    
+                    // Inicializa drag and drop na tabela
+                    initDragAndDrop();
+                    
+                    // Se não há prêmios no banco de dados, deixa a tabela vazia
+                    if (!response.prizes || response.prizes.length === 0) {
+                        $('#premios table tbody').empty();
+                    }
+                } else {
+                    $('#table tbody').html('<tr><td colspan="6" class="text-center">Nenhum nível encontrado.</td></tr>');
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error("Erro ao carregar dados:", error);
+                console.error("Status HTTP:", xhr.status);
+                console.error("Resposta:", xhr.responseText);
+                
+                $('#table tbody').html('<tr><td colspan="6" class="text-center text-danger">Erro ao carregar dados. <button class="btn btn-xs btn-primary" id="btn-retry">Tentar novamente</button></td></tr>');
+                
+                // Adiciona listener para o botão de tentar novamente
+                $('#btn-retry').on('click', function() {
+                    carregarDadosIniciais();
+                });
+                
+                toastr.error('Ocorreu um erro ao carregar os dados. Por favor, verifique o console para mais detalhes ou tente novamente.');
+            }
+        });
+    }
+    
+    // Renderiza a tabela de níveis de forma robusta
+    function renderNiveisTable() {
+        console.log("Renderizando tabela de níveis com", niveisData ? niveisData.length : 0, "níveis");
+        
+        // Guarda as imagens atuais na tabela para referência
+        const imagensAtuais = {};
+        $('#table tbody tr').each(function() {
+            const id = $(this).data('id');
+            const imgElement = $(this).find('td:eq(1) img');
+            if (imgElement.length && imgElement.attr('src')) {
+                imagensAtuais[id] = imgElement.attr('src');
+                console.log(`Imagem encontrada na tabela para nível ID ${id}: ${imgElement.attr('src')}`);
+            }
+        });
+        
+        if (!niveisData || niveisData.length === 0) {
+            $('#table tbody').html('<tr><td colspan="6" class="text-center">Nenhum nível encontrado.</td></tr>');
+            return;
+        }
+        
+        // Validar os dados das imagens antes de renderizar
+        niveisData.forEach(nivel => {
+            // Verificar se temos uma imagem na tabela atual que não está nos dados
+            if (imagensAtuais[nivel.id] && !nivel.image) {
+                console.log(`Recuperando imagem da tabela para nível ID ${nivel.id}`);
+                nivel.image = imagensAtuais[nivel.id];
+            }
+            
+            // Garantir que a propriedade image não se torne undefined
+            if (!nivel.image) {
+                nivel.image = null;
+            }
+            
+            console.log(`Renderizando nível: ${nivel.name}, ID: ${nivel.id}, tem imagem: ${nivel.image ? 'Sim' : 'Não'}`);
+        });
+        
+        // Atualizar o localStorage com as imagens atuais
+        try {
+            const imagensParaArmazenar = {};
+            niveisData.forEach(nivel => {
+                if (nivel.image) {
+                    imagensParaArmazenar[nivel.id] = nivel.image;
+                }
+            });
+            localStorage.setItem('niveisImagens', JSON.stringify(imagensParaArmazenar));
+            console.log(`${Object.keys(imagensParaArmazenar).length} imagens salvas no localStorage`);
+        } catch (e) {
+            console.error("Erro ao salvar imagens no localStorage:", e);
+        }
+        
+        let html = '';
+        niveisData.forEach(function(nivel) {
+            // Garante que a imagem seja exibida se estiver disponível
+            const imagemHTML = nivel.image 
+                ? `<img src="${nivel.image}" height="32" width="32" alt="Imagem" onerror="this.onerror=null; this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiI+PHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiBmaWxsPSIjZWVlIi8+PHRleHQgdGV4dC1hbmNob3I9Im1pZGRsZSIgeD0iMTYiIHk9IjE2IiBzdHlsZT0iZmlsbDojYWFhO2ZvbnQtd2VpZ2h0OmJvbGQ7Zm9udC1zaXplOjEycHg7Zm9udC1mYW1pbHk6QXJpYWwsSGVsdmV0aWNhLHNhbnMtc2VyaWY7ZG9taW5hbnQtYmFzZWxpbmU6Y2VudHJhbCI+Pzw8L3RleHQ+PC9zdmc+'; console.log('Erro ao carregar imagem para nível ID ' + ${nivel.id});">`
+                : '-';
+            
+            html += `
+            <tr data-id="${nivel.id}" data-order="${nivel.order}">
+                <td><span class="drag-handle" style="cursor: move; margin-right: 5px;">&#9776;</span> ${nivel.name || '-'}</td>
+                <td class="center-middle" data-has-image="${!!nivel.image}">${imagemHTML}</td>
+                <td>${nivel.players || 0}</td>
+                <td>${nivel.premium_players || 0}</td>
+                <td>${nivel.owner_premium ? 'Sim' : 'Não'}</td>
+                <td>
+                    <div>
+                        <button type="button" class="btn btn-info btn-xs mr5" title="Editar"><i class="glyphicon glyphicon-pencil"></i></button>
+                        <button type="button" class="btn btn-danger btn-xs mr5" title="Excluir"><i class="glyphicon glyphicon-trash"></i></button>
+                    </div>
+                </td>
+            </tr>`;
+        });
+        
+        $('#table tbody').html(html);
+        
+        // Verifica depois da renderização se as imagens estão sendo exibidas corretamente
+        setTimeout(function() {
+            $('#table tbody tr').each(function() {
+                const id = $(this).data('id');
+                const nivel = niveisData.find(n => n.id == id);
+                
+                if (nivel && nivel.image) {
+                    const imgElement = $(this).find('td:eq(1) img');
+                    if (imgElement.length === 0) {
+                        console.error(`Imagem não renderizada para nível ID ${id}, apesar de ter dados de imagem`);
+                    }
+                }
+            });
+        }, 500);
+    }
+    
+    // Carrega os dados iniciais quando a página carrega
+    carregarDadosIniciais();
 
     // Preview da imagem com validações
     $("#image").change(function() {
@@ -94,6 +315,11 @@ $(document).ready(function() {
         e.stopPropagation();
         e.stopImmediatePropagation(); // Impede que outros manipuladores sejam chamados
         
+        console.log("Botão de remover imagem clicado - removendo imagem intencionalmente");
+        
+        // Marca que a imagem foi intencionalmente removida
+        imageWasRemoved = true;
+        
         // Limpa o campo de arquivo
         $("#image").val('');
         
@@ -130,16 +356,41 @@ $(document).ready(function() {
         const imagePreview = $("#image-preview img");
         if (imagePreview.length) {
             imageData = imagePreview.attr('src');
+            console.log('Imagem encontrada no formulário e será usada');
+        } else {
+            console.log('Nenhuma imagem encontrada no formulário');
+            
+            // Se estiver editando e a imagem NÃO foi removida intencionalmente, 
+            // verificar se o nível já tem uma imagem que deve ser mantida
+            if (isEditing && !imageWasRemoved) {
+                const existingLevel = niveisData.find(nivel => nivel.id == editingId);
+                if (existingLevel && existingLevel.image) {
+                    console.log('Mantendo imagem existente do nível em edição');
+                    imageData = existingLevel.image;
+                }
+            } else if (imageWasRemoved) {
+                console.log('Imagem foi intencionalmente removida pelo usuário');
+            }
         }
 
         // Cria ou atualiza o nível
+        try {
         if (isEditing) {
+                console.log(`Atualizando nível ID: ${editingId}, Nome: ${name}, Imagem: ${imageData ? 'Com imagem' : 'Sem imagem'}`);
             updateLevel(editingId, name, players, premium_players, owner_premium, imageData);
             toastr.success('Nível atualizado com sucesso!');
         } else {
+                console.log(`Adicionando novo nível, Nome: ${name}, Imagem: ${imageData ? 'Com imagem' : 'Sem imagem'}`);
             addLevel(name, players, premium_players, owner_premium, imageData);
             toastr.success('Nível adicionado com sucesso!');
+            }
+        } catch (error) {
+            console.error('Erro ao salvar nível:', error);
+            toastr.error('Ocorreu um erro ao salvar. Por favor, tente novamente.');
         }
+
+        // Resetar o flag de remoção de imagem
+        imageWasRemoved = false;
 
         resetForm();
     });
@@ -149,24 +400,34 @@ $(document).ready(function() {
         const row = $(this).closest('tr');
         editingId = row.data('id');
         
-        // Remove o ícone de barras do nome
-        const name = row.find('td:eq(0)').text().replace(/^\s*\u2630\s*/, '').trim();
-        $("#name").val(name);
-        $("#players").val(row.find('td:eq(2)').text());
-        $("#premium_players").val(row.find('td:eq(3)').text());
-        $("#owner_premium").prop('checked', row.find('td:eq(4)').text() === 'Sim').iCheck('update');
+        console.log(`Editando nível ID: ${editingId}`);
+        
+        // Obtém o nível dos dados em memória para garantir todos os detalhes
+        const nivel = niveisData.find(n => n.id == editingId);
+        if (!nivel) {
+            console.error(`Nível com ID ${editingId} não encontrado nos dados em memória`);
+            toastr.error('Erro ao editar: nível não encontrado');
+            return;
+        }
+        
+        // Preenche o formulário com dados do nível
+        $("#name").val(nivel.name);
+        $("#players").val(nivel.players);
+        $("#premium_players").val(nivel.premium_players);
+        $("#owner_premium").prop('checked', nivel.owner_premium).iCheck('update');
         
         // Recupera a imagem existente se houver
-        const existingImage = row.find('td:eq(1) img');
-        if (existingImage.length) {
+        if (nivel.image) {
+            console.log(`Nível tem imagem: ${nivel.image}`);
             $("#image-preview").html(`
-                <img src="${existingImage.attr('src')}" style="max-width: 50px; max-height: 50px; object-fit: contain; cursor: pointer;" onclick="document.getElementById('image').click()">
+                <img src="${nivel.image}" style="max-width: 50px; max-height: 50px; object-fit: contain; cursor: pointer;" onclick="document.getElementById('image').click()">
                 <button type="button" class="btn btn-danger btn-xs img-remove-btn" id="remove_image_btn" style="position: absolute; bottom: -7px; right: -30px;">
                     <i class="fa fa-trash"></i>
                 </button>
             `);
             $('#image-preview').css('margin-top', '-7px');
         } else {
+            console.log(`Nível não tem imagem`);
             $("#image-preview").html('<i class="fa fa-file-image-o" style="font-size: 32px; color: #ccc; cursor: pointer;" onclick="document.getElementById(\'image\').click()"></i>');
         }
         
@@ -215,85 +476,50 @@ $(document).ready(function() {
         }
     });
     
-    // Confirmar exclusão no modal
+    // Confirmar exclusão de nível
     $('#confirmDeleteButton').click(function() {
-        const row = $('#modalConfirmDelete').data('row');
-        const nivelId = row.data('id');
-        const nivelNome = row.find('td:eq(0)').text().replace(/^\s*\u2630\s*/, '').trim();
+        // Obter dados do modal
+        const $row = $('#modalConfirmDelete').data('row');
+        const nivelId = $row.data('id');
         
-        // Botão de confirmação - mostra spinner
-        const $btn = $(this);
-        const originalText = $btn.html();
-        $btn.html('<i class="fa fa-spinner fa-spin"></i> Excluindo...').prop('disabled', true);
-        
-        // Envia solicitação AJAX para excluir o nível
-        $.ajax({
-            url: ADMIN_URL_PREFIX + "/futligas/jogadores/excluir/",
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': $('[name=csrfmiddlewaretoken]').val()
-            },
-            data: JSON.stringify({
-                level_id: nivelId,
-                level_name: nivelNome
-            }),
-            contentType: 'application/json',
-            success: function(response) {
-                if (response.success) {
-                    // Remove a linha
-                    row.remove();
-                    
-                    // Atualiza a tabela de prêmios
-                    updatePremiosTable();
-                    
-                    // Restaura o botão antes de fechar o modal
-                    $btn.html(originalText).prop('disabled', false);
-                    
-                    // Fecha o modal de forma segura
+        // Encontra o índice no array de dados
+        const levelIndex = niveisData.findIndex(nivel => nivel.id == nivelId);
+        if (levelIndex >= 0) {
+            // Remove do array de dados
+            niveisData.splice(levelIndex, 1);
+            
+            // Atualiza os índices de ordem
+            niveisData.forEach((nivel, index) => {
+                nivel.order = index;
+            });
+            
+            // Renderiza a tabela novamente
+            renderNiveisTable();
+            
+            // Atualiza a tabela de prêmios sem resetar as linhas
+            updatePremiosTableWithoutReset();
+            
+            // Reinicializa o drag and drop
+            initDragAndDrop();
+            
+            // Fecha o modal
                     $('#modalConfirmDelete').modal('hide');
                     
-                    // Notifica o usuário
-                    toastr.success('Nível excluído com sucesso!');
-                    
-                    // Atualiza o drag and drop após excluir
-                    initDragAndDrop();
-                } else {
-                    toastr.error(response.message || 'Erro ao excluir nível!');
-                    console.error("Erro ao excluir (sucesso=false):", response);
-                    
-                    // Restaura o botão
-                    $btn.html(originalText).prop('disabled', false);
-                }
-            },
-            error: function(xhr, status, error) {
-                console.error("Erro na requisição AJAX de exclusão:", {status: status, error: error, response: xhr.responseText});
-                
-                let errorMsg = 'Erro ao excluir nível';
-                try {
-                    const errorResponse = JSON.parse(xhr.responseText);
-                    if (errorResponse && errorResponse.error) {
-                        errorMsg += ': ' + errorResponse.error;
-                    } else if (errorResponse && errorResponse.message) {
-                        errorMsg += ': ' + errorResponse.message;
+            // Notificar o usuário
+            toastr.success("Nível excluído com sucesso!");
+            
+            // Reseta o estado de edição, se o nível que estava sendo editado foi excluído
+            if (isEditing && editingId == nivelId) {
+                resetForm();
+                $("#submit-btn").html('<i class="fa fa-plus mr5"></i> Adicionar');
+                isEditing = false;
+                editingId = null;
+            }
                     } else {
-                        errorMsg += ': ' + error;
-                    }
-                } catch (e) {
-                    errorMsg += ': ' + error;
-                    if (xhr.status) {
-                        errorMsg += ' (Status ' + xhr.status + ')';
-                    }
-                }
-                
-                toastr.error(errorMsg);
-                
-                // Restaura o botão
-                $btn.html(originalText).prop('disabled', false);
-                
-                // Fecha o modal se houve erro
+            console.error("Nível não encontrado para exclusão:", nivelId);
+            toastr.error("Erro ao excluir nível, recarregue a página e tente novamente.");
                 $('#modalConfirmDelete').modal('hide');
             }
-        });
     });
 
     // Botão para abrir modal de importação
@@ -411,54 +637,55 @@ $(document).ready(function() {
         toastr.success('Níveis exportados com sucesso!');
     });
 
-    // Adiciona prêmio - Atualizar para usar o seletor correto do botão
-    $("#addPremioRow, .btn-adicionar-premio").click(function() {
-        const posicao = $('.premio-table tbody tr').length + 1;
+    // Adiciona evento para o botão de adicionar prêmio
+    $('.btn-adicionar-premio, #addPremioRow').off('click').on('click', function() {
+        const $premiTable = $('#premiosTable');
+        const numRows = $premiTable.find('tbody tr').length;
+        const position = numRows + 1;
         
-        // Obtém a lista de níveis
         const niveis = [];
         $("#table tbody tr").each(function() {
             niveis.push($(this).find('td:eq(0)').text().replace(/^\s*\u2630\s*/, '').trim());
         });
         
-        // Cria a nova linha
+        // Cria uma nova linha
         let newRow = `
-            <tr class="premio-row">
-                <td>
-                    <input type="number" class="form-control position-input" min="1" value="${posicao}">
-                </td>
+            <tr>
+                <td>${position}°</td>
                 <td class="center-middle">
-                    <div class="image-preview-container">
-                        <input type="file" class="premio-image" accept="image/*" style="display: none;">
-                        <div class="premio-image-preview">
-                            <i class="fa fa-file-image-o"></i>
+                    <div class="premio-image-container" style="position: relative; display: inline-block;">
+                        <div class="premio-image-preview dropzone-imagem" style="height: 32px; width: 32px; border: 1px dashed #ccc; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                            <i class="fa fa-plus"></i>
                         </div>
+                        <input type="file" class="premio-image" style="display: none;" accept="image/*">
                     </div>
                 </td>`;
                 
-        // Adiciona uma coluna para cada nível
+        // Adiciona células para cada nível
         niveis.forEach(nivel => {
             newRow += `
                 <td>
-                    <input type="number" class="form-control premio-valor" data-nivel="${nivel}" min="0" value="1000">
+                    <input type="number" class="form-control premio-valor" data-nivel="${nivel}" value="1000" min="0">
                 </td>`;
         });
         
-        // Adiciona a coluna de ações
+        // Finaliza a linha com a célula de ações - botão simplificado e maior
         newRow += `
                 <td>
-                    <button type="button" class="btn btn-danger btn-xs delete-premio" title="Excluir"><i class="glyphicon glyphicon-trash"></i></button>
+                    <button type="button" class="btn btn-danger delete-premio" title="Excluir"><i class="glyphicon glyphicon-trash"></i></button>
                 </td>
             </tr>`;
         
-        // Adiciona a nova linha à tabela
-        $('.premio-table tbody').append(newRow);
+        // Adiciona a linha à tabela
+        $premiTable.find('tbody').append(newRow);
         
         // Inicializa o preview de imagem para a nova linha
-        initPremioImagePreview($('.premio-table tbody tr:last'));
+        initPremioImagePreview($premiTable.find('tbody tr:last'));
         
         // Reaplica os eventos aos botões de exclusão
         initDeletePremioButtons();
+        
+        toastr.success('Prêmio adicionado com sucesso!');
     });
     
     // Função para inicializar a visualização de imagem de prêmio
@@ -502,7 +729,11 @@ $(document).ready(function() {
     
     // Função para inicializar os botões de exclusão de prêmios
     function initDeletePremioButtons() {
-        $('.delete-premio').off('click').on('click', function() {
+        // Remover handlers de clique anteriores para evitar duplicação
+        $('.delete-premio').off('click');
+        
+        // Adicionar novos handlers
+        $('.delete-premio').on('click', function() {
             const $row = $(this).closest('tr');
             const position = $row.find('td:first').text();
             
@@ -511,16 +742,18 @@ $(document).ready(function() {
                 
                 // Atualiza as posições dos prêmios
                 $('#premiosTable tbody tr').each(function(index) {
-                    $(this).find('.position-input').val(index + 1);
+                    $(this).find('td:first').text((index + 1) + '°');
                 });
+                
+                toastr.success(`Prêmio da posição ${position} excluído com sucesso!`);
             }
         });
     }
     
-    // Delegação de evento para os botões de excluir prêmio
-    $(document).on('click', '.remove-premio', function() {
+    // Delegação de evento para os botões de excluir prêmio (para botões adicionados dinamicamente)
+    $(document).on('click', '.delete-premio', function() {
         const row = $(this).closest('tr');
-        const position = row.find('.position-input').val() || row.index() + 1;
+        const position = row.find('td:first').text();
         
         if (confirm(`Tem certeza que deseja excluir o prêmio da posição ${position}?`)) {
             row.remove();
@@ -541,251 +774,489 @@ $(document).ready(function() {
         });
     });
 
-    // Salvar todas as alterações
-    $("#successToast").click(function(e) {
-        e.preventDefault();
+    // Salvar todas as configurações
+    $("#successToast").click(function() {
+        console.log("Iniciando processo de salvar todas as configurações");
         
-        // Coleta todos os níveis da tabela
-        const niveis = [];
+        // Mostra indicador de carregamento
         const $btn = $(this);
-        const originalText = $btn.html();
+        const originalHtml = $btn.html();
+        $btn.html('<i class="fa fa-spinner fa-spin mr5"></i> Salvando...').prop('disabled', true);
         
-        // Debug
-        console.log("Iniciando coleta de dados");
+        // IMPORTANTE: Certifique-se que niveisData está atualizado com as imagens corretas
+        console.log("Verificando dados antes do envio para o servidor");
         
-        $('#table tbody tr').each(function(index) {
-            const $row = $(this);
-            const id = $row.data('id');
+        // Verifica se há alguma imagem na tabela que não está nos dados em memória
+        $('#table tbody tr').each(function() {
+            const id = $(this).data('id');
+            const nivel = niveisData.find(n => n.id == id);
+            const imgElement = $(this).find('td:eq(1) img');
             
-            // Remove o ícone de barras do nome
-            const name = $row.find('td:eq(0)').text().replace(/^\s*\u2630\s*/, '').trim();
-            
-            // Obtém a imagem se houver
-            const $img = $row.find('td:eq(1) img');
-            let image = null;
-            if ($img.length) {
-                image = $img.attr('src');
-                console.log(`Nível ${name}: Imagem encontrada com src ${image.substring(0, 30)}...`);
-            } else {
-                console.log(`Nível ${name}: Sem imagem`);
+            // Se temos um nível mas ele não tem imagem, e a tabela tem uma imagem
+            if (nivel && !nivel.image && imgElement.length) {
+                console.log(`Recuperando imagem da tabela para nível ID ${id} antes de salvar`);
+                nivel.image = imgElement.attr('src');
             }
-            
-            // Obtém os valores das colunas
-            niveis.push({
-                id: id,
-                name: name,
-                image: image,
-                players: parseInt($row.find('td:eq(2)').text()) || 0,
-                premium_players: parseInt($row.find('td:eq(3)').text()) || 0,
-                owner_premium: $row.find('td:eq(4)').text() === 'Sim',
-                order: index + 1
-            });
         });
         
-        // Obtém os prêmios da tabela
-        const premios = [];
-        $('#premiosTable tbody tr').each(function(index) {
-            const $row = $(this);
-            const position = index + 1;
-            const values = {};
-            
-            // Para cada nível, obtém o valor correspondente
-            $row.find('.premio-valor').each(function() {
-                const nivelName = $(this).data('nivel');
-                if (nivelName) {
-                    console.log(`Coletando valor para posição ${position}, nível ${nivelName}: ${$(this).val()}`);
-                    values[nivelName] = parseInt($(this).val()) || 0;
+        // Verifica se todos os níveis têm dados de imagem válidos
+        niveisData.forEach(nivel => {
+            if (nivel.image === undefined) {
+                nivel.image = null;
+                console.log(`Corrigido valor 'undefined' para imagem do nível ID ${nivel.id}`);
+            }
+        });
+        
+        // Salva as imagens no localStorage como backup
+        try {
+            const imagensParaArmazenar = {};
+            niveisData.forEach(nivel => {
+                if (nivel.image) {
+                    imagensParaArmazenar[nivel.id] = nivel.image;
                 }
             });
-            
-            // Procura imagem do prêmio
-            let image = null;
-            // Primeiro, tenta encontrar a imagem diretamente
-            let $img = $row.find('td:eq(1) img');
-            
-            // Se não encontrar, tenta encontrar a imagem dentro de qualquer container
-            if (!$img.length) {
-                $img = $row.find('td:eq(1) .premio-image-preview img');
+            localStorage.setItem('niveisImagens', JSON.stringify(imagensParaArmazenar));
+            console.log(`${Object.keys(imagensParaArmazenar).length} imagens salvas no localStorage antes do salvamento no servidor`);
+        } catch (e) {
+            console.error("Erro ao salvar imagens no localStorage:", e);
+        }
+        
+        // Obter os dados de todos os níveis da tabela
+        const levels = [];
+        niveisData.forEach(function(nivel, index) {
+            // Verificar se a imagem do nível existe na interface antes de enviá-la
+            const rowElement = $(`#table tbody tr[data-id="${nivel.id}"]`);
+            if (rowElement.length) {
+                const imgElement = rowElement.find('td:eq(1) img');
+                if (imgElement.length && imgElement.attr('src') && !nivel.image) {
+                    console.log(`CORREÇÃO CRÍTICA: Recuperando imagem da DOM para o nível ${nivel.name} antes de salvar`);
+                    nivel.image = imgElement.attr('src');
+                }
             }
             
-            if ($img.length) {
-                image = $img.attr('src');
-                console.log(`Prêmio posição ${position}: Imagem encontrada com src: ${image ? image.substring(0, 30) + '...' : 'undefined'}`);
-            } else {
-                console.log(`Prêmio posição ${position}: Sem imagem`);
-            }
+            // IMPORTANTE: Força salvar todos os campos, até mesmo null, para garantir que o backend não descarte dados
+            levels.push({
+                id: nivel.id,
+                name: nivel.name,
+                players: nivel.players,
+                premium_players: nivel.premium_players,
+                owner_premium: nivel.owner_premium,
+                image: nivel.image, // Garantir que imagem seja enviada, mesmo que seja null
+                order: index
+            });
             
-            console.log(`Prêmio posição ${position}, valores:`, values);
+            // Log detalhado para diagnóstico
+            console.log(`VERIFICAÇÃO PRÉ-ENVIO: Nível ${nivel.name} (ID: ${nivel.id}), Ordem: ${index}, Imagem: ${nivel.image ? 'SIM' : 'NÃO'}`);
+        });
+        
+        // Obter os dados dos prêmios
+        const prizes = [];
+        $("#premios table tbody tr").each(function() {
+            const row = $(this);
+            const position = parseInt(row.find('td:eq(0)').text());
+            const imageElement = row.find('td:eq(1) img');
+            const image = imageElement.length ? imageElement.attr('src') : null;
             
-            premios.push({
-                position: position,
-                values: values,
-                image: image
+            // Obter valores por nível
+            const values = {};
+            row.find('.premio-valor').each(function() {
+                const nivel = $(this).data('nivel');
+                const valor = parseInt($(this).val());
+                values[nivel] = isNaN(valor) ? 0 : valor;
+            });
+            
+            prizes.push({
+                position,
+                image,
+                values
             });
         });
         
-        // Obtém as configurações de premiação
-        const premiacao = {
+        // Obter configurações de premiação
+        const awardConfig = {
             weekly: {
-                day: $('#dia-premiacao').val() || 'Segunda',
-                time: $('.clockpicker:eq(0) input').val() || '12:00'
+                day: $("#dia-premiacao").val(),
+                time: $(".clockpicker:eq(0) input").val()
             },
             season: {
-                month: $('#mes-ano-premiacao').val() || 'Janeiro',
-                day: $('#dia-ano-premiacao').val() || '1',
-                time: $('.clockpicker:eq(1) input').val() || '12:00'
+                month: $("#mes-ano-premiacao").val(),
+                day: $("#dia-ano-premiacao").val(),
+                time: $(".clockpicker:eq(1) input").val()
             }
         };
         
-        // Debug dos dados
-        console.log("Dados a serem enviados:", {
-            levels: niveis,
-            prizes: premios,
-            award_config: premiacao
+        // Adicionar função de proteção para data.levels antes do envio
+        function garantirCompletudeDeDados(dados) {
+            console.log("PROTEÇÃO: Verificando completude de dados antes do envio");
+            
+            // Verificar se todos os níveis têm todas as propriedades necessárias
+            if (dados.levels) {
+                dados.levels.forEach((nivel, index) => {
+                    // Garantir que todas as propriedades estão definidas (mesmo que sejam null)
+                    const propriedadesNecessarias = ['id', 'name', 'players', 'premium_players', 'owner_premium', 'image', 'order'];
+                    propriedadesNecessarias.forEach(prop => {
+                        if (nivel[prop] === undefined) {
+                            console.warn(`CORREÇÃO: Propriedade '${prop}' ausente no nível ${nivel.name || index}, definindo como null`);
+                            nivel[prop] = null;
+                        }
+                    });
+                    
+                    // Double-check para imagens
+                    if (nivel.image === undefined) nivel.image = null;
+                });
+            }
+            
+            return dados;
+        }
+
+        // Dados completos para envio
+        const data = garantirCompletudeDeDados({
+            levels,
+            prizes,
+            award_config: awardConfig
         });
         
-        // Verificação detalhada de imagens nos níveis antes de enviar
-        if (niveis && niveis.length > 0) {
-            console.log("Verificação detalhada de imagens antes de enviar:");
-            niveis.forEach((nivel, index) => {
-                console.log(`Nível ${index + 1} - ${nivel.name}: Tem imagem? ${nivel.image ? 'Sim' : 'Não'}`);
-                if (nivel.image) {
-                    console.log(`Imagem URL: ${nivel.image.substring(0, 50)}...`);
-                }
-            });
-        }
+        console.log("Dados a serem enviados:", data);
+        console.log("Detalhe das imagens nos dados a serem enviados:");
+        levels.forEach(level => {
+            console.log(`Nível ID ${level.id}, Nome: ${level.name}, Tem imagem: ${level.image ? 'Sim' : 'Não'}`);
+        });
         
-        $btn.html('<i class="fa fa-spinner fa-spin"></i> Salvando...').prop('disabled', true);
-
-        // Adiciona um timeout para garantir que o console.log seja exibido antes da requisição
-        setTimeout(function() {
+        // Enviar dados ao servidor
             $.ajax({
-                url: ADMIN_URL_PREFIX + "/futligas/jogadores/salvar/",
-                method: 'POST',
+            url: "/futligas/jogadores/salvar/",
+            type: "POST",
+            data: JSON.stringify(data),
+            contentType: "application/json",
                 headers: {
                     'X-CSRFToken': $('[name=csrfmiddlewaretoken]').val()
                 },
-                data: JSON.stringify({
-                    levels: niveis,
-                    prizes: premios,
-                    award_config: premiacao
-                }),
-                contentType: 'application/json',
                 success: function(response) {
                     console.log("Resposta do servidor:", response);
+                if (response.success) {
+                    toastr.success("Configurações salvas com sucesso!");
                     
-                    // Verificação detalhada da resposta do servidor
-                    if (response.success && response.data) {
-                        console.log("Verificação da resposta do servidor após salvamento:");
+                    // IMPORTANTE: Não recarregar os dados, pois pode perder as imagens
+                    // Em vez disso, apenas atualiza os IDs se necessário
+                    if (response.levels) {
+                        console.log("Atualizando IDs dos níveis após salvar");
                         
-                        if (response.data.levels) {
-                            console.log(`Níveis retornados pelo servidor: ${response.data.levels.length}`);
-                            response.data.levels.forEach((nivel, index) => {
-                                console.log(`Nível ${index + 1} - ${nivel.name}: Tem imagem? ${nivel.image ? 'Sim' : 'Não'}`);
+                        // Criar um backup das imagens existentes indexado por nome e ordem
+                        const imagensBackup = {};
+                        niveisData.forEach(nivel => {
                                 if (nivel.image) {
-                                    console.log(`Imagem URL: ${nivel.image.substring(0, 50)}...`);
+                                // Usar nome e ordem como chave para garantir correspondência após salvamento
+                                const chave = `${nivel.name}_${nivel.order}`;
+                                imagensBackup[chave] = nivel.image;
+                            }
+                        });
+                        
+                        response.levels.forEach(nivelServidor => {
+                            const nivelLocal = niveisData.find(n => 
+                                n.name === nivelServidor.name && 
+                                n.order === nivelServidor.order);
+                            
+                            if (nivelLocal) {
+                                // Atualiza o ID
+                                if (nivelLocal.id !== nivelServidor.id) {
+                                    console.log(`Atualizando ID do nível ${nivelLocal.name} de ${nivelLocal.id} para ${nivelServidor.id}`);
+                                    
+                                    // Preserva a imagem ao atualizar o ID
+                                    const imagemOriginal = nivelLocal.image;
+                                    nivelLocal.id = nivelServidor.id;
+                                    
+                                    // Se o servidor não retornou imagem mas tínhamos uma, mantemos
+                                    if (!nivelServidor.image && imagemOriginal) {
+                                        console.log(`Mantendo imagem original para ${nivelLocal.name} após atualização de ID`);
+                                        nivelLocal.image = imagemOriginal;
+                                    }
                                 }
-                            });
-                        }
-                    }
-                    
-                    if (response.success) {
-                        toastr.success('Alterações salvas com sucesso!');
-                        
-                        // Não recarregamos a página para evitar perder as imagens
-                        // Os dados já estão atualizados na interface
-                        
-                        // Aviso para não recarregar a página
-                        setTimeout(function() {
-                            toastr.info('Não recarregue a página (F5) para evitar perder as imagens. As alterações já foram salvas.');
-                        }, 1000);
+                                
+                                // Verifica se a imagem foi perdida na resposta do servidor
+                                if (!nivelServidor.image && nivelLocal.image) {
+                                    console.log(`Mantendo imagem local para nível ${nivelLocal.name} (ID: ${nivelLocal.id})`);
+                                } else if (!nivelLocal.image) {
+                                    // Tenta recuperar do backup por nome e ordem
+                                    const chave = `${nivelLocal.name}_${nivelLocal.order}`;
+                                    if (imagensBackup[chave]) {
+                                        console.log(`Recuperando imagem do backup para ${nivelLocal.name}`);
+                                        nivelLocal.image = imagensBackup[chave];
+                                    }
+                                }
                     } else {
-                        toastr.error(response.message || response.error || 'Erro ao salvar alterações!');
-                        console.error("Erro ao salvar (sucesso=false):", response);
+                                // Nível novo do servidor, adicionar aos dados locais
+                                console.log(`Adicionando novo nível do servidor: ${nivelServidor.name} (ID: ${nivelServidor.id})`);
+                                niveisData.push(nivelServidor);
+                            }
+                        });
                         
-                        // Se há detalhes específicos do erro, mostrá-los no console
-                        if (response.details) {
-                            console.error("Detalhes do erro:", response.details);
-                        }
+                        // Renderiza novamente com os IDs atualizados
+                        renderNiveisTable();
                     }
-                    $btn.html(originalText).prop('disabled', false);
+                } else {
+                    toastr.error("Erro ao salvar: " + (response.error || "Erro desconhecido"));
+                }
+                
+                // Restaurar o botão
+                $btn.html(originalHtml).prop('disabled', false);
                 },
                 error: function(xhr, status, error) {
-                    console.error("Erro na requisição AJAX:", {status: status, error: error, response: xhr.responseText});
-                    
-                    let errorMsg = 'Erro ao salvar dados';
-                    
-                    try {
-                        const errorResponse = JSON.parse(xhr.responseText);
-                        if (errorResponse && errorResponse.error) {
-                            errorMsg += ': ' + errorResponse.error;
-                            
-                            // Se há detalhes específicos do erro, mostrá-los no console
-                            if (errorResponse.details) {
-                                console.error("Detalhes do erro:", errorResponse.details);
-                            }
-                        } else if (errorResponse && errorResponse.message) {
-                            errorMsg += ': ' + errorResponse.message;
-                        } else {
-                            errorMsg += ': ' + error;
-                        }
-                    } catch (e) {
-                        errorMsg += ': ' + error;
-                        if (xhr.status) {
-                            errorMsg += ' (Status ' + xhr.status + ')';
-                        }
-                    }
-                    
-                    toastr.error(errorMsg);
-                    $btn.html(originalText).prop('disabled', false);
-                }
-            });
-        }, 100);
+                console.error("Erro ao salvar dados:", error);
+                console.error("Status:", status);
+                console.error("Resposta:", xhr.responseText);
+                
+                toastr.error("Ocorreu um erro ao salvar. Por favor, tente novamente.");
+                
+                // Restaurar o botão
+                $btn.html(originalHtml).prop('disabled', false);
+            }
+        });
     });
 
     // Funções auxiliares
     function addLevel(name, players, premium_players, owner_premium, imageData = null) {
-        const newRow = `
-            <tr data-id="${Date.now()}">
-                <td><i class="fa fa-bars drag-handle"></i> ${name}</td>
-                <td class="center-middle">
-                    ${imageData ? `<img src="${imageData}" style="width: 32px; height: 32px; object-fit: contain;" alt="Imagem">` : ''}
-                </td>
-                <td>${players}</td>
-                <td>${premium_players}</td>
-                <td>${owner_premium ? 'Sim' : 'Não'}</td>
-                <td>
-                    <div>
-                        <button type="button" class="btn btn-info btn-xs mr5" title="Editar"><i class="glyphicon glyphicon-pencil"></i></button>
-                        <button type="button" class="btn btn-danger btn-xs mr5" title="Excluir"><i class="glyphicon glyphicon-trash"></i></button>
-                    </div>
-                </td>
-            </tr>
-        `;
-        $("#table tbody").append(newRow);
-        updatePremiosTable();
+        console.log("Adicionando novo nível:", name);
+        
+        // Gerar um ID único temporário até que o nível seja salvo no servidor
+        const id = 'temp_' + Date.now();
+        
+        // Garante que os dados da imagem sejam válidos
+        if (imageData === undefined) {
+            console.log("Corrigindo undefined para imageData");
+            imageData = null;
+        }
+        
+        // Armazena a URL da imagem para verificação posterior
+        let imagemOriginal = imageData;
+        
+        // Cria o objeto de nível completo
+        const newLevel = {
+            id: id,
+            name: name,
+            players: parseInt(players) || 0,
+            premium_players: parseInt(premium_players) || 0,
+            owner_premium: !!owner_premium,
+            image: imageData,
+            order: niveisData.length
+        };
+        
+        console.log("Objeto de nível criado:", newLevel);
+        console.log("Tem imagem:", newLevel.image ? "Sim" : "Não");
+        
+        // Adiciona aos dados em memória
+        niveisData.push(newLevel);
+        
+        // Renderiza a tabela com o novo nível
+        renderNiveisTable();
+        
+        // Verifica se a imagem foi renderizada corretamente
+        setTimeout(function() {
+            const row = $(`#table tbody tr[data-id="${id}"]`);
+            const imgElement = row.find('td:eq(1) img');
+            
+            if (imagemOriginal && (!imgElement.length || imgElement.attr('src') !== imagemOriginal)) {
+                console.error("A imagem não foi renderizada corretamente!");
+                console.log("Tentando corrigir...");
+                
+                // Tentar corrigir diretamente no DOM
+                row.find('td:eq(1)').html(`<img src="${imagemOriginal}" height="32" width="32" alt="Imagem">`);
+                
+                // Também corrige nos dados
+                const nivel = niveisData.find(n => n.id === id);
+                if (nivel) {
+                    nivel.image = imagemOriginal;
+                }
+            }
+        }, 100);
+        
+        // Atualiza a tabela de prêmios sem perder os dados existentes
+        updatePremiosTableWithoutReset();
         
         // Reinicializa o drag and drop após adicionar nova linha
         initDragAndDrop();
     }
+    
+    // Nova função para atualizar a tabela de prêmios sem resetar/recriar todas as linhas
+    function updatePremiosTableWithoutReset() {
+        console.log("Iniciando updatePremiosTableWithoutReset");
+        
+        // Obtém a lista de níveis disponíveis
+        const niveis = [];
+        $("#table tbody tr").each(function() {
+            niveis.push($(this).find('td:eq(0)').text().replace(/^\s*\u2630\s*/, '').trim());
+        });
+        console.log("Níveis disponíveis para atualização:", niveis);
+        
+        // Verifica se a tabela tem o seletor correto
+        const $premiosTable = $('#premiosTable');
+        
+        // Verifica quantas posições existem
+        let premioRows = $premiosTable.find('tbody tr').length;
+        console.log(`Número de linhas de prêmios existentes: ${premioRows}`);
+        
+        if (premioRows === 0) {
+            // Se não há linhas, chama a função original para criar as linhas iniciais
+            console.log("Nenhuma linha de prêmio encontrada, criando tabela inicial");
+            updatePremiosTable();
+            return;
+        }
+
+        // Atualiza os cabeçalhos da tabela para incluir os níveis
+        const premiosHeader = $premiosTable.find('thead tr');
+        
+        // Guarda os níveis que já estão na tabela
+        const niveisExistentes = [];
+        premiosHeader.find('th[data-nivel]').each(function() {
+            niveisExistentes.push($(this).attr('data-nivel'));
+        });
+        console.log("Níveis existentes na tabela:", niveisExistentes);
+        
+        // Remove colunas de níveis que não existem mais
+        premiosHeader.find('th[data-nivel]').each(function() {
+            const nivel = $(this).attr('data-nivel');
+            if (!niveis.includes(nivel)) {
+                console.log(`Removendo coluna do nível '${nivel}' que não existe mais`);
+                const index = $(this).index();
+                $premiosTable.find(`tbody tr`).each(function() {
+                    $(this).find(`td:eq(${index})`).remove();
+                });
+                $(this).remove();
+            }
+        });
+        
+        // Adiciona colunas para novos níveis
+        for (let i = 0; i < niveis.length; i++) {
+            const nivel = niveis[i];
+            if (!niveisExistentes.includes(nivel)) {
+                console.log(`Adicionando nova coluna para o nível '${nivel}'`);
+                premiosHeader.find('th:last').before(`<th class="per15" data-nivel="${nivel}">${nivel}</th>`);
+                
+                // Adiciona células para este nível em todas as linhas
+                $premiosTable.find('tbody tr').each(function() {
+                    const $actionCell = $(this).find('td:last');
+                    $actionCell.before(`
+                        <td>
+                            <input type="number" class="form-control premio-valor" data-nivel="${nivel}" value="1000" min="0">
+                </td>
+                    `);
+                });
+            }
+        }
+
+        // Verificar se as imagens estão sendo exibidas corretamente
+        $premiosTable.find('tbody tr').each(function(index) {
+            const $row = $(this);
+            const $imageCell = $row.find('td:eq(1)');
+            
+            // Verifica se a célula de imagem tem conteúdo
+            if ($imageCell.find('img').length === 0 && $imageCell.find('.premio-image-preview').length === 0) {
+                console.log(`Corrigindo célula de imagem na linha ${index + 1}`);
+                $imageCell.html(`
+                    <div class="premio-image-container" style="position: relative; display: inline-block;">
+                        <div class="premio-image-preview dropzone-imagem" style="height: 32px; width: 32px; border: 1px dashed #ccc; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                            <i class="fa fa-plus"></i>
+                        </div>
+                        <input type="file" class="premio-image" style="display: none;" accept="image/*">
+                    </div>
+                `);
+                
+                // Inicializa o preview para esta linha
+                initPremioImagePreview($row);
+            }
+            
+            // Verifica se a célula de ação tem o botão de exclusão
+            const $actionCell = $row.find('td:last');
+            if ($actionCell.find('.delete-premio').length === 0) {
+                console.log(`Adicionando botão de exclusão na linha ${index + 1}`);
+                $actionCell.html(`
+                    <button type="button" class="btn btn-danger delete-premio" title="Excluir"><i class="glyphicon glyphicon-trash"></i></button>
+                `);
+            }
+        });
+        
+        // Inicializa os botões de exclusão para garantir que funcionem
+        initDeletePremioButtons();
+        
+        console.log("updatePremiosTableWithoutReset concluído com sucesso");
+    }
 
     function updateLevel(id, name, players, premium_players, owner_premium, imageData = null) {
-        const row = $(`tr[data-id="${id}"]`);
-        row.find('td:eq(0)').html(`<i class="fa fa-bars drag-handle"></i> ${name}`);
-        row.find('td:eq(2)').text(players);
-        row.find('td:eq(3)').text(premium_players);
-        row.find('td:eq(4)').text(owner_premium ? 'Sim' : 'Não');
+        console.log(`Atualizando nível ID ${id} - Nome: ${name}`);
         
-        // Atualiza a imagem se tiver uma nova
-        if (imageData) {
-            row.find('td:eq(1)').html(`<img src="${imageData}" style="width: 32px; height: 32px; object-fit: contain;" alt="Imagem">`);
-        } else {
-            row.find('td:eq(1)').html(''); // Remove a imagem se não tiver uma nova
-        }
+        // Encontra o nível nos dados em memória
+        const levelIndex = niveisData.findIndex(nivel => nivel.id == id);
+        if (levelIndex >= 0) {
+            // Preserva os dados atuais para comparação
+            const nivelAntigo = {...niveisData[levelIndex]};
+            console.log("Dados anteriores:", nivelAntigo);
+            console.log("Imagem anterior:", nivelAntigo.image ? "Sim" : "Não");
+            console.log("Nova imagem:", imageData ? "Sim" : "Não");
+            
+            // Determina qual imagem usar
+            let imagemFinal = imageData;
+            
+            // Se não foi fornecida uma nova imagem (null/undefined) E não houve remoção explícita,
+            // mantém a imagem existente
+            if ((imageData === null || imageData === undefined) && !imageWasRemoved && nivelAntigo.image) {
+                console.log("Mantendo imagem existente");
+                imagemFinal = nivelAntigo.image;
+            } else if (imageWasRemoved) {
+                console.log("Imagem foi removida explicitamente");
+                imagemFinal = null;
+            }
+            
+            // Armazena a URL da imagem para verificação posterior
+            let imagemOriginal = imagemFinal;
+            
+            // Atualiza os dados em memória
+            niveisData[levelIndex] = {
+                ...nivelAntigo,  // Mantém propriedades que não estão sendo atualizadas
+                name: name,
+                players: parseInt(players) || 0,
+                premium_players: parseInt(premium_players) || 0,
+                owner_premium: !!owner_premium,
+                image: imagemFinal
+            };
+            
+            console.log("Dados após atualização:", niveisData[levelIndex]);
+            console.log("Imagem após atualização:", niveisData[levelIndex].image ? "Sim" : "Não");
+            
+            // Renderiza toda a tabela novamente
+            renderNiveisTable();
+            
+            // Verifica se a imagem foi renderizada corretamente
+            setTimeout(function() {
+                const row = $(`#table tbody tr[data-id="${id}"]`);
+                const imgElement = row.find('td:eq(1) img');
+                
+                if (imagemOriginal && (!imgElement.length || imgElement.attr('src') !== imagemOriginal)) {
+                    console.error("A imagem não foi renderizada corretamente na atualização!");
+                    console.log("Tentando corrigir...");
+                    
+                    // Tentar corrigir diretamente no DOM
+                    row.find('td:eq(1)').html(`<img src="${imagemOriginal}" height="32" width="32" alt="Imagem">`);
+                    
+                    // Também corrige nos dados
+                    niveisData[levelIndex].image = imagemOriginal;
+                }
+            }, 100);
+            
+            // Atualiza a tabela de prêmios sem resetar as linhas
+            updatePremiosTableWithoutReset();
+            
+            // Reinicializa o drag and drop
+            initDragAndDrop();
         
         // Limpa o campo de imagem e o preview
         $("#image").val('');
         $("#image-preview").html('<i class="fa fa-file-image-o" style="font-size: 32px; color: #ccc; cursor: pointer;" onclick="document.getElementById(\'image\').click()"></i>');
+            
+            // Reset imageWasRemoved flag
+            imageWasRemoved = false;
+        } else {
+            console.error("Nível não encontrado para atualizar:", id);
+            toastr.error("Erro ao atualizar nível. O nível não foi encontrado.");
+        }
     }
 
     function resetForm() {
@@ -804,6 +1275,9 @@ $(document).ready(function() {
             isEditing = false;
             editingId = null;
         }
+        
+        // Resetar o flag de remoção de imagem
+        imageWasRemoved = false;
         
         // Revincula eventos no input de imagem
         $("#image").off().on('change', function() {
@@ -867,12 +1341,11 @@ $(document).ready(function() {
     }
 
     function updatePremiosTable() {
+        // Obtém a lista de níveis disponíveis
         const niveis = [];
         $("#table tbody tr").each(function() {
             niveis.push($(this).find('td:eq(0)').text().replace(/^\s*\u2630\s*/, '').trim());
         });
-
-        // Log para debug
         console.log("Níveis disponíveis:", niveis);
         
         // Verifica se a tabela tem o seletor correto
@@ -904,14 +1377,11 @@ $(document).ready(function() {
                     `);
                 });
                 
-                // Adiciona coluna de ações
+                // Adiciona coluna de ações com ícone de lixeira bem visível
                 $premiosTable.find('tbody tr:last').append(`
                         <td>
-                            <div>
-                                <button type="button" class="btn btn-danger btn-xs mr5 delete-premio" title="Excluir"><i class="glyphicon glyphicon-trash"></i></button>
-                            </div>
+                        <button type="button" class="btn btn-danger btn-xs delete-premio" title="Excluir"><i class="glyphicon glyphicon-trash"></i></button>
                         </td>
-                    </tr>
                 `);
             }
             premioRows = 3;
@@ -961,6 +1431,13 @@ $(document).ready(function() {
                     `);
                 }
             });
+            
+            // Verifica se existe o botão de exclusão, caso contrário adiciona
+            if ($actionCell.find('.delete-premio').length === 0) {
+                $actionCell.html(`
+                    <button type="button" class="btn btn-danger btn-xs delete-premio" title="Excluir"><i class="glyphicon glyphicon-trash"></i></button>
+                `);
+            }
         });
         
         // Verifica se há alguma célula de imagem sem o evento de click configurado
@@ -970,6 +1447,9 @@ $(document).ready(function() {
                 initPremioImagePreview($row);
             }
         });
+        
+        // Inicializa os botões de exclusão
+        initDeletePremioButtons();
     }
 
     // Função para lidar com o clique na dropzone
@@ -1062,234 +1542,66 @@ $(document).ready(function() {
         toastr.success('Imagem removida com sucesso!');
     });
 
-    // Carrega dados iniciais
-    $.ajax({
-        url: ADMIN_URL_PREFIX + "/futligas/jogadores/dados/",
-        method: 'GET',
-        success: function(data) {
-            if (data.success === false) {
-                toastr.error(data.message || "Erro ao carregar dados");
-                return;
-            }
-            
-            // Debug dos dados recebidos
-            console.log("Dados recebidos do servidor:", data);
-            console.log("Níveis recebidos:", data.levels ? data.levels.length : 0);
-            
-            // Verificação de imagens nos níveis
-            if (data.levels && data.levels.length > 0) {
-                data.levels.forEach((nivel, index) => {
-                    console.log(`Nível ${index + 1} - ${nivel.name}: Tem imagem? ${nivel.image ? 'Sim' : 'Não'}`);
-                    if (nivel.image) {
-                        console.log(`Imagem URL: ${nivel.image.substring(0, 50)}...`);
-                    }
-                });
-            }
-            
-            // Salva as imagens existentes na tabela antes de limpar
-            const imagensExistentes = {};
-            $('#table tbody tr').each(function() {
-                const nome = $(this).find('td:eq(0)').text().replace(/^\s*\u2630\s*/, '').trim();
-                const img = $(this).find('td:eq(1) img').attr('src');
-                if (img) {
-                    imagensExistentes[nome] = img;
-                    console.log(`Salvando imagem existente para ${nome}: ${img.substring(0, 30)}...`);
-                }
-            });
-            
-            // Limpa a tabela antes de adicionar os novos dados
-            $('#table tbody').empty();
-            
-            // Primeiro carregamos os níveis
-            data.levels.forEach(nivel => {
-                // Se o nível não tem imagem mas temos uma imagem salva para ele, usamos a imagem salva
-                let imagemFinal = nivel.image;
-                if (!imagemFinal && imagensExistentes[nivel.name]) {
-                    imagemFinal = imagensExistentes[nivel.name];
-                    console.log(`Usando imagem existente para ${nivel.name}: ${imagemFinal.substring(0, 30)}...`);
-                }
-                
-                addLevel(
-                    nivel.name,
-                    nivel.players,
-                    nivel.premium_players,
-                    nivel.owner_premium,
-                    imagemFinal
-                );
-            });
-
-            // Configuração de premiação semanal e por temporada
-            console.log("Configuração de premiação recebida:", data.award_config);
-            
-            // Configuração semanal
-            if (data.award_config && data.award_config.weekly) {
-                const weekly = data.award_config.weekly;
-                
-                // Seleciona o dia da semana
-                if (weekly.day) {
-                    $("#dia-premiacao").val(weekly.day);
-                    console.log(`Dia da semana selecionado: ${weekly.day}`);
-                }
-                
-                // Define o horário
-                if (weekly.time) {
-                    $(".clockpicker:eq(0) input").val(weekly.time);
-                    console.log(`Horário semanal definido: ${weekly.time}`);
-                }
-            }
-            
-            // Configuração por temporada
-            if (data.award_config && data.award_config.season) {
-                const season = data.award_config.season;
-                
-                // Seleciona o mês
-                if (season.month) {
-                    $("#mes-ano-premiacao").val(season.month);
-                    console.log(`Mês selecionado: ${season.month}`);
-                }
-                
-                // Seleciona o dia
-                if (season.day) {
-                    $("#dia-ano-premiacao").val(season.day);
-                    console.log(`Dia do mês selecionado: ${season.day}`);
-                }
-                
-                // Define o horário
-                if (season.time) {
-                    $(".clockpicker:eq(1) input").val(season.time);
-                    console.log(`Horário da temporada definido: ${season.time}`);
-                }
-            }
-            
-            // Reinicializa os clockpickers para garantir que os valores sejam exibidos corretamente
-            $('.clockpicker').clockpicker('remove').clockpicker({
-                placement: 'bottom',
-                align: 'left',
-                autoclose: true
-            });
-            
-            // Atualizamos a tabela de prêmios
-            updatePremiosTable();
-            
-            // Limpa a tabela de prêmios para recriar com base nos dados do banco
-            $('#premios table tbody').empty();
-            
-            // Carregamos as posições de prêmios do banco de dados
-            if (data.prizes && data.prizes.length > 0) {
-                console.log("Carregando dados dos prêmios:", data.prizes);
-                
-                // Ordena os prêmios por posição para garantir que sejam exibidos na ordem correta
-                data.prizes.sort((a, b) => a.position - b.position);
-                
-                // Para cada prêmio, criamos uma linha na tabela
-                data.prizes.forEach(premio => {
-                    // Cria a nova linha na tabela
-                    let newRow = `
-                        <tr data-position="${premio.position}">
-                            <td>${premio.position}°</td>
-                            <td class="center-middle">
-                                ${premio.image ? 
-                                    `<div class="image-container" style="position: relative; width: 32px; height: 32px; display: inline-block;">
-                                        <img src="${premio.image}" height="32" width="32" alt="Imagem" style="object-fit: contain;">
-                                        <div class="image-remove-btn" style="position: absolute; bottom: 0; right: 0; background-color: #f8f8f8; border-radius: 50%; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.2);">
-                                            <i class="fa fa-trash" style="font-size: 10px; color: #FF5252;"></i>
-                                        </div>
-                                    </div>` : 
-                                    `<div class="dropzone-imagem" style="height: 32px; width: 32px; border: 1px dashed #ccc; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
-                                        <i class="fa fa-plus"></i>
-                                    </div>`
-                                }
-                            </td>
-                            <td>
-                                <div>
-                                    <button type="button" class="btn btn-danger btn-xs mr5" title="Excluir"><i class="glyphicon glyphicon-trash"></i></button>
-                                </div>
-                            </td>
-                        </tr>
-                    `;
-                    
-                    $('#premios table tbody').append(newRow);
-                    
-                    // Obtém a linha recém-adicionada
-                    const row = $('#premios table tbody tr').last();
-                    
-                    // Obtém a lista de níveis
-                    const niveis = [];
-                    $("#table tbody tr").each(function() {
-                        niveis.push($(this).find('td:eq(0)').text().replace(/^\s*\u2630\s*/, '').trim());
-                    });
-                    
-                    // Adiciona células para cada nível
-                    niveis.forEach((nivel, index) => {
-                        const valorPremio = premio.values && premio.values[nivel] !== undefined ? premio.values[nivel] : 1000;
-                        row.find('td:last').before(`
-                            <td>
-                                <input type="number" class="form-control premio-valor" data-nivel="${nivel}" value="${valorPremio}" min="0">
-                            </td>
-                        `);
-                    });
-                    
-                    console.log(`Criada linha para o prêmio posição ${premio.position}`);
-                    
-                    // Adiciona evento de clique para o botão de remover imagem
-                    if (premio.image) {
-                        row.find('.image-remove-btn').on('click', function(e) {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            
-                            const cell = $(this).closest('td');
-                            cell.html(`
-                                <div class="dropzone-imagem" style="height: 32px; width: 32px; border: 1px dashed #ccc; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
-                                    <i class="fa fa-plus"></i>
-                                </div>
-                            `);
-                            
-                            toastr.success('Imagem removida com sucesso!');
-                            
-                            // Reaplica o evento de clique à nova dropzone
-                            cell.find('.dropzone-imagem').on('click', handleDropzoneClick);
-                        });
-                    }
-                });
-                
-                // Reaplica o evento de clique nas dropzones após carregar os dados
-                $('#premios table .dropzone-imagem').each(function() {
-                    $(this).on('click', handleDropzoneClick);
-                });
-            } else {
-                // Se não há prêmios, adicionamos pelo menos 3 posições padrão
-                for (let i = 1; i <= 3; i++) {
-                    $('.btn-adicionar-premio').click();
-                }
-            }
-            
-            // Inicializa o drag and drop após carregar os dados
-            initDragAndDrop();
-            
-            // Mensagem de sucesso após carregamento
-            toastr.success("Dados carregados com sucesso!");
-        },
-        error: function(xhr, status, error) {
-            console.error("Erro ao carregar dados:", error);
-            toastr.error("Ocorreu um erro ao carregar os dados. Por favor, atualize a página.");
+    // Ajuste para o plugin de importação de Excel
+    $('#importFile').on('change', function() {
+        const file = this.files[0];
+        if (file) {
+            const filename = file.name;
+            $(this).closest('.input-group').find('input[type="text"]').val(filename);
         }
     });
+
+    // Função para reinicializar o estado do modal
+    function resetModalState() {
+        // Limpa os dados armazenados no modal
+        $('#modalConfirmDelete').removeData('row');
+        
+        // Garante que o botão de confirmação esteja habilitado e com texto correto
+        $('#confirmDeleteButton').prop('disabled', false).html('Excluir');
+    }
     
-    // Ajuste do problema de AJAX - garante que as URLs são redirecionadas corretamente
-    $.ajaxPrefilter(function(options, originalOptions, jqXHR) {
-        // Evitando loops de redirecionamento de URLs e garantindo formatos corretos
-        if (options.url.indexOf('/administrativo/futligas/jogadores/dados/') !== -1) {
-            options.url = ADMIN_URL_PREFIX + "/futligas/jogadores/dados/";
-        } else if (options.url.indexOf('/administrativo/futligas/jogadores/salvar/') !== -1) {
-            options.url = ADMIN_URL_PREFIX + "/futligas/jogadores/salvar/";
-        } else if (options.url.indexOf('/administrativo/futligas/jogadores/excluir/') !== -1) {
-            options.url = ADMIN_URL_PREFIX + "/futligas/jogadores/excluir/";
+    // Quando o modal é fechado, reinicia seu estado
+    $('#modalConfirmDelete').on('hidden.bs.modal', function() {
+        resetModalState();
+        
+        // Verifica se há backdrop residual e remove
+        if ($('.modal-backdrop').length) {
+            $('.modal-backdrop').remove();
         }
         
-        // Evitando duplicação de prefixos quando ADMIN_URL_PREFIX já foi adicionado
-        if (options.url.includes("/administrativo/administrativo/")) {
-            options.url = options.url.replace("/administrativo/administrativo/", "/administrativo/");
+        // Garante que o body não tenha a classe modal-open se não houver modais abertos
+        if ($('.modal.in').length === 0) {
+            $('body').removeClass('modal-open');
         }
+    });
+
+    // Função para criar o html do botão de remoção de imagem
+    function createImagePreviewWithRemoveButton(imageUrl) {
+        return `
+            <img src="${imageUrl}" style="max-width: 50px; max-height: 50px; object-fit: contain; cursor: pointer;" onclick="document.getElementById('image').click()">
+            <button type="button" class="btn btn-danger btn-xs img-remove-btn" id="remove_image_btn" style="position: absolute; bottom: 0; right: 0; background-color: #f8f8f8; border-radius: 50%; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.2);">
+                                            <i class="fa fa-trash" style="font-size: 10px; color: #FF5252;"></i>
+            </button>
+        `;
+    }
+
+    // Função para criar o html do preview padrão sem imagem
+    function createDefaultImagePreview() {
+        return '<i class="fa fa-file-image-o" style="font-size: 32px; color: #ccc; cursor: pointer;" onclick="document.getElementById(\'image\').click()"></i>';
+    }
+
+    // Ajuste do problema de AJAX - garante que as URLs são corretas
+    $(document).ajaxSend(function(event, jqxhr, options) {
+        // Logs para debug
+        console.log("URL da requisição antes:", options.url);
+        
+        // Remover possíveis prefixos em URLs absolutas
+        if (options.url && options.url.startsWith('/administrativo')) {
+            options.url = options.url.replace('/administrativo', '');
+            console.log("URL corrigida:", options.url);
+        }
+        
+        console.log("URL da requisição após ajuste:", options.url);
     });
     
     // Adiciona CSS para o cursor de arrastar e imagens
@@ -1353,97 +1665,19 @@ $(document).ready(function() {
         `)
         .appendTo("head");
 
-    // Função para reinicializar o estado do modal
-    function resetModalState() {
-        // Limpa os dados armazenados no modal
-        $('#modalConfirmDelete').removeData('row');
-        
-        // Garante que o botão de confirmação esteja habilitado e com texto correto
-        $('#confirmDeleteButton').prop('disabled', false).html('Excluir');
-    }
-    
-    // Quando o modal é fechado, reinicia seu estado
-    $('#modalConfirmDelete').on('hidden.bs.modal', function() {
-        resetModalState();
-        
-        // Verifica se há backdrop residual e remove
-        if ($('.modal-backdrop').length) {
-            $('.modal-backdrop').remove();
-        }
-        
-        // Garante que o body não tenha a classe modal-open se não houver modais abertos
-        if ($('.modal.in').length === 0) {
-            $('body').removeClass('modal-open');
-        }
-    });
-
-    // Função para criar o html do botão de remoção de imagem
-    function createImagePreviewWithRemoveButton(imageUrl) {
-        return `
-            <img src="${imageUrl}" style="max-width: 50px; max-height: 50px; object-fit: contain; cursor: pointer;" onclick="document.getElementById('image').click()">
-            <button type="button" class="btn btn-danger btn-xs img-remove-btn" id="remove_image_btn" style="position: absolute; bottom: 0; right: 0; background-color: #f8f8f8; border-radius: 50%; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.2);">
-                <i class="fa fa-trash" style="font-size: 10px; color: #FF5252;"></i>
-            </button>
-        `;
-    }
-
-    // Função para criar o html do preview padrão sem imagem
-    function createDefaultImagePreview() {
-        return '<i class="fa fa-file-image-o" style="font-size: 32px; color: #ccc; cursor: pointer;" onclick="document.getElementById(\'image\').click()"></i>';
-    }
-
-    // Adiciona evento para o botão de adicionar prêmio
-    $('.btn-adicionar-premio').off('click').on('click', function() {
-        const $premiTable = $('#premiosTable');
-        const numRows = $premiTable.find('tbody tr').length;
-        const position = numRows + 1;
-        
-        const niveis = [];
-        $("#table tbody tr").each(function() {
-            niveis.push($(this).find('td:eq(0)').text().replace(/^\s*\u2630\s*/, '').trim());
+    // Função para verificar se URLs requerem ajuste (usando jQuery)
+    function isURLValid(url) {
+        var result = false;
+        $.ajax({
+            url: url,
+            type: 'HEAD',
+            async: false,
+            success: function() {
+                result = true;
+            }
         });
-        
-        // Cria uma nova linha
-        let newRow = `
-            <tr>
-                <td>${position}°</td>
-                <td class="center-middle">
-                    <div class="premio-image-container" style="position: relative; display: inline-block;">
-                        <div class="premio-image-preview dropzone-imagem" style="height: 32px; width: 32px; border: 1px dashed #ccc; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
-                            <i class="fa fa-plus"></i>
-                        </div>
-                        <input type="file" class="premio-image" style="display: none;" accept="image/*">
-                    </div>
-                </td>`;
-        
-        // Adiciona células para cada nível
-        niveis.forEach(nivel => {
-            newRow += `
-                <td>
-                    <input type="number" class="form-control premio-valor" data-nivel="${nivel}" value="1000" min="0">
-                </td>`;
-        });
-        
-        // Finaliza a linha com a célula de ações
-        newRow += `
-                <td>
-                    <div>
-                        <button type="button" class="btn btn-danger btn-xs mr5 delete-premio" title="Excluir"><i class="glyphicon glyphicon-trash"></i></button>
-                    </div>
-                </td>
-            </tr>`;
-        
-        // Adiciona a linha à tabela
-        $premiTable.find('tbody').append(newRow);
-        
-        // Inicializa o preview de imagem para a nova linha
-        initPremioImagePreview($premiTable.find('tbody tr:last'));
-        
-        // Reaplica os eventos aos botões de exclusão
-        initDeletePremioButtons();
-        
-        toastr.success('Prêmio adicionado com sucesso!');
-    });
+        return result;
+    }
 
     // Inicializa os botões de exclusão de prêmios
     initDeletePremioButtons();

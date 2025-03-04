@@ -10,10 +10,13 @@
 <script src="{% static 'administrativo/js/futligas-classicas.js' %}"></script>
 
 <script>
-// Desativa imediatamente o handler original do futligas-classicas.js
+// Desativa imediatamente os handlers originais do futligas-classicas.js
 $(document).ready(function() {
     // Renomeia os handlers do botão original para que eles não sejam acionados
     $('#btn-save').attr('id', 'btn-save-original').hide();
+    
+    // Renomeamos o botão add-prize para que o handler original não funcione
+    $('#add-prize').attr('id', 'add-prize-temp');
 });
 </script>
 {% endblock %}
@@ -38,6 +41,9 @@ $(document).ready(function() {
     }
     
     $(document).ready(function() {
+        // Restauramos o ID original do botão para usar nosso handler
+        $('#add-prize-temp').attr('id', 'add-prize');
+        
         // Preenche os campos com os dados da Futliga
         $('#nome').val('{{ futliga.name }}');
         
@@ -387,10 +393,8 @@ $(document).ready(function() {
         });
         {% endfor %}
         
-        // Handler do botão adicionar prêmio
-        var prizeCounter = {{ futliga.prizes.all|length }};
-        
-        $('#add-prize').click(function() {
+        // Desativa qualquer handler anterior e registra nosso handler único para o botão
+        $('#add-prize').off('click').on('click', function() {
             prizeCounter++;
             var newPosition = $('#prizes-table tbody tr').length + 1;
             
@@ -634,6 +638,34 @@ $(document).ready(function() {
                 console.log(pair[0] + ': ' + pair[1]);
             }
             console.log('------------------------------------');
+            
+            // Adicionar um campo explícito indicando quais posições não têm novas imagens
+            // para garantir que o backend saiba tratar corretamente
+            var allPrizePositions = [];
+            var positionsWithImages = [];
+            
+            // Coletamos todas as posições de prêmios
+            $('#prizes-table tbody tr').each(function() {
+                var position = $(this).find('.position-input').val();
+                if (position && !isNaN(parseInt(position))) {
+                    allPrizePositions.push(parseInt(position));
+                }
+            });
+            
+            // Obtemos as posições que têm novas imagens
+            for (var pair of formData.entries()) {
+                if (pair[0] === 'prize_image_positions[]') {
+                    positionsWithImages.push(parseInt(pair[1]));
+                }
+            }
+            
+            // Para cada posição sem imagem nova, adicionamos explicitamente ao formData
+            allPrizePositions.forEach(function(position) {
+                if (!positionsWithImages.includes(position)) {
+                    formData.append('prize_without_image[]', position);
+                    console.log('Marcando explicitamente posição sem imagem: ' + position);
+                }
+            });
             
             $.ajax({
                 url: '/futliga/classica/editar/{{ futliga.id }}/',

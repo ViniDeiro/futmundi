@@ -1949,6 +1949,12 @@ def futliga_classica_editar(request, futliga_id):
                             if i < len(prize_files):
                                 prize_image_positions[pos] = prize_files[i]
                     
+                    # Lista de posições explicitamente marcadas como sem imagem
+                    positions_without_image = []
+                    if 'prize_without_image[]' in request.POST:
+                        positions_without_image = [str(pos) for pos in request.POST.getlist('prize_without_image[]')]
+                        print(f"[DEBUG] Posições explicitamente marcadas como sem imagem: {', '.join(positions_without_image)}")
+                    
                     for i, position in enumerate(positions):
                         if i < len(prizes):
                             prize_value = prizes[i]
@@ -1977,6 +1983,12 @@ def futliga_classica_editar(request, futliga_id):
                                     
                                     # Adiciona a nova imagem
                                     prize_obj.image = prize_image_positions[str(position)]
+                                # Se a posição estiver marcada explicitamente como sem imagem,
+                                # e não tiver uma nova imagem, removemos a imagem existente
+                                elif str(position) in positions_without_image and prize_obj.image:
+                                    print(f"[DEBUG] Removendo imagem do prêmio na posição {position} que foi explicitamente marcado como sem imagem")
+                                    prize_obj.image.delete(save=False)
+                                    prize_obj.image = None
                                 
                                 # Salva o prêmio
                                 prize_obj.save()

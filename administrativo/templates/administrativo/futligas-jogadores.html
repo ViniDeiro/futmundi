@@ -4,7 +4,6 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="url-prefix" content="{% url 'administrativo:index' as index_url %}{{ index_url|slice:':-1' }}">
 
     <title>Futligas Jogadores</title>
 
@@ -233,24 +232,7 @@
                                                     </tr>
                                                 </thead>
                                                 <tbody>
-                                                    <tr>
-                                                        <td>1°</td>
-                                                        <td class="center-middle"><img src="{% static 'administrativo/img/Corinthians.png' %}" height="32" width="32" alt="Imagem"></td>
-                                                        <td>
-                                                            <div>
-                                                                <button type="button" class="btn btn-danger btn-xs mr5 delete-premio" title="Excluir"><i class="glyphicon glyphicon-trash"></i></button>
-                                                            </div>
-                                                        </td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td>2°</td>
-                                                        <td class="center-middle"><img src="{% static 'administrativo/img/Corinthians.png' %}" height="32" width="32" alt="Imagem"></td>
-                                                        <td>
-                                                            <div>
-                                                                <button type="button" class="btn btn-danger btn-xs mr5 delete-premio" title="Excluir"><i class="glyphicon glyphicon-trash"></i></button>
-                                                            </div>
-                                                        </td>
-                                                    </tr>
+                                                    <!-- Os dados serão inseridos dinamicamente pelo JavaScript -->
                                                 </tbody>
                                             </table>
                                         </div>
