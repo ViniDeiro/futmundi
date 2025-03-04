@@ -25,6 +25,78 @@
         <!-- Favicon -->
         <link rel="icon" href="{% static 'administrativo/img/futmundi.ico' %}" type="image/png">
 
+        <script>
+            // Função para manipular a mudança de tipo
+            function handleTipoChange(tipo) {
+                console.log("FUNÇÃO DIRETA: Tipo selecionado:", tipo);
+                
+                // Obtém a referência ao container de pacote
+                var pacoteContainer = document.getElementById('pacote-container');
+                var pacoteSelect = document.getElementById('pacote');
+                
+                // Oculta ou exibe o container de pacote
+                if (tipo === 'Geral') {
+                    console.log("FUNÇÃO DIRETA: Ocultando container de pacotes");
+                    pacoteContainer.style.display = 'none';
+                } else {
+                    console.log("FUNÇÃO DIRETA: Exibindo container de pacotes");
+                    pacoteContainer.style.display = 'block';
+                    
+                    // Limpa as opções atuais
+                    pacoteSelect.innerHTML = '<option value="">Selecione um pacote</option>';
+                    
+                    // Determina o tipo de pacote para a API
+                    var apiType = tipo === 'PacoteFutcoins' ? 'package_coins' : 'package_plan';
+                    
+                    // Faz uma chamada AJAX via XMLHttpRequest
+                    var xhr = new XMLHttpRequest();
+                    xhr.open('GET', '{% url "administrativo:get_packages" %}?type=' + apiType, true);
+                    xhr.onreadystatechange = function() {
+                        if (xhr.readyState === 4 && xhr.status === 200) {
+                            var response = JSON.parse(xhr.responseText);
+                            console.log("FUNÇÃO DIRETA: Resposta da API:", response);
+                            
+                            if (response.success) {
+                                // Adiciona as opções ao select
+                                response.packages.forEach(function(package) {
+                                    var option = document.createElement('option');
+                                    option.value = package.id;
+                                    option.textContent = package.name;
+                                    
+                                    // Marca como selecionado se for o mesmo id do pacote atual
+                                    if (package.id == {{ notification.package_id|default:0 }}) {
+                                        option.selected = true;
+                                    }
+                                    
+                                    pacoteSelect.appendChild(option);
+                                });
+                                
+                                // Dispara um evento para que o jQuery Select2 seja atualizado, se estiver presente
+                                if (typeof $ !== 'undefined') {
+                                    $(pacoteSelect).trigger('change');
+                                }
+                            } else {
+                                console.error("FUNÇÃO DIRETA: Erro ao carregar pacotes:", response.message);
+                            }
+                        }
+                    };
+                    xhr.send();
+                }
+            }
+            
+            // Função executada quando a página carrega completamente
+            window.onload = function() {
+                console.log("FUNÇÃO DIRETA: Página carregada, inicializando...");
+                
+                // Dispara o evento de mudança para configurar o estado inicial
+                var tipoSelect = document.getElementById('tipo');
+                if (tipoSelect) {
+                    console.log("FUNÇÃO DIRETA: Disparando evento inicial com valor:", tipoSelect.value);
+                    handleTipoChange(tipoSelect.value);
+                }
+            };
+        </script>
+
         <style>
             .form-group {
                 margin-bottom: 15px;
@@ -313,13 +385,13 @@
                                                 <div class="row">
                                                     <div class="col-lg-6 mtm20">
                                                         <label class="control-label" for="tipo">Tipo</label>
-                                                        <select class="form-control select2" name="notification_type" id="tipo" style="width: 80%">
+                                                        <select class="form-control" name="notification_type" id="tipo" style="width: 80%" onchange="handleTipoChange(this.value)">
                                                             <option value="Geral" {% if notification.notification_type == 'Geral' %}selected{% endif %}>Geral</option>
                                                             <option value="PacoteFutcoins" {% if notification.notification_type == 'PacoteFutcoins' %}selected{% endif %}>Pacote Futcoins</option>
                                                             <option value="PacotePlano" {% if notification.notification_type == 'PacotePlano' %}selected{% endif %}>Pacote Plano</option>
                                                         </select>
                                                     </div>
-                                                    <div class="col-lg-6 mtm20" id="pacote-container" {% if notification.notification_type == 'Geral' %}style="display: none;"{% endif %}>
+                                                    <div class="col-lg-6 mtm20" id="pacote-container" style="display: {% if notification.notification_type == 'Geral' %}none{% else %}block{% endif %};">
                                                         <label class="control-label" for="pacote">Pacote</label>
                                                         <select class="form-control select2" name="package" id="pacote" style="width: 80%">
                                                             <option value="">Selecione um pacote</option>
@@ -483,52 +555,18 @@
                 }
             });
 
-            // Controle do campo de pacote baseado no tipo
-            $('#tipo').on('change', function() {
-                var tipo = $(this).val();
-                var $pacoteSelect = $('#pacote');
-                var $pacoteContainer = $('#pacote-container');
-                
-                $pacoteSelect.empty().append('<option value="">Selecione um pacote</option>');
-                
-                if (tipo === 'Geral') {
-                    $pacoteContainer.hide();
-                } else {
-                    $pacoteContainer.show();
-                    
-                    // Determina o tipo de pacote para a API
-                    var apiType = tipo === 'PacoteFutcoins' ? 'package_coins' : 'package_plan';
-                    
-                    // Carrega os pacotes baseado no tipo selecionado
-                    $.ajax({
-                        url: '{% url "administrativo:get_packages" %}',
-                        type: 'GET',
-                        data: {
-                            type: apiType
-                        },
-                        success: function(response) {
-                            if (response.success) {
-                                response.packages.forEach(function(package) {
-                                    $pacoteSelect.append(new Option(package.name, package.id));
-                                });
-                                // Para edição, selecionar o pacote atual se existir
-                                var currentPackageId = "{{ notification.package_id|default:'' }}";
-                                if (currentPackageId) {
-                                    $pacoteSelect.val(currentPackageId).trigger('change');
-                                }
-                            } else {
-                                toastr.error('Erro ao carregar pacotes: ' + response.message);
-                            }
-                        },
-                        error: function() {
-                            toastr.error('Erro ao carregar pacotes. Tente novamente.');
-                        }
-                    });
-                }
-            });
+            // Remove todos os eventos change anteriores
+            $('#tipo').off('change');
 
-            // Trigger inicial para configurar o estado dos campos
-            $('#tipo').trigger('change');
+            // Reinicia o select2 quando a página carrega
+            $('#pacote').on('change', function() {
+                // Reinicializa o select2 para refletir as alterações
+                $(this).select2('destroy').select2({
+                    width: '100%',
+                    dropdownCssClass: 'select2-dropdown-custom',
+                    minimumResultsForSearch: Infinity
+                });
+            });
 
             // Preenchimento automático do título e mensagem baseado no tipo e nome do pacote
             $('#pacote').on('change', function() {
@@ -544,13 +582,6 @@
                         $('#mensagem').val('Seja Craque agora e aproveite todas as vantagens.');
                     }
                 }
-            });
-            
-            // Garantir que a mudança de tipo também considere o pacote já selecionado
-            $('#tipo').on('change', function() {
-                setTimeout(function() {
-                    $('#pacote').trigger('change');
-                }, 500); // Pequeno delay para garantir que os pacotes foram carregados
             });
 
             // Controle do campo de data baseado no tipo de envio

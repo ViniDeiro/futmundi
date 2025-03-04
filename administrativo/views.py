@@ -1781,154 +1781,230 @@ def futliga_classica_editar(request, futliga_id):
     try:
         futliga = StandardLeague.objects.get(id=futliga_id)
     except StandardLeague.DoesNotExist:
-        return JsonResponse({'success': False, 'message': 'Liga não encontrada'}, status=404)
+        return JsonResponse({'success': False, 'message': 'Futliga não encontrada'})
     
-    if request.method == 'POST':
-        # Validação básica
-        name = request.POST.get('name', '').strip()
-        players = request.POST.get('players', '')
-        award_frequency = request.POST.get('award_frequency', '')
-        award_time = request.POST.get('award_time', '')
-        
-        # Verificações de campos obrigatórios
-        if not name:
-            return JsonResponse({'success': False, 'message': 'O campo Nome é obrigatório'}, status=400)
-        if not players:
-            return JsonResponse({'success': False, 'message': 'O campo Participantes é obrigatório'}, status=400)
-        if not award_frequency:
-            return JsonResponse({'success': False, 'message': 'O campo Frequência de Premiação é obrigatório'}, status=400)
-        
+    if request.method == 'GET':
+        # Retorna o template com os dados da Futliga para edição
+        return render(request, 'administrativo/futliga-classica-editar.html', {'futliga': futliga})
+    
+    elif request.method == 'POST':
+        # Processa o formulário de edição e salva as mudanças
         try:
-            # Verificações específicas por frequência
-            if award_frequency == 'weekly':
-                weekday = request.POST.get('weekday')
-                if not weekday:
-                    return JsonResponse({'success': False, 'message': 'O campo Dia de Premiação é obrigatório para ligas semanais'}, status=400)
-                monthday = None
-                month_value = None
-            elif award_frequency == 'monthly':
-                monthday = request.POST.get('monthday')
-                if not monthday:
-                    return JsonResponse({'success': False, 'message': 'O campo Dia do Mês é obrigatório para ligas mensais'}, status=400)
-                weekday = 0  # Valor padrão para ligas mensais
-                month_value = None
-            elif award_frequency == 'annual':
-                monthday = request.POST.get('monthday')
-                month_value = request.POST.get('month_value')
-                if not monthday or not month_value:
-                    return JsonResponse({'success': False, 'message': 'Os campos Dia e Mês são obrigatórios para ligas anuais'}, status=400)
-                weekday = 0  # Valor padrão para ligas anuais
-            
-            # Mapeamento dos valores de players
-            players_map = {
-                'Comum': 1,
-                'Craque': 2,
-                'Todos': 0
-            }
-            
-            # Atualização dos campos da liga
-            futliga.name = name
-            futliga.players = players_map.get(players, 0)
-            futliga.award_frequency = award_frequency
-            futliga.weekday = weekday
-            futliga.monthday = monthday
-            futliga.month_value = month_value
-            futliga.award_time = award_time
-            
-            # Imagem principal
-            if 'image' in request.FILES:
-                if futliga.image:
-                    futliga.image.delete()
-                futliga.image = request.FILES['image']
-            elif 'remove_image' in request.POST and request.POST.get('remove_image') == '1':
-                # Se solicitou remover a imagem
-                if futliga.image:
-                    futliga.image.delete()
-                    futliga.image = None
-            
-            futliga.save()
-            
-            # Lista de prêmios a serem removidos
-            prizes_to_remove = request.POST.getlist('remove_prizes[]', [])
-            
-            # Lista de índices de prêmios que devem ter as imagens removidas
-            prize_images_to_remove = set(request.POST.getlist('remove_prize_image[]', []))
-            
-            # Remover apenas os prêmios que foram marcados para exclusão, não todos
-            if prizes_to_remove:
-                for prize_id in prizes_to_remove:
-                    try:
-                        prize = StandardLeaguePrize.objects.get(id=prize_id, league=futliga)
-                        if prize.image:
-                            prize.image.delete()
-                        prize.delete()
-                    except (StandardLeaguePrize.DoesNotExist, ValueError):
-                        continue
-            
-            # Processamento dos novos prêmios e atualização dos existentes
-            prize_positions = request.POST.getlist('prize_positions[]', [])
-            prize_descriptions = request.POST.getlist('prize_descriptions[]', [])
-            
-            if len(prize_positions) != len(prize_descriptions):
-                return JsonResponse({'success': False, 'message': 'Dados de prêmios inválidos'}, status=400)
-            
-            # Obter prêmios existentes para facilitar a atualização
-            existing_prizes = {p.position: p for p in futliga.prizes.all()}
-            
-            # Criação ou atualização dos prêmios
-            for i in range(len(prize_positions)):
-                try:
-                    position = int(prize_positions[i])
-                    prize_value = int(prize_descriptions[i])
-                    
-                    # Verificar se já existe um prêmio nesta posição
-                    if position in existing_prizes:
-                        prize_obj = existing_prizes[position]
-                        prize_obj.prize = prize_value
-                        
-                        # Se este prêmio está na lista de imagens a remover
-                        if str(i) in prize_images_to_remove:
-                            if prize_obj.image:
-                                prize_obj.image.delete()
-                                prize_obj.image = None
-                    else:
-                        # Criar novo prêmio
-                        prize_obj = StandardLeaguePrize(
-                            league=futliga,
-                            position=position,
-                            prize=prize_value
-                        )
-                    
-                    # Salvar o objeto do prêmio
-                    prize_obj.save()
-                    
-                    # Atualizar imagem do prêmio se uma nova foi enviada
-                    if 'prize_images[]' in request.FILES and i < len(request.FILES.getlist('prize_images[]')):
-                        # Verificar se esta imagem não é vazia (alguns navegadores podem enviar arquivos vazios)
-                        prize_image = request.FILES.getlist('prize_images[]')[i]
-                        print(f"[DEBUG] Processando imagem para prêmio na posição {position}. Arquivo: {prize_image.name}, tamanho: {prize_image.size}")
-                        
-                        # Se já tinha imagem, remove primeiro
-                        if prize_obj.image:
-                            print(f"[DEBUG] Removendo imagem existente: {prize_obj.image.path}")
-                            prize_obj.image.delete()
-                        
-                        # Salvar nova imagem
-                        prize_obj.image = prize_image
-                        print(f"[DEBUG] Nova imagem atribuída ao prêmio ID {prize_obj.id}, posição {position}")
-                        prize_obj.save()
-                        print(f"[DEBUG] Prêmio salvo com nova imagem: {prize_obj.image.url if prize_obj.image else 'Sem imagem'}")
+            with transaction.atomic():
+                # Verifica se devemos remover TODAS as imagens de prêmios
+                remove_all_prize_images = request.POST.get('remove_all_prize_images', '0') == '1'
                 
-                except (ValueError, IndexError) as e:
-                    # Se houver erro em um prêmio, pula para o próximo
-                    continue
-            
-            return JsonResponse({'success': True, 'message': 'Futliga Clássica atualizada com sucesso!'})
-        
+                # REMOÇÃO EM MASSA: Usa uma abordagem direta e inequívoca
+                if remove_all_prize_images:
+                    print(f"[DEBUG] REMOÇÃO EM MASSA: Removendo TODAS as imagens de prêmios para a liga {futliga.id}")
+                    all_prizes = StandardLeaguePrize.objects.filter(league=futliga)
+                    
+                    for prize in all_prizes:
+                        if prize.image:
+                            print(f"[DEBUG] Removendo imagem do prêmio ID={prize.id}, posição={prize.position}")
+                            image_path = prize.image.path if hasattr(prize.image, 'path') else None
+                            prize.image.delete(save=False)
+                            prize.image = None
+                            prize.save(update_fields=['image'])
+                            
+                            # Verificar se a imagem foi realmente removida
+                            prize.refresh_from_db()
+                            print(f"[DEBUG] Prêmio ID={prize.id} após remoção tem imagem? {bool(prize.image)}")
+                            
+                            # Tentar remover o arquivo físico, se possível
+                            if image_path and os.path.exists(image_path):
+                                try:
+                                    os.remove(image_path)
+                                    print(f"[DEBUG] Arquivo físico removido: {image_path}")
+                                except Exception as e:
+                                    print(f"[DEBUG] Erro ao remover arquivo físico: {str(e)}")
+                    
+                    print(f"[DEBUG] REMOÇÃO EM MASSA concluída - {all_prizes.count()} prêmios processados")
+                
+                # Dados básicos da futliga
+                futliga.name = request.POST.get('name')
+                
+                # Participantes (0 = Todos, 1 = Comum, 2 = Craque)
+                players_str = request.POST.get('players')
+                try:
+                    futliga.players = int(players_str)
+                except (ValueError, TypeError):
+                    futliga.players = 0
+                
+                # Tipo de premiação
+                futliga.award_frequency = request.POST.get('award_frequency')
+                
+                # Campos específicos dependendo do tipo de premiação
+                if futliga.award_frequency == 'weekly':
+                    futliga.weekday = request.POST.get('weekday')
+                    futliga.monthday = None
+                    futliga.month_value = None
+                elif futliga.award_frequency == 'monthly':
+                    futliga.weekday = None
+                    futliga.monthday = request.POST.get('monthday')
+                    futliga.month_value = None
+                elif futliga.award_frequency == 'annual':
+                    futliga.weekday = None
+                    futliga.monthday = request.POST.get('monthday')
+                    futliga.month_value = request.POST.get('month_value')
+                
+                # Horário de premiação
+                if request.POST.get('award_time'):
+                    time_str = request.POST.get('award_time')
+                    # Converte para objeto time
+                    time_obj = datetime.strptime(time_str, '%H:%M').time()
+                    futliga.award_time = time_obj
+                
+                # Imagem principal
+                if 'image' in request.FILES:
+                    if futliga.image:
+                        # Remove a imagem existente
+                        futliga.image.delete(save=False)
+                    futliga.image = request.FILES['image']
+                elif request.POST.get('remove_image') == '1' and futliga.image:
+                    # Remove a imagem se solicitado
+                    futliga.image.delete(save=False)
+                    futliga.image = None
+                
+                # Salva as alterações na futliga
+                futliga.save()
+                
+                # Processa prêmios que devem ser removidos
+                if 'remove_prizes[]' in request.POST:
+                    prize_ids_to_remove = request.POST.getlist('remove_prizes[]')
+                    for prize_id in prize_ids_to_remove:
+                        try:
+                            prize = StandardLeaguePrize.objects.get(id=prize_id, league=futliga)
+                            
+                            # Se tem imagem, remove primeiro
+                            if prize.image:
+                                prize.image.delete(save=False)
+                            
+                            # Remove o prêmio do banco
+                            prize.delete()
+                            print(f"[DEBUG] Prêmio ID={prize_id} removido com sucesso")
+                        except StandardLeaguePrize.DoesNotExist:
+                            print(f"[DEBUG] Prêmio ID={prize_id} não encontrado para remoção")
+                
+                # Imagens de prêmios que devem ser removidas individualmente
+                if 'remove_prize_images[]' in request.POST:
+                    # Obtém as posições dos prêmios que devem ter suas imagens removidas
+                    prize_positions_for_image_removal = request.POST.getlist('remove_prize_images[]')
+                    
+                    print(f"[DEBUG] Posições marcadas para remoção de imagem: {', '.join(prize_positions_for_image_removal)}")
+                    
+                    # Para cada posição marcada para remoção de imagem
+                    for position in prize_positions_for_image_removal:
+                        try:
+                            # Verificar se a posição é um número válido
+                            try:
+                                if not position or position == 'undefined' or not position.isdigit():
+                                    print(f"[DEBUG] Posição inválida ('{position}'), pulando")
+                                    continue
+                                position_int = int(position)
+                            except (ValueError, TypeError):
+                                print(f"[DEBUG] Posição inválida ('{position}'), pulando")
+                                continue
+                            
+                            # Busca o prêmio pela posição
+                            prize = StandardLeaguePrize.objects.get(position=position_int, league=futliga)
+                            
+                            if prize.image:
+                                # Guarda o caminho da imagem se existir
+                                image_path = prize.image.path if hasattr(prize.image, 'path') else None
+                                
+                                # Remove a imagem do modelo
+                                prize.image.delete(save=False)
+                                prize.image = None
+                                prize.save(update_fields=['image'])
+                                
+                                print(f"[DEBUG] Imagem removida do prêmio ID={prize.id}, posição={position_int}")
+                                
+                                # Tenta remover o arquivo físico também
+                                if image_path and os.path.exists(image_path):
+                                    try:
+                                        os.remove(image_path)
+                                        print(f"[DEBUG] Arquivo físico removido: {image_path}")
+                                    except Exception as e:
+                                        print(f"[DEBUG] Erro ao remover arquivo físico: {str(e)}")
+                            else:
+                                print(f"[DEBUG] Prêmio ID={prize.id}, posição={position_int} não tem imagem para remover")
+                        except StandardLeaguePrize.DoesNotExist:
+                            print(f"[DEBUG] Prêmio na posição {position} não encontrado")
+                        except Exception as e:
+                            print(f"[DEBUG] Erro ao processar remoção de imagem posição {position}: {str(e)}")
+                
+                # Processa os prêmios existentes e novos
+                if 'prize_positions[]' in request.POST:
+                    positions = request.POST.getlist('prize_positions[]')
+                    prizes = request.POST.getlist('prize_descriptions[]')
+                    
+                    # Mapeia novas imagens para posições
+                    prize_image_positions = {}
+                    if 'prize_image_positions[]' in request.POST:
+                        image_positions = request.POST.getlist('prize_image_positions[]')
+                        prize_files = request.FILES.getlist('prize_images[]')
+                        
+                        for i, pos in enumerate(image_positions):
+                            if i < len(prize_files):
+                                prize_image_positions[pos] = prize_files[i]
+                    
+                    for i, position in enumerate(positions):
+                        if i < len(prizes):
+                            prize_value = prizes[i]
+                            
+                            # Garantir que position seja sempre um número inteiro válido
+                            try:
+                                position = int(position)
+                                if position <= 0:
+                                    position = i + 1  # Usar o índice +1 como posição válida
+                                    print(f"[DEBUG] Posição inválida (<=0), corrigindo para {position}")
+                            except (ValueError, TypeError):
+                                position = i + 1  # Se não for conversível para inteiro, usar o índice
+                                print(f"[DEBUG] Posição inválida (não numérica), corrigindo para {position}")
+                            
+                            # Tenta encontrar um prêmio existente nessa posição
+                            try:
+                                prize_obj = StandardLeaguePrize.objects.get(position=position, league=futliga)
+                                # Atualiza valor
+                                prize_obj.prize = prize_value
+                                
+                                # Se tiver uma nova imagem para esta posição, atualiza
+                                if str(position) in prize_image_positions:
+                                    # Remove a imagem anterior se existir
+                                    if prize_obj.image:
+                                        prize_obj.image.delete(save=False)
+                                    
+                                    # Adiciona a nova imagem
+                                    prize_obj.image = prize_image_positions[str(position)]
+                                
+                                # Salva o prêmio
+                                prize_obj.save()
+                                
+                            except StandardLeaguePrize.DoesNotExist:
+                                # Cria um novo prêmio
+                                prize_obj = StandardLeaguePrize(
+                                    league=futliga,
+                                    position=position,
+                                    prize=prize_value
+                                )
+                                
+                                # Adiciona imagem se disponível
+                                if str(position) in prize_image_positions:
+                                    prize_obj.image = prize_image_positions[str(position)]
+                                
+                                # Salva o novo prêmio
+                                prize_obj.save()
+                
+                return JsonResponse({'success': True})
         except Exception as e:
-            return JsonResponse({'success': False, 'message': f'Erro ao atualizar Futliga Clássica: {str(e)}'}, status=500)
+            print(f"[DEBUG] Erro ao editar futliga: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            return JsonResponse({'success': False, 'message': f'Erro ao editar Futliga Clássica: {str(e)}'})
     
-    return render(request, 'administrativo/futliga-classica-editar.html', {'futliga': futliga})
+    # Se o método não for GET nem POST
+    return JsonResponse({'success': False, 'message': 'Método não permitido'})
 
 @login_required
 @csrf_exempt
@@ -5064,31 +5140,31 @@ def time_excluir_em_massa(request):
             team.delete()
         
         # Monta a mensagem de retorno
-            deleted_count = len(teams_to_delete)
-            non_deleted_count = len(teams_with_championships)
-            
-            message_parts = []
-            if deleted_count > 0:
-                message_parts.append(f'{deleted_count} time(s) excluído(s) com sucesso')
-            if non_deleted_count > 0:
-                message_parts.append(f'{non_deleted_count} time(s) não pode(m) ser excluído(s) pois possui(em) campeonatos vinculados')
-            
-            message = '. '.join(message_parts) + '.'
-            if not message_parts:
-                message = 'Nenhum time foi excluído.'
-            
-            return JsonResponse({
-                'success': True,
-                'message': message,
-                'deleted': deleted_count,
-                'errors': [message] if non_deleted_count > 0 else []
-            })
+        deleted_count = len(teams_to_delete)
+        non_deleted_count = len(teams_with_championships)
+        
+        message_parts = []
+        if deleted_count > 0:
+            message_parts.append(f'{deleted_count} time(s) excluído(s) com sucesso')
+        if non_deleted_count > 0:
+            message_parts.append(f'{non_deleted_count} time(s) não pode(m) ser excluído(s) pois possui(em) campeonatos vinculados')
+        
+        message = '. '.join(message_parts) + '.'
+        if not message_parts:
+            message = 'Nenhum time foi excluído.'
+        
+        return JsonResponse({
+            'success': True,
+            'message': message,
+            'deleted': deleted_count,
+            'errors': [message] if non_deleted_count > 0 else []
+        })
             
     except Exception as e:
-            return JsonResponse({
-                'success': False,
-                'message': f'Erro ao excluir times: {str(e)}'
-            })
+        return JsonResponse({
+            'success': False,
+            'message': f'Erro ao excluir times: {str(e)}'
+        })
     
     return JsonResponse({
         'success': False,
