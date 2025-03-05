@@ -139,6 +139,14 @@ $(document).ready(function() {
                         '</div>'
                     );
                     
+                    // Remove o campo hidden de remoção se existir
+                    var tr = preview.closest('tr');
+                    if (tr.length) {
+                        var rowIndex = tr.index();
+                        $('#remove_prize_image_' + rowIndex).remove();
+                        tr.find('.prize-image-container').removeClass('image-removed');
+                    }
+                    
                     // Handler para limpar a imagem
                     preview.find('.image-remove-btn').on('click', function(e) {
                         e.preventDefault();
@@ -148,6 +156,16 @@ $(document).ready(function() {
                         container.find('.prize-image-preview').html(
                             '<i class="fa fa-file-image-o" style="font-size: 24px; color: #ccc; cursor: pointer;" onclick="$(this).closest(\'.prize-image-container\').find(\'.prize-image\').click()"></i>'
                         );
+                        
+                        // Adiciona o campo hidden para remoção
+                        var tr = container.closest('tr');
+                        if (tr.length) {
+                            var rowIndex = tr.index();
+                            if (!$('#remove_prize_image_' + rowIndex).length) {
+                                $('form').append('<input type="hidden" id="remove_prize_image_' + rowIndex + '" name="remove_prize_image[]" value="' + rowIndex + '">');
+                            }
+                            container.addClass('image-removed');
+                        }
                     });
                 };
                 reader.readAsDataURL(file);
@@ -187,7 +205,42 @@ $(document).ready(function() {
         $('#prizes-table tbody').append(newRow);
     });
 
-    // Configurar handler para todos os elementos image-remove-btn que possam ser adicionados dinamicamente
+    // Função para restaurar o estado das imagens removidas após recarregar a página
+    function restoreRemovedImagesState() {
+        try {
+            var removedImages = JSON.parse(localStorage.getItem('removedPrizeImages') || '{}');
+            Object.keys(removedImages).forEach(function(index) {
+                if (removedImages[index]) {
+                    var tr = $('#prizes-table tbody tr').eq(index);
+                    if (tr.length) {
+                        var container = tr.find('.prize-image-container');
+                        container.addClass('image-removed');
+                        if (!$('#remove_prize_image_' + index).length) {
+                            $('form').append('<input type="hidden" id="remove_prize_image_' + index + '" name="remove_prize_image[]" value="' + index + '">');
+                        }
+                    }
+                }
+            });
+        } catch (e) {
+            console.error('Erro ao restaurar estado de remoção de imagens:', e);
+        }
+    }
+
+    // Função para limpar o estado de remoção quando uma nova imagem é adicionada
+    function clearRemovedImageState(index) {
+        try {
+            var removedImages = JSON.parse(localStorage.getItem('removedPrizeImages') || '{}');
+            delete removedImages[index];
+            localStorage.setItem('removedPrizeImages', JSON.stringify(removedImages));
+        } catch (e) {
+            console.error('Erro ao limpar estado de remoção:', e);
+        }
+    }
+
+    // Inicializa o estado das imagens removidas
+    restoreRemovedImagesState();
+
+    // Handler para remoção de imagens
     $(document).on('click', '.image-remove-btn', function(e) {
         e.preventDefault();
         e.stopPropagation();
@@ -197,15 +250,41 @@ $(document).ready(function() {
             '<i class="fa fa-file-image-o" style="font-size: 24px; color: #ccc; cursor: pointer;" onclick="$(this).closest(\'.prize-image-container\').find(\'.prize-image\').click()"></i>'
         );
         
-        // Se estiver na página de edição, adicione o campo hidden para remoção
         var tr = $(this).closest('tr');
         if (tr.length) {
             var rowIndex = tr.index();
-            if (window.location.href.indexOf('editar') > -1) {
-                if (!$('#remove_prize_image_' + rowIndex).length) {
-                    $('form').append('<input type="hidden" id="remove_prize_image_' + rowIndex + '" name="remove_prize_image[]" value="' + rowIndex + '">');
-                }
+            // Adiciona ou atualiza o campo hidden para remoção
+            var hiddenInput = $('#remove_prize_image_' + rowIndex);
+            if (hiddenInput.length === 0) {
+                $('form').append('<input type="hidden" id="remove_prize_image_' + rowIndex + '" name="remove_prize_image[]" value="' + rowIndex + '">');
+            } else {
+                hiddenInput.val(rowIndex);
             }
+            
+            // Adiciona uma classe para indicar que a imagem foi removida
+            container.addClass('image-removed');
+            
+            // Salva o estado da remoção no localStorage
+            try {
+                var removedImages = JSON.parse(localStorage.getItem('removedPrizeImages') || '{}');
+                removedImages[rowIndex] = true;
+                localStorage.setItem('removedPrizeImages', JSON.stringify(removedImages));
+            } catch (e) {
+                console.error('Erro ao salvar estado de remoção no localStorage:', e);
+            }
+        }
+    });
+
+    // Handler para mudança de imagem
+    $(document).on('change', '.prize-image', function() {
+        var tr = $(this).closest('tr');
+        if (tr.length) {
+            var index = tr.index();
+            clearRemovedImageState(index);
+            
+            // Remove a classe de remoção e o campo hidden
+            tr.find('.prize-image-container').removeClass('image-removed');
+            $('#remove_prize_image_' + index).remove();
         }
     });
 
@@ -236,12 +315,28 @@ $(document).ready(function() {
     $('#btn-save').click(function(e) {
         e.preventDefault();
         
+        // Antes de enviar, verifica se há imagens que devem ser preservadas
+        $('#prizes-table tbody tr').each(function(index) {
+            var container = $(this).find('.prize-image-container');
+            var preview = container.find('.prize-image-preview');
+            var img = preview.find('img');
+            
+            // Se tem imagem e não está marcada para remoção
+            if (img.length && !container.hasClass('image-removed')) {
+                var imgSrc = img.attr('src');
+                // Adiciona um campo hidden para preservar a imagem
+                if (!$('#preserve_prize_image_' + index).length) {
+                    $('form').append('<input type="hidden" id="preserve_prize_image_' + index + '" name="preserve_prize_image[]" value="' + imgSrc + '">');
+                }
+            }
+        });
+        
         var formData = new FormData();
         
         // Nome é obrigatório
         var nome = $('#nome').val();
         if (!nome) {
-            toastr.remove(); // Limpa mensagens anteriores
+            toastr.remove();
             toastr.error('O nome é obrigatório');
             return;
         }
@@ -275,6 +370,11 @@ $(document).ready(function() {
             formData.append('image', mainImage);
         }
         
+        // Verifica se a imagem principal foi removida
+        if ($('#remove_image').length && $('#remove_image').val() === '1') {
+            formData.append('remove_image', '1');
+        }
+        
         // Dia/horário de premiação
         if (frequencia === 'Semanal') {
             var weekday = parseInt($('#dia-premiacao').val());
@@ -305,20 +405,38 @@ $(document).ready(function() {
         formData.append('award_time', $('.clockpicker input').val());
         
         // Prêmios
-        $('#prizes-table tbody tr').each(function() {
+        $('#prizes-table tbody tr').each(function(index) {
             var position = $(this).find('.position-input').val();
             var prize = $(this).find('.prize-input').val();
             var prizeImage = $(this).find('.prize-image')[0].files[0];
+            var existingImage = $(this).find('.prize-image-preview img').attr('src');
+            var preserveImage = $('#preserve_prize_image_' + index).val();
             
             if (position && prize) {
                 formData.append('prize_positions[]', position);
                 formData.append('prize_descriptions[]', prize);
+                
+                // Verifica se há uma imagem nova para enviar
                 if (prizeImage) {
                     formData.append('prize_images[]', prizeImage);
+                    formData.append('prize_image_positions[]', index);
+                }
+                // Se não há nova imagem mas existe uma imagem atual e não foi marcada para remoção
+                else if ((existingImage || preserveImage) && !$('#remove_prize_image_' + index).length) {
+                    formData.append('prize_existing_images[]', existingImage || preserveImage);
+                    formData.append('prize_existing_image_positions[]', index);
+                }
+                // Se a imagem foi marcada para remoção
+                else if ($('#remove_prize_image_' + index).length) {
+                    formData.append('remove_prize_images[]', index);
                 }
             }
         });
-
+        
+        // Limpa o localStorage após enviar o formulário
+        localStorage.removeItem('removedPrizeImages');
+        
+        // Envia os dados para o servidor
         $.ajax({
             url: $('#form-futliga').data('url'),
             type: 'POST',
@@ -331,18 +449,18 @@ $(document).ready(function() {
             success: function(response) {
                 if (response.success) {
                     toastr.remove();
-                    toastr.success('Futliga clássica criada com sucesso!');
+                    toastr.success('Futliga clássica salva com sucesso!');
                     setTimeout(function() {
                         window.location.href = $('#form-futliga').data('list-url');
                     }, 2000);
                 } else {
                     toastr.remove();
-                    toastr.error(response.message || 'Erro ao criar futliga clássica');
+                    toastr.error(response.message || 'Erro ao salvar futliga clássica');
                 }
             },
             error: function(xhr, status, error) {
                 toastr.remove();
-                var errorMessage = xhr.responseJSON ? xhr.responseJSON.message : 'Erro ao criar futliga clássica';
+                var errorMessage = xhr.responseJSON ? xhr.responseJSON.message : 'Erro ao salvar futliga clássica';
                 toastr.error(errorMessage);
             }
         });
@@ -447,129 +565,17 @@ $(document).ready(function() {
     $(document).on('click', '#delete-selected', function() {
         const selectedCount = $('.check-item:checked').length;
         if (selectedCount > 0) {
-            console.log(`${selectedCount} Futligas selecionadas para exclusão em massa`);
-            $('#modalAlert').modal('show');
-        } else {
-            toastr.remove();
-            toastr.warning('Selecione pelo menos uma Futliga Clássica para excluir');
-        }
-    });
-
-    $(document).on('click', '#confirm-mass-delete', function() {
-        const selectedIds = [];
-        $('.check-item:checked').each(function() {
-            selectedIds.push($(this).val());
-        });
-
-        if (selectedIds.length > 0) {
-            // Adiciona indicador visual de que a exclusão está em andamento
-            const $btn = $(this);
-            $btn.html('<i class="fa fa-spinner fa-spin"></i> Excluindo...');
-            $btn.prop('disabled', true);
-            
-            console.log(`Iniciando exclusão em massa. IDs: ${selectedIds.join(', ')}`);
-
-            // Obtém a URL do botão que iniciou a exclusão em massa
-            const url = $('#delete-selected').data('url');
-            console.log('URL da requisição de exclusão em massa:', url);
-
-            $.ajax({
-                url: url,
-                type: 'POST',
-                data: JSON.stringify({ ids: selectedIds }),
-                contentType: 'application/json',
-                headers: {
-                    'X-CSRFToken': $('meta[name="csrf-token"]').attr('content')
-                },
-                success: function(response) {
-                    $('#modalAlert').modal('hide');
-                    
-                    console.log('Resposta do servidor (exclusão em massa):', response);
-                    
-                    if (response.success) {
-                        toastr.remove();
-                        toastr.success('Futligas Clássicas excluídas com sucesso!');
-                        setTimeout(function() {
-                            window.location.reload();
-                        }, 2000);
-                    } else {
-                        // Restaura o botão
-                        $btn.html('Excluir');
-                        $btn.prop('disabled', false);
-                        
-                        toastr.remove();
-                        const errorMsg = response.message || 'Erro ao excluir Futligas Clássicas';
-                        console.error('Erro na exclusão em massa:', errorMsg);
-                        toastr.error(errorMsg);
-                    }
-                },
-                error: function(xhr, status, error) {
-                    $('#modalAlert').modal('hide');
-                    
-                    // Restaura o botão
-                    $btn.html('Excluir');
-                    $btn.prop('disabled', false);
-                    
-                    console.error('Erro na requisição AJAX (exclusão em massa):', status, error);
-                    console.error('Resposta do servidor:', xhr.responseText);
-                    console.error('Status da requisição:', xhr.status);
-                    console.error('URL tentada:', url);
-                    
-                    toastr.remove();
-                    let errorMessage = 'Erro ao excluir Futligas Clássicas';
-                    
-                    try {
-                        if (xhr.responseJSON && xhr.responseJSON.message) {
-                            errorMessage = xhr.responseJSON.message;
-                        } else if (xhr.responseText) {
-                            const responseObj = JSON.parse(xhr.responseText);
-                            if (responseObj.message) {
-                                errorMessage = responseObj.message;
-                            }
-                        }
-                    } catch (e) {
-                        console.error('Erro ao processar resposta de erro:', e);
-                    }
-                    
-                    toastr.error(errorMessage);
+            console.log(`Iniciando exclusão de ${selectedCount} Futliga(s) Clássica(s)`);
+            $('.check-item:checked').each(function() {
+                const futligaId = $(this).data('id');
+                if (futligaId) {
+                    console.log(`Excluindo Futliga ID: ${futligaId}`);
+                    $(`.delete-btn[data-id="${futligaId}"]`).trigger('click');
                 }
             });
+        } else {
+            console.log('Nenhuma Futliga selecionada para exclusão');
+            toastr.error('Nenhuma Futliga selecionada para exclusão');
         }
     });
-
-    // Checkbox "Selecionar todos" usando delegação de eventos
-    $(document).on('change', '.checkAll', function() {
-        $('.check-item').prop('checked', $(this).prop('checked'));
-    });
-
-    // Inicialização do DataTable
-    $('.dataTables-futligas-padrao').DataTable({
-        pageLength: 25,
-        responsive: true,
-        dom: '<"html5buttons"B>lTfgitp',
-        buttons: [],
-        language: {
-            "sEmptyTable": "Nenhum registro encontrado",
-            "sInfo": "Mostrando de _START_ até _END_ de _TOTAL_ registros",
-            "sInfoEmpty": "Mostrando 0 até 0 de 0 registros",
-            "sInfoFiltered": "(Filtrados de _MAX_ registros)",
-            "sInfoPostFix": "",
-            "sInfoThousands": ".",
-            "sLengthMenu": "_MENU_ resultados por página",
-            "sLoadingRecords": "Carregando...",
-            "sProcessing": "Processando...",
-            "sZeroRecords": "Nenhum registro encontrado",
-            "sSearch": "Pesquisar",
-            "oPaginate": {
-                "sNext": "Próximo",
-                "sPrevious": "Anterior",
-                "sFirst": "Primeiro",
-                "sLast": "Último"
-            },
-            "oAria": {
-                "sSortAscending": ": Ordenar colunas de forma ascendente",
-                "sSortDescending": ": Ordenar colunas de forma descendente"
-            }
-        }
-    });
-}); 
+});

@@ -200,13 +200,13 @@ $(document).ready(function() {
         // Validar os dados das imagens antes de renderizar
         niveisData.forEach(nivel => {
             // Verificar se temos uma imagem na tabela atual que não está nos dados
-            if (imagensAtuais[nivel.id] && !nivel.image) {
+            if (!nivel.image && imagensAtuais[nivel.id]) {
                 console.log(`Recuperando imagem da tabela para nível ID ${nivel.id}`);
                 nivel.image = imagensAtuais[nivel.id];
             }
             
             // Garantir que a propriedade image não se torne undefined
-            if (!nivel.image) {
+            if (nivel.image === undefined) {
                 nivel.image = null;
             }
             
@@ -231,7 +231,7 @@ $(document).ready(function() {
         niveisData.forEach(function(nivel) {
             // Garante que a imagem seja exibida se estiver disponível
             const imagemHTML = nivel.image 
-                ? `<img src="${nivel.image}" height="32" width="32" alt="Imagem" onerror="this.onerror=null; this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiI+PHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiBmaWxsPSIjZWVlIi8+PHRleHQgdGV4dC1hbmNob3I9Im1pZGRsZSIgeD0iMTYiIHk9IjE2IiBzdHlsZT0iZmlsbDojYWFhO2ZvbnQtd2VpZ2h0OmJvbGQ7Zm9udC1zaXplOjEycHg7Zm9udC1mYW1pbHk6QXJpYWwsSGVsdmV0aWNhLHNhbnMtc2VyaWY7ZG9taW5hbnQtYmFzZWxpbmU6Y2VudHJhbCI+Pzw8L3RleHQ+PC9zdmc+'; console.log('Erro ao carregar imagem para nível ID ' + ${nivel.id});">`
+                ? `<img src="${nivel.image}" height="32" width="32" alt="Imagem" onerror="this.onerror=null; this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiI+PHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiBmaWxsPSIjZWVlIi8+PHRleHQgdGV4dC1hbmNob3I9Im1pZGRsZSIgeD0iMTYiIHk9IjE2IiBzdHlsZT0iZmlsbDojYWFhO2ZvbnQtd2VpZ2h0OmJvbGQ7Zm9udC1zaXplOjEycHg7Zm9udC1mYW1pbHk6QXJpYWwsSGVsdmV0aWNhLHNhbnMtc2VyaWY7ZG9taW5hbnQtYmFzZWxpbmU6Y2VudHJhbCI+Pzw8L3RleHQ+PC9zdmc+'; console.log('Erro ao carregar imagem para nível ID ' + nivel.id);">`
                 : '-';
             
             html += `
@@ -1020,14 +1020,19 @@ $(document).ready(function() {
         // Gerar um ID único temporário até que o nível seja salvo no servidor
         const id = 'temp_' + Date.now();
         
+        // Backup das imagens existentes antes de qualquer modificação
+        const imagensBackup = {};
+        niveisData.forEach(nivel => {
+            if (nivel.image) {
+                imagensBackup[nivel.id] = nivel.image;
+            }
+        });
+        
         // Garante que os dados da imagem sejam válidos
         if (imageData === undefined) {
             console.log("Corrigindo undefined para imageData");
             imageData = null;
         }
-        
-        // Armazena a URL da imagem para verificação posterior
-        let imagemOriginal = imageData;
         
         // Cria o objeto de nível completo
         const newLevel = {
@@ -1046,28 +1051,27 @@ $(document).ready(function() {
         // Adiciona aos dados em memória
         niveisData.push(newLevel);
         
+        // Restaura as imagens do backup para os níveis existentes
+        niveisData.forEach(nivel => {
+            if (nivel.id !== id && imagensBackup[nivel.id]) {
+                nivel.image = imagensBackup[nivel.id];
+            }
+        });
+        
+        // Atualiza o localStorage com as imagens atuais
+        try {
+            const imagensParaArmazenar = {...imagensBackup};
+            if (newLevel.image) {
+                imagensParaArmazenar[newLevel.id] = newLevel.image;
+            }
+            localStorage.setItem('niveisImagens', JSON.stringify(imagensParaArmazenar));
+            console.log(`${Object.keys(imagensParaArmazenar).length} imagens salvas no localStorage`);
+        } catch (e) {
+            console.error("Erro ao salvar imagens no localStorage:", e);
+        }
+        
         // Renderiza a tabela com o novo nível
         renderNiveisTable();
-        
-        // Verifica se a imagem foi renderizada corretamente
-        setTimeout(function() {
-            const row = $(`#table tbody tr[data-id="${id}"]`);
-            const imgElement = row.find('td:eq(1) img');
-            
-            if (imagemOriginal && (!imgElement.length || imgElement.attr('src') !== imagemOriginal)) {
-                console.error("A imagem não foi renderizada corretamente!");
-                console.log("Tentando corrigir...");
-                
-                // Tentar corrigir diretamente no DOM
-                row.find('td:eq(1)').html(`<img src="${imagemOriginal}" height="32" width="32" alt="Imagem">`);
-                
-                // Também corrige nos dados
-                const nivel = niveisData.find(n => n.id === id);
-                if (nivel) {
-                    nivel.image = imagemOriginal;
-                }
-            }
-        }, 100);
         
         // Atualiza a tabela de prêmios sem perder os dados existentes
         updatePremiosTableWithoutReset();
@@ -1183,6 +1187,14 @@ $(document).ready(function() {
     function updateLevel(id, name, players, premium_players, owner_premium, imageData = null) {
         console.log(`Atualizando nível ID ${id} - Nome: ${name}`);
         
+        // Backup das imagens existentes
+        const imagensBackup = {};
+        niveisData.forEach(nivel => {
+            if (nivel.image) {
+                imagensBackup[nivel.id] = nivel.image;
+            }
+        });
+        
         // Encontra o nível nos dados em memória
         const levelIndex = niveisData.findIndex(nivel => nivel.id == id);
         if (levelIndex >= 0) {
@@ -1205,12 +1217,9 @@ $(document).ready(function() {
                 imagemFinal = null;
             }
             
-            // Armazena a URL da imagem para verificação posterior
-            let imagemOriginal = imagemFinal;
-            
-            // Atualiza os dados em memória
+            // Atualiza os dados em memória preservando a ordem e outras propriedades
             niveisData[levelIndex] = {
-                ...nivelAntigo,  // Mantém propriedades que não estão sendo atualizadas
+                ...nivelAntigo,
                 name: name,
                 players: parseInt(players) || 0,
                 premium_players: parseInt(premium_players) || 0,
@@ -1218,38 +1227,39 @@ $(document).ready(function() {
                 image: imagemFinal
             };
             
-            console.log("Dados após atualização:", niveisData[levelIndex]);
-            console.log("Imagem após atualização:", niveisData[levelIndex].image ? "Sim" : "Não");
+            // Restaura as imagens do backup para os outros níveis
+            niveisData.forEach(nivel => {
+                if (nivel.id !== id && imagensBackup[nivel.id]) {
+                    nivel.image = imagensBackup[nivel.id];
+                }
+            });
+            
+            // Atualiza o localStorage com as imagens atuais
+            try {
+                const imagensParaArmazenar = {...imagensBackup};
+                if (imagemFinal) {
+                    imagensParaArmazenar[id] = imagemFinal;
+                } else {
+                    delete imagensParaArmazenar[id];
+                }
+                localStorage.setItem('niveisImagens', JSON.stringify(imagensParaArmazenar));
+                console.log(`${Object.keys(imagensParaArmazenar).length} imagens salvas no localStorage`);
+            } catch (e) {
+                console.error("Erro ao salvar imagens no localStorage:", e);
+            }
             
             // Renderiza toda a tabela novamente
             renderNiveisTable();
-            
-            // Verifica se a imagem foi renderizada corretamente
-            setTimeout(function() {
-                const row = $(`#table tbody tr[data-id="${id}"]`);
-                const imgElement = row.find('td:eq(1) img');
-                
-                if (imagemOriginal && (!imgElement.length || imgElement.attr('src') !== imagemOriginal)) {
-                    console.error("A imagem não foi renderizada corretamente na atualização!");
-                    console.log("Tentando corrigir...");
-                    
-                    // Tentar corrigir diretamente no DOM
-                    row.find('td:eq(1)').html(`<img src="${imagemOriginal}" height="32" width="32" alt="Imagem">`);
-                    
-                    // Também corrige nos dados
-                    niveisData[levelIndex].image = imagemOriginal;
-                }
-            }, 100);
             
             // Atualiza a tabela de prêmios sem resetar as linhas
             updatePremiosTableWithoutReset();
             
             // Reinicializa o drag and drop
             initDragAndDrop();
-        
-        // Limpa o campo de imagem e o preview
-        $("#image").val('');
-        $("#image-preview").html('<i class="fa fa-file-image-o" style="font-size: 32px; color: #ccc; cursor: pointer;" onclick="document.getElementById(\'image\').click()"></i>');
+            
+            // Limpa o campo de imagem e o preview
+            $("#image").val('');
+            $("#image-preview").html('<i class="fa fa-file-image-o" style="font-size: 32px; color: #ccc; cursor: pointer;" onclick="document.getElementById(\'image\').click()"></i>');
             
             // Reset imageWasRemoved flag
             imageWasRemoved = false;
