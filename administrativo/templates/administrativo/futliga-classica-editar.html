@@ -281,34 +281,45 @@ $(document).ready(function() {
             
             if (prizeId) {
                 // Se temos o ID, usamos ele diretamente
-                // Atualiza a interface visualmente primeiro
-                var container = $(this).closest('.prize-image-container');
-                container.find('.prize-image').val('');
-                container.find('.prize-image-preview').html(
-                    '<i class="fa fa-file-image-o" style="font-size: 24px; color: #ccc; cursor: pointer;" onclick="$(this).closest(\'.prize-image-container\').find(\'.prize-image\').click()"></i>'
-                );
-                
-                // CORREÇÃO: Marcar esta imagem específica para remoção com ID e posição
-                // Remover qualquer input anterior com mesmo ID para evitar duplicações
-                $('input[name="remove_specific_prize_image_id_' + prizeId + '"]').remove();
-                
-                // Adicionar um novo identificador exclusivo para este prêmio
-                $('form').append('<input type="hidden" name="remove_specific_prize_image_id_' + prizeId + '" value="' + prizeId + '">');
+                var confirmText = "Tem certeza que deseja remover a imagem do prêmio na posição " + position + "?";
+                if (confirm(confirmText)) {
+                    // Atualiza a interface visualmente primeiro
+                    var container = $(this).closest('.prize-image-container');
+                    container.find('.prize-image').val('');
+                    container.find('.prize-image-preview').html(
+                        '<i class="fa fa-file-image-o" style="font-size: 24px; color: #ccc; cursor: pointer;" onclick="$(this).closest(\'.prize-image-container\').find(\'.prize-image\').click()"></i>'
+                    );
+                    
+                    // Adicionar um input escondido com flag de remover imagem
+                    $('form').append('<input type="hidden" name="remove_prize_image_prize_id" value="' + prizeId + '">');
+                    
+                    // Adicionalmente, marcar para processamento do JS
+                    $('form').append('<input type="hidden" name="marked_for_image_removal" value="' + prizeId + '">');
+                    
+                    alert("Imagem do prêmio #" + prizeId + " será removida quando você salvar.");
+                }
             } else {
                 // Se não temos ID, usamos a posição com cuidado especial
-                // Atualiza a interface visualmente primeiro
-                var container = $(this).closest('.prize-image-container');
-                container.find('.prize-image').val('');
-                container.find('.prize-image-preview').html(
-                    '<i class="fa fa-file-image-o" style="font-size: 24px; color: #ccc; cursor: pointer;" onclick="$(this).closest(\'.prize-image-container\').find(\'.prize-image\').click()"></i>'
-                );
-                
-                // CORREÇÃO: Marcar esta posição específica para remoção
-                // Remover qualquer input anterior com mesma posição para evitar duplicações
-                $('input[name="remove_specific_prize_image_pos_' + position + '"]').remove();
-                
-                // Adicionar um novo identificador exclusivo para esta posição
-                $('form').append('<input type="hidden" name="remove_specific_prize_image_pos_' + position + '" value="' + position + '">');
+                var confirmText = "Tem certeza que deseja remover a imagem do prêmio na posição " + position + "?";
+                if (confirm(confirmText)) {
+                    // Atualiza a interface visualmente primeiro
+                    var container = $(this).closest('.prize-image-container');
+                    container.find('.prize-image').val('');
+                    container.find('.prize-image-preview').html(
+                        '<i class="fa fa-file-image-o" style="font-size: 24px; color: #ccc; cursor: pointer;" onclick="$(this).closest(\'.prize-image-container\').find(\'.prize-image\').click()"></i>'
+                    );
+                    
+                    // Adicionar um input escondido com flag de remover imagem
+                    if (position > 0) {
+                        // Usando o formato específico que o backend espera
+                        $('form').append('<input type="hidden" name="remove_prize_image_' + position + '" value="' + position + '">');
+                        
+                        // Adicionalmente, marcar para processamento do JS
+                        $('form').append('<input type="hidden" name="marked_for_position_removal" value="' + position + '">');
+                        
+                        alert("Imagem do prêmio na posição " + position + " será removida quando você salvar.");
+                    }
+                }
             }
         });
         {% else %}
@@ -385,34 +396,45 @@ $(document).ready(function() {
                         
                         if (prizeId) {
                             // Se temos o ID, usamos ele diretamente
-                            // Atualiza a interface visualmente primeiro
-                            var container = $(this).closest('.prize-image-container');
-                            container.find('.prize-image').val('');
-                            container.find('.prize-image-preview').html(
-                                '<i class="fa fa-file-image-o" style="font-size: 24px; color: #ccc; cursor: pointer;" onclick="$(this).closest(\'.prize-image-container\').find(\'.prize-image\').click()"></i>'
-                            );
-                            
-                            // CORREÇÃO: Marcar esta imagem específica para remoção com ID e posição
-                            // Remover qualquer input anterior com mesmo ID para evitar duplicações
-                            $('input[name="remove_specific_prize_image_id_' + prizeId + '"]').remove();
-                            
-                            // Adicionar um novo identificador exclusivo para este prêmio
-                            $('form').append('<input type="hidden" name="remove_specific_prize_image_id_' + prizeId + '" value="' + prizeId + '">');
+                            var confirmText = "Tem certeza que deseja remover a imagem do prêmio na posição " + position + "?";
+                            if (confirm(confirmText)) {
+                                // Atualiza a interface visualmente primeiro
+                                var container = $(this).closest('.prize-image-container');
+                                container.find('.prize-image').val('');
+                                container.find('.prize-image-preview').html(
+                                    '<i class="fa fa-file-image-o" style="font-size: 24px; color: #ccc; cursor: pointer;" onclick="$(this).closest(\'.prize-image-container\').find(\'.prize-image\').click()"></i>'
+                                );
+                                
+                                // Adicionar um input escondido com flag de remover imagem
+                                $('form').append('<input type="hidden" name="remove_prize_image_prize_id" value="' + prizeId + '">');
+                                
+                                // Adicionalmente, marcar para processamento do JS
+                                $('form').append('<input type="hidden" name="marked_for_image_removal" value="' + prizeId + '">');
+                                
+                                alert("Imagem do prêmio #" + prizeId + " será removida quando você salvar.");
+                            }
                         } else {
                             // Se não temos ID, usamos a posição com cuidado especial
-                            // Atualiza a interface visualmente primeiro
-                            var container = $(this).closest('.prize-image-container');
-                            container.find('.prize-image').val('');
-                            container.find('.prize-image-preview').html(
-                                '<i class="fa fa-file-image-o" style="font-size: 24px; color: #ccc; cursor: pointer;" onclick="$(this).closest(\'.prize-image-container\').find(\'.prize-image\').click()"></i>'
-                            );
-                            
-                            // CORREÇÃO: Marcar esta posição específica para remoção
-                            // Remover qualquer input anterior com mesma posição para evitar duplicações
-                            $('input[name="remove_specific_prize_image_pos_' + position + '"]').remove();
-                            
-                            // Adicionar um novo identificador exclusivo para esta posição
-                            $('form').append('<input type="hidden" name="remove_specific_prize_image_pos_' + position + '" value="' + position + '">');
+                            var confirmText = "Tem certeza que deseja remover a imagem do prêmio na posição " + position + "?";
+                            if (confirm(confirmText)) {
+                                // Atualiza a interface visualmente primeiro
+                                var container = $(this).closest('.prize-image-container');
+                                container.find('.prize-image').val('');
+                                container.find('.prize-image-preview').html(
+                                    '<i class="fa fa-file-image-o" style="font-size: 24px; color: #ccc; cursor: pointer;" onclick="$(this).closest(\'.prize-image-container\').find(\'.prize-image\').click()"></i>'
+                                );
+                                
+                                // Adicionar um input escondido com flag de remover imagem
+                                if (position > 0) {
+                                    // Usando o formato específico que o backend espera
+                                    $('form').append('<input type="hidden" name="remove_prize_image_' + position + '" value="' + position + '">');
+                                    
+                                    // Adicionalmente, marcar para processamento do JS
+                                    $('form').append('<input type="hidden" name="marked_for_position_removal" value="' + position + '">');
+                                    
+                                    alert("Imagem do prêmio na posição " + position + " será removida quando você salvar.");
+                                }
+                            }
                         }
                     });
                 };
@@ -496,34 +518,45 @@ $(document).ready(function() {
                             
                             if (prizeId) {
                                 // Se temos o ID, usamos ele diretamente
-                                // Atualiza a interface visualmente primeiro
-                                var container = $(this).closest('.prize-image-container');
-                                container.find('.prize-image').val('');
-                                container.find('.prize-image-preview').html(
-                                    '<i class="fa fa-file-image-o" style="font-size: 24px; color: #ccc; cursor: pointer;" onclick="$(this).closest(\'.prize-image-container\').find(\'.prize-image\').click()"></i>'
-                                );
-                                
-                                // CORREÇÃO: Marcar esta imagem específica para remoção com ID e posição
-                                // Remover qualquer input anterior com mesmo ID para evitar duplicações
-                                $('input[name="remove_specific_prize_image_id_' + prizeId + '"]').remove();
-                                
-                                // Adicionar um novo identificador exclusivo para este prêmio
-                                $('form').append('<input type="hidden" name="remove_specific_prize_image_id_' + prizeId + '" value="' + prizeId + '">');
+                                var confirmText = "Tem certeza que deseja remover a imagem do prêmio na posição " + position + "?";
+                                if (confirm(confirmText)) {
+                                    // Atualiza a interface visualmente primeiro
+                                    var container = $(this).closest('.prize-image-container');
+                                    container.find('.prize-image').val('');
+                                    container.find('.prize-image-preview').html(
+                                        '<i class="fa fa-file-image-o" style="font-size: 24px; color: #ccc; cursor: pointer;" onclick="$(this).closest(\'.prize-image-container\').find(\'.prize-image\').click()"></i>'
+                                    );
+                                    
+                                    // Adicionar um input escondido com flag de remover imagem
+                                    $('form').append('<input type="hidden" name="remove_prize_image_prize_id" value="' + prizeId + '">');
+                                    
+                                    // Adicionalmente, marcar para processamento do JS
+                                    $('form').append('<input type="hidden" name="marked_for_image_removal" value="' + prizeId + '">');
+                                    
+                                    alert("Imagem do prêmio #" + prizeId + " será removida quando você salvar.");
+                                }
                             } else {
                                 // Se não temos ID, usamos a posição com cuidado especial
-                                // Atualiza a interface visualmente primeiro
-                                var container = $(this).closest('.prize-image-container');
-                                container.find('.prize-image').val('');
-                                container.find('.prize-image-preview').html(
-                                    '<i class="fa fa-file-image-o" style="font-size: 24px; color: #ccc; cursor: pointer;" onclick="$(this).closest(\'.prize-image-container\').find(\'.prize-image\').click()"></i>'
-                                );
-                                
-                                // CORREÇÃO: Marcar esta posição específica para remoção
-                                // Remover qualquer input anterior com mesma posição para evitar duplicações
-                                $('input[name="remove_specific_prize_image_pos_' + position + '"]').remove();
-                                
-                                // Adicionar um novo identificador exclusivo para esta posição
-                                $('form').append('<input type="hidden" name="remove_specific_prize_image_pos_' + position + '" value="' + position + '">');
+                                var confirmText = "Tem certeza que deseja remover a imagem do prêmio na posição " + position + "?";
+                                if (confirm(confirmText)) {
+                                    // Atualiza a interface visualmente primeiro
+                                    var container = $(this).closest('.prize-image-container');
+                                    container.find('.prize-image').val('');
+                                    container.find('.prize-image-preview').html(
+                                        '<i class="fa fa-file-image-o" style="font-size: 24px; color: #ccc; cursor: pointer;" onclick="$(this).closest(\'.prize-image-container\').find(\'.prize-image\').click()"></i>'
+                                    );
+                                    
+                                    // Adicionar um input escondido com flag de remover imagem
+                                    if (position > 0) {
+                                        // Usando o formato específico que o backend espera
+                                        $('form').append('<input type="hidden" name="remove_prize_image_' + position + '" value="' + position + '">');
+                                        
+                                        // Adicionalmente, marcar para processamento do JS
+                                        $('form').append('<input type="hidden" name="marked_for_position_removal" value="' + position + '">');
+                                        
+                                        alert("Imagem do prêmio na posição " + position + " será removida quando você salvar.");
+                                    }
+                                }
                             }
                         });
                     };
@@ -614,36 +647,37 @@ $(document).ready(function() {
                 console.log('FLAG DE REMOÇÃO EM MASSA ATIVADA');
             } else {
                 // Tratamento especial para remover imagens individuais
-                // CORREÇÃO COMPLETA: Nova abordagem para remoção de imagens específicas
-                var imagesToRemoveByIds = [];
-                var imagesToRemoveByPositions = [];
+                // Baseado nos campos ocultos que adicionamos anteriormente
                 
-                // Coletar IDs para remover
-                $('input[name^="remove_specific_prize_image_id_"]').each(function() {
+                // Processa remoções por ID
+                $('input[name="marked_for_image_removal"]').each(function() {
                     var prizeId = $(this).val();
                     if (prizeId && prizeId > 0) {
-                        imagesToRemoveByIds.push(prizeId);
+                        formData.append('remove_prize_image_prize_id', prizeId);
+                        console.log('Marcando ID de prêmio para remoção de imagem: ' + prizeId);
                     }
                 });
                 
-                // Coletar posições para remover
-                $('input[name^="remove_specific_prize_image_pos_"]').each(function() {
+                // Processa remoções por posição
+                $('input[name="marked_for_position_removal"]').each(function() {
                     var position = $(this).val();
                     if (position && position > 0) {
-                        imagesToRemoveByPositions.push(position);
+                        formData.append('remove_prize_image_' + position, position);
+                        console.log('Marcando posição para remoção de imagem: ' + position);
                     }
                 });
                 
-                // Se temos imagens para remover, adicionamos ao FormData
-                if (imagesToRemoveByIds.length > 0) {
-                    formData.append('specific_prize_images_to_remove_by_id', JSON.stringify(imagesToRemoveByIds));
-                    console.log('Imagens para remover por ID: ' + JSON.stringify(imagesToRemoveByIds));
-                }
-                
-                if (imagesToRemoveByPositions.length > 0) {
-                    formData.append('specific_prize_images_to_remove_by_position', JSON.stringify(imagesToRemoveByPositions));
-                    console.log('Imagens para remover por posição: ' + JSON.stringify(imagesToRemoveByPositions));
-                }
+                // Garantir que as remoções de imagem são processadas corretamente
+                $('input[name^="remove_prize_image_"]').each(function() {
+                    var name = $(this).attr('name');
+                    var value = $(this).val();
+                    
+                    // Só adiciona se ainda não foi processado acima e se tem um valor válido
+                    if (name !== 'remove_prize_image_prize_id' && value && value > 0) {
+                        formData.append(name, value);
+                        console.log('Adicionando parâmetro para remoção de imagem: ' + name + '=' + value);
+                    }
+                });
             }
             
             // Premiação - campos dependem da frequência
@@ -708,13 +742,6 @@ $(document).ready(function() {
             
             // IMPORTANTE: Verificar se existe o campo de remoção em massa de imagens
             var removeAllImages = $('#remove_all_prize_images').length > 0 && $('#remove_all_prize_images').val() === '1';
-            
-            // IMPORTANTE: Aqui está a correção para impedir a remoção de todas as imagens
-            // Se NÃO estivermos removendo todas as imagens, não devemos 
-            // usar o parâmetro remove_prize_image_positions[] de forma generalizada
-            var shouldRemoveSpecificImages = !removeAllImages && 
-                ($('input[name="marked_for_image_removal"]').length > 0 || 
-                 $('input[name="marked_for_position_removal"]').length > 0);
             
             // Prêmios
             $('#prizes-table tbody tr').each(function() {
@@ -791,10 +818,10 @@ $(document).ready(function() {
                     formData.append('prize_without_image[]', position);
                     console.log('Marcando explicitamente posição sem imagem: ' + position);
                     
-                    // CORREÇÃO: Verificar se esta posição específica está marcada para remoção
-                    if (imagesToRemoveByPositions.includes(position.toString())) {
-                        console.log('Posição ' + position + ' marcada especificamente para remoção de imagem');
-                        formData.append('specific_position_to_remove_image', position);
+                    // Se temos uma posição marcada para remover imagem, garantimos que seja enviada corretamente
+                    if (imageRemovalPositions.includes(position) && !removeAllImages) {
+                        console.log('Reforçando remoção de imagem para posição: ' + position);
+                        formData.append('remove_prize_image_positions[]', position);
                     }
                 }
             });

@@ -28,6 +28,27 @@ $(document).ready(function() {
         "hideMethod": "fadeOut"
     };
 
+    // Inicialização da DataTable para a tabela de futligas clássicas
+    $('.dataTables-futligas-padrao').DataTable({
+        pageLength: 10,
+        responsive: true,
+        dom: 'lfrtip',
+        language: {
+            search: "Buscar:",
+            lengthMenu: "_MENU_ resultados por página",
+            info: "Mostrando _START_ a _END_ de _TOTAL_ resultados",
+            infoEmpty: "Mostrando 0 a 0 de 0 resultados",
+            infoFiltered: "(filtrado de _MAX_ resultados no total)",
+            zeroRecords: "Nenhum resultado correspondente encontrado",
+            paginate: {
+                first: "Primeiro",
+                last: "Último",
+                next: "Próximo",
+                previous: "Anterior"
+            }
+        }
+    });
+
     // Detecta o prefixo da URL dinamicamente
     const ADMIN_URL_PREFIX = '/administrativo';
 
@@ -565,17 +586,99 @@ $(document).ready(function() {
     $(document).on('click', '#delete-selected', function() {
         const selectedCount = $('.check-item:checked').length;
         if (selectedCount > 0) {
-            console.log(`Iniciando exclusão de ${selectedCount} Futliga(s) Clássica(s)`);
-            $('.check-item:checked').each(function() {
-                const futligaId = $(this).data('id');
-                if (futligaId) {
-                    console.log(`Excluindo Futliga ID: ${futligaId}`);
-                    $(`.delete-btn[data-id="${futligaId}"]`).trigger('click');
-                }
-            });
+            console.log(`Selecionadas ${selectedCount} Futliga(s) Clássica(s) para exclusão`);
+            
+            // Mostra o modal de confirmação
+            $('#modalAlert').modal('show');
+            
+            // Atualiza o texto do modal para refletir a quantidade
+            $('#modalAlert .modal-body p').text(`Tem certeza que deseja excluir ${selectedCount} Futliga(s) Clássica(s) selecionada(s)?`);
         } else {
             console.log('Nenhuma Futliga selecionada para exclusão');
-            toastr.error('Nenhuma Futliga selecionada para exclusão');
+            toastr.error('Selecione pelo menos uma Futliga para excluir');
         }
+    });
+    
+    // Confirmação da exclusão em massa
+    $(document).on('click', '#confirm-mass-delete', function() {
+        // Desabilita o botão para evitar múltiplos cliques
+        $(this).prop('disabled', true);
+        $(this).html('<i class="fa fa-spinner fa-spin"></i> Processando...');
+        
+        // Coleta os IDs dos itens selecionados
+        const selectedIds = [];
+        $('.check-item:checked').each(function() {
+            selectedIds.push($(this).val());
+        });
+        
+        console.log('IDs selecionados para exclusão em massa:', selectedIds);
+        
+        if (selectedIds.length === 0) {
+            toastr.error('Nenhuma Futliga selecionada para exclusão');
+            $('#modalAlert').modal('hide');
+            return;
+        }
+        
+        // Obter a URL do botão de exclusão em massa
+        const url = $('#delete-selected').data('url');
+        console.log('URL da requisição de exclusão em massa:', url);
+        
+        // Envia a requisição AJAX
+        $.ajax({
+            url: url,
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ ids: selectedIds }),
+            headers: {
+                'X-CSRFToken': $('meta[name="csrf-token"]').attr('content')
+            },
+            success: function(response) {
+                $('#modalAlert').modal('hide');
+                
+                console.log('Resposta do servidor:', response);
+                
+                if (response.success) {
+                    toastr.success(response.message || 'Futligas excluídas com sucesso!');
+                    setTimeout(function() {
+                        window.location.reload();
+                    }, 2000);
+                } else {
+                    // Restaura o botão
+                    $('#confirm-mass-delete').html('Excluir');
+                    $('#confirm-mass-delete').prop('disabled', false);
+                    
+                    const errorMsg = response.message || 'Erro ao excluir Futligas Clássicas';
+                    console.error('Erro na exclusão em massa:', errorMsg);
+                    toastr.error(errorMsg);
+                }
+            },
+            error: function(xhr, status, error) {
+                $('#modalAlert').modal('hide');
+                
+                // Restaura o botão
+                $('#confirm-mass-delete').html('Excluir');
+                $('#confirm-mass-delete').prop('disabled', false);
+                
+                console.error('Erro na requisição AJAX de exclusão em massa:', status, error);
+                console.error('Resposta do servidor:', xhr.responseText);
+                
+                let errorMessage = 'Erro ao excluir Futligas Clássicas';
+                
+                try {
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMessage = xhr.responseJSON.message;
+                    } else if (xhr.responseText) {
+                        const responseObj = JSON.parse(xhr.responseText);
+                        if (responseObj.message) {
+                            errorMessage = responseObj.message;
+                        }
+                    }
+                } catch (e) {
+                    console.error('Erro ao processar resposta de erro:', e);
+                }
+                
+                toastr.error(errorMessage);
+            }
+        });
     });
 });

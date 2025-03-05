@@ -118,23 +118,67 @@ $(document).ready(function() {
             return;
         }
 
-        // Processar a imagem se houver
-        let imageData = null;
-        const imagePreview = $("#image-preview img");
-        if (imagePreview.length) {
-            imageData = imagePreview.attr('src');
-        }
-
-        // Cria ou atualiza o nível
+        // Criar um FormData para enviar incluindo a imagem
+        const formData = new FormData(this);
+        
+        // Alterar o botão para indicar processamento
+        const $btn = $("#submit-btn");
+        const originalText = $btn.html();
+        $btn.html('<i class="fa fa-spinner fa-spin"></i> Processando...').prop('disabled', true);
+        
+        // URL para salvar o nível (novo ou edição)
+        let url = ADMIN_URL_PREFIX + '/futligas/jogadores/nivel/novo/';
         if (isEditing) {
-            updateLevel(editingId, name, players, premium_players, owner_premium, imageData);
-            toastr.success('Nível atualizado com sucesso!');
-        } else {
-            addLevel(name, players, premium_players, owner_premium, imageData);
-            toastr.success('Nível adicionado com sucesso!');
+            url = ADMIN_URL_PREFIX + '/futligas/jogadores/nivel/editar/' + editingId + '/';
         }
-
-        resetForm();
+        
+        // Enviar via AJAX
+        $.ajax({
+            url: url,
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(response) {
+                $btn.html(originalText).prop('disabled', false);
+                
+                if (response.success) {
+                    // Recuperar a URL da imagem da resposta
+                    const imageData = response.image_url;
+                    
+                    if (isEditing) {
+                        updateLevel(editingId, name, players, premium_players, owner_premium, imageData);
+                        toastr.success('Nível atualizado com sucesso!');
+                    } else {
+                        // Usar o ID retornado pelo backend para o novo nível
+                        addLevel(name, players, premium_players, owner_premium, imageData, response.id);
+                        toastr.success('Nível adicionado com sucesso!');
+                    }
+                    
+                    resetForm();
+                } else {
+                    toastr.error(response.message || 'Erro ao salvar nível!');
+                    console.error("Erro ao salvar nível:", response);
+                }
+            },
+            error: function(xhr, status, error) {
+                $btn.html(originalText).prop('disabled', false);
+                
+                console.error("Erro na requisição AJAX:", {status: status, error: error, response: xhr.responseText});
+                
+                let errorMsg = 'Erro ao salvar nível';
+                try {
+                    const errorResponse = JSON.parse(xhr.responseText);
+                    if (errorResponse && errorResponse.message) {
+                        errorMsg += ': ' + errorResponse.message;
+                    }
+                } catch (e) {
+                    errorMsg += ': ' + error;
+                }
+                
+                toastr.error(errorMsg);
+            }
+        });
     });
 
     // Editar nível
@@ -611,9 +655,10 @@ $(document).ready(function() {
     });
 
     // Funções auxiliares
-    function addLevel(name, players, premium_players, owner_premium, imageData = null) {
+    function addLevel(name, players, premium_players, owner_premium, imageData = null, id = null) {
+        const levelId = id || Date.now(); // Usar o ID retornado pelo backend ou gerar um temporário
         const newRow = `
-            <tr data-id="${Date.now()}">
+            <tr data-id="${levelId}">
                 <td><i class="fa fa-bars drag-handle"></i> ${name}</td>
                 <td class="center-middle">
                     ${imageData ? `<img src="${imageData}" style="width: 32px; height: 32px; object-fit: contain;" alt="Imagem">` : ''}

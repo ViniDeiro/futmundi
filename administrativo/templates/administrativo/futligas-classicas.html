@@ -196,7 +196,7 @@
                                                             <i class="fa fa-image"></i>
                                                         {% endif %}
                                                     </td>
-                                                    <td>{{ futliga.participants }}</td>
+                                                    <td>{{ futliga.players }}</td>
                                                     <td>{{ futliga.created_at|date:"d/m/Y H:i" }}</td>
                                                     <td>
                                                         <a href="{% url 'administrativo:futliga_classica_editar' futliga.id %}" class="btn btn-info btn-xs" title="Editar">
@@ -273,6 +273,7 @@
         <script src="{% static 'administrativo/js/plugins/slimscroll/jquery.slimscroll.min.js' %}"></script>
         <script src="{% static 'administrativo/js/plugins/dataTables/datatables.min.js' %}"></script>
         <script src="{% static 'administrativo/js/plugins/dataTables/dataTables.bootstrap4.min.js' %}"></script>
+        <!-- Scripts de botões removidos -->
         <script src="{% static 'administrativo/js/plugins/toastr/toastr.min.js' %}"></script>
         <script src="{% static 'administrativo/js/plugins/checkAll/checkAll.js' %}"></script>
         <!-- Custom and plugin javascript -->

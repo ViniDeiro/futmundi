@@ -1976,149 +1976,75 @@ def futliga_classica_editar(request, futliga_id):
                         positions_without_image = [str(pos) for pos in request.POST.getlist('prize_without_image[]')]
                         print(f"[DEBUG] Posições explicitamente marcadas como sem imagem: {', '.join(positions_without_image)}")
                     
-                    # NOVA IMPLEMENTAÇÃO: Processar a remoção específica de imagens
-                    # Processar remoção por ID específico do prêmio
-                    images_to_remove_by_id = []
-                    for key in request.POST.keys():
-                        if key.startswith('remove_specific_prize_image_id_'):
-                            prize_id = request.POST.get(key)
-                            if prize_id and prize_id.isdigit():
-                                images_to_remove_by_id.append(int(prize_id))
-                    
-                    # Processar remoção por posição específica
-                    images_to_remove_by_position = []
-                    for key in request.POST.keys():
-                        if key.startswith('remove_specific_prize_image_pos_'):
-                            position = request.POST.get(key)
-                            if position and position.isdigit():
-                                images_to_remove_by_position.append(int(position))
-                    
-                    # Registrar o que encontramos
-                    if images_to_remove_by_id:
-                        print(f"[DEBUG] NOVA IMPLEMENTAÇÃO: IDs de prêmios marcados para remoção de imagem: {images_to_remove_by_id}")
-                    if images_to_remove_by_position:
-                        print(f"[DEBUG] NOVA IMPLEMENTAÇÃO: Posições marcadas para remoção de imagem: {images_to_remove_by_position}")
-                    
-                    # Processar remoções por ID (método mais confiável)
-                    for prize_id in images_to_remove_by_id:
-                        try:
-                            prize = StandardLeaguePrize.objects.get(id=prize_id, league=futliga)
-                            if prize.image:
-                                print(f"[DEBUG] NOVA IMPLEMENTAÇÃO: Removendo imagem do prêmio ID={prize_id}")
-                                # Salvar caminho da imagem
-                                image_path = prize.image.path if hasattr(prize.image, 'path') else None
-                                # Remover imagem do modelo
-                                prize.image.delete(save=False)
-                                prize.image = None
-                                prize.save(update_fields=['image'])
-                                
-                                # Tentar remover o arquivo físico, se existir
-                                if image_path and os.path.exists(image_path):
-                                    try:
-                                        os.remove(image_path)
-                                    except Exception as e:
-                                        print(f"[DEBUG] NOVA IMPLEMENTAÇÃO: Erro ao remover arquivo físico: {str(e)}")
-                            else:
-                                print(f"[DEBUG] NOVA IMPLEMENTAÇÃO: Prêmio ID={prize_id} não tem imagem para remover")
-                        except StandardLeaguePrize.DoesNotExist:
-                            print(f"[DEBUG] NOVA IMPLEMENTAÇÃO: Prêmio ID={prize_id} não encontrado")
-                        except Exception as e:
-                            print(f"[DEBUG] NOVA IMPLEMENTAÇÃO: Erro ao processar remoção de imagem do prêmio ID={prize_id}: {str(e)}")
-                    
-                    # Processar remoções por posição
-                    for position_int in images_to_remove_by_position:
-                        try:
-                            prize = StandardLeaguePrize.objects.get(position=position_int, league=futliga)
-                            if prize.image:
-                                print(f"[DEBUG] NOVA IMPLEMENTAÇÃO: Removendo imagem do prêmio posição={position_int}, ID={prize.id}")
-                                # Salvar caminho da imagem
-                                image_path = prize.image.path if hasattr(prize.image, 'path') else None
-                                # Remover imagem do modelo
-                                prize.image.delete(save=False)
-                                prize.image = None
-                                prize.save(update_fields=['image'])
-                                
-                                # Tentar remover o arquivo físico, se existir
-                                if image_path and os.path.exists(image_path):
-                                    try:
-                                        os.remove(image_path)
-                                    except Exception as e:
-                                        print(f"[DEBUG] NOVA IMPLEMENTAÇÃO: Erro ao remover arquivo físico: {str(e)}")
-                            else:
-                                print(f"[DEBUG] NOVA IMPLEMENTAÇÃO: Prêmio posição={position_int} não tem imagem para remover")
-                        except StandardLeaguePrize.DoesNotExist:
-                            print(f"[DEBUG] NOVA IMPLEMENTAÇÃO: Prêmio na posição {position_int} não encontrado")
-                        except Exception as e:
-                            print(f"[DEBUG] NOVA IMPLEMENTAÇÃO: Erro ao processar remoção de imagem do prêmio posição={position_int}: {str(e)}")
-                    
                     for i, position in enumerate(positions):
-                        prize_value = prizes[i]
-                        
-                        # Garantir que position seja sempre um número inteiro válido
-                        try:
-                            position = int(position)
-                            if position <= 0:
-                                position = i + 1  # Usar o índice +1 como posição válida
-                                print(f"[DEBUG] Posição inválida (<=0), corrigindo para {position}")
-                        except (ValueError, TypeError):
-                            position = i + 1  # Se não for conversível para inteiro, usar o índice
-                            print(f"[DEBUG] Posição inválida (não numérica), corrigindo para {position}")
-                        
-                        # Tenta encontrar um prêmio existente nessa posição
-                        try:
-                            prize_obj = StandardLeaguePrize.objects.get(position=position, league=futliga)
-                            # Atualiza valor
-                            prize_obj.prize = prize_value
+                        if i < len(prizes):
+                            prize_value = prizes[i]
                             
-                            # Se tiver uma nova imagem para esta posição, atualiza
-                            if str(position) in prize_image_positions:
-                                # Remove a imagem anterior se existir
-                                if prize_obj.image:
-                                    prize_obj.image.delete(save=False)
+                            # Garantir que position seja sempre um número inteiro válido
+                            try:
+                                position = int(position)
+                                if position <= 0:
+                                    position = i + 1  # Usar o índice +1 como posição válida
+                                    print(f"[DEBUG] Posição inválida (<=0), corrigindo para {position}")
+                            except (ValueError, TypeError):
+                                position = i + 1  # Se não for conversível para inteiro, usar o índice
+                                print(f"[DEBUG] Posição inválida (não numérica), corrigindo para {position}")
+                            
+                            # Tenta encontrar um prêmio existente nessa posição
+                            try:
+                                prize_obj = StandardLeaguePrize.objects.get(position=position, league=futliga)
+                                # Atualiza valor
+                                prize_obj.prize = prize_value
                                 
-                                # Adiciona a nova imagem
-                                prize_obj.image = prize_image_positions[str(position)]
-                            # Se a posição estiver marcada explicitamente como sem imagem,
-                            # e não tiver uma nova imagem, removemos a imagem existente
-                            elif str(position) in positions_without_image and prize_obj.image:
-                                # Verificar também se a posição está na lista de remove_prize_images
-                                should_remove_image = False
+                                # Se tiver uma nova imagem para esta posição, atualiza
+                                if str(position) in prize_image_positions:
+                                    # Remove a imagem anterior se existir
+                                    if prize_obj.image:
+                                        prize_obj.image.delete(save=False)
+                                    
+                                    # Adiciona a nova imagem
+                                    prize_obj.image = prize_image_positions[str(position)]
+                                # Se a posição estiver marcada explicitamente como sem imagem,
+                                # e não tiver uma nova imagem, removemos a imagem existente
+                                elif str(position) in positions_without_image and prize_obj.image:
+                                    # Verificar também se a posição está na lista de remove_prize_images
+                                    should_remove_image = False
+                                    
+                                    # Verificar se está marcada para remoção através do campo remove_prize_images[]
+                                    if 'remove_prize_images[]' in request.POST:
+                                        remove_positions = request.POST.getlist('remove_prize_images[]')
+                                        if str(position) in remove_positions:
+                                            should_remove_image = True
+                                            print(f"[DEBUG] Posição {position} encontrada em remove_prize_images[]")
+                                    
+                                    # Se não está na flag de remoção em massa e deve remover a imagem
+                                    if should_remove_image and not remove_all_prize_images:
+                                        print(f"[DEBUG] Removendo imagem do prêmio na posição {position} que foi marcado para remoção")
+                                        prize_obj.image.delete(save=False)
+                                        prize_obj.image = None
+                                    # Ou se está apenas marcado como "sem imagem"
+                                    elif not should_remove_image:
+                                        print(f"[DEBUG] Removendo imagem do prêmio na posição {position} que foi explicitamente marcado como sem imagem")
+                                        prize_obj.image.delete(save=False)
+                                        prize_obj.image = None
                                 
-                                # Verificar se está marcada para remoção através do campo remove_prize_images[]
-                                if 'remove_prize_images[]' in request.POST:
-                                    remove_positions = request.POST.getlist('remove_prize_images[]')
-                                    if str(position) in remove_positions:
-                                        should_remove_image = True
-                                        print(f"[DEBUG] Posição {position} encontrada em remove_prize_images[]")
+                                # Salva o prêmio
+                                prize_obj.save()
                                 
-                                # Se não está na flag de remoção em massa e deve remover a imagem
-                                if should_remove_image and not remove_all_prize_images:
-                                    print(f"[DEBUG] Removendo imagem do prêmio na posição {position} que foi marcado para remoção")
-                                    prize_obj.image.delete(save=False)
-                                    prize_obj.image = None
-                                # Ou se está apenas marcado como "sem imagem"
-                                elif not should_remove_image:
-                                    print(f"[DEBUG] Removendo imagem do prêmio na posição {position} que foi explicitamente marcado como sem imagem")
-                                    prize_obj.image.delete(save=False)
-                                    prize_obj.image = None
-                            
-                            # Salva o prêmio
-                            prize_obj.save()
-                            
-                        except StandardLeaguePrize.DoesNotExist:
-                            # Cria um novo prêmio
-                            prize_obj = StandardLeaguePrize(
-                                league=futliga,
-                                position=position,
-                                prize=prize_value
-                            )
-                            
-                            # Adiciona imagem se disponível
-                            if str(position) in prize_image_positions:
-                                prize_obj.image = prize_image_positions[str(position)]
-                            
-                            # Salva o novo prêmio
-                            prize_obj.save()
+                            except StandardLeaguePrize.DoesNotExist:
+                                # Cria um novo prêmio
+                                prize_obj = StandardLeaguePrize(
+                                    league=futliga,
+                                    position=position,
+                                    prize=prize_value
+                                )
+                                
+                                # Adiciona imagem se disponível
+                                if str(position) in prize_image_positions:
+                                    prize_obj.image = prize_image_positions[str(position)]
+                                
+                                # Salva o novo prêmio
+                                prize_obj.save()
                 
                 return JsonResponse({'success': True})
         except Exception as e:
@@ -2140,59 +2066,49 @@ def futliga_classica_excluir(request, id):
         try:
             # Adicionando logs para depuração
             print(f"[DEBUG] Iniciando exclusão da futliga com ID: {id}")
+            print(f"[DEBUG] Método da requisição: {request.method}")
+            print(f"[DEBUG] Headers da requisição: {request.headers}")
+            print(f"[DEBUG] Corpo da requisição: {request.body}")
             
             futliga = StandardLeague.objects.get(id=id)
             print(f"[DEBUG] Futliga encontrada: {futliga.name}")
             
-            # Remove as imagens dos prêmios primeiro
+            # Remove a imagem principal
+            if futliga.image:
+                try:
+                    print(f"[DEBUG] Excluindo imagem principal: {futliga.image.path}")
+                    futliga.image.delete(save=False)  # Não salva ainda para evitar problemas de referência
+                    print("[DEBUG] Imagem principal excluída com sucesso")
+                except Exception as img_error:
+                    print(f"[DEBUG] Erro ao excluir imagem principal: {str(img_error)}")
+                    # Continua a execução mesmo se falhar ao excluir a imagem
+            
+            # Remove as imagens dos prêmios
             print(f"[DEBUG] Procurando prêmios da futliga: {futliga.id}")
             prizes = futliga.prizes.all()
             print(f"[DEBUG] Quantidade de prêmios encontrados: {prizes.count()}")
             
-            prize_ids = [prize.id for prize in prizes]  # Armazena IDs para exclusão posterior
-            
-            # Tenta excluir os arquivos físicos das imagens dos prêmios
             for prize in prizes:
                 try:
-                    if prize.image and hasattr(prize.image, 'path') and os.path.exists(prize.image.path):
-                        print(f"[DEBUG] Excluindo imagem do prêmio {prize.id}")
-                        # Tenta excluir apenas o arquivo físico, ignorando erros
-                        try:
-                            os.remove(prize.image.path)
-                            print(f"[DEBUG] Arquivo de imagem do prêmio {prize.id} excluído com sucesso")
-                        except (PermissionError, FileNotFoundError, OSError) as e:
-                            print(f"[DEBUG] Erro ao excluir arquivo de imagem do prêmio {prize.id}: {str(e)}")
-                            # Continua a execução, pois o arquivo pode não existir ou ter permissões diferentes
+                    if prize.image:
+                        print(f"[DEBUG] Excluindo imagem do prêmio {prize.id}: {prize.image.path}")
+                        prize.image.delete(save=False)  # Não salva ainda para evitar problemas de referência
+                        print(f"[DEBUG] Imagem do prêmio {prize.id} excluída com sucesso")
                 except Exception as prize_img_error:
-                    print(f"[DEBUG] Erro ao processar imagem do prêmio {prize.id}: {str(prize_img_error)}")
-                    # Continua mesmo com erro
+                    print(f"[DEBUG] Erro ao excluir imagem do prêmio {prize.id}: {str(prize_img_error)}")
+                    # Continua a execução mesmo se falhar ao excluir a imagem do prêmio
             
-            # Tenta excluir o arquivo físico da imagem principal
+            # Excluindo os prêmios primeiro para evitar problemas de referência
             try:
-                if futliga.image and hasattr(futliga.image, 'path') and os.path.exists(futliga.image.path):
-                    print(f"[DEBUG] Excluindo arquivo de imagem principal: {futliga.image.path}")
-                    try:
-                        os.remove(futliga.image.path)
-                        print("[DEBUG] Arquivo de imagem principal excluído com sucesso")
-                    except (PermissionError, FileNotFoundError, OSError) as e:
-                        print(f"[DEBUG] Erro ao excluir arquivo de imagem principal: {str(e)}")
-                        # Continua a execução
-            except Exception as img_error:
-                print(f"[DEBUG] Erro ao processar imagem principal: {str(img_error)}")
-                # Continua mesmo com erro
-            
-            # Agora exclui os registros do banco de dados
-            # Primeiro os prêmios
-            try:
-                print(f"[DEBUG] Excluindo registros dos prêmios no banco de dados")
-                StandardLeaguePrize.objects.filter(id__in=prize_ids).delete()
-                print(f"[DEBUG] Registros dos prêmios excluídos com sucesso")
+                print(f"[DEBUG] Excluindo prêmios da futliga {futliga.id}")
+                prizes.delete()
+                print(f"[DEBUG] Prêmios excluídos com sucesso")
             except Exception as prizes_error:
-                print(f"[DEBUG] Erro ao excluir registros dos prêmios: {str(prizes_error)}")
-                # Continua tentando excluir a futliga
+                print(f"[DEBUG] Erro ao excluir prêmios: {str(prizes_error)}")
+                # Se a exclusão dos prêmios falhar, tenta excluir a futliga de qualquer forma
             
-            # Por fim, exclui a futliga
-            print(f"[DEBUG] Excluindo registro da futliga {futliga.id} do banco de dados")
+            # Agora exclui a futliga
+            print(f"[DEBUG] Excluindo futliga {futliga.id}")
             futliga.delete()
             print(f"[DEBUG] Futliga {futliga.id} excluída com sucesso")
             
@@ -2235,48 +2151,61 @@ def futliga_classica_excluir_em_massa(request):
                 return JsonResponse({'success': False, 'message': 'Nenhuma Futliga encontrada com os IDs fornecidos'})
             
             for futliga in futligas:
-                print(f"[DEBUG] Processando futliga: {futliga.id} - {futliga.name}")
-                
-                # Remove a imagem principal
-                if futliga.image:
-                    try:
-                        print(f"[DEBUG] Excluindo imagem principal da futliga {futliga.id}: {futliga.image.path}")
-                        futliga.image.delete()
-                        print(f"[DEBUG] Imagem principal da futliga {futliga.id} excluída com sucesso")
-                    except Exception as img_error:
-                        print(f"[DEBUG] Erro ao excluir imagem principal da futliga {futliga.id}: {str(img_error)}")
-                        # Continua a execução mesmo se falhar ao excluir a imagem
-                
-                # Remove as imagens dos prêmios
-                print(f"[DEBUG] Procurando prêmios da futliga: {futliga.id}")
-                prizes = futliga.prizes.all()
-                print(f"[DEBUG] Quantidade de prêmios encontrados para futliga {futliga.id}: {prizes.count()}")
-                
-                for prize in prizes:
-                    try:
-                        if prize.image:
-                            print(f"[DEBUG] Excluindo imagem do prêmio {prize.id} da futliga {futliga.id}: {prize.image.path}")
-                            prize.image.delete()
-                            print(f"[DEBUG] Imagem do prêmio {prize.id} excluída com sucesso")
-                    except Exception as prize_img_error:
-                        print(f"[DEBUG] Erro ao excluir imagem do prêmio {prize.id} da futliga {futliga.id}: {str(prize_img_error)}")
-                        # Continua a execução mesmo se falhar ao excluir a imagem do prêmio
-                
-                # Excluindo os prêmios primeiro para evitar problemas de referência
                 try:
-                    print(f"[DEBUG] Excluindo prêmios da futliga {futliga.id}")
-                    prizes.delete()
-                    print(f"[DEBUG] Prêmios da futliga {futliga.id} excluídos com sucesso")
-                except Exception as prizes_error:
-                    print(f"[DEBUG] Erro ao excluir prêmios da futliga {futliga.id}: {str(prizes_error)}")
-                    # Se a exclusão dos prêmios falhar, tenta continuar a execução
+                    print(f"[DEBUG] Processando futliga: {futliga.id} - {futliga.name}")
+                    
+                    # Remove a imagem principal
+                    if futliga.image:
+                        try:
+                            from django.core.files.storage import default_storage
+                            if default_storage.exists(futliga.image.name):
+                                print(f"[DEBUG] Excluindo imagem principal da futliga {futliga.id}: {futliga.image.path}")
+                                futliga.image.delete(save=False)
+                                print(f"[DEBUG] Imagem principal da futliga {futliga.id} excluída com sucesso")
+                        except Exception as img_error:
+                            print(f"[DEBUG] Erro ao excluir imagem principal da futliga {futliga.id}: {str(img_error)}")
+                            # Continua a execução mesmo se falhar ao excluir a imagem
+                    
+                    # Remove as imagens dos prêmios
+                    print(f"[DEBUG] Procurando prêmios da futliga: {futliga.id}")
+                    prizes = futliga.prizes.all()
+                    print(f"[DEBUG] Quantidade de prêmios encontrados para futliga {futliga.id}: {prizes.count()}")
+                    
+                    for prize in prizes:
+                        try:
+                            if prize.image:
+                                from django.core.files.storage import default_storage
+                                if default_storage.exists(prize.image.name):
+                                    print(f"[DEBUG] Excluindo imagem do prêmio {prize.id} da futliga {futliga.id}: {prize.image.path}")
+                                    prize.image.delete(save=False)
+                                    print(f"[DEBUG] Imagem do prêmio {prize.id} excluída com sucesso")
+                        except Exception as prize_img_error:
+                            print(f"[DEBUG] Erro ao excluir imagem do prêmio {prize.id} da futliga {futliga.id}: {str(prize_img_error)}")
+                            # Continua a execução mesmo se falhar ao excluir a imagem do prêmio
+                    
+                    # Excluindo os prêmios primeiro para evitar problemas de referência
+                    try:
+                        print(f"[DEBUG] Excluindo prêmios da futliga {futliga.id}")
+                        prizes.delete()
+                        print(f"[DEBUG] Prêmios da futliga {futliga.id} excluídos com sucesso")
+                    except Exception as prizes_error:
+                        print(f"[DEBUG] Erro ao excluir prêmios da futliga {futliga.id}: {str(prizes_error)}")
+                        # Se a exclusão dos prêmios falhar, tenta continuar a execução
+                
+                except Exception as futliga_error:
+                    print(f"[DEBUG] Erro ao processar futliga {futliga.id}: {str(futliga_error)}")
+                    continue
             
             # Excluindo todas as futligas
-            print(f"[DEBUG] Excluindo todas as futligas selecionadas")
-            futligas.delete()
-            print(f"[DEBUG] Todas as futligas selecionadas foram excluídas com sucesso")
+            try:
+                print(f"[DEBUG] Excluindo todas as futligas selecionadas")
+                futligas.delete()
+                print(f"[DEBUG] Todas as futligas selecionadas foram excluídas com sucesso")
+            except Exception as delete_error:
+                print(f"[DEBUG] Erro ao excluir futligas: {str(delete_error)}")
+                return JsonResponse({'success': False, 'message': f'Erro ao excluir futligas: {str(delete_error)}'})
             
-            return JsonResponse({'success': True})
+            return JsonResponse({'success': True, 'message': 'Futligas excluídas com sucesso'})
             
         except json.JSONDecodeError:
             print("[DEBUG] Erro ao decodificar JSON da requisição")
@@ -2380,27 +2309,38 @@ def futliga_jogador_salvar(request):
             return JsonResponse({'success': False, 'error': "Estrutura de dados inválida: 'prizes' não encontrado"}, status=400)
         
         with transaction.atomic():
-            # Deleta níveis existentes
-            logger.info("Deletando níveis existentes")
-            custom_levels_count = CustomLeagueLevel.objects.count()
-            logger.info(f"Níveis existentes antes da exclusão: {custom_levels_count}")
-            CustomLeagueLevel.objects.all().delete()
+            # Obter os níveis existentes
+            logger.info("Obtendo níveis existentes")
+            existing_levels = {level.id: level for level in CustomLeagueLevel.objects.all()}
+            logger.info(f"Níveis existentes: {len(existing_levels)}")
             
-            # Cria novos níveis
+            # Registrar quais níveis são processados para depois remover os não utilizados
+            processed_level_ids = set()
+            
+            # Atualizar ou criar níveis
             created_levels = []
             levels_data = data.get('levels', [])
-            logger.info(f"Criando {len(levels_data)} novos níveis")
+            logger.info(f"Processando {len(levels_data)} níveis")
             
             for level_data in levels_data:
                 try:
                     image_url = level_data.get('image')
                     image = None
+                    level_id = level_data.get('id')
                     
-                    logger.info(f"Verificando imagem para o nível: {level_data.get('name')} - Tem imagem: {image_url is not None}")
+                    logger.info(f"Verificando nível: {level_data.get('name')} - ID: {level_id} - Tem imagem: {image_url is not None}")
                     
-                    # Verifica se a URL é data:image ou uma URL real para imagem já salva
+                    # Verifica se estamos atualizando ou criando um nível
+                    level = None
+                    if level_id and level_id in existing_levels:
+                        level = existing_levels[level_id]
+                        processed_level_ids.add(level_id)
+                        logger.info(f"Atualizando nível existente: {level.name} (ID: {level.id})")
+                    
+                    # Processa a imagem se fornecida
                     if image_url and isinstance(image_url, str):
                         if image_url.startswith('data:image'):
+                            # Nova imagem em formato base64
                             try:
                                 format, imgstr = image_url.split(';base64,')
                                 ext = format.split('/')[-1]
@@ -2411,46 +2351,82 @@ def futliga_jogador_salvar(request):
                             except Exception as e:
                                 logger.error(f'Erro ao processar imagem do nível {level_data.get("name", "unnamed")}: {str(e)}')
                         elif image_url.startswith('/media/'):
-                            # É uma URL para uma imagem já salva, vamos mantê-la
-                            try:
-                                # Extrai o caminho relativo da URL
-                                relative_path = image_url.replace('/media/', '')
-                                logger.info(f"Imagem existente detectada em: {relative_path}")
-                                
-                                # Verifica se o arquivo existe
-                                full_path = os.path.join(settings.MEDIA_ROOT, relative_path)
-                                if os.path.exists(full_path):
-                                    # Encontra o nível existente com essa imagem
-                                    existing_levels = CustomLeagueLevel.objects.filter(image=relative_path)
-                                    if existing_levels.exists():
-                                        # Reusa a imagem existente
-                                        existing_level = existing_levels.first()
-                                        image = existing_level.image
-                                        logger.info(f"Reusando imagem existente de {existing_level.name}")
-                            except Exception as e:
-                                logger.error(f'Erro ao processar URL de imagem existente: {str(e)}')
+                            # É uma URL para uma imagem já salva, mantemos a referência
+                            if level and level.image and level.image.url == image_url:
+                                # A imagem não mudou, não precisamos fazer nada
+                                logger.info(f"Mantendo imagem existente para o nível: {level.name}")
+                                pass
+                            else:
+                                try:
+                                    # Extrai o caminho relativo da URL
+                                    relative_path = image_url.replace('/media/', '')
+                                    logger.info(f"Imagem existente detectada em: {relative_path}")
+                                    
+                                    # Verifica se o arquivo existe
+                                    full_path = os.path.join(settings.MEDIA_ROOT, relative_path)
+                                    if os.path.exists(full_path):
+                                        # Tenta encontrar o nível que possui essa imagem
+                                        for existing_id, existing_level in existing_levels.items():
+                                            if existing_level.image and existing_level.image.name == relative_path:
+                                                image = existing_level.image
+                                                logger.info(f"Reusando imagem existente de {existing_level.name}")
+                                                break
+                                except Exception as e:
+                                    logger.error(f'Erro ao processar URL de imagem existente: {str(e)}')
                     
                     # Verificar campos obrigatórios
                     if not level_data.get('name'):
                         raise ValueError('Nome do nível é obrigatório')
                     
-                    # Criar o nível
-                    level = CustomLeagueLevel(
-                        name=level_data.get('name'),
-                        players=level_data.get('players', 0),
-                        premium_players=level_data.get('premium_players', 0),
-                        owner_premium=level_data.get('owner_premium', 0),
-                        order=level_data.get('order', 0)
-                    )
-                    
-                    if image:
-                        level.image = image
-                    
-                    level.save()
-                    created_levels.append(level)
+                    if level:
+                        # Atualiza o nível existente
+                        level.name = level_data.get('name')
+                        level.players = level_data.get('players', 0)
+                        level.premium_players = level_data.get('premium_players', 0)
+                        level.owner_premium = level_data.get('owner_premium', 0)
+                        level.order = level_data.get('order', 0)
+                        
+                        # Só atualiza a imagem se uma nova for fornecida
+                        if image:
+                            # Se já existe uma imagem e estamos recebendo uma nova, deleta a antiga
+                            if level.image and image != level.image:
+                                old_image = level.image
+                                level.image = image
+                                # Só deleta a imagem antiga depois de atribuir a nova para evitar perda de dados
+                                old_image.delete(save=False)
+                            else:
+                                level.image = image
+                        
+                        level.save()
+                        created_levels.append(level)
+                    else:
+                        # Criar um novo nível
+                        level = CustomLeagueLevel(
+                            name=level_data.get('name'),
+                            players=level_data.get('players', 0),
+                            premium_players=level_data.get('premium_players', 0),
+                            owner_premium=level_data.get('owner_premium', 0),
+                            order=level_data.get('order', 0)
+                        )
+                        
+                        if image:
+                            level.image = image
+                        
+                        level.save()
+                        created_levels.append(level)
+                        
+                        if level_id:
+                            # Se o nível tinha um ID, mas não foi encontrado, registramos para não excluir
+                            processed_level_ids.add(level_id)
                 except Exception as e:
                     logger.error(f'Erro ao salvar nível {level_data.get("name", "unnamed")}: {str(e)}')
                     return JsonResponse({'success': False, 'message': f'Erro ao salvar nível: {str(e)}'})
+            
+            # Remove níveis que não foram processados (não estão mais no array enviado)
+            levels_to_delete = set(existing_levels.keys()) - processed_level_ids
+            if levels_to_delete:
+                logger.info(f"Removendo {len(levels_to_delete)} níveis não utilizados")
+                CustomLeagueLevel.objects.filter(id__in=levels_to_delete).delete()
             
             # Aqui continua o resto do código para salvar os prêmios, etc.
             
