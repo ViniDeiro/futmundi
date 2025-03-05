@@ -272,30 +272,44 @@ $(document).ready(function() {
         imageCell.find('.image-remove-btn').on('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
-            var container = $(this).closest('.prize-image-container');
-            container.find('.prize-image').val('');
-            container.find('.prize-image-preview').html(
-                '<i class="fa fa-file-image-o" style="font-size: 24px; color: #ccc; cursor: pointer;" onclick="$(this).closest(\'.prize-image-container\').find(\'.prize-image\').click()"></i>'
-            );
             
             // Obter a posição do prêmio
             var position = $(this).closest('tr').find('.position-input').val();
             
-            // Garantir que position seja sempre um número válido
-            if (!position || position === 'undefined' || isNaN(parseInt(position))) {
-                // Se a posição for undefined, usar o índice da linha +1
-                position = $(this).closest('tr').index() + 1;
-                console.log('Corrigindo posição undefined para: ' + position);
+            // Obter o ID do prêmio
+            var prizeId = $(this).closest('tr').find('.glyphicon-trash').data('prize-id');
+            
+            if (prizeId) {
+                // Se temos o ID, usamos ele diretamente
+                // Atualiza a interface visualmente primeiro
+                var container = $(this).closest('.prize-image-container');
+                container.find('.prize-image').val('');
+                container.find('.prize-image-preview').html(
+                    '<i class="fa fa-file-image-o" style="font-size: 24px; color: #ccc; cursor: pointer;" onclick="$(this).closest(\'.prize-image-container\').find(\'.prize-image\').click()"></i>'
+                );
+                
+                // CORREÇÃO: Marcar esta imagem específica para remoção com ID e posição
+                // Remover qualquer input anterior com mesmo ID para evitar duplicações
+                $('input[name="remove_specific_prize_image_id_' + prizeId + '"]').remove();
+                
+                // Adicionar um novo identificador exclusivo para este prêmio
+                $('form').append('<input type="hidden" name="remove_specific_prize_image_id_' + prizeId + '" value="' + prizeId + '">');
+            } else {
+                // Se não temos ID, usamos a posição com cuidado especial
+                // Atualiza a interface visualmente primeiro
+                var container = $(this).closest('.prize-image-container');
+                container.find('.prize-image').val('');
+                container.find('.prize-image-preview').html(
+                    '<i class="fa fa-file-image-o" style="font-size: 24px; color: #ccc; cursor: pointer;" onclick="$(this).closest(\'.prize-image-container\').find(\'.prize-image\').click()"></i>'
+                );
+                
+                // CORREÇÃO: Marcar esta posição específica para remoção
+                // Remover qualquer input anterior com mesma posição para evitar duplicações
+                $('input[name="remove_specific_prize_image_pos_' + position + '"]').remove();
+                
+                // Adicionar um novo identificador exclusivo para esta posição
+                $('form').append('<input type="hidden" name="remove_specific_prize_image_pos_' + position + '" value="' + position + '">');
             }
-            
-            // Remover campo existente se houver
-            $('input[name="remove_prize_image_' + position + '"]').remove();
-            
-            // Criar e adicionar o campo hidden ao formulário (visível para debug)
-            var hiddenField = '<input type="hidden" name="remove_prize_image_' + position + '" value="' + position + '" style="display:block; margin:5px; padding:3px; background:#ffdddd;">';
-            $('form').append(hiddenField);
-            
-            console.log('Campo para remoção de imagem criado: remove_prize_image_' + position);
         });
         {% else %}
         imageCell.find('.prize-image-container').append(
@@ -319,7 +333,7 @@ $(document).ready(function() {
                 'class': 'form-control prize-input',
                 'required': true,
                 'min': '0',
-                'value': '{{ prize.prize }}'
+                'value': '0'
             })
         ));
         
@@ -362,36 +376,55 @@ $(document).ready(function() {
                     preview.find('.image-remove-btn').on('click', function(e) {
                         e.preventDefault();
                         e.stopPropagation();
-                        var container = $(this).closest('.prize-image-container');
-                        container.find('.prize-image').val('');
-                        container.find('.prize-image-preview').html(
-                            '<i class="fa fa-file-image-o" style="font-size: 24px; color: #ccc; cursor: pointer;" onclick="$(this).closest(\'.prize-image-container\').find(\'.prize-image\').click()"></i>'
-                        );
                         
                         // Obter a posição do prêmio
                         var position = $(this).closest('tr').find('.position-input').val();
                         
-                        // Garantir que position seja sempre um número válido
-                        if (!position || position === 'undefined' || isNaN(parseInt(position))) {
-                            // Se a posição for undefined, usar o índice da linha +1
-                            position = $(this).closest('tr').index() + 1;
-                            console.log('Corrigindo posição undefined para: ' + position);
+                        // Obter o ID do prêmio
+                        var prizeId = $(this).closest('tr').find('.glyphicon-trash').data('prize-id');
+                        
+                        if (prizeId) {
+                            // Se temos o ID, usamos ele diretamente
+                            // Atualiza a interface visualmente primeiro
+                            var container = $(this).closest('.prize-image-container');
+                            container.find('.prize-image').val('');
+                            container.find('.prize-image-preview').html(
+                                '<i class="fa fa-file-image-o" style="font-size: 24px; color: #ccc; cursor: pointer;" onclick="$(this).closest(\'.prize-image-container\').find(\'.prize-image\').click()"></i>'
+                            );
+                            
+                            // CORREÇÃO: Marcar esta imagem específica para remoção com ID e posição
+                            // Remover qualquer input anterior com mesmo ID para evitar duplicações
+                            $('input[name="remove_specific_prize_image_id_' + prizeId + '"]').remove();
+                            
+                            // Adicionar um novo identificador exclusivo para este prêmio
+                            $('form').append('<input type="hidden" name="remove_specific_prize_image_id_' + prizeId + '" value="' + prizeId + '">');
+                        } else {
+                            // Se não temos ID, usamos a posição com cuidado especial
+                            // Atualiza a interface visualmente primeiro
+                            var container = $(this).closest('.prize-image-container');
+                            container.find('.prize-image').val('');
+                            container.find('.prize-image-preview').html(
+                                '<i class="fa fa-file-image-o" style="font-size: 24px; color: #ccc; cursor: pointer;" onclick="$(this).closest(\'.prize-image-container\').find(\'.prize-image\').click()"></i>'
+                            );
+                            
+                            // CORREÇÃO: Marcar esta posição específica para remoção
+                            // Remover qualquer input anterior com mesma posição para evitar duplicações
+                            $('input[name="remove_specific_prize_image_pos_' + position + '"]').remove();
+                            
+                            // Adicionar um novo identificador exclusivo para esta posição
+                            $('form').append('<input type="hidden" name="remove_specific_prize_image_pos_' + position + '" value="' + position + '">');
                         }
-                        
-                        // Remover campo existente se houver
-                        $('input[name="remove_prize_image_' + position + '"]').remove();
-                        
-                        // Criar e adicionar o campo hidden ao formulário (visível para debug)
-                        var hiddenField = '<input type="hidden" name="remove_prize_image_' + position + '" value="' + position + '" style="display:block; margin:5px; padding:3px; background:#ffdddd;">';
-                        $('form').append(hiddenField);
-                        
-                        console.log('Campo para remoção de imagem criado: remove_prize_image_' + position);
                     });
                 };
                 reader.readAsDataURL(file);
             }
         });
         {% endfor %}
+        
+        // Garantir que temos uma variável prizeCounter inicializada
+        if (typeof prizeCounter === 'undefined') {
+            var prizeCounter = $('#prizes-table tbody tr').length;
+        }
         
         // Desativa qualquer handler anterior e registra nosso handler único para o botão
         $('#add-prize').off('click').on('click', function() {
@@ -454,30 +487,44 @@ $(document).ready(function() {
                         preview.find('.image-remove-btn').on('click', function(e) {
                             e.preventDefault();
                             e.stopPropagation();
-                            var container = $(this).closest('.prize-image-container');
-                            container.find('.prize-image').val('');
-                            container.find('.prize-image-preview').html(
-                                '<i class="fa fa-file-image-o" style="font-size: 24px; color: #ccc; cursor: pointer;" onclick="$(this).closest(\'.prize-image-container\').find(\'.prize-image\').click()"></i>'
-                            );
                             
                             // Obter a posição do prêmio
                             var position = $(this).closest('tr').find('.position-input').val();
                             
-                            // Garantir que position seja sempre um número válido
-                            if (!position || position === 'undefined' || isNaN(parseInt(position))) {
-                                // Se a posição for undefined, usar o índice da linha +1
-                                position = $(this).closest('tr').index() + 1;
-                                console.log('Corrigindo posição undefined para: ' + position);
+                            // Obter o ID do prêmio
+                            var prizeId = $(this).closest('tr').find('.glyphicon-trash').data('prize-id');
+                            
+                            if (prizeId) {
+                                // Se temos o ID, usamos ele diretamente
+                                // Atualiza a interface visualmente primeiro
+                                var container = $(this).closest('.prize-image-container');
+                                container.find('.prize-image').val('');
+                                container.find('.prize-image-preview').html(
+                                    '<i class="fa fa-file-image-o" style="font-size: 24px; color: #ccc; cursor: pointer;" onclick="$(this).closest(\'.prize-image-container\').find(\'.prize-image\').click()"></i>'
+                                );
+                                
+                                // CORREÇÃO: Marcar esta imagem específica para remoção com ID e posição
+                                // Remover qualquer input anterior com mesmo ID para evitar duplicações
+                                $('input[name="remove_specific_prize_image_id_' + prizeId + '"]').remove();
+                                
+                                // Adicionar um novo identificador exclusivo para este prêmio
+                                $('form').append('<input type="hidden" name="remove_specific_prize_image_id_' + prizeId + '" value="' + prizeId + '">');
+                            } else {
+                                // Se não temos ID, usamos a posição com cuidado especial
+                                // Atualiza a interface visualmente primeiro
+                                var container = $(this).closest('.prize-image-container');
+                                container.find('.prize-image').val('');
+                                container.find('.prize-image-preview').html(
+                                    '<i class="fa fa-file-image-o" style="font-size: 24px; color: #ccc; cursor: pointer;" onclick="$(this).closest(\'.prize-image-container\').find(\'.prize-image\').click()"></i>'
+                                );
+                                
+                                // CORREÇÃO: Marcar esta posição específica para remoção
+                                // Remover qualquer input anterior com mesma posição para evitar duplicações
+                                $('input[name="remove_specific_prize_image_pos_' + position + '"]').remove();
+                                
+                                // Adicionar um novo identificador exclusivo para esta posição
+                                $('form').append('<input type="hidden" name="remove_specific_prize_image_pos_' + position + '" value="' + position + '">');
                             }
-                            
-                            // Remover campo existente se houver
-                            $('input[name="remove_prize_image_' + position + '"]').remove();
-                            
-                            // Criar e adicionar o campo hidden ao formulário (visível para debug)
-                            var hiddenField = '<input type="hidden" name="remove_prize_image_' + position + '" value="' + position + '" style="display:block; margin:5px; padding:3px; background:#ffdddd;">';
-                            $('form').append(hiddenField);
-                            
-                            console.log('Campo para remoção de imagem criado: remove_prize_image_' + position);
                         });
                     };
                     reader.readAsDataURL(file);
@@ -493,7 +540,7 @@ $(document).ready(function() {
                     'class': 'form-control prize-input',
                     'required': true,
                     'min': '0',
-                    'value': '10000' // Valor padrão
+                    'value': '0'
                 })
             ));
             
@@ -515,15 +562,32 @@ $(document).ready(function() {
             $('#prizes-table tbody').append(newRow);
         });
         
-        // Handler do botão salvar
-        $('#btn-save-edit').click(function() {
-            // Desabilita o botão para evitar múltiplos cliques
+        // Inicializar a coleção de posições para remover imagens
+        var removedImagesPositions = [];
+        
+        // Handler para o botão de salvar
+        $('#btn-save-edit').on('click', function() {
+            // Desativa o botão para prevenir duplos cliques
             $(this).prop('disabled', true);
             $(this).html('<i class="fa fa-spinner fa-spin mr5"></i> Processando...');
             
+            // Nova validação de valores dos campos de prêmio
+            var validForm = true;
+            $('#prizes-table .prize-input').each(function() {
+                if ($(this).val() === '') {
+                    toastr.error('Preencha o valor do prêmio em todas as posições');
+                    validForm = false;
+                    // Reabilita o botão
+                    $('#btn-save-edit').prop('disabled', false);
+                    $('#btn-save-edit').html('<i class="glyphicon glyphicon-save mr5"></i> Salvar');
+                    return false; // sai do loop each
+                }
+            });
+            
+            if (!validForm) return;
+            
             var formData = new FormData();
             
-            // Dados básicos
             formData.append('name', $('#nome').val());
             
             // Definindo players com base na seleção
@@ -548,6 +612,38 @@ $(document).ready(function() {
             if ($('#remove_all_prize_images').length && $('#remove_all_prize_images').val() === '1') {
                 formData.append('remove_all_prize_images', '1');
                 console.log('FLAG DE REMOÇÃO EM MASSA ATIVADA');
+            } else {
+                // Tratamento especial para remover imagens individuais
+                // CORREÇÃO COMPLETA: Nova abordagem para remoção de imagens específicas
+                var imagesToRemoveByIds = [];
+                var imagesToRemoveByPositions = [];
+                
+                // Coletar IDs para remover
+                $('input[name^="remove_specific_prize_image_id_"]').each(function() {
+                    var prizeId = $(this).val();
+                    if (prizeId && prizeId > 0) {
+                        imagesToRemoveByIds.push(prizeId);
+                    }
+                });
+                
+                // Coletar posições para remover
+                $('input[name^="remove_specific_prize_image_pos_"]').each(function() {
+                    var position = $(this).val();
+                    if (position && position > 0) {
+                        imagesToRemoveByPositions.push(position);
+                    }
+                });
+                
+                // Se temos imagens para remover, adicionamos ao FormData
+                if (imagesToRemoveByIds.length > 0) {
+                    formData.append('specific_prize_images_to_remove_by_id', JSON.stringify(imagesToRemoveByIds));
+                    console.log('Imagens para remover por ID: ' + JSON.stringify(imagesToRemoveByIds));
+                }
+                
+                if (imagesToRemoveByPositions.length > 0) {
+                    formData.append('specific_prize_images_to_remove_by_position', JSON.stringify(imagesToRemoveByPositions));
+                    console.log('Imagens para remover por posição: ' + JSON.stringify(imagesToRemoveByPositions));
+                }
             }
             
             // Premiação - campos dependem da frequência
@@ -577,21 +673,48 @@ $(document).ready(function() {
                 formData.append('remove_prizes[]', $(this).val());
             });
             
-            // Imagens de prêmios a serem removidas
-            var removedImagesPositions = [];
-            
             // Coletando todas as posições marcadas para remoção
-            $('input[name^="remove_prize_image_"]').each(function() {
-                var position = $(this).val();
-                if (position) {
-                    removedImagesPositions.push(position);
-                    formData.append('remove_prize_images[]', position); // Enviamos todas as posições marcadas para remoção
-                    console.log('Marcando posição para remoção de imagem: ' + position);
+            var imageRemovalIds = [];
+            var imageRemovalPositions = [];
+            
+            // Coletamos IDs (método preferido)
+            $('input[name="remove_prize_image_id"]').each(function() {
+                var id = $(this).val();
+                if (id && !isNaN(parseInt(id))) {
+                    id = parseInt(id);
+                    if (id > 0) {
+                        imageRemovalIds.push(id);
+                        formData.append('remove_prize_image_ids[]', id);
+                        console.log('Marcando ID para remoção de imagem: ' + id);
+                    }
                 }
             });
             
-            console.log('Total de imagens marcadas para remoção: ' + removedImagesPositions.length);
-            console.log('Posições marcadas para remoção: ' + removedImagesPositions.join(', '));
+            // Coletamos posições (método alternativo)
+            $('input[name="remove_prize_image_position"]').each(function() {
+                var position = $(this).val();
+                if (position && !isNaN(parseInt(position))) {
+                    position = parseInt(position);
+                    if (position > 0) {
+                        imageRemovalPositions.push(position);
+                        formData.append('remove_prize_image_positions[]', position);
+                        console.log('Marcando posição para remoção de imagem: ' + position);
+                    }
+                }
+            });
+            
+            console.log('Total de imagens marcadas para remoção por ID: ' + imageRemovalIds.length);
+            console.log('Total de imagens marcadas para remoção por posição: ' + imageRemovalPositions.length);
+            
+            // IMPORTANTE: Verificar se existe o campo de remoção em massa de imagens
+            var removeAllImages = $('#remove_all_prize_images').length > 0 && $('#remove_all_prize_images').val() === '1';
+            
+            // IMPORTANTE: Aqui está a correção para impedir a remoção de todas as imagens
+            // Se NÃO estivermos removendo todas as imagens, não devemos 
+            // usar o parâmetro remove_prize_image_positions[] de forma generalizada
+            var shouldRemoveSpecificImages = !removeAllImages && 
+                ($('input[name="marked_for_image_removal"]').length > 0 || 
+                 $('input[name="marked_for_position_removal"]').length > 0);
             
             // Prêmios
             $('#prizes-table tbody tr').each(function() {
@@ -606,10 +729,13 @@ $(document).ready(function() {
                     console.log('Corrigindo posição undefined para: ' + position);
                 }
                 
-                if (position && prize) {
+                // IMPORTANTE: Enviar mesmo se o prize estiver vazio para garantir que o registro seja salvo
+                if (position) {
                     formData.append('prize_positions[]', position);
-                    formData.append('prize_descriptions[]', prize);
-                    console.log('Adicionando prêmio: posição=' + position + ', valor=' + prize);
+                    // Se o valor estiver vazio, usa 0 como padrão
+                    var prizeValue = prize || '0';
+                    formData.append('prize_descriptions[]', prizeValue);
+                    console.log('Adicionando prêmio: posição=' + position + ', valor=' + prizeValue);
                     
                     if (prizeImage) {
                         formData.append('prize_images[]', prizeImage);
@@ -622,7 +748,7 @@ $(document).ready(function() {
                         console.log('Sem nova imagem para prêmio na posição: ' + position);
                         
                         // Verificar se este prêmio foi marcado para ter sua imagem removida
-                        if (removedImagesPositions.includes(position)) {
+                        if (imageRemovalPositions.includes(position)) {
                             console.log('Este prêmio tem sua imagem marcada para remoção: ' + position);
                         }
                     }
@@ -664,6 +790,12 @@ $(document).ready(function() {
                 if (!positionsWithImages.includes(position)) {
                     formData.append('prize_without_image[]', position);
                     console.log('Marcando explicitamente posição sem imagem: ' + position);
+                    
+                    // CORREÇÃO: Verificar se esta posição específica está marcada para remoção
+                    if (imagesToRemoveByPositions.includes(position.toString())) {
+                        console.log('Posição ' + position + ' marcada especificamente para remoção de imagem');
+                        formData.append('specific_position_to_remove_image', position);
+                    }
                 }
             });
             
@@ -713,14 +845,26 @@ $(document).ready(function() {
     // Handler para botão de confirmação de exclusão
     $('#confirm-delete-prize').click(function() {
         if (rowToDelete) {
+            // Obter a posição antes de remover a linha
+            var position = rowToDelete.find('.position-input').val();
+            
+            // Remover a linha da tabela
             rowToDelete.remove();
+            
+            // Atualizar as posições das linhas restantes
             updatePositions();
             
             // Adicionar campo hidden para indicar que o prêmio deve ser removido
             if (prizeIdToDelete) {
+                // Se for um prêmio existente (tem ID)
                 if (!$('#remove_prize_' + prizeIdToDelete).length) {
                     $('form').append('<input type="hidden" id="remove_prize_' + prizeIdToDelete + '" name="remove_prizes[]" value="' + prizeIdToDelete + '">');
+                    console.log('Marcado prêmio ID=' + prizeIdToDelete + ' para exclusão');
                 }
+            } else if (position) {
+                // Se for um prêmio novo (sem ID), removemos pela posição
+                $('form').append('<input type="hidden" name="remove_prize_position[]" value="' + position + '">');
+                console.log('Marcada posição ' + position + ' para exclusão');
             }
             
             $('#modal-alert2').modal('hide');

@@ -1886,8 +1886,29 @@ def futliga_classica_editar(request, futliga_id):
                         except StandardLeaguePrize.DoesNotExist:
                             print(f"[DEBUG] Prêmio ID={prize_id} não encontrado para remoção")
                 
+                # Processa prêmios que devem ser removidos (por posição - novos prêmios que foram removidos antes de salvar)
+                if 'remove_prize_position[]' in request.POST:
+                    prize_positions_to_remove = request.POST.getlist('remove_prize_position[]')
+                    for position in prize_positions_to_remove:
+                        try:
+                            position_int = int(position)
+                            # Verifica se existe um prêmio nesta posição
+                            try:
+                                prize = StandardLeaguePrize.objects.get(position=position_int, league=futliga)
+                                # Se tem imagem, remove primeiro
+                                if prize.image:
+                                    prize.image.delete(save=False)
+                                
+                                # Remove o prêmio do banco
+                                prize.delete()
+                                print(f"[DEBUG] Prêmio na posição {position_int} removido com sucesso")
+                            except StandardLeaguePrize.DoesNotExist:
+                                print(f"[DEBUG] Prêmio na posição {position_int} não encontrado para remoção")
+                        except (ValueError, TypeError):
+                            print(f"[DEBUG] Posição inválida para remoção: {position}")
+                
                 # Imagens de prêmios que devem ser removidas individualmente
-                if 'remove_prize_images[]' in request.POST:
+                if 'remove_prize_images[]' in request.POST and not remove_all_prize_images:
                     # Obtém as posições dos prêmios que devem ter suas imagens removidas
                     prize_positions_for_image_removal = request.POST.getlist('remove_prize_images[]')
                     
@@ -1939,7 +1960,7 @@ def futliga_classica_editar(request, futliga_id):
                     positions = request.POST.getlist('prize_positions[]')
                     prizes = request.POST.getlist('prize_descriptions[]')
                     
-                    # Mapeia novas imagens para posições
+                    # Mapeia nós novos prêmios para posições
                     prize_image_positions = {}
                     if 'prize_image_positions[]' in request.POST:
                         image_positions = request.POST.getlist('prize_image_positions[]')
@@ -1955,58 +1976,149 @@ def futliga_classica_editar(request, futliga_id):
                         positions_without_image = [str(pos) for pos in request.POST.getlist('prize_without_image[]')]
                         print(f"[DEBUG] Posições explicitamente marcadas como sem imagem: {', '.join(positions_without_image)}")
                     
-                    for i, position in enumerate(positions):
-                        if i < len(prizes):
-                            prize_value = prizes[i]
-                            
-                            # Garantir que position seja sempre um número inteiro válido
-                            try:
-                                position = int(position)
-                                if position <= 0:
-                                    position = i + 1  # Usar o índice +1 como posição válida
-                                    print(f"[DEBUG] Posição inválida (<=0), corrigindo para {position}")
-                            except (ValueError, TypeError):
-                                position = i + 1  # Se não for conversível para inteiro, usar o índice
-                                print(f"[DEBUG] Posição inválida (não numérica), corrigindo para {position}")
-                            
-                            # Tenta encontrar um prêmio existente nessa posição
-                            try:
-                                prize_obj = StandardLeaguePrize.objects.get(position=position, league=futliga)
-                                # Atualiza valor
-                                prize_obj.prize = prize_value
+                    # NOVA IMPLEMENTAÇÃO: Processar a remoção específica de imagens
+                    # Processar remoção por ID específico do prêmio
+                    images_to_remove_by_id = []
+                    for key in request.POST.keys():
+                        if key.startswith('remove_specific_prize_image_id_'):
+                            prize_id = request.POST.get(key)
+                            if prize_id and prize_id.isdigit():
+                                images_to_remove_by_id.append(int(prize_id))
+                    
+                    # Processar remoção por posição específica
+                    images_to_remove_by_position = []
+                    for key in request.POST.keys():
+                        if key.startswith('remove_specific_prize_image_pos_'):
+                            position = request.POST.get(key)
+                            if position and position.isdigit():
+                                images_to_remove_by_position.append(int(position))
+                    
+                    # Registrar o que encontramos
+                    if images_to_remove_by_id:
+                        print(f"[DEBUG] NOVA IMPLEMENTAÇÃO: IDs de prêmios marcados para remoção de imagem: {images_to_remove_by_id}")
+                    if images_to_remove_by_position:
+                        print(f"[DEBUG] NOVA IMPLEMENTAÇÃO: Posições marcadas para remoção de imagem: {images_to_remove_by_position}")
+                    
+                    # Processar remoções por ID (método mais confiável)
+                    for prize_id in images_to_remove_by_id:
+                        try:
+                            prize = StandardLeaguePrize.objects.get(id=prize_id, league=futliga)
+                            if prize.image:
+                                print(f"[DEBUG] NOVA IMPLEMENTAÇÃO: Removendo imagem do prêmio ID={prize_id}")
+                                # Salvar caminho da imagem
+                                image_path = prize.image.path if hasattr(prize.image, 'path') else None
+                                # Remover imagem do modelo
+                                prize.image.delete(save=False)
+                                prize.image = None
+                                prize.save(update_fields=['image'])
                                 
-                                # Se tiver uma nova imagem para esta posição, atualiza
-                                if str(position) in prize_image_positions:
-                                    # Remove a imagem anterior se existir
-                                    if prize_obj.image:
-                                        prize_obj.image.delete(save=False)
-                                    
-                                    # Adiciona a nova imagem
-                                    prize_obj.image = prize_image_positions[str(position)]
-                                # Se a posição estiver marcada explicitamente como sem imagem,
-                                # e não tiver uma nova imagem, removemos a imagem existente
-                                elif str(position) in positions_without_image and prize_obj.image:
+                                # Tentar remover o arquivo físico, se existir
+                                if image_path and os.path.exists(image_path):
+                                    try:
+                                        os.remove(image_path)
+                                    except Exception as e:
+                                        print(f"[DEBUG] NOVA IMPLEMENTAÇÃO: Erro ao remover arquivo físico: {str(e)}")
+                            else:
+                                print(f"[DEBUG] NOVA IMPLEMENTAÇÃO: Prêmio ID={prize_id} não tem imagem para remover")
+                        except StandardLeaguePrize.DoesNotExist:
+                            print(f"[DEBUG] NOVA IMPLEMENTAÇÃO: Prêmio ID={prize_id} não encontrado")
+                        except Exception as e:
+                            print(f"[DEBUG] NOVA IMPLEMENTAÇÃO: Erro ao processar remoção de imagem do prêmio ID={prize_id}: {str(e)}")
+                    
+                    # Processar remoções por posição
+                    for position_int in images_to_remove_by_position:
+                        try:
+                            prize = StandardLeaguePrize.objects.get(position=position_int, league=futliga)
+                            if prize.image:
+                                print(f"[DEBUG] NOVA IMPLEMENTAÇÃO: Removendo imagem do prêmio posição={position_int}, ID={prize.id}")
+                                # Salvar caminho da imagem
+                                image_path = prize.image.path if hasattr(prize.image, 'path') else None
+                                # Remover imagem do modelo
+                                prize.image.delete(save=False)
+                                prize.image = None
+                                prize.save(update_fields=['image'])
+                                
+                                # Tentar remover o arquivo físico, se existir
+                                if image_path and os.path.exists(image_path):
+                                    try:
+                                        os.remove(image_path)
+                                    except Exception as e:
+                                        print(f"[DEBUG] NOVA IMPLEMENTAÇÃO: Erro ao remover arquivo físico: {str(e)}")
+                            else:
+                                print(f"[DEBUG] NOVA IMPLEMENTAÇÃO: Prêmio posição={position_int} não tem imagem para remover")
+                        except StandardLeaguePrize.DoesNotExist:
+                            print(f"[DEBUG] NOVA IMPLEMENTAÇÃO: Prêmio na posição {position_int} não encontrado")
+                        except Exception as e:
+                            print(f"[DEBUG] NOVA IMPLEMENTAÇÃO: Erro ao processar remoção de imagem do prêmio posição={position_int}: {str(e)}")
+                    
+                    for i, position in enumerate(positions):
+                        prize_value = prizes[i]
+                        
+                        # Garantir que position seja sempre um número inteiro válido
+                        try:
+                            position = int(position)
+                            if position <= 0:
+                                position = i + 1  # Usar o índice +1 como posição válida
+                                print(f"[DEBUG] Posição inválida (<=0), corrigindo para {position}")
+                        except (ValueError, TypeError):
+                            position = i + 1  # Se não for conversível para inteiro, usar o índice
+                            print(f"[DEBUG] Posição inválida (não numérica), corrigindo para {position}")
+                        
+                        # Tenta encontrar um prêmio existente nessa posição
+                        try:
+                            prize_obj = StandardLeaguePrize.objects.get(position=position, league=futliga)
+                            # Atualiza valor
+                            prize_obj.prize = prize_value
+                            
+                            # Se tiver uma nova imagem para esta posição, atualiza
+                            if str(position) in prize_image_positions:
+                                # Remove a imagem anterior se existir
+                                if prize_obj.image:
+                                    prize_obj.image.delete(save=False)
+                                
+                                # Adiciona a nova imagem
+                                prize_obj.image = prize_image_positions[str(position)]
+                            # Se a posição estiver marcada explicitamente como sem imagem,
+                            # e não tiver uma nova imagem, removemos a imagem existente
+                            elif str(position) in positions_without_image and prize_obj.image:
+                                # Verificar também se a posição está na lista de remove_prize_images
+                                should_remove_image = False
+                                
+                                # Verificar se está marcada para remoção através do campo remove_prize_images[]
+                                if 'remove_prize_images[]' in request.POST:
+                                    remove_positions = request.POST.getlist('remove_prize_images[]')
+                                    if str(position) in remove_positions:
+                                        should_remove_image = True
+                                        print(f"[DEBUG] Posição {position} encontrada em remove_prize_images[]")
+                                
+                                # Se não está na flag de remoção em massa e deve remover a imagem
+                                if should_remove_image and not remove_all_prize_images:
+                                    print(f"[DEBUG] Removendo imagem do prêmio na posição {position} que foi marcado para remoção")
+                                    prize_obj.image.delete(save=False)
+                                    prize_obj.image = None
+                                # Ou se está apenas marcado como "sem imagem"
+                                elif not should_remove_image:
                                     print(f"[DEBUG] Removendo imagem do prêmio na posição {position} que foi explicitamente marcado como sem imagem")
                                     prize_obj.image.delete(save=False)
                                     prize_obj.image = None
-                                
-                                # Salva o prêmio
-                                prize_obj.save()
-                                
-                            except StandardLeaguePrize.DoesNotExist:
-                                # Cria um novo prêmio
-                                prize_obj = StandardLeaguePrize(
-                                    league=futliga,
-                                    position=position,
-                                    prize=prize_value
-                                )
-                                
-                                # Adiciona imagem se disponível
-                                if str(position) in prize_image_positions:
-                                    prize_obj.image = prize_image_positions[str(position)]
-                                
-                                # Salva o novo prêmio
-                                prize_obj.save()
+                            
+                            # Salva o prêmio
+                            prize_obj.save()
+                            
+                        except StandardLeaguePrize.DoesNotExist:
+                            # Cria um novo prêmio
+                            prize_obj = StandardLeaguePrize(
+                                league=futliga,
+                                position=position,
+                                prize=prize_value
+                            )
+                            
+                            # Adiciona imagem se disponível
+                            if str(position) in prize_image_positions:
+                                prize_obj.image = prize_image_positions[str(position)]
+                            
+                            # Salva o novo prêmio
+                            prize_obj.save()
                 
                 return JsonResponse({'success': True})
         except Exception as e:
