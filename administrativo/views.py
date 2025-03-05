@@ -2140,49 +2140,59 @@ def futliga_classica_excluir(request, id):
         try:
             # Adicionando logs para depuração
             print(f"[DEBUG] Iniciando exclusão da futliga com ID: {id}")
-            print(f"[DEBUG] Método da requisição: {request.method}")
-            print(f"[DEBUG] Headers da requisição: {request.headers}")
-            print(f"[DEBUG] Corpo da requisição: {request.body}")
             
             futliga = StandardLeague.objects.get(id=id)
             print(f"[DEBUG] Futliga encontrada: {futliga.name}")
             
-            # Remove a imagem principal
-            if futliga.image:
-                try:
-                    print(f"[DEBUG] Excluindo imagem principal: {futliga.image.path}")
-                    futliga.image.delete(save=False)  # Não salva ainda para evitar problemas de referência
-                    print("[DEBUG] Imagem principal excluída com sucesso")
-                except Exception as img_error:
-                    print(f"[DEBUG] Erro ao excluir imagem principal: {str(img_error)}")
-                    # Continua a execução mesmo se falhar ao excluir a imagem
-            
-            # Remove as imagens dos prêmios
+            # Remove as imagens dos prêmios primeiro
             print(f"[DEBUG] Procurando prêmios da futliga: {futliga.id}")
             prizes = futliga.prizes.all()
             print(f"[DEBUG] Quantidade de prêmios encontrados: {prizes.count()}")
             
+            prize_ids = [prize.id for prize in prizes]  # Armazena IDs para exclusão posterior
+            
+            # Tenta excluir os arquivos físicos das imagens dos prêmios
             for prize in prizes:
                 try:
-                    if prize.image:
-                        print(f"[DEBUG] Excluindo imagem do prêmio {prize.id}: {prize.image.path}")
-                        prize.image.delete(save=False)  # Não salva ainda para evitar problemas de referência
-                        print(f"[DEBUG] Imagem do prêmio {prize.id} excluída com sucesso")
+                    if prize.image and hasattr(prize.image, 'path') and os.path.exists(prize.image.path):
+                        print(f"[DEBUG] Excluindo imagem do prêmio {prize.id}")
+                        # Tenta excluir apenas o arquivo físico, ignorando erros
+                        try:
+                            os.remove(prize.image.path)
+                            print(f"[DEBUG] Arquivo de imagem do prêmio {prize.id} excluído com sucesso")
+                        except (PermissionError, FileNotFoundError, OSError) as e:
+                            print(f"[DEBUG] Erro ao excluir arquivo de imagem do prêmio {prize.id}: {str(e)}")
+                            # Continua a execução, pois o arquivo pode não existir ou ter permissões diferentes
                 except Exception as prize_img_error:
-                    print(f"[DEBUG] Erro ao excluir imagem do prêmio {prize.id}: {str(prize_img_error)}")
-                    # Continua a execução mesmo se falhar ao excluir a imagem do prêmio
+                    print(f"[DEBUG] Erro ao processar imagem do prêmio {prize.id}: {str(prize_img_error)}")
+                    # Continua mesmo com erro
             
-            # Excluindo os prêmios primeiro para evitar problemas de referência
+            # Tenta excluir o arquivo físico da imagem principal
             try:
-                print(f"[DEBUG] Excluindo prêmios da futliga {futliga.id}")
-                prizes.delete()
-                print(f"[DEBUG] Prêmios excluídos com sucesso")
-            except Exception as prizes_error:
-                print(f"[DEBUG] Erro ao excluir prêmios: {str(prizes_error)}")
-                # Se a exclusão dos prêmios falhar, tenta excluir a futliga de qualquer forma
+                if futliga.image and hasattr(futliga.image, 'path') and os.path.exists(futliga.image.path):
+                    print(f"[DEBUG] Excluindo arquivo de imagem principal: {futliga.image.path}")
+                    try:
+                        os.remove(futliga.image.path)
+                        print("[DEBUG] Arquivo de imagem principal excluído com sucesso")
+                    except (PermissionError, FileNotFoundError, OSError) as e:
+                        print(f"[DEBUG] Erro ao excluir arquivo de imagem principal: {str(e)}")
+                        # Continua a execução
+            except Exception as img_error:
+                print(f"[DEBUG] Erro ao processar imagem principal: {str(img_error)}")
+                # Continua mesmo com erro
             
-            # Agora exclui a futliga
-            print(f"[DEBUG] Excluindo futliga {futliga.id}")
+            # Agora exclui os registros do banco de dados
+            # Primeiro os prêmios
+            try:
+                print(f"[DEBUG] Excluindo registros dos prêmios no banco de dados")
+                StandardLeaguePrize.objects.filter(id__in=prize_ids).delete()
+                print(f"[DEBUG] Registros dos prêmios excluídos com sucesso")
+            except Exception as prizes_error:
+                print(f"[DEBUG] Erro ao excluir registros dos prêmios: {str(prizes_error)}")
+                # Continua tentando excluir a futliga
+            
+            # Por fim, exclui a futliga
+            print(f"[DEBUG] Excluindo registro da futliga {futliga.id} do banco de dados")
             futliga.delete()
             print(f"[DEBUG] Futliga {futliga.id} excluída com sucesso")
             
