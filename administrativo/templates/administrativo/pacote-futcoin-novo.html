@@ -283,10 +283,6 @@
                                                                     <input type="text" id="ios-product-code" class="form-control">
                                                                     <label class="form-control-placeholder" for="ios-product-code">Código do Produto (iOS)</label>
                                                                 </div>
-                                                                <div class="col-lg-4">
-                                                                    <input type="text" id="gateway-product-code" class="form-control">
-                                                                    <label class="form-control-placeholder" for="gateway-product-code">Código do Produto (Gateway)</label>
-                                                                </div>
                                                             </div>
                                                         </div>
                                                     </form>
@@ -443,6 +439,11 @@
                         $('#etiqueta').val('OFERTA ESPECIAL');
                         $('#id3 input').val('#FFFFFF');
                         $('#id4 input').val('#CC000C');
+                        $('#id3').colorpicker('setValue', '#FFFFFF');
+                        $('#id4').colorpicker('setValue', '#CC000C');
+                        
+                        // Atualiza o fundo do indicador de cor
+                        $('#id3 .input-group-addon i').css('background-color', '#FFFFFF');
                         $('#id4 .input-group-addon i').css('background-color', '#CC000C');
                     }
                 });
@@ -545,18 +546,32 @@
                     }
 
                     // Validação das datas para pacotes promocionais
-                    if ($('#tipo').val() === 'Promocional') {
+                    if (tipo === 'Promocional') {
                         var startDate = $('#datetimepicker').val();
                         var endDate = $('#datetimepicker2').val();
                         
                         if (!startDate) {
-                            toastr.error('A Data de Início é obrigatória para pacotes promocionais');
+                            toastr.error('A Data de Início é obrigatória para este tipo de pacote');
                             $('#datetimepicker').focus();
                             return;
                         }
                         if (!endDate) {
-                            toastr.error('A Data de Término é obrigatória para pacotes promocionais');
+                            toastr.error('A Data de Término é obrigatória para este tipo de pacote');
                             $('#datetimepicker2').focus();
+                            return;
+                        }
+                        
+                        // Verificar se data inicial é anterior à data final
+                        try {
+                            var inicio = moment(startDate, 'DD/MM/YYYY HH:mm');
+                            var termino = moment(endDate, 'DD/MM/YYYY HH:mm');
+                            if (inicio.isAfter(termino)) {
+                                toastr.error('A data de início não pode ser posterior à data de término');
+                                return;
+                            }
+                        } catch (e) {
+                            console.error('Erro ao validar datas:', e);
+                            toastr.error('Formato de data inválido. Use DD/MM/YYYY HH:mm');
                             return;
                         }
                     }
@@ -570,8 +585,49 @@
                     formData.append('enabled', $('.i-checks input[type="checkbox"]').is(':checked'));
                     formData.append('package_type', $('#tipo').val());
                     formData.append('label', $('#etiqueta').val());
-                    formData.append('color_text_label', validateColor($('#id3 input').val()));
-                    formData.append('color_background_label', validateColor($('#id4 input').val()));
+                    
+                    // Validação das cores para garantir formato hexadecimal correto
+                    function validateColor(color) {
+                        if (!color) return '#000000';
+                        
+                        // Remove espaços e converte para minúsculas
+                        color = color.trim().toLowerCase();
+                        
+                        // Se já estiver no formato #RRGGBB, retorna como está
+                        if (/^#[0-9a-f]{6}$/.test(color)) {
+                            return color;
+                        }
+                        
+                        // Se estiver no formato RGB(r,g,b), converte para hex
+                        var rgbMatch = color.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
+                        if (rgbMatch) {
+                            var r = parseInt(rgbMatch[1]).toString(16).padStart(2, '0');
+                            var g = parseInt(rgbMatch[2]).toString(16).padStart(2, '0');
+                            var b = parseInt(rgbMatch[3]).toString(16).padStart(2, '0');
+                            return `#${r}${g}${b}`;
+                        }
+                        
+                        // Se for rgba, remove o canal alpha e converte para hex
+                        var rgbaMatch = color.match(/^rgba\((\d+),\s*(\d+),\s*(\d+),\s*[\d.]+\)$/);
+                        if (rgbaMatch) {
+                            var r = parseInt(rgbaMatch[1]).toString(16).padStart(2, '0');
+                            var g = parseInt(rgbaMatch[2]).toString(16).padStart(2, '0');
+                            var b = parseInt(rgbaMatch[3]).toString(16).padStart(2, '0');
+                            return `#${r}${g}${b}`;
+                        }
+                        
+                        // Se não estiver em nenhum formato válido, retorna preto
+                        return '#000000';
+                    }
+                    
+                    // Obtenha e valide as cores
+                    var colorTextLabel = validateColor($('#id3 input').val());
+                    var colorBackgroundLabel = validateColor($('#id4 input').val());
+                    
+                    console.log('Valores recebidos - Etiqueta:', $('#etiqueta').val(), 'Cor texto:', colorTextLabel, 'Cor fundo:', colorBackgroundLabel);
+                    
+                    formData.append('color_text_label', colorTextLabel);
+                    formData.append('color_background_label', colorBackgroundLabel);
                     
                     // Configurações
                     formData.append('full_price', precoPadrao);
@@ -581,24 +637,29 @@
                     formData.append('show_to', $('#exibir-para').val());
                     
                     // Trata as datas apenas se o tipo for Promocional
-                    if ($('#tipo').val() === 'Promocional') {
+                    if (tipo === 'Promocional') {
                         var startDate = $('#datetimepicker').val();
                         var endDate = $('#datetimepicker2').val();
                         
-                        if (startDate) formData.append('start_date', startDate);
-                        if (endDate) formData.append('end_date', endDate);
+                        formData.append('start_date', startDate);
+                        formData.append('end_date', endDate);
+                        
+                        console.log('Datas definidas - Início:', startDate, 'Término:', endDate);
                     }
                     
                     // Códigos do produto
                     formData.append('android_product_code', $('#android-product-code').val());
                     formData.append('ios_product_code', $('#ios-product-code').val());
-                    formData.append('gateway_product_code', $('#gateway-product-code').val());
 
                     // Imagem
                     var imageFile = $('.input-image')[0].files[0];
                     if (imageFile) {
                         formData.append('image', imageFile);
                     }
+
+                    // Desabilita o botão durante o envio
+                    var btn = $(this);
+                    btn.prop('disabled', true);
 
                     // Envia os dados
                     $.ajax({
@@ -615,10 +676,17 @@
                                 }, 1500);
                             } else {
                                 toastr.error(response.message);
+                                // Reabilita o botão após o envio
+                                btn.prop('disabled', false);
                             }
                         },
-                        error: function() {
-                            toastr.error('Erro ao criar pacote');
+                        error: function(xhr, status, error) {
+                            console.error('Erro na requisição:', error);
+                            console.error('Status:', xhr.status);
+                            console.error('Resposta:', xhr.responseText);
+                            toastr.error(xhr.responseJSON?.message || 'Erro ao criar pacote');
+                            // Reabilita o botão após o envio
+                            btn.prop('disabled', false);
                         }
                     });
                 });

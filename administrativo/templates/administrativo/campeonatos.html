@@ -194,7 +194,7 @@
                                                                 data-id="{{ championship.id }}">
                                                             <i class="glyphicon glyphicon-{% if championship.is_active %}remove{% else %}ok{% endif %}" style="color: white;"></i>
                                                         </button>
-                                                        <a href="{% url 'administrativo:campeonato_resultados' championship.id %}" class="btn btn-warning btn-xs" title="Ver Resultados"><i class="glyphicon glyphicon-th"></i></a>
+                                                        <a href="{% url 'administrativo:campeonato_editar' championship.id %}#rodadas" class="btn btn-warning btn-xs" title="Ver Resultados"><i class="glyphicon glyphicon-th"></i></a>
                                                         {% if not championship.is_active and not championship.predictions.exists %}
                                                         <button type="button" class="btn btn-danger btn-xs btn-excluir" data-id="{{ championship.id }}" data-name="{{ championship.name }}" title="Excluir"><i class="glyphicon glyphicon-trash"></i></button>
                                                         {% endif %}
@@ -207,25 +207,6 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Modal Excluir Individual -->
-        <div class="modal inmodal" id="modalExcluirIndividual" tabindex="-1" role="dialog" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered modal-sm">
-                <div class="modal-content animated fadeIn">
-                    <div class="modal-header">
-                        <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
-                        <h4 class="modal-title">Tem certeza?</h4>
-                    </div>
-                    <div class="modal-body">
-                        <p>Tem certeza que deseja excluir o registro selecionado?</p>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
-                        <button type="button" class="btn btn-danger btn-excluir-confirmar">Deletar</button>
                     </div>
                 </div>
             </div>
@@ -250,6 +231,25 @@
             </div>
         </div>
 
+        <!-- Modal Excluir Individual -->
+        <div class="modal inmodal" id="modalExcluirIndividual" tabindex="-1" role="dialog" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-sm">
+                <div class="modal-content animated fadeIn">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                        <h4 class="modal-title">Tem certeza?</h4>
+                    </div>
+                    <div class="modal-body">
+                        <p>Tem certeza que deseja excluir este campeonato?</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
+                        <button type="button" class="btn btn-danger btn-excluir-confirmar">Deletar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Mainly scripts -->
         <script src="{% static 'administrativo/js/jquery-3.4.1.min.js' %}"></script>
         <script src="{% static 'administrativo/js/popper.min.js' %}"></script>
@@ -264,20 +264,18 @@
         <script src="{% static 'administrativo/js/plugins/toastr/toastr.min.js' %}"></script>
         <script src="{% static 'administrativo/js/settings.js' %}"></script>
         <script>
-            var dataTable; // Variável global para armazenar a referência do DataTable
-            
-            // Função específica para inicializar o DataTable
-            function initializeDataTable() {
-                console.log("Inicializando DataTable...");
-                
-                // Se já existe um DataTable, destrua-o primeiro
-                if ($.fn.DataTable.isDataTable('.dataTables-campeonatos')) {
-                    console.log("Destruindo DataTable existente...");
-                    $('.dataTables-campeonatos').DataTable().destroy();
-                }
-                
-                // Inicializa o DataTable
-                dataTable = $('.dataTables-campeonatos').DataTable({
+            $(document).ready(function() {
+                // Configuração do toastr
+                toastr.options = {
+                    closeButton: true,
+                    progressBar: true,
+                    showMethod: 'slideDown',
+                    timeOut: 5000,
+                    positionClass: "toast-top-right"
+                };
+
+                // Inicializar DataTable
+                $('.dataTables-campeonatos').DataTable({
                     pageLength: 25,
                     responsive: true,
                     dom: '<"html5buttons"B>lTfgitp',
@@ -286,31 +284,6 @@
                         url: "//cdn.datatables.net/plug-ins/1.10.19/i18n/Portuguese-Brasil.json"
                     }
                 });
-                
-                console.log("DataTable inicializado com sucesso!");
-            }
-            
-            // Garante que o DataTable seja inicializado quando a página estiver totalmente carregada
-            window.onload = function() {
-                console.log("Página totalmente carregada, garantindo inicialização do DataTable");
-                setTimeout(function() {
-                    // Força a reinicialização do DataTable após a página estar completamente carregada
-                    initializeDataTable();
-                }, 100);
-            };
-            
-            $(document).ready(function() {
-                // Inicializa o DataTable na carga da página
-                initializeDataTable();
-                
-                // Exibe mensagens do Django usando toastr
-                var messagesElement = document.getElementById('django-messages');
-                if (messagesElement) {
-                    var messages = JSON.parse(messagesElement.getAttribute('data-messages'));
-                    messages.forEach(function(message) {
-                        toastr[message.tag](message.text);
-                    });
-                }
 
                 // Configuração do CSRF token para todas as requisições AJAX
                 function getCookie(name) {
@@ -327,8 +300,9 @@
                     }
                     return cookieValue;
                 }
+
+                // Configurar CSRF token para AJAX
                 const csrftoken = getCookie('csrftoken');
-                
                 $.ajaxSetup({
                     beforeSend: function(xhr, settings) {
                         if (!this.crossDomain) {
@@ -337,140 +311,290 @@
                     }
                 });
 
-                // Excluir campeonato
-                var championshipIdToDelete = null;
-                $('.btn-excluir').off('click').on('click', function(e) {
-                    e.stopPropagation();  // Impede propagação do evento
-                    championshipIdToDelete = $(this).data('id');
-                    $('#modalExcluirIndividual').modal('show');
-                });
-
-                // Confirmar exclusão individual
-                $('.btn-excluir-confirmar').off('click').on('click', function() {
-                    if (!championshipIdToDelete) return;
-                    
-                    $.ajax({
-                        url: "{% url 'administrativo:campeonato_excluir' 0 %}".replace('0', championshipIdToDelete),
-                        type: 'POST',
-                        data: {
-                            'csrfmiddlewaretoken': '{{ csrf_token }}'
-                        },
-                        success: function(response) {
-                            $('#modalExcluirIndividual').modal('hide');
-                            if (response.success) {
-                                toastr.success(response.message);
-                                // Recarregar página e garantir que o DataTable seja inicializado
-                                window.location.href = window.location.pathname;
-                            } else {
-                                toastr.error(response.message);
-                            }
-                        },
-                        error: function(xhr) {
-                            $('#modalExcluirIndividual').modal('hide');
-                            toastr.error(xhr.responseJSON?.message || 'Erro ao excluir campeonato');
-                        }
-                    });
-                });
-
-                // Função para excluir múltiplos registros
-                window.excluirSelecionados = function() {
-                    const ids = [];
-                    $('input[name="ids[]"]:checked').each(function() {
-                        ids.push($(this).val());
-                    });
-
-                    if (ids.length === 0) {
-                        toastr.warning('Selecione pelo menos um campeonato para excluir');
-                        return;
-                    }
-
-                    $('#modalExcluirMassa').modal('show');
-                    $('.btn-excluir-massa-confirmar').off('click').on('click', function() {
-                        $.ajax({
-                            url: "{% url 'administrativo:campeonato_excluir_em_massa' %}",
-                            type: 'POST',
-                            data: {
-                                'ids[]': ids,
-                                'csrfmiddlewaretoken': '{{ csrf_token }}'
-                            },
-                            success: function(response) {
-                                $('#modalExcluirMassa').modal('hide');
-                                if (response.success) {
-                                    toastr.success(response.message);
-                                    if (response.errors && response.errors.length > 0) {
-                                        response.errors.forEach(function(error) {
-                                            toastr.warning(error);
-                                        });
-                                    }
-                                    // Recarregar página e garantir que o DataTable seja inicializado
-                                    window.location.href = window.location.pathname;
-                                } else {
-                                    toastr.error(response.message || 'Erro ao excluir campeonatos');
-                                }
-                            },
-                            error: function(xhr) {
-                                $('#modalExcluirMassa').modal('hide');
-                                toastr.error('Erro ao excluir campeonatos');
-                            }
-                        });
-                    });
-                };
-
-                // Atualiza o botão de exclusão em massa quando os checkboxes são alterados
-                $('input[name="ids[]"]').on('change', function() {
-                    var hasChecked = $('input[name="ids[]"]:checked').length > 0;
-                    $('#btn-excluir-em-massa').prop('disabled', !hasChecked);
-                    
-                    // Atualiza o estado do checkbox "Selecionar todos"
-                    var totalCheckboxes = $('input[name="ids[]"]:not(:disabled)').length;
-                    var checkedCheckboxes = $('input[name="ids[]"]:checked').length;
-                    $('.checkAll').prop('checked', totalCheckboxes === checkedCheckboxes && totalCheckboxes > 0);
-                });
-
-                // Checkbox "Selecionar todos"
-                $('.checkAll').on('change', function() {
-                    var isChecked = $(this).prop('checked');
-                    $('input[name="ids[]"]:not(:disabled)').prop('checked', isChecked);
-                    $('#btn-excluir-em-massa').prop('disabled', !isChecked);
-                });
-
-                // Ativar/Desativar campeonato
-                $('.btn-toggle-championship').off('click').on('click', function(e) {
-                    e.stopPropagation();  // Impede propagação do evento
+                // Manipulador para o botão de ativar/desativar
+                $('.btn-toggle-championship').on('click', function(e) {
+                    e.preventDefault();
                     var btn = $(this);
                     var championshipId = btn.data('id');
-                    
+                    var isActive = btn.hasClass('btn-danger');
+                    var action = isActive ? 'desativar' : 'ativar';
+
+                    // Desabilitar o botão durante o processamento
+                    btn.prop('disabled', true);
+
                     $.ajax({
                         url: "{% url 'administrativo:campeonato_toggle_status' %}",
                         type: 'POST',
                         data: {
                             id: championshipId,
-                            csrfmiddlewaretoken: '{{ csrf_token }}'
+                            csrfmiddlewaretoken: csrftoken
                         },
                         success: function(response) {
                             if (response.success) {
-                                var icon = btn.find('i');
-                                if (response.is_active) {
-                                    icon.removeClass('glyphicon-ok').addClass('glyphicon-remove');
-                                    btn.removeClass('btn-success').addClass('btn-danger');
-                                    btn.attr('title', 'Desativar');
+                                // Atualizar o botão
+                                btn.removeClass(isActive ? 'btn-danger' : 'btn-success')
+                                   .addClass(isActive ? 'btn-success' : 'btn-danger');
+                                
+                                // Atualizar o ícone
+                                btn.find('i').removeClass(isActive ? 'glyphicon-remove' : 'glyphicon-ok')
+                                            .addClass(isActive ? 'glyphicon-ok' : 'glyphicon-remove');
+                                
+                                // Atualizar o título
+                                btn.attr('title', isActive ? 'Ativar' : 'Desativar');
+
+                                // Atualizar o status na tabela
+                                var statusCell = btn.closest('tr').find('td:nth-child(6)').find('span');
+                                statusCell.removeClass(isActive ? 'label-primary' : 'label-default')
+                                        .addClass(isActive ? 'label-default' : 'label-primary')
+                                        .text(isActive ? 'Inativo' : 'Ativo');
+
+                                // Atualizar o checkbox
+                                var checkbox = btn.closest('tr').find('input[type="checkbox"]');
+                                checkbox.prop('disabled', !isActive);
+
+                                // Atualizar o botão de excluir
+                                var row = btn.closest('tr');
+                                if (isActive) {
+                                    // Se está sendo desativado, adicionar o botão de excluir
+                                    var championshipName = row.find('td:eq(1)').text().trim();
+                                    var deleteButton = $('<button type="button" class="btn btn-danger btn-xs btn-excluir" ' +
+                                                       'data-id="' + championshipId + '" ' +
+                                                       'data-name="' + championshipName + '" ' +
+                                                       'title="Excluir"><i class="glyphicon glyphicon-trash"></i></button>');
+                                    
+                                    // Adicionar o botão após o botão de resultados
+                                    row.find('.btn-warning').after(' ', deleteButton);
+                                    
+                                    // Adicionar o handler de clique para o novo botão
+                                    deleteButton.on('click', function() {
+                                        var id = $(this).data('id');
+                                        var name = $(this).data('name');
+                                        $('#modalExcluirIndividual').modal('show');
+                                        
+                                        $('.btn-excluir-confirmar').off('click').on('click', function() {
+                                            excluirCampeonato(id);
+                                        });
+                                    });
                                 } else {
-                                    icon.removeClass('glyphicon-remove').addClass('glyphicon-ok');
-                                    btn.removeClass('btn-danger').addClass('btn-success');
-                                    btn.attr('title', 'Ativar');
+                                    // Se está sendo ativado, remover o botão de excluir
+                                    row.find('.btn-excluir').remove();
                                 }
-                                toastr.success(response.message);
-                                // Recarregar página e garantir que o DataTable seja inicializado
-                                window.location.href = window.location.pathname;
+
+                                // Mostrar mensagem de sucesso
+                                toastr.success(response.message || 'Campeonato ' + (isActive ? 'desativado' : 'ativado') + ' com sucesso!');
                             } else {
-                                toastr.error(response.message);
+                                // Mostrar mensagem de erro do servidor
+                                toastr.error(response.message || 'Erro ao ' + action + ' o campeonato.');
                             }
                         },
-                        error: function() {
-                            toastr.error('Erro ao alterar o status do campeonato.');
+                        error: function(xhr, status, error) {
+                            // Log detalhado do erro
+                            console.error('Erro ao ' + action + ' campeonato:', {
+                                status: status,
+                                error: error,
+                                response: xhr.responseText
+                            });
+
+                            // Tentar obter mensagem de erro do servidor
+                            var errorMessage = 'Erro ao ' + action + ' o campeonato.';
+                            try {
+                                var response = JSON.parse(xhr.responseText);
+                                if (response.message) {
+                                    errorMessage = response.message;
+                                }
+                            } catch (e) {
+                                console.error('Erro ao parsear resposta:', e);
+                            }
+
+                            // Mostrar mensagem de erro
+                            toastr.error(errorMessage + ' Por favor, tente novamente.');
+                        },
+                        complete: function() {
+                            // Reabilitar o botão após o processamento
+                            btn.prop('disabled', false);
                         }
                     });
                 });
+
+                // Função para excluir campeonato
+                function excluirCampeonato(championshipId) {
+                    // Desabilitar o botão de confirmar para evitar cliques múltiplos
+                    $('.btn-excluir-confirmar').prop('disabled', true);
+                    
+                    $.ajax({
+                        url: "{% url 'administrativo:campeonato_excluir' 0 %}".replace('0', championshipId),
+                        type: 'POST',
+                        data: {
+                            csrfmiddlewaretoken: csrftoken
+                        },
+                        success: function(response) {
+                            // Fechar o modal
+                            $('#modalExcluirIndividual').modal('hide');
+                            
+                            if (response.success) {
+                                // Remover a linha da tabela
+                                var table = $('.dataTables-campeonatos').DataTable();
+                                var row = table.row($('[data-id="' + championshipId + '"]').closest('tr'));
+                                if (row) {
+                                    row.remove().draw();
+                                }
+
+                                // Mostrar mensagem de sucesso
+                                toastr.success(response.message || 'Campeonato excluído com sucesso!');
+                            } else {
+                                // Mostrar mensagem de erro do servidor
+                                toastr.error(response.message || 'Erro ao excluir o campeonato.');
+                                console.error('Erro ao excluir campeonato:', response);
+                            }
+                        },
+                        error: function(xhr, status, error) {
+                            // Fechar o modal
+                            $('#modalExcluirIndividual').modal('hide');
+                            
+                            // Log detalhado do erro
+                            console.error('Erro ao excluir campeonato:', {
+                                status: status,
+                                error: error,
+                                response: xhr.responseText,
+                                xhr: xhr
+                            });
+                            
+                            // Tentar obter mensagem de erro do servidor
+                            var errorMessage = 'Erro ao excluir o campeonato.';
+                            try {
+                                var response = JSON.parse(xhr.responseText);
+                                if (response.message) {
+                                    errorMessage = response.message;
+                                }
+                            } catch (e) {
+                                console.error('Erro ao parsear resposta:', e);
+                            }
+                            
+                            // Mostrar mensagem de erro
+                            toastr.error(errorMessage + ' Por favor, tente novamente.');
+                        },
+                        complete: function() {
+                            // Reabilitar o botão de confirmar
+                            $('.btn-excluir-confirmar').prop('disabled', false);
+                        }
+                    });
+                }
+
+                // Manipulador para o botão de excluir individual
+                $(document).on('click', '.btn-excluir', function() {
+                    var championshipId = $(this).data('id');
+                    var championshipName = $(this).data('name');
+                    
+                    // Atualizar o texto do modal com o nome do campeonato
+                    $('#modalExcluirIndividual .modal-body p').text('Tem certeza que deseja excluir o campeonato "' + championshipName + '"?');
+                    
+                    $('#modalExcluirIndividual').modal('show');
+                    
+                    // Configurar o botão de confirmação
+                    $('.btn-excluir-confirmar').off('click').on('click', function() {
+                        excluirCampeonato(championshipId);
+                    });
+                });
+
+                // Manipulador para exclusão em massa
+                window.excluirSelecionados = function() {
+                    var ids = [];
+                    $('input[name="ids[]"]:checked').each(function() {
+                        ids.push($(this).val());
+                    });
+
+                    if (ids.length === 0) {
+                        toastr.warning('Selecione pelo menos um campeonato para excluir.');
+                        return;
+                    }
+
+                    $('#modalExcluirMassa').modal('show');
+
+                    // Configurar o botão de confirmação
+                    $('.btn-excluir-massa-confirmar').off('click').on('click', function() {
+                        // Desabilitar o botão para evitar cliques múltiplos
+                        $(this).prop('disabled', true);
+                        
+                        $.ajax({
+                            url: "{% url 'administrativo:campeonato_excluir_em_massa' %}",
+                            type: 'POST',
+                            data: {
+                                ids: ids,
+                                csrfmiddlewaretoken: csrftoken
+                            },
+                            success: function(response) {
+                                // Fechar o modal
+                                $('#modalExcluirMassa').modal('hide');
+
+                                if (response.success) {
+                                    // Remover as linhas da tabela
+                                    var table = $('.dataTables-campeonatos').DataTable();
+                                    ids.forEach(function(id) {
+                                        var row = table.row($('input[value="' + id + '"]').closest('tr'));
+                                        if (row) {
+                                            row.remove();
+                                        }
+                                    });
+                                    table.draw();
+
+                                    // Mostrar mensagem de sucesso
+                                    toastr.success(response.message || 'Campeonatos excluídos com sucesso!');
+                                } else {
+                                    // Mostrar mensagem de erro do servidor
+                                    toastr.error(response.message || 'Erro ao excluir os campeonatos.');
+                                    console.error('Erro ao excluir campeonatos:', response);
+                                }
+                            },
+                            error: function(xhr, status, error) {
+                                // Fechar o modal
+                                $('#modalExcluirMassa').modal('hide');
+
+                                // Log detalhado do erro
+                                console.error('Erro ao excluir campeonatos:', {
+                                    status: status,
+                                    error: error,
+                                    response: xhr.responseText,
+                                    xhr: xhr
+                                });
+
+                                // Tentar obter mensagem de erro do servidor
+                                var errorMessage = 'Erro ao excluir os campeonatos.';
+                                try {
+                                    var response = JSON.parse(xhr.responseText);
+                                    if (response.message) {
+                                        errorMessage = response.message;
+                                    }
+                                } catch (e) {
+                                    console.error('Erro ao parsear resposta:', e);
+                                }
+
+                                // Mostrar mensagem de erro
+                                toastr.error(errorMessage + ' Por favor, tente novamente.');
+                            },
+                            complete: function() {
+                                // Reabilitar o botão
+                                $('.btn-excluir-massa-confirmar').prop('disabled', false);
+                            }
+                        });
+                    });
+                };
+
+                // Manipulador para o checkbox "selecionar todos"
+                $('.checkAll').on('change', function() {
+                    var isChecked = $(this).prop('checked');
+                    $('input[name="ids[]"]:not(:disabled)').prop('checked', isChecked);
+                });
+
+                // Exibir mensagens do Django
+                var messages = $('#django-messages').data('messages');
+                if (messages) {
+                    messages.forEach(function(message) {
+                        var type = message.tag === 'error' ? 'error' :
+                                  message.tag === 'success' ? 'success' :
+                                  message.tag === 'warning' ? 'warning' : 'info';
+                        toastr[type](message.text);
+                    });
+                }
             });
         </script>
     </body>

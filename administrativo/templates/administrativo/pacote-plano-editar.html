@@ -107,11 +107,45 @@
         console.log('Valor de enabled recebido:', planData.enabled);
         console.log('Tipo do enabled:', typeof planData.enabled);
         
+        // Mostrar diretamente os dados dos campos específicos para depuração
+        console.log('DADOS DE NOVOS JOGADORES:');
+        console.log('- promotion_days:', planData.promotion_days);
+        console.log('- futcoins_package_benefit:', planData.futcoins_package_benefit);
+        console.log('- package_renewals:', planData.package_renewals);
+        
+        // INSERINDO VALORES DIRETAMENTE NOS ELEMENTOS HTML NO MOMENTO DA INICIALIZAÇÃO
+        if (planData.promotion_days) {
+            document.getElementById('dias-promocao').value = planData.promotion_days;
+        }
+        
+        if (planData.package_renewals) {
+            document.getElementById('renovacoes-pacote').value = planData.package_renewals;
+        }
+        
         // Preencher campos básicos
         $('#nome').val(planData.name || '');
         $('#plano').val(planData.plan || '');
         $('#vigencia').val(planData.billing_cycle || '');
-        $('#tipo').val(planData.package_type || 'Padrão');
+        
+        // Ajustar o valor do tipo para exibição correta
+        var tipoExibicao = planData.package_type || 'Padrão';
+        console.log('Valor original do tipo recebido do servidor:', tipoExibicao);
+        
+        if (tipoExibicao === 'Dias Promoção Novos Jogadores') {
+            tipoExibicao = 'Novos Jogadores';
+            console.log('Convertendo tipo para exibição: Dias Promoção Novos Jogadores -> Novos Jogadores');
+        }
+        
+        // Verificação de segurança para garantir que o valor seja válido
+        var valoresValidos = ['Padrão', 'Promocional', 'Novos Jogadores'];
+        if (valoresValidos.indexOf(tipoExibicao) === -1) {
+            console.error('Valor do tipo inválido:', tipoExibicao, 'Usando valor padrão: Padrão');
+            tipoExibicao = 'Padrão';
+        }
+        
+        console.log('Definindo valor do tipo para:', tipoExibicao);
+        $('#tipo').val(tipoExibicao);
+        
         $('#preco-padrao').val(planData.full_price || '');
         $('#preco-promocional').val(planData.promotional_price || '');
         $('#exibir-para').val(planData.show_to || 'Todos');
@@ -123,14 +157,11 @@
         
         $('#codigo-android').val(planData.android_product_code || '');
         $('#codigo-apple').val(planData.apple_product_code || '');
-        $('#codigo-gateway').val(planData.gateway_product_code || '');
         
         console.log('Código Android carregado:', planData.android_product_code);
         console.log('Código Apple carregado:', planData.apple_product_code);
-        console.log('Código Gateway carregado:', planData.gateway_product_code);
         console.log('Valor do campo código Android:', $('#codigo-android').val());
         console.log('Valor do campo código Apple:', $('#codigo-apple').val());
-        console.log('Valor do campo código Gateway:', $('#codigo-gateway').val());
         
         // Define as cores nos color pickers
         $('#id3').colorpicker('setValue', planData.color_text_label || '#FFFFFF');
@@ -250,11 +281,78 @@
         // Dispara o evento change do tipo para ajustar a visibilidade dos campos
         $('#tipo').trigger('change');
         
+        // Função específica para carregar e selecionar o pacote de futcoins correto
+        function carregarESetarPacoteFutcoins() {
+            // Apenas se tivermos um ID de pacote para selecionar
+            if (planData.futcoins_package_benefit) {
+                console.log('Tentando carregar e selecionar pacote futcoins:', planData.futcoins_package_benefit);
+                
+                // Faz a requisição direta
+                $.ajax({
+                    url: '/administrativo/api/pacotes-futcoins-ativos/',
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function(response) {
+                        console.log('RESPOSTA DA API DE PACOTES:', response);
+                        
+                        // Limpar o select
+                        $('#beneficio-futcoins').empty();
+                        $('#beneficio-futcoins').append('<option value="">Selecione um pacote</option>');
+                        
+                        // Identificar a lista de pacotes (pode estar em 'packages' ou 'pacotes')
+                        var listaPacotes = response.packages || response.pacotes || [];
+                        
+                        if (listaPacotes.length > 0) {
+                            console.log('Lista de pacotes encontrada com ' + listaPacotes.length + ' itens');
+                            
+                            // Adicionar cada opção
+                            listaPacotes.forEach(function(pacote) {
+                                var selected = (pacote.id == planData.futcoins_package_benefit) ? 'selected' : '';
+                                $('#beneficio-futcoins').append(`<option value="${pacote.id}" ${selected}>${pacote.name}</option>`);
+                                
+                                if (pacote.id == planData.futcoins_package_benefit) {
+                                    console.log('Pacote correspondente encontrado e marcado como selecionado:', pacote.name);
+                                }
+                            });
+                            
+                            // Certificar-se de que o valor está selecionado
+                            $('#beneficio-futcoins').val(planData.futcoins_package_benefit);
+                            console.log('Valor definido para o select:', planData.futcoins_package_benefit);
+                            console.log('Valor atual do select após definição:', $('#beneficio-futcoins').val());
+                        } else {
+                            console.log('Nenhum pacote encontrado na resposta');
+                        }
+                    },
+                    error: function(error) {
+                        console.error('Erro ao buscar pacotes futcoins:', error);
+                    }
+                });
+            }
+        }
+        
+        // Chamar a função para carregar e selecionar o pacote futcoins
+        if (planData.package_type === 'Dias Promoção Novos Jogadores' || planData.package_type === 'Novos Jogadores') {
+            // Garantir que os campos sejam exibidos
+            $('.novos-usuarios-fields').show();
+            $('#bloco-beneficio-futcoins').show();
+            
+            // Carregar os pacotes futcoins imediatamente
+            carregarESetarPacoteFutcoins();
+            
+            // E tentar novamente após um tempo, para garantir
+            setTimeout(carregarESetarPacoteFutcoins, 500);
+        }
+        
         // Garante que os campos de etiqueta sejam exibidos quando o tipo for promocional
         if (planData.package_type === 'Promocional') {
             $('.label-fields, #etiqueta, .date-fields').show();
         } else if (planData.package_type === 'Padrão' && planData.label) {
             $('.label-fields, #etiqueta').show();
+        } else if (planData.package_type === 'Dias Promoção Novos Jogadores') {
+            $('.label-fields, #etiqueta').show();
+            // Garante que os campos específicos de Novos Jogadores sejam exibidos
+            $('.novos-usuarios-fields').show();
+            $('#bloco-beneficio-futcoins').show();
         }
         
         // IMPORTANTE: Definimos o valor do campo etiqueta DEPOIS que a visibilidade dos campos
@@ -277,6 +375,40 @@
             // AQUI: Força novamente o valor do campo etiqueta para garantir que não seja limpo
             $('#etiqueta').val(planData.label || '');
             console.log('Forçando valor da etiqueta novamente:', planData.label);
+            
+            // Preenche os campos específicos de Novos Jogadores após o resto da interface estar inicializada
+            setTimeout(function() {
+                if (planData.package_type === 'Dias Promoção Novos Jogadores' || planData.package_type === 'Novos Jogadores') {
+                    console.log('Verificação final dos campos de Novos Jogadores');
+                    
+                    // Dias Promoção - aplicar novamente
+                    if (planData.promotion_days) {
+                        var valorAtual = $('#dias-promocao').val();
+                        if (valorAtual != planData.promotion_days) {
+                            console.log('Corrigindo valor de dias-promocao:', valorAtual, '->', planData.promotion_days);
+                            $('#dias-promocao').val(planData.promotion_days);
+                        }
+                    }
+                    
+                    // Qtde Renovações - aplicar novamente
+                    if (planData.package_renewals) {
+                        var valorAtual = $('#renovacoes-pacote').val();
+                        if (valorAtual != planData.package_renewals) {
+                            console.log('Corrigindo valor de renovacoes-pacote:', valorAtual, '->', planData.package_renewals);
+                            $('#renovacoes-pacote').val(planData.package_renewals);
+                        }
+                    }
+                    
+                    // Benefício Pacote Futcoins - aplicar novamente
+                    if (planData.futcoins_package_benefit) {
+                        var valorAtual = $('#beneficio-futcoins').val();
+                        if (valorAtual != planData.futcoins_package_benefit) {
+                            console.log('Corrigindo valor de beneficio-futcoins:', valorAtual, '->', planData.futcoins_package_benefit);
+                            $('#beneficio-futcoins').val(planData.futcoins_package_benefit);
+                        }
+                    }
+                }
+            }, 1000);
         }, 300);
         
         // Adiciona um evento para garantir que o valor da etiqueta não seja perdido
@@ -289,14 +421,46 @@
                 console.log('Valor esperado:', planData.label);
                 $('#etiqueta').val(planData.label);
             }
+            
+            // Verifica novamente os campos específicos de Novos Jogadores depois de um tempo maior
+            setTimeout(function() {
+                if (planData.package_type === 'Dias Promoção Novos Jogadores' || planData.package_type === 'Novos Jogadores') {
+                    console.log('Verificação final dos campos de Novos Jogadores');
+                    
+                    // Dias Promoção - aplicar novamente
+                    if (planData.promotion_days) {
+                        var valorAtual = $('#dias-promocao').val();
+                        if (valorAtual != planData.promotion_days) {
+                            console.log('Corrigindo valor de dias-promocao:', valorAtual, '->', planData.promotion_days);
+                            $('#dias-promocao').val(planData.promotion_days);
+                        }
+                    }
+                    
+                    // Qtde Renovações - aplicar novamente
+                    if (planData.package_renewals) {
+                        var valorAtual = $('#renovacoes-pacote').val();
+                        if (valorAtual != planData.package_renewals) {
+                            console.log('Corrigindo valor de renovacoes-pacote:', valorAtual, '->', planData.package_renewals);
+                            $('#renovacoes-pacote').val(planData.package_renewals);
+                        }
+                    }
+                    
+                    // Benefício Pacote Futcoins - aplicar novamente
+                    if (planData.futcoins_package_benefit) {
+                        var valorAtual = $('#beneficio-futcoins').val();
+                        if (valorAtual != planData.futcoins_package_benefit) {
+                            console.log('Corrigindo valor de beneficio-futcoins:', valorAtual, '->', planData.futcoins_package_benefit);
+                            $('#beneficio-futcoins').val(planData.futcoins_package_benefit);
+                        }
+                    }
+                }
+            }, 200);
         }, 500);
         
         // Salva o valor original da etiqueta para garantir que podemos restaurá-lo
         const originalLabelValue = planData.label || '';
         
-        // Sobrescreve a função atualizarCamposTipo do arquivo pacote-plano-novo.js
-        // para evitar que ela limpe o campo etiqueta na edição
-        var originalAtualizarCamposTipo = window.atualizarCamposTipo;
+        // Sobrescreve a função atualizarCamposTipo para manter os valores na edição
         window.atualizarCamposTipo = function() {
             var tipo = $('#tipo').val();
             console.log('Função atualizarCamposTipo sobrescrita. Tipo:', tipo);
@@ -338,7 +502,37 @@
                     $('#id3').colorpicker('setValue', '#FFFFFF');
                 }
                 if (!$('#id4').colorpicker('getValue')) {
-                    $('#id4').colorpicker('setValue', '#CC000C');
+                    $('#id4').colorpicker('setValue', '#CCA53F');
+                }
+            }
+            else if (tipo === 'Novos Jogadores' || tipo === 'Dias Promoção Novos Jogadores') {
+                console.log('Tipo Novos Jogadores: mostrando campos específicos');
+                $('#etiqueta, label[for="etiqueta"]').show();
+                $('.label-fields').show();
+                $('.novos-usuarios-fields').show();
+                $('#bloco-beneficio-futcoins').show();
+                $('.date-fields').hide(); // Oculta campos de data para Novos Jogadores
+                
+                // Usa o valor original ou define um valor padrão apenas se estiver vazio
+                if (!$('#etiqueta').val()) {
+                    if (originalLabelValue) {
+                        $('#etiqueta').val(originalLabelValue);
+                    } else {
+                        $('#etiqueta').val('NOVOS JOGADORES');
+                    }
+                }
+                
+                // Define valores padrão para as cores se não estiverem definidas
+                if (!$('#id3').colorpicker('getValue')) {
+                    $('#id3').colorpicker('setValue', '#FFFFFF');
+                }
+                if (!$('#id4').colorpicker('getValue')) {
+                    $('#id4').colorpicker('setValue', '#CCA53F');
+                }
+                
+                // Carrega os pacotes de futcoins ativos
+                if (typeof carregarPacotesFutcoins === 'function') {
+                    carregarPacotesFutcoins();
                 }
             }
         };
@@ -364,7 +558,34 @@
             formData.append('billing_cycle', $('#vigencia').val());
             formData.append('enabled', $('#enabled').prop('checked') ? 'true' : 'false');
             console.log('Valor de enabled enviado:', $('#enabled').prop('checked') ? 'true' : 'false');
-            formData.append('tipo', $('#tipo').val());
+            
+            // Converter o valor "Novos Jogadores" para um valor válido no backend
+            var tipo = $('#tipo').val();
+            console.log('Valor bruto do tipo antes da conversão:', tipo);
+            console.log('Elemento #tipo existe:', $('#tipo').length > 0);
+            console.log('Opções disponíveis no select:', $('#tipo option').map(function() { return $(this).val(); }).get());
+            
+            // Verificação adicional para evitar null
+            if (!tipo || tipo === '') {
+                console.error('ATENÇÃO: Tipo está nulo ou vazio! Usando valor padrão "Padrão"');
+                tipo = 'Padrão'; // Valor padrão seguro
+            }
+            
+            if (tipo === 'Novos Jogadores') {
+                console.log('Convertendo "Novos Jogadores" para valor válido aceito pelo backend');
+                tipo = 'Dias Promoção Novos Jogadores'; // Valor que o backend aceita
+            }
+            
+            // Verificação final para garantir que package_type nunca seja nulo
+            if (!tipo) {
+                console.error('ERRO CRÍTICO: Tipo continua nulo após correções. Forçando valor "Padrão"');
+                tipo = 'Padrão';
+            }
+            
+            formData.append('package_type', tipo);
+            formData.append('package_type_backup', tipo); // Adiciona uma cópia redundante
+            formData.append('tipo', tipo); // Adiciona outra cópia com nome alternativo
+            console.log('Tipo a ser enviado:', tipo);
             
             // Etiqueta e cores
             formData.append('label', $('#etiqueta').val() || '');
@@ -393,8 +614,52 @@
             console.log('Data de início a ser enviada:', startDate);
             console.log('Data de término a ser enviada:', endDate);
             
+            // Para o tipo "Novos Jogadores", definir datas padrão se não estiverem preenchidas
+            if ($('#tipo').val() === 'Novos Jogadores' && (!startDate || !endDate)) {
+                console.log('Definindo datas padrão para Novos Jogadores');
+                
+                // Data de início: hoje
+                var hoje = moment().format('DD/MM/YYYY HH:mm');
+                
+                // Data de término: 1 ano no futuro
+                var umAnoFuturo = moment().add(1, 'year').format('DD/MM/YYYY HH:mm');
+                
+                if (!startDate) {
+                    startDate = hoje;
+                    $('#datetimepicker').val(startDate);
+                    console.log('Data de início definida como:', startDate);
+                }
+                
+                if (!endDate) {
+                    endDate = umAnoFuturo;
+                    $('#datetimepicker2').val(endDate);
+                    console.log('Data de término definida como:', endDate);
+                }
+            }
+            
             if (startDate) formData.append('start_date', startDate);
             if (endDate) formData.append('end_date', endDate);
+            
+            // Campos específicos para Novos Jogadores
+            if ($('#tipo').val() === 'Novos Jogadores' || tipo === 'Dias Promoção Novos Jogadores') {
+                // Dias Promoção
+                var diasPromocao = $('#dias-promocao').val();
+                if (diasPromocao) {
+                    formData.append('promotion_days', diasPromocao);
+                }
+                
+                // Benefício Pacote Futcoins
+                var beneficioFutcoins = $('#beneficio-futcoins').val();
+                if (beneficioFutcoins) {
+                    formData.append('futcoins_package_benefit', beneficioFutcoins);
+                }
+                
+                // Qtde Renovações Pacote
+                var qtdeRenovacoes = $('#renovacoes-pacote').val();
+                if (qtdeRenovacoes) {
+                    formData.append('package_renewals', qtdeRenovacoes);
+                }
+            }
             
             // Outros campos
             formData.append('show_to', $('#exibir-para').val());
@@ -402,14 +667,11 @@
             // Códigos de produto - Adicionando logs para depuração
             var androidCode = $('#codigo-android').val() || '';
             var appleCode = $('#codigo-apple').val() || '';
-            var gatewayCode = $('#codigo-gateway').val() || '';
             console.log('Código Android a ser enviado:', androidCode);
             console.log('Código Apple a ser enviado:', appleCode);
-            console.log('Código Gateway a ser enviado:', gatewayCode);
             
             formData.append('android_product_code', androidCode);
             formData.append('apple_product_code', appleCode);
-            formData.append('gateway_product_code', gatewayCode);
             
             // Imagem
             var imageFile = $('#image')[0].files[0];

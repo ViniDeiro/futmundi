@@ -105,7 +105,7 @@
                                                         </div>
                                                     </td>
                                                     <td>{{ plan.name }}</td>
-                                                    <td>{{ plan.package_type }}</td>
+                                                    <td>{% if "Novos Jogadores" in plan.package_type or "Promoção Novos Jogadores" in plan.package_type %}Novos Jogadores{% else %}{{ plan.package_type }}{% endif %}</td>
                                                     <td>R$ {{ plan.full_price }}</td>
                                                     <td>{% if plan.promotional_price %}R$ {{ plan.promotional_price }}{% endif %}</td>
                                                     <td>{{ plan.created_at|date:"d/m/Y H:i" }}</td>

@@ -196,7 +196,7 @@
                                                                     Frequência Premiação
                                                                 </label>
                                                                 <select class="form-control js-example-basic-single"
-                                                                        id="frequencia" style="width: 80%">
+                                                                        id="frequencia" style="width: 100%">
                                                                     <option value="Semanal">Semanal</option>
                                                                     <option value="Mensal">Mensal</option>
                                                                     <option value="Anual">Anual</option>
@@ -204,66 +204,83 @@
                                                             </div>
                                                         </div>
                                                     </div>
-                                                    <div class="form-group col-lg-12">
+                                                    
+                                                    <!-- Dia/Hora de premiação - Reorganizado com melhor layout -->
+                                                    <div class="form-group">
                                                         <div class="row">
-                                                            <div class="col-lg-4 mtm20" id="campo-dia-semana">
-                                                                <label class="control-label" for="dia-premiacao">Dia da Semana</label>
-                                                                <select class="form-control js-example-basic-single"
-                                                                        id="dia-premiacao" style="width: 80%">
-                                                                    <option value="0">Domingo</option>
-                                                                    <option value="1">Segunda-feira</option>
-                                                                    <option value="2">Terça-feira</option>
-                                                                    <option value="3">Quarta-feira</option>
-                                                                    <option value="4">Quinta-feira</option>
-                                                                    <option value="5">Sexta-feira</option>
-                                                                    <option value="6">Sábado</option>
-                                                                </select>
+                                                            <!-- Dia da Semana -->
+                                                            <div class="col-lg-4" id="campo-dia-semana">
+                                                                <div class="form-group">
+                                                                    <label class="control-label" for="dia-premiacao">Dia da Semana</label>
+                                                                    <select class="form-control" id="dia-premiacao" style="width: 100%">
+                                                                        <option value="0">Domingo</option>
+                                                                        <option value="1">Segunda-feira</option>
+                                                                        <option value="2">Terça-feira</option>
+                                                                        <option value="3">Quarta-feira</option>
+                                                                        <option value="4">Quinta-feira</option>
+                                                                        <option value="5">Sexta-feira</option>
+                                                                        <option value="6">Sábado</option>
+                                                                    </select>
+                                                                </div>
                                                             </div>
-                                                            <div class="col-lg-4 mtm20" id="campo-dia-mes">
-                                                                <label class="control-label" for="mes-premiacao">Dia do Mês</label>
-                                                                <select class="form-control js-example-basic-single"
-                                                                        id="mes-premiacao" style="width: 80%">
-                                                                    {% for i in ""|rjust:"31" %}
-                                                                        <option value="{{ forloop.counter }}">{{ forloop.counter }}</option>
-                                                                    {% endfor %}
-                                                                </select>
+                                                            
+                                                            <!-- Dia do Mês -->
+                                                            <div class="col-lg-4" id="campo-dia-mes" style="display: none;">
+                                                                <div class="form-group">
+                                                                    <label class="control-label" for="mes-premiacao">Dia do Mês</label>
+                                                                    <select class="form-control" id="mes-premiacao" style="width: 100%">
+                                                                        {% for i in ""|rjust:"31" %}
+                                                                            <option value="{{ forloop.counter }}">{{ forloop.counter }}</option>
+                                                                        {% endfor %}
+                                                                    </select>
+                                                                </div>
                                                             </div>
-                                                            <div class="col-lg-4 mtm20" id="campo-mes-ano">
-                                                                <label class="control-label" for="mes-ano-premiacao">Mês do Ano</label>
-                                                                <select class="form-control js-example-basic-single"
-                                                                        id="mes-ano-premiacao" style="width: 80%">
-                                                                    <option value="1">Janeiro</option>
-                                                                    <option value="2">Fevereiro</option>
-                                                                    <option value="3">Março</option>
-                                                                    <option value="4">Abril</option>
-                                                                    <option value="5">Maio</option>
-                                                                    <option value="6">Junho</option>
-                                                                    <option value="7">Julho</option>
-                                                                    <option value="8">Agosto</option>
-                                                                    <option value="9">Setembro</option>
-                                                                    <option value="10">Outubro</option>
-                                                                    <option value="11">Novembro</option>
-                                                                    <option value="12">Dezembro</option>
-                                                                </select>
+                                                            
+                                                            <!-- Mês do Ano -->
+                                                            <div class="col-lg-4" id="campo-mes-ano" style="display: none;">
+                                                                <div class="form-group">
+                                                                    <label class="control-label" for="mes-ano-premiacao">Mês do Ano</label>
+                                                                    <select class="form-control" id="mes-ano-premiacao" style="width: 100%">
+                                                                        <option value="1">Janeiro</option>
+                                                                        <option value="2">Fevereiro</option>
+                                                                        <option value="3">Março</option>
+                                                                        <option value="4">Abril</option>
+                                                                        <option value="5">Maio</option>
+                                                                        <option value="6">Junho</option>
+                                                                        <option value="7">Julho</option>
+                                                                        <option value="8">Agosto</option>
+                                                                        <option value="9">Setembro</option>
+                                                                        <option value="10">Outubro</option>
+                                                                        <option value="11">Novembro</option>
+                                                                        <option value="12">Dezembro</option>
+                                                                    </select>
+                                                                </div>
                                                             </div>
-                                                            <div class="col-lg-4 mtm20" id="campo-dia-ano">
-                                                                <label class="control-label" for="dia-ano-premiacao">Dia do Ano</label>
-                                                                <select class="form-control js-example-basic-single"
-                                                                        id="dia-ano-premiacao" style="width: 80%">
-                                                                    {% for i in ""|rjust:"31" %}
-                                                                        <option value="{{ forloop.counter }}">{{ forloop.counter }}</option>
-                                                                    {% endfor %}
-                                                                </select>
+                                                            
+                                                            <!-- Dia do Ano -->
+                                                            <div class="col-lg-4" id="campo-dia-ano" style="display: none;">
+                                                                <div class="form-group">
+                                                                    <label class="control-label" for="dia-ano-premiacao">Dia do Ano</label>
+                                                                    <select class="form-control" id="dia-ano-premiacao" style="width: 100%">
+                                                                        {% for i in ""|rjust:"31" %}
+                                                                            <option value="{{ forloop.counter }}">{{ forloop.counter }}</option>
+                                                                        {% endfor %}
+                                                                    </select>
+                                                                </div>
                                                             </div>
-                                                            <div class="col-lg-4 mtm20">
-                                                                <label class="control-label" for="hora-premiacao">
-                                                                    Horário Premiação
-                                                                </label>
-                                                                <div class="input-group clockpicker" data-autoclose="true" style="width: 80%">
-                                                                    <input type="text" class="form-control" required>
-                                                                    <span class="input-group-addon">
-                                                                        <span class="fa fa-clock-o"></span>
-                                                                    </span>
+                                                            
+                                                            <!-- Horário de Premiação -->
+                                                            <div class="col-lg-4">
+                                                                <div class="form-group">
+                                                                    <label class="control-label" for="hora-premiacao">
+                                                                        Horário Premiação
+                                                                    </label>
+                                                                    <div class="input-group clockpicker" data-autoclose="true" style="width: 100%">
+                                                                        <input type="text" class="form-control" required>
+                                                                        <span class="input-group-addon">
+                                                                            <span class="fa fa-clock-o"></span>
+                                                                        </span>
+                                                                    </div>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -453,8 +470,61 @@
                 radioClass: 'iradio_square-green'
             });
 
+            // Gerenciamento da visibilidade dos campos de frequência
+            $('#frequencia').change(function() {
+                var value = $(this).val();
+                
+                // Esconde todos os campos primeiro
+                $('#campo-dia-semana').hide();
+                $('#campo-dia-mes').hide();
+                $('#campo-mes-ano').hide();
+                $('#campo-dia-ano').hide();
+                
+                if (value === 'Semanal') {
+                    // Mostra apenas seleção do dia da semana
+                    $('#campo-dia-semana').show();
+                } else if (value === 'Mensal') {
+                    // Mostra apenas seleção do dia do mês
+                    $('#campo-dia-mes').show();
+                } else if (value === 'Anual') {
+                    // Mostra seleção do mês e dia do ano
+                    $('#campo-mes-ano').show();
+                    $('#campo-dia-ano').show();
+                }
+            });
+            
             // Trigger inicial para mostrar/esconder campos de acordo com a frequência
             $('#frequencia').trigger('change');
+            
+            // CORREÇÃO: Preview de imagem na aba Requisitos
+            $('#image').on('change', function() {
+                var file = this.files[0];
+                if (file) {
+                    var reader = new FileReader();
+                    reader.onload = function(e) {
+                        $('#image-preview').html(
+                            '<img src="' + e.target.result + '" style="width: 48px; height: 48px; object-fit: contain; cursor: pointer;" onclick="document.getElementById(\'image\').click()">' +
+                            '<button type="button" class="btn btn-danger btn-xs" id="remove_image_btn" style="position: absolute; bottom: -7px; right: -30px;">' +
+                            '<i class="fa fa-trash"></i>' +
+                            '</button>'
+                        );
+                        
+                        // Adiciona handler para o botão de remover
+                        $('#remove_image_btn').on('click', function(e) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            $('#image').val('');
+                            $('#image-preview').html('<i class="fa fa-file-image-o" style="font-size: 48px; color: #ccc; cursor: pointer;" onclick="document.getElementById(\'image\').click()"></i>');
+                            if (!$('#remove_image').length) {
+                                $('form').append('<input type="hidden" id="remove_image" name="remove_image" value="1">');
+                            } else {
+                                $('#remove_image').val('1');
+                            }
+                        });
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
             
             // Variável para armazenar temporariamente a linha a ser excluída
             var rowToDelete = null;
@@ -482,6 +552,277 @@
                     $(this).find('.position-input').val(index + 1);
                 });
             }
+            
+            // CORREÇÃO: Adicionar função para o botão "Adicionar Posição"
+            var prizeCounter = 0;
+            
+            // Função para validar número inteiro positivo
+            function validatePositiveInteger(value) {
+                return /^\d+$/.test(value) && parseInt(value) > 0;
+            }
+            
+            $('#add-prize').click(function() {
+                prizeCounter++;
+                var newPosition = $('#prizes-table tbody tr').length + 1;
+                
+                var newRow = $('<tr>').attr('id', 'prize-row-' + prizeCounter);
+                
+                // Coluna Posição
+                newRow.append($('<td>').append(
+                    $('<input>').attr({
+                        'type': 'number',
+                        'class': 'form-control position-input',
+                        'required': true,
+                        'min': '1',
+                        'value': newPosition,
+                        'readonly': true,
+                        'style': 'background-color: #eee'
+                    })
+                ));
+                
+                // Coluna Imagem
+                var imageCell = $('<td>').addClass('center-middle').append(
+                    $('<div>').attr('class', 'prize-image-container').append(
+                        $('<input>').attr({
+                            'type': 'file',
+                            'class': 'prize-image',
+                            'accept': 'image/*',
+                            'style': 'display: none;'
+                        }),
+                        $('<div>').attr('class', 'prize-image-preview').append(
+                            $('<i>').attr({
+                                'class': 'fa fa-file-image-o',
+                                'style': 'font-size: 24px; color: #ccc; cursor: pointer;'
+                            }).click(function() {
+                                $(this).closest('.prize-image-container').find('.prize-image').click();
+                            })
+                        )
+                    )
+                );
+                
+                // Preview de imagem quando altera
+                imageCell.find('.prize-image').change(function() {
+                    var file = this.files[0];
+                    var preview = $(this).siblings('.prize-image-preview');
+                    
+                    if (file) {
+                        var reader = new FileReader();
+                        reader.onload = function(e) {
+                            preview.html(
+                                '<div class="image-container" style="position: relative; width: 32px; height: 32px; display: inline-block;">' +
+                                '<img src="' + e.target.result + '" height="32" width="32" alt="Imagem" style="object-fit: contain; cursor: pointer;">' +
+                                '<div class="image-remove-btn" style="position: absolute; bottom: 0; right: 0; background-color: #f8f8f8; border-radius: 50%; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.2);">' +
+                                '<i class="fa fa-trash" style="font-size: 10px; color: #FF5252;"></i>' +
+                                '</div>' +
+                                '</div>'
+                            );
+                            
+                            // Handler para limpar a imagem
+                            preview.find('.image-remove-btn').on('click', function(e) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                $(this).closest('.prize-image-container').find('.prize-image').val('');
+                                preview.html(
+                                    '<i class="fa fa-file-image-o" style="font-size: 24px; color: #ccc; cursor: pointer;"></i>'
+                                );
+                            });
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                });
+                
+                newRow.append(imageCell);
+                
+                // Coluna Prêmio
+                newRow.append($('<td>').append(
+                    $('<input>').attr({
+                        'type': 'number',
+                        'class': 'form-control prize-input',
+                        'required': true,
+                        'min': '0',
+                        'placeholder': 'Valor do prêmio'
+                    })
+                ));
+                
+                // Coluna Ações
+                newRow.append($('<td>').append(
+                    $('<button>').attr({
+                        'type': 'button',
+                        'class': 'btn btn-danger btn-xs remove-prize',
+                        'title': 'Excluir'
+                    }).html('<i class="fa fa-trash"></i>')
+                ));
+                
+                $('#prizes-table tbody').append(newRow);
+            });
+            
+            // CORREÇÃO: Adicionar função para o botão Salvar
+            $('#btn-save').click(function(e) {
+                e.preventDefault();
+                
+                // Mostra indicador de carregamento
+                $(this).html('<i class="fa fa-spinner fa-spin"></i> Salvando...');
+                $(this).prop('disabled', true);
+                
+                // Antes de enviar, verifica se há imagens que devem ser preservadas
+                $('#prizes-table tbody tr').each(function(index) {
+                    var container = $(this).find('.prize-image-container');
+                    var preview = container.find('.prize-image-preview');
+                    var img = preview.find('img');
+                    
+                    // Se tem imagem e não está marcada para remoção
+                    if (img.length && !container.hasClass('image-removed')) {
+                        var imgSrc = img.attr('src');
+                        // Adiciona um campo hidden para preservar a imagem
+                        if (!$('#preserve_prize_image_' + index).length) {
+                            $('form').append('<input type="hidden" id="preserve_prize_image_' + index + '" name="preserve_prize_image[]" value="' + imgSrc + '">');
+                        }
+                    }
+                });
+                
+                var formData = new FormData();
+                
+                // Nome é obrigatório
+                var nome = $('#nome').val();
+                if (!nome) {
+                    toastr.remove();
+                    toastr.error('O nome é obrigatório');
+                    $(this).html('<i class="glyphicon glyphicon-save mr5"></i> Salvar');
+                    $(this).prop('disabled', false);
+                    return;
+                }
+                formData.append('name', nome);
+                
+                // Participantes
+                var participantes = $('#participantes').val();
+                if (participantes === 'Comum') {
+                    formData.append('players', 'Comum');
+                } else if (participantes === 'Craque') {
+                    formData.append('players', 'Craque');
+                } else {
+                    formData.append('players', 'Todos'); // Todos
+                }
+                
+                // Converte a frequência para o formato do backend
+                var frequencia = $('#frequencia').val();
+                
+                // Mapeia os valores de frequência para o formato do backend
+                var frequencyMap = {
+                    'Semanal': 'weekly',
+                    'Mensal': 'monthly',
+                    'Anual': 'annual'
+                };
+                
+                formData.append('award_frequency', frequencyMap[frequencia]);
+                
+                // Imagem principal
+                var mainImage = $('#image')[0].files[0];
+                if (mainImage) {
+                    formData.append('image', mainImage);
+                }
+                
+                // Verifica se a imagem principal foi removida
+                if ($('#remove_image').length && $('#remove_image').val() === '1') {
+                    formData.append('remove_image', '1');
+                }
+                
+                // Dia/horário de premiação
+                if (frequencia === 'Semanal') {
+                    var weekday = parseInt($('#dia-premiacao').val());
+                    formData.append('weekday', weekday);
+                } else if (frequencia === 'Mensal') {
+                    var monthday = parseInt($('#mes-premiacao').val());
+                    if (monthday >= 1 && monthday <= 31) {
+                        formData.append('monthday', monthday);
+                    } else {
+                        toastr.error('O dia do mês deve estar entre 1 e 31');
+                        $(this).html('<i class="glyphicon glyphicon-save mr5"></i> Salvar');
+                        $(this).prop('disabled', false);
+                        return;
+                    }
+                } else if (frequencia === 'Anual') {
+                    var monthYearValue = parseInt($('#mes-ano-premiacao').val());
+                    var dayYearValue = parseInt($('#dia-ano-premiacao').val());
+                    
+                    if (dayYearValue >= 1 && dayYearValue <= 31) {
+                        formData.append('monthday', dayYearValue);
+                    } else {
+                        toastr.error('O dia do ano deve estar entre 1 e 31');
+                        $(this).html('<i class="glyphicon glyphicon-save mr5"></i> Salvar');
+                        $(this).prop('disabled', false);
+                        return;
+                    }
+                    // Também enviamos o mês do ano
+                    formData.append('month_value', monthYearValue);
+                }
+                
+                // Horário é sempre enviado
+                formData.append('award_time', $('.clockpicker input').val());
+                
+                // Prêmios
+                $('#prizes-table tbody tr').each(function(index) {
+                    var position = $(this).find('.position-input').val();
+                    var prize = $(this).find('.prize-input').val();
+                    var prizeImage = $(this).find('.prize-image')[0].files[0];
+                    var existingImage = $(this).find('.prize-image-preview img').attr('src');
+                    var preserveImage = $('#preserve_prize_image_' + index).val();
+                    
+                    if (position && prize) {
+                        formData.append('prize_positions[]', position);
+                        formData.append('prize_descriptions[]', prize);
+                        
+                        // Verifica se há uma imagem nova para enviar
+                        if (prizeImage) {
+                            formData.append('prize_images[]', prizeImage);
+                            formData.append('prize_image_positions[]', index);
+                        }
+                        // Se não há nova imagem mas existe uma imagem atual e não foi marcada para remoção
+                        else if ((existingImage || preserveImage) && !$('#remove_prize_image_' + index).length) {
+                            formData.append('prize_existing_images[]', existingImage || preserveImage);
+                            formData.append('prize_existing_image_positions[]', index);
+                        }
+                        // Se a imagem foi marcada para remoção
+                        else if ($('#remove_prize_image_' + index).length) {
+                            formData.append('remove_prize_images[]', index);
+                        }
+                    }
+                });
+                
+                // Envia os dados para o servidor
+                $.ajax({
+                    url: $('#form-futliga').data('url'),
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    headers: {
+                        'X-CSRFToken': $('meta[name="csrf-token"]').attr('content')
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            toastr.remove();
+                            toastr.success('Futliga clássica salva com sucesso!');
+                            setTimeout(function() {
+                                window.location.href = $('#form-futliga').data('list-url');
+                            }, 2000);
+                        } else {
+                            $('#btn-save').html('<i class="glyphicon glyphicon-save mr5"></i> Salvar');
+                            $('#btn-save').prop('disabled', false);
+                            toastr.remove();
+                            toastr.error(response.message || 'Erro ao salvar futliga clássica');
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        $('#btn-save').html('<i class="glyphicon glyphicon-save mr5"></i> Salvar');
+                        $('#btn-save').prop('disabled', false);
+                        toastr.remove();
+                        var errorMessage = xhr.responseJSON ? xhr.responseJSON.message : 'Erro ao salvar futliga clássica';
+                        toastr.error(errorMessage);
+                        console.error('Erro ao salvar:', status, error);
+                        console.error('Resposta do servidor:', xhr.responseText);
+                    }
+                });
+            });
         });
     </script>
     {% block extra_js %}{% endblock %}

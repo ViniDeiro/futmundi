@@ -119,6 +119,7 @@
                                                                         <option value="">Selecione</option>
                                                                         <option value="Padrão">Padrão</option>
                                                                         <option value="Promocional">Promocional</option>
+                                                                        <option value="Novos Jogadores">Novos Jogadores</option>
                                                                     </select>
                                                                 </div>
                                                             </div>
@@ -150,7 +151,35 @@
                                                                     </div>
                                                                 </div>
                                                             </div>
-                                                        </div>                                    
+                                                        </div>
+                                                        <div class="form-group col-lg-12 beneficio-fields" style="display: none;">
+                                                            <div class="row">
+                                                                <div class="col-lg-4">
+                                                                    <input type="number" id="qtd-renovacoes" class="form-control" min="0">
+                                                                    <label class="form-control-placeholder" for="qtd-renovacoes">Qtde Renovações Pacote</label>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="form-group col-lg-12 novos-usuarios-fields" style="display: none;">
+                                                            <div class="row">
+                                                                <div class="col-lg-4">
+                                                                    <input type="number" id="dias-promocao" class="form-control" min="1">
+                                                                    <label class="form-control-placeholder" for="dias-promocao">Dias Promoção</label>
+                                                                </div>
+                                                            </div>
+                                                            <div class="row mt-4" id="bloco-beneficio-futcoins" style="display: none;">
+                                                                <div class="col-lg-4 mtm20">
+                                                                    <label class="control-label" for="beneficio-futcoins">Benefício Pacote Futcoins<span class="text-danger">*</span></label>
+                                                                    <select class="form-control js-example-basic-single" id="beneficio-futcoins" name="beneficio-futcoins" style="width: 100%">
+                                                                        <option value="">Selecione um pacote</option>
+                                                                    </select>
+                                                                </div>
+                                                                <div class="col-lg-4">
+                                                                    <input type="number" id="renovacoes-pacote" name="renovacoes-pacote" class="form-control" min="1" value="1">
+                                                                    <label class="form-control-placeholder" for="renovacoes-pacote">Qtde Renovações Pacote<span class="text-danger">*</span></label>
+                                                                </div>
+                                                            </div>
+                                                        </div>
                                                     </form>
                                                 </div>
                                             </div>
@@ -194,10 +223,6 @@
                                                                 <div class="col-lg-4">
                                                                     <input type="text" id="codigo-apple" class="form-control input-medium">
                                                                     <label class="form-control-placeholder" for="codigo-apple">Código do produto (Apple)</label>
-                                                                </div>
-                                                                <div class="col-lg-4">
-                                                                    <input type="text" id="codigo-gateway" class="form-control input-medium">
-                                                                    <label class="form-control-placeholder" for="codigo-gateway">Código do produto (Gateway)</label>
                                                                 </div>
                                                             </div>
                                                         </div>

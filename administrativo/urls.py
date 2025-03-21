@@ -18,10 +18,12 @@ urlpatterns = [
     path('campeonato/excluir-em-massa/', views.campeonato_excluir_em_massa, name='campeonato_excluir_em_massa'),
     path('campeonato/resultados/<int:id>/', views.campeonato_resultados, name='campeonato_resultados'),
     path('campeonato/toggle-status/', views.campeonato_toggle_status, name='campeonato_toggle_status'),
-    path('campeonato/importar-rodadas', views.campeonato_importar_rodadas, name='campeonato_importar_rodadas'),
+    path('campeonato/importar-rodadas', views.campeonato_importar_jogos, name='campeonato_importar_rodadas'),
     path('campeonato/get-rounds-by-stage', views.get_rounds_by_stage, name='get_rounds_by_stage'),
     path('campeonato/get-matches-by-round', views.get_matches_by_round, name='get_matches_by_round'),
     path('campeonato/get-stages-by-template', views.get_stages_by_template, name='get_stages_by_template'),
+    path('campeonato/get-stages-by-championship', views.get_stages_by_championship, name='get_stages_by_championship'),
+    path('campeonato/check-matches/', views.check_championship_matches, name='check_championship_matches'),
     path('templates/', views.templates, name='templates'),
     path('template/novo/', views.template_novo, name='template_novo'),
     path('template/editar/<int:id>/', views.template_editar, name='template_editar'),
@@ -80,15 +82,18 @@ urlpatterns = [
     path('futligas/jogadores/excluir/<int:id>/', views.futliga_jogador_excluir, name='futliga_jogador_excluir'),
     path('futligas/jogadores/importar/', views.futliga_jogador_importar, name='futliga_jogador_importar'),
     path('futligas/jogadores/exportar/', views.futliga_jogador_exportar, name='futliga_jogador_exportar'),
+    path('futligas/jogadores/premio/<int:premio_id>/', views.futliga_premio_excluir, name='futliga_premio_excluir'),
     path('futligas/niveis/', views.futliga_niveis, name='futligas_niveis'),
     path('futligas/premiacao/salvar/', views.futliga_premiacao_salvar, name='futliga_premiacao_salvar'),
     path('futligas/premio/novo/', views.futliga_premio_novo, name='futliga_premio_novo'),
+    path('futligas/premio/<int:premio_id>/excluir/', views.futliga_premio_excluir, name='futliga_premio_excluir'),
     path('futligas/niveis/novo/', views.futliga_nivel_novo, name='futliga_nivel_novo'),
     path('futligas/niveis/editar/<int:id>/', views.futliga_nivel_editar, name='futliga_nivel_editar'),
     path('futligas/niveis/excluir/<int:id>/', views.futliga_nivel_excluir, name='futliga_nivel_excluir'),
     path('futligas/niveis/importar/', views.futliga_nivel_importar, name='futliga_nivel_importar'),
     path('futligas/niveis/exportar/', views.futliga_nivel_exportar, name='futliga_nivel_exportar'),
     path('futligas/niveis/importar-imagens/', views.futliga_nivel_importar_imagens, name='futliga_nivel_importar_imagens'),
+    path('futligas/niveis/ordem/', views.futliga_nivel_ordem, name='futliga_nivel_ordem'),
     
     # Locais
     path('continentes/', views.continentes, name='continentes'),
@@ -132,4 +137,6 @@ urlpatterns = [
     path('administradores/excluir-massa/', views.administradores_excluir_massa, name='administradores_excluir_massa'),
     path('login/', views.login, name='login'),
     path('logout/', views.logout, name='logout'),
-] 
+    path('api/pacotes-futcoins-ativos/', views.pacotes_futcoins_ativos, name='pacotes_futcoins_ativos'),
+
+    path('administrativo/api/pacotes-futcoins-ativos/', views.pacotes_futcoins_ativos, name='pacotes_futcoins_ativos_alt'),] 

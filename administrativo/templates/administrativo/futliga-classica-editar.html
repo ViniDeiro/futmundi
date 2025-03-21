@@ -31,215 +31,203 @@ $(document).ready(function() {
 </a>
 {% endblock %}
 
+{% block modals %}
+{{ block.super }}
+<!-- Modal de confirmação para exclusão de prêmio -->
+<div class="modal fade" id="modal-alert2" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                <h4 class="modal-title">Confirmação</h4>
+            </div>
+            <div class="modal-body">
+                <p>Tem certeza que deseja excluir este prêmio?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-danger" id="confirm-delete-prize">Excluir</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
 {% block extra_js %}
 <script>
-    // Função para atualizar as posições - movida para escopo global
-    function updatePositions() {
-        $('#prizes-table tbody tr').each(function(index) {
-            $(this).find('.position-input').val(index + 1);
-        });
+// Função para atualizar as posições dos prêmios
+function updatePositions() {
+    $('#prizes-table tbody tr').each(function(index) {
+        $(this).find('.position-input').val(index + 1);
+    });
+}
+
+$(document).ready(function() {
+    // Renomeia os handlers do botão original para que eles não sejam acionados
+    $('#btn-save').attr('id', 'btn-save-original').hide();
+    
+    // Renomeamos o botão add-prize-temp para add-prize para nosso código funcionar
+    $('#add-prize-temp').attr('id', 'add-prize');
+    
+    // Preenche os campos com os dados da Futliga
+    $('#nome').val('{{ futliga.name }}');
+    
+    // Preencher o campo de participantes corretamente
+    var players = {{ futliga.players }};
+    if (players === 1) {
+        $('#participantes').val('Comum');
+    } else if (players === 2) {
+        $('#participantes').val('Craque');
+    } else {
+        $('#participantes').val('Todos');
     }
     
-    $(document).ready(function() {
-        // Restauramos o ID original do botão para usar nosso handler
-        $('#add-prize-temp').attr('id', 'add-prize');
-        
-        // Preenche os campos com os dados da Futliga
-        $('#nome').val('{{ futliga.name }}');
-        
-        // Preencher o campo de participantes corretamente
-        var players = {{ futliga.players }};
-        if (players === 1) {
-            $('#participantes').val('Comum');
-        } else if (players === 2) {
-            $('#participantes').val('Craque');
-        } else {
-            $('#participantes').val('Todos');
-        }
-        // Verificar se o valor foi definido corretamente, caso contrário selecionar por índice
-        if ($('#participantes').val() !== 'Comum' && players === 1) {
-            $('#participantes option').eq(1).prop('selected', true);
-        }
-        if ($('#participantes').val() !== 'Craque' && players === 2) {
-            $('#participantes option').eq(2).prop('selected', true);
-        }
-        $('#participantes').trigger('change');
-        
-        // Frequência de premiação - corrigindo mapeamento dos valores
-        var frequencia = '{{ futliga.award_frequency }}';
+    // Verificar se o valor foi definido corretamente, caso contrário selecionar por índice
+    if ($('#participantes').val() !== 'Comum' && players === 1) {
+        $('#participantes option').eq(1).prop('selected', true);
+    }
+    if ($('#participantes').val() !== 'Craque' && players === 2) {
+        $('#participantes option').eq(2).prop('selected', true);
+    }
+    
+    // Frequência de premiação - corrigindo mapeamento dos valores
+    var frequencia = '{{ futliga.award_frequency }}';
+    if (frequencia === 'weekly') {
+        $('#frequencia').val('Semanal');
+    } else if (frequencia === 'monthly') {
+        $('#frequencia').val('Mensal');
+    } else if (frequencia === 'annual') {
+        $('#frequencia').val('Anual');
+    }
+    
+    // Forçar a seleção de frequência mesmo se os valores não coincidirem exatamente
+    if ($('#frequencia').val() === null) {
         if (frequencia === 'weekly') {
-            $('#frequencia').val('Semanal');
+            $('#frequencia option[value="Semanal"]').prop('selected', true);
         } else if (frequencia === 'monthly') {
-            $('#frequencia').val('Mensal');
+            $('#frequencia option[value="Mensal"]').prop('selected', true);
         } else if (frequencia === 'annual') {
-            $('#frequencia').val('Anual');
+            $('#frequencia option[value="Anual"]').prop('selected', true);
+        }
+    }
+    
+    // Disparamos o evento change para mostrar/esconder campos apropriados
+    $('#frequencia').trigger('change');
+    
+    // IMPORTANTE: Armazenar os valores antes de disparar o evento de mudança
+    // que irá mostrar/esconder os campos
+    var weekday = '{{ futliga.weekday }}';
+    var monthday = '{{ futliga.monthday }}';
+    var month_value = '{{ futliga.month_value }}';
+    
+    // Após mostrar os campos correspondentes, preenchemos com os valores
+    if (frequencia === 'weekly' && weekday) {
+        $('#dia-premiacao').val(weekday);
+    } else if (frequencia === 'monthly' && monthday) {
+        $('#mes-premiacao').val(monthday);
+    } else if (frequencia === 'annual') {
+        // Para frequência anual, definimos AMBOS os campos sempre
+        if (monthday) {
+            $('#dia-ano-premiacao').val(monthday);
         }
         
-        // Forçar a seleção de frequência mesmo se os valores não coincidirem exatamente
-        if ($('#frequencia').val() === null) {
-            if (frequencia === 'weekly') {
-                $('#frequencia option[value="Semanal"]').prop('selected', true);
-            } else if (frequencia === 'monthly') {
-                $('#frequencia option[value="Mensal"]').prop('selected', true);
-            } else if (frequencia === 'annual') {
-                $('#frequencia option[value="Anual"]').prop('selected', true);
-            }
+        // Verificamos se month_value existe E não está vazio
+        if (month_value && month_value.trim() !== '') {
+            $('#mes-ano-premiacao').val(month_value);
+        } else {
+            // Se month_value não existir, definimos um valor padrão (janeiro)
+            $('#mes-ano-premiacao').val('1');
         }
         
-        // IMPORTANTE: Armazenar os valores antes de disparar o evento de mudança
-        // que irá mostrar/esconder os campos
-        var weekday = '{{ futliga.weekday }}';
-        var monthday = '{{ futliga.monthday }}';
-        var month_value = '{{ futliga.month_value }}';
-        
-        // Agora disparamos o evento change para mostrar/esconder campos apropriados
-        $('#frequencia').trigger('change');
-        
-        // Após mostrar os campos correspondentes, preenchemos com os valores
-        if (frequencia === 'weekly' && weekday) {
-            $('#dia-premiacao').val(weekday);
-        } else if (frequencia === 'monthly' && monthday) {
-            $('#mes-premiacao').val(monthday);
-        } else if (frequencia === 'annual') {
-            // Para frequência anual, definimos AMBOS os campos sempre
-            if (monthday) {
-                $('#dia-ano-premiacao').val(monthday);
-            }
-            
-            // Verificamos se month_value existe E não está vazio
-            if (month_value && month_value.trim() !== '') {
-                $('#mes-ano-premiacao').val(month_value);
-            } else {
-                // Se month_value não existir, definimos um valor padrão (janeiro)
-                $('#mes-ano-premiacao').val('1');
-            }
-            
-            // Verificação adicional para garantir que os campos estejam visíveis
-            $('#campo-mes-ano').show();
-            $('#campo-dia-ano').show();
+        // Verificação adicional para garantir que os campos estejam visíveis
+        $('#campo-mes-ano').show();
+        $('#campo-dia-ano').show();
+    }
+    
+    // Horário de premiação
+    {% if futliga.award_time %}
+    $('.clockpicker input').val('{{ futliga.award_time|time:"H:i" }}');
+    {% endif %}
+    
+    // Imagem principal
+    {% if futliga.image %}
+    $('#image-preview').html(
+        '<img src="{{ futliga.image.url }}" style="width: 48px; height: 48px; object-fit: contain; cursor: pointer;" onclick="document.getElementById(\'image\').click()">' +
+        '<button type="button" class="btn btn-danger btn-xs" id="remove_image_btn" style="position: absolute; bottom: -7px; right: -30px;">' +
+        '<i class="fa fa-trash"></i>' +
+        '</button>'
+    );
+    
+    // Adiciona handler para o botão de remover
+    $('#remove_image_btn').on('click', function() {
+        $('#image').val('');
+        $('#image-preview').html('<i class="fa fa-file-image-o" style="font-size: 48px; color: #ccc; cursor: pointer;" onclick="document.getElementById(\'image\').click()"></i>');
+        // Adicionar campo hidden para indicar que a imagem deve ser removida
+        if (!$('#remove_image').length) {
+            $('form').append('<input type="hidden" id="remove_image" name="remove_image" value="1">');
+        } else {
+            $('#remove_image').val('1');
         }
+    });
+    {% endif %}
+    
+    // DIAGNOSTIC LOGS - Data from backend
+    console.log('================ INÍCIO DOS LOGS DE DIAGNÓSTICO ================');
+    console.log('Futliga ID: {{ futliga.id }}, Nome: {{ futliga.name }}');
+    
+    // Verificar variáveis de prêmios
+    var prizes1Count = {{ prizes|length }};
+    var prizes2Count = {{ futliga.prizes.all|length }};
+    
+    console.log('Quantidade de prêmios (prizes explícito): ' + prizes1Count);
+    console.log('Quantidade de prêmios (futliga.prizes.all): ' + prizes2Count);
+    
+    // Log detalhado dos prêmios da variável prizes
+    console.log('PRÊMIOS CARREGADOS DA VARIÁVEL prizes:');
+    {% for prize in prizes %}
+        console.log("Adicionando prêmio existente #{{ forloop.counter }}: Position=" + {{ prize.position }} + ", ID=" + {{ prize.id }} + ", Prize=" + "{{ prize.prize|escapejs }}" + ", HasImage=" + {% if prize.image %}true{% else %}false{% endif %});
+    {% endfor %}
+    
+    // Log detalhado dos prêmios da relação futliga.prizes
+    console.log('PRÊMIOS CARREGADOS DA RELAÇÃO futliga.prizes:');
+    {% for prize in futliga.prizes.all %}
+        console.log('Prêmio #{{ forloop.counter }}: ID={{ prize.id }}, Posição={{ prize.position }}, Valor={{ prize.prize }}, Tem imagem?: ' + {{ prize.image|yesno:'true,false' }});
+    {% endfor %}
+    
+    console.log('Qual variável está sendo usada no loop principal: prizes');
+    console.log('================ FIM DOS LOGS DE DIAGNÓSTICO ================');
+    
+    // Limpa qualquer conteúdo existente na tabela de prêmios antes de adicionar novos
+    $("#prizes-table tbody").empty();
+    
+    // Usa a variável prizes explícita em vez de futliga.prizes.all
+    {% for prize in prizes %}
+        var position = {{ prize.position }};
+        var prize_id = {{ prize.id }};
+        var prize_value = "{{ prize.prize|escapejs }}";
+        var has_image = {% if prize.image %}true{% else %}false{% endif %};
         
-        // Horário de premiação
-        {% if futliga.award_time %}
-        $('.clockpicker input').val('{{ futliga.award_time|time:"H:i" }}');
-        {% endif %}
+        console.log("Adicionando prêmio existente #{{ forloop.counter }}: Position=" + position + ", ID=" + prize_id + ", Prize=" + prize_value + ", HasImage=" + has_image);
         
-        // Imagem principal
-        {% if futliga.image %}
-        $('#image-preview').html(
-            '<img src="{{ futliga.image.url }}" style="width: 48px; height: 48px; object-fit: contain; cursor: pointer;" onclick="document.getElementById(\'image\').click()">' +
-            '<button type="button" class="btn btn-danger btn-xs" id="remove_image_btn" style="position: absolute; bottom: -7px; right: -30px;">' +
-            '<i class="fa fa-trash"></i>' +
-            '</button>'
-        );
+        // Adicionar o prêmio ao HTML
+        var newRow = $('<tr>').attr('id', 'prize-row-' + prize_id);
         
-        // Adiciona handler para o botão de remover
-        $('#remove_image_btn').on('click', function() {
-            $('#image').val('');
-            $('#image-preview').html('<i class="fa fa-file-image-o" style="font-size: 48px; color: #ccc; cursor: pointer;" onclick="document.getElementById(\'image\').click()"></i>');
-            // Adicionar campo hidden para indicar que a imagem deve ser removida
-            if (!$('#remove_image').length) {
-                $('form').append('<input type="hidden" id="remove_image" name="remove_image" value="1">');
-            } else {
-                $('#remove_image').val('1');
-            }
-        });
-        {% endif %}
-        
-        // Preview de imagem quando alterada
-        $('#image').on('change', function() {
-            var file = this.files[0];
-            if (file) {
-                var reader = new FileReader();
-                reader.onload = function(e) {
-                    $('#image-preview').html(
-                        '<img src="' + e.target.result + '" style="width: 48px; height: 48px; object-fit: contain; cursor: pointer;" onclick="document.getElementById(\'image\').click()">' +
-                        '<button type="button" class="btn btn-danger btn-xs" id="remove_image_btn" style="position: absolute; bottom: -7px; right: -30px;">' +
-                        '<i class="fa fa-trash"></i>' +
-                        '</button>'
-                    );
-                    
-                    // Adiciona handler para o botão de remover
-                    $('#remove_image_btn').on('click', function() {
-                        $('#image').val('');
-                        $('#image-preview').html('<i class="fa fa-file-image-o" style="font-size: 48px; color: #ccc; cursor: pointer;" onclick="document.getElementById(\'image\').click()"></i>');
-                        if (!$('#remove_image').length) {
-                            $('form').append('<input type="hidden" id="remove_image" name="remove_image" value="1">');
-                        } else {
-                            $('#remove_image').val('1');
-                        }
-                    });
-                };
-                reader.readAsDataURL(file);
-            }
-        });
-        
-        // Limpar tabela de prêmios antes de adicionar os existentes
-        $('#prizes-table tbody').empty();
-        
-        // Frequência de premiação
-        $('#frequencia').change(function() {
-            var value = $(this).val();
-            
-            // Esconde todos os campos primeiro
-            $('#campo-dia-semana').hide();
-            $('#campo-dia-mes').hide();
-            $('#campo-mes-ano').hide();
-            $('#campo-dia-ano').hide();
-            
-            if (value === 'Semanal') {
-                // Mostra apenas seleção do dia da semana
-                $('#campo-dia-semana').show();
-            } else if (value === 'Mensal') {
-                // Mostra apenas seleção do dia do mês
-                $('#campo-dia-mes').show();
-            } else if (value === 'Anual') {
-                // Mostra seleção do mês e dia do ano
-                $('#campo-mes-ano').show();
-                $('#campo-dia-ano').show();
-            }
-        });
-        
-        // Adicionar botão para remover TODAS as imagens de prêmios
-        var removalButton = $('<div class="row mt-3 mb-3"><div class="col-12"><button type="button" id="btn-remove-all-prize-images" class="btn btn-warning"><i class="fa fa-trash mr-2"></i>Remover TODAS as Imagens de Prêmios</button><span class="ml-3 text-danger removal-status"></span></div></div>');
-        $('.tab-content .tab-pane').eq(2).prepend(removalButton);
-
-        // Handler para o botão de remoção em massa
-        $('#btn-remove-all-prize-images').on('click', function() {
-            if (confirm('Tem certeza que deseja remover TODAS as imagens de prêmios? Esta ação não pode ser desfeita.')) {
-                // Muda a aparência do botão
-                $(this).html('<i class="fa fa-check mr-2"></i>Todas as imagens serão removidas ao salvar');
-                $(this).removeClass('btn-warning').addClass('btn-success');
-                $('.removal-status').html('✓ Todas as imagens serão removidas ao salvar');
-                
-                // Adiciona um campo hidden simples indicando para remover TODAS as imagens
-                $('form').append('<input type="hidden" id="remove_all_prize_images" name="remove_all_prize_images" value="1">');
-                
-                // Atualiza visualmente todas as imagens
-                $('.prize-image-preview').each(function() {
-                    $(this).html('<i class="fa fa-file-image-o" style="font-size: 24px; color: #ccc;"></i>');
-                });
-                
-                // Limpa todos os inputs de arquivo
-                $('.prize-image').val('');
-            }
-        });
-        
-        // Prêmios
-        {% for prize in futliga.prizes.all %}
-        var prizeCounter = {{ forloop.counter }};
-        var newRow = $('<tr>').attr('id', 'prize-row-' + prizeCounter);
-        
-        // Coluna Posição - readonly pois o sistema já reorganiza automaticamente
+        // Coluna Posição
         newRow.append($('<td>').append(
             $('<input>').attr({
                 'type': 'number',
                 'class': 'form-control position-input',
+                'name': 'prize_positions[]',
                 'required': true,
                 'min': '1',
-                'value': '{{ prize.position }}',
+                'value': position,
                 'readonly': true,
                 'style': 'background-color: #eee'
+            }),
+            $('<input>').attr({
+                'type': 'hidden',
+                'name': 'prize_ids[]',
+                'value': prize_id
             })
         ));
         
@@ -249,6 +237,7 @@ $(document).ready(function() {
                 $('<input>').attr({
                     'type': 'file',
                     'class': 'prize-image',
+                    'name': 'prize_image_' + prize_id,
                     'accept': 'image/*',
                     'style': 'display: none;'
                 })
@@ -256,112 +245,71 @@ $(document).ready(function() {
         );
         
         // Se já tem imagem, exibe preview
-        {% if prize.image %}
-        imageCell.find('.prize-image-container').append(
-            $('<div>').attr('class', 'prize-image-preview').html(
-                '<div class="image-container" style="position: relative; width: 32px; height: 32px; display: inline-block;">' +
-                '<img src="{{ prize.image.url }}" height="32" width="32" alt="Imagem" style="object-fit: contain; cursor: pointer;" onclick="$(this).closest(\'.prize-image-container\').find(\'.prize-image\').click()">' +
-                '<div class="image-remove-btn" style="position: absolute; bottom: 0; right: 0; background-color: #f8f8f8; border-radius: 50%; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.2);">' +
-                '<i class="fa fa-trash" style="font-size: 10px; color: #FF5252;"></i>' +
-                '</div>' +
-                '</div>'
-            )
-        );
-        
-        // Handler para limpar a imagem
-        imageCell.find('.image-remove-btn').on('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
+        if (has_image) {
+            imageCell.find('.prize-image-container').append(
+                $('<div>').attr('class', 'prize-image-preview').html(
+                    '<div class="image-container" style="position: relative; width: 32px; height: 32px; display: inline-block;">' +
+                    {% if prize.image %}'<img src="{{ prize.image.url }}" height="32" width="32" alt="Imagem" style="object-fit: contain; cursor: pointer;" onclick="$(this).closest(\'.prize-image-container\').find(\'.prize-image\').click()">'{% else %}'<i class="fa fa-file-image-o" style="font-size: 24px; color: #ccc; cursor: pointer;" onclick="$(this).closest(\'.prize-image-container\').find(\'.prize-image\').click()"></i>'{% endif %} +
+                    '<div class="image-remove-btn" style="position: absolute; bottom: 0; right: 0; background-color: #f8f8f8; border-radius: 50%; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.2);">' +
+                    '<i class="fa fa-trash" style="font-size: 10px; color: #FF5252;"></i>' +
+                    '</div>' +
+                    '</div>'
+                )
+            );
             
-            // Obter a posição do prêmio
-            var position = $(this).closest('tr').find('.position-input').val();
-            
-            // Obter o ID do prêmio
-            var prizeId = $(this).closest('tr').find('.glyphicon-trash').data('prize-id');
-            
-            if (prizeId) {
-                // Se temos o ID, usamos ele diretamente
-                var confirmText = "Tem certeza que deseja remover a imagem do prêmio na posição " + position + "?";
-                if (confirm(confirmText)) {
-                    // Atualiza a interface visualmente primeiro
-                    var container = $(this).closest('.prize-image-container');
-                    container.find('.prize-image').val('');
-                    container.find('.prize-image-preview').html(
-                        '<i class="fa fa-file-image-o" style="font-size: 24px; color: #ccc; cursor: pointer;" onclick="$(this).closest(\'.prize-image-container\').find(\'.prize-image\').click()"></i>'
-                    );
-                    
-                    // Adicionar um input escondido com flag de remover imagem
-                    $('form').append('<input type="hidden" name="remove_prize_image_prize_id" value="' + prizeId + '">');
-                    
-                    // Adicionalmente, marcar para processamento do JS
-                    $('form').append('<input type="hidden" name="marked_for_image_removal" value="' + prizeId + '">');
-                    
-                    alert("Imagem do prêmio #" + prizeId + " será removida quando você salvar.");
+            // Handler para limpar a imagem
+            imageCell.find('.image-remove-btn').on('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // Obter o ID do prêmio
+                var prizeId = $(this).closest('tr').find('.fa-trash').data('prize-id');
+                
+                // Adicionar um campo escondido para remover a imagem ao salvar
+                if (prizeId && !$('#prize_remove_image_' + prizeId).length) {
+                    $('form').append('<input type="hidden" id="prize_remove_image_' + prizeId + '" name="prize_remove_images[]" value="' + prizeId + '">');
                 }
-            } else {
-                // Se não temos ID, usamos a posição com cuidado especial
-                var confirmText = "Tem certeza que deseja remover a imagem do prêmio na posição " + position + "?";
-                if (confirm(confirmText)) {
-                    // Atualiza a interface visualmente primeiro
-                    var container = $(this).closest('.prize-image-container');
-                    container.find('.prize-image').val('');
-                    container.find('.prize-image-preview').html(
-                        '<i class="fa fa-file-image-o" style="font-size: 24px; color: #ccc; cursor: pointer;" onclick="$(this).closest(\'.prize-image-container\').find(\'.prize-image\').click()"></i>'
-                    );
-                    
-                    // Adicionar um input escondido com flag de remover imagem
-                    if (position > 0) {
-                        // Usando o formato específico que o backend espera
-                        $('form').append('<input type="hidden" name="remove_prize_image_' + position + '" value="' + position + '">');
-                        
-                        // Adicionalmente, marcar para processamento do JS
-                        $('form').append('<input type="hidden" name="marked_for_position_removal" value="' + position + '">');
-                        
-                        alert("Imagem do prêmio na posição " + position + " será removida quando você salvar.");
-                    }
-                }
-            }
-        });
-        {% else %}
-        imageCell.find('.prize-image-container').append(
-            $('<div>').attr('class', 'prize-image-preview').html(
-                '<i class="fa fa-file-image-o" style="font-size: 24px; color: #ccc; cursor: pointer;"></i>'
-            )
-        );
-        
-        // Adicionar evento de clique no ícone para prêmios sem imagem
-        imageCell.find('.prize-image-preview').on('click', function() {
-            $(this).closest('.prize-image-container').find('.prize-image').click();
-        });
-        {% endif %}
+                
+                // Atualiza a interface visualmente
+                var container = $(this).closest('.prize-image-container');
+                container.find('.prize-image').val('');
+                container.find('.prize-image-preview').html(
+                    '<i class="fa fa-file-image-o" style="font-size: 24px; color: #ccc; cursor: pointer;" onclick="$(this).closest(\'.prize-image-container\').find(\'.prize-image\').click()"></i>'
+                );
+            });
+        } else {
+            imageCell.find('.prize-image-container').append(
+                $('<div>').attr('class', 'prize-image-preview').html(
+                    '<i class="fa fa-file-image-o" style="font-size: 24px; color: #ccc; cursor: pointer;"></i>'
+                )
+            );
+            
+            // Adicionar evento de clique no ícone para prêmios sem imagem
+            imageCell.find('.prize-image-preview i').on('click', function() {
+                $(this).closest('.prize-image-container').find('.prize-image').click();
+            });
+        }
         
         newRow.append(imageCell);
         
-        // Coluna Prêmio
+        // Coluna Valor do Prêmio
         newRow.append($('<td>').append(
             $('<input>').attr({
-                'type': 'number',
+                'type': 'text',
                 'class': 'form-control prize-input',
+                'name': 'prize_values[]',
                 'required': true,
-                'min': '0',
-                'value': '0'
+                'value': prize_value
             })
         ));
         
         // Coluna Ações
         newRow.append($('<td>').append(
-            $('<div>').append(
-                $('<button>').attr({
-                    'type': 'button',
-                    'class': 'btn btn-danger btn-xs mr5 remove-prize',
-                    'title': 'Excluir'
-                }).append(
-                    $('<i>').attr({
-                        'class': 'glyphicon glyphicon-trash',
-                        'data-prize-id': {{ prize.id }}
-                    })
-                )
-            )
+            $('<button>').attr({
+                'type': 'button',
+                'class': 'btn btn-danger btn-xs remove-prize',
+                'title': 'Excluir'
+            }).html('<i class="fa fa-trash" data-prize-id="' + prize_id + '"></i>')
         ));
         
         $('#prizes-table tbody').append(newRow);
@@ -369,7 +317,7 @@ $(document).ready(function() {
         // Handler para quando uma nova imagem é selecionada
         imageCell.find('.prize-image').change(function() {
             var file = this.files[0];
-            var preview = $(this).siblings('.prize-image-preview');
+            var preview = $(this).closest('.prize-image-container').find('.prize-image-preview');
             
             if (file) {
                 var reader = new FileReader();
@@ -383,7 +331,7 @@ $(document).ready(function() {
                         '</div>'
                     );
                     
-                    // Handler para limpar a imagem (para prêmios novos)
+                    // Handler para limpar a imagem
                     preview.find('.image-remove-btn').on('click', function(e) {
                         e.preventDefault();
                         e.stopPropagation();
@@ -391,471 +339,23 @@ $(document).ready(function() {
                         // Obter a posição do prêmio
                         var position = $(this).closest('tr').find('.position-input').val();
                         
-                        // Obter o ID do prêmio
-                        var prizeId = $(this).closest('tr').find('.glyphicon-trash').data('prize-id');
-                        
-                        if (prizeId) {
-                            // Se temos o ID, usamos ele diretamente
-                            var confirmText = "Tem certeza que deseja remover a imagem do prêmio na posição " + position + "?";
-                            if (confirm(confirmText)) {
-                                // Atualiza a interface visualmente primeiro
-                                var container = $(this).closest('.prize-image-container');
-                                container.find('.prize-image').val('');
-                                container.find('.prize-image-preview').html(
-                                    '<i class="fa fa-file-image-o" style="font-size: 24px; color: #ccc; cursor: pointer;" onclick="$(this).closest(\'.prize-image-container\').find(\'.prize-image\').click()"></i>'
-                                );
-                                
-                                // Adicionar um input escondido com flag de remover imagem
-                                $('form').append('<input type="hidden" name="remove_prize_image_prize_id" value="' + prizeId + '">');
-                                
-                                // Adicionalmente, marcar para processamento do JS
-                                $('form').append('<input type="hidden" name="marked_for_image_removal" value="' + prizeId + '">');
-                                
-                                alert("Imagem do prêmio #" + prizeId + " será removida quando você salvar.");
-                            }
-                        } else {
-                            // Se não temos ID, usamos a posição com cuidado especial
-                            var confirmText = "Tem certeza que deseja remover a imagem do prêmio na posição " + position + "?";
-                            if (confirm(confirmText)) {
-                                // Atualiza a interface visualmente primeiro
-                                var container = $(this).closest('.prize-image-container');
-                                container.find('.prize-image').val('');
-                                container.find('.prize-image-preview').html(
-                                    '<i class="fa fa-file-image-o" style="font-size: 24px; color: #ccc; cursor: pointer;" onclick="$(this).closest(\'.prize-image-container\').find(\'.prize-image\').click()"></i>'
-                                );
-                                
-                                // Adicionar um input escondido com flag de remover imagem
-                                if (position > 0) {
-                                    // Usando o formato específico que o backend espera
-                                    $('form').append('<input type="hidden" name="remove_prize_image_' + position + '" value="' + position + '">');
-                                    
-                                    // Adicionalmente, marcar para processamento do JS
-                                    $('form').append('<input type="hidden" name="marked_for_position_removal" value="' + position + '">');
-                                    
-                                    alert("Imagem do prêmio na posição " + position + " será removida quando você salvar.");
-                                }
-                            }
+                        // Adicionar um campo escondido para remover a imagem ao salvar
+                        if (position && !$('#prize_remove_image_' + position).length) {
+                            $('form').append('<input type="hidden" id="prize_remove_image_' + position + '" name="prize_remove_images[]" value="' + position + '">');
+                            console.log('Marcada nova imagem da posição ' + position + ' para remoção');
                         }
+                        
+                        // Atualiza a interface visualmente
+                        $(this).closest('.prize-image-container').find('.prize-image').val('');
+                        preview.html(
+                            '<i class="fa fa-file-image-o" style="font-size: 24px; color: #ccc; cursor: pointer;" onclick="$(this).closest(\'.prize-image-container\').find(\'.prize-image\').click()"></i>'
+                        );
                     });
                 };
                 reader.readAsDataURL(file);
             }
         });
-        {% endfor %}
-        
-        // Garantir que temos uma variável prizeCounter inicializada
-        if (typeof prizeCounter === 'undefined') {
-            var prizeCounter = $('#prizes-table tbody tr').length;
-        }
-        
-        // Desativa qualquer handler anterior e registra nosso handler único para o botão
-        $('#add-prize').off('click').on('click', function() {
-            prizeCounter++;
-            var newPosition = $('#prizes-table tbody tr').length + 1;
-            
-            var newRow = $('<tr>').attr('id', 'prize-row-' + prizeCounter);
-            
-            // Coluna Posição
-            newRow.append($('<td>').append(
-                $('<input>').attr({
-                    'type': 'number',
-                    'class': 'form-control position-input',
-                    'required': true,
-                    'min': '1',
-                    'value': newPosition,
-                    'readonly': true,
-                    'style': 'background-color: #eee'
-                })
-            ));
-            
-            // Coluna Imagem
-            var imageCell = $('<td>').addClass('center-middle').append(
-                $('<div>').attr('class', 'prize-image-container').append(
-                    $('<input>').attr({
-                        'type': 'file',
-                        'class': 'prize-image',
-                        'accept': 'image/*',
-                        'style': 'display: none;'
-                    }),
-                    $('<div>').attr('class', 'prize-image-preview').append(
-                        $('<i>').attr({
-                            'class': 'fa fa-file-image-o',
-                            'style': 'font-size: 24px; color: #ccc; cursor: pointer;'
-                        }).click(function() {
-                            $(this).closest('.prize-image-container').find('.prize-image').click();
-                        })
-                    )
-                )
-            );
-            
-            // Preview de imagem quando altera
-            imageCell.find('.prize-image').change(function() {
-                var file = this.files[0];
-                var preview = $(this).siblings('.prize-image-preview');
-                
-                if (file) {
-                    var reader = new FileReader();
-                    reader.onload = function(e) {
-                        preview.html(
-                            '<div class="image-container" style="position: relative; width: 32px; height: 32px; display: inline-block;">' +
-                            '<img src="' + e.target.result + '" height="32" width="32" alt="Imagem" style="object-fit: contain; cursor: pointer;" onclick="$(this).closest(\'.prize-image-container\').find(\'.prize-image\').click()">' +
-                            '<div class="image-remove-btn" style="position: absolute; bottom: 0; right: 0; background-color: #f8f8f8; border-radius: 50%; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.2);">' +
-                            '<i class="fa fa-trash" style="font-size: 10px; color: #FF5252;"></i>' +
-                            '</div>' +
-                            '</div>'
-                        );
-                        
-                        // Handler para limpar a imagem (para prêmios novos)
-                        preview.find('.image-remove-btn').on('click', function(e) {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            
-                            // Obter a posição do prêmio
-                            var position = $(this).closest('tr').find('.position-input').val();
-                            
-                            // Obter o ID do prêmio
-                            var prizeId = $(this).closest('tr').find('.glyphicon-trash').data('prize-id');
-                            
-                            if (prizeId) {
-                                // Se temos o ID, usamos ele diretamente
-                                var confirmText = "Tem certeza que deseja remover a imagem do prêmio na posição " + position + "?";
-                                if (confirm(confirmText)) {
-                                    // Atualiza a interface visualmente primeiro
-                                    var container = $(this).closest('.prize-image-container');
-                                    container.find('.prize-image').val('');
-                                    container.find('.prize-image-preview').html(
-                                        '<i class="fa fa-file-image-o" style="font-size: 24px; color: #ccc; cursor: pointer;" onclick="$(this).closest(\'.prize-image-container\').find(\'.prize-image\').click()"></i>'
-                                    );
-                                    
-                                    // Adicionar um input escondido com flag de remover imagem
-                                    $('form').append('<input type="hidden" name="remove_prize_image_prize_id" value="' + prizeId + '">');
-                                    
-                                    // Adicionalmente, marcar para processamento do JS
-                                    $('form').append('<input type="hidden" name="marked_for_image_removal" value="' + prizeId + '">');
-                                    
-                                    alert("Imagem do prêmio #" + prizeId + " será removida quando você salvar.");
-                                }
-                            } else {
-                                // Se não temos ID, usamos a posição com cuidado especial
-                                var confirmText = "Tem certeza que deseja remover a imagem do prêmio na posição " + position + "?";
-                                if (confirm(confirmText)) {
-                                    // Atualiza a interface visualmente primeiro
-                                    var container = $(this).closest('.prize-image-container');
-                                    container.find('.prize-image').val('');
-                                    container.find('.prize-image-preview').html(
-                                        '<i class="fa fa-file-image-o" style="font-size: 24px; color: #ccc; cursor: pointer;" onclick="$(this).closest(\'.prize-image-container\').find(\'.prize-image\').click()"></i>'
-                                    );
-                                    
-                                    // Adicionar um input escondido com flag de remover imagem
-                                    if (position > 0) {
-                                        // Usando o formato específico que o backend espera
-                                        $('form').append('<input type="hidden" name="remove_prize_image_' + position + '" value="' + position + '">');
-                                        
-                                        // Adicionalmente, marcar para processamento do JS
-                                        $('form').append('<input type="hidden" name="marked_for_position_removal" value="' + position + '">');
-                                        
-                                        alert("Imagem do prêmio na posição " + position + " será removida quando você salvar.");
-                                    }
-                                }
-                            }
-                        });
-                    };
-                    reader.readAsDataURL(file);
-                }
-            });
-            
-            newRow.append(imageCell);
-            
-            // Coluna Prêmio
-            newRow.append($('<td>').append(
-                $('<input>').attr({
-                    'type': 'number',
-                    'class': 'form-control prize-input',
-                    'required': true,
-                    'min': '0',
-                    'value': '0'
-                })
-            ));
-            
-            // Coluna Ações
-            newRow.append($('<td>').append(
-                $('<div>').append(
-                    $('<button>').attr({
-                        'type': 'button',
-                        'class': 'btn btn-danger btn-xs mr5 remove-prize',
-                        'title': 'Excluir'
-                    }).append(
-                        $('<i>').attr({
-                            'class': 'glyphicon glyphicon-trash'
-                        })
-                    )
-                )
-            ));
-            
-            $('#prizes-table tbody').append(newRow);
-        });
-        
-        // Inicializar a coleção de posições para remover imagens
-        var removedImagesPositions = [];
-        
-        // Handler para o botão de salvar
-        $('#btn-save-edit').on('click', function() {
-            // Desativa o botão para prevenir duplos cliques
-            $(this).prop('disabled', true);
-            $(this).html('<i class="fa fa-spinner fa-spin mr5"></i> Processando...');
-            
-            // Nova validação de valores dos campos de prêmio
-            var validForm = true;
-            $('#prizes-table .prize-input').each(function() {
-                if ($(this).val() === '') {
-                    toastr.error('Preencha o valor do prêmio em todas as posições');
-                    validForm = false;
-                    // Reabilita o botão
-                    $('#btn-save-edit').prop('disabled', false);
-                    $('#btn-save-edit').html('<i class="glyphicon glyphicon-save mr5"></i> Salvar');
-                    return false; // sai do loop each
-                }
-            });
-            
-            if (!validForm) return;
-            
-            var formData = new FormData();
-            
-            formData.append('name', $('#nome').val());
-            
-            // Definindo players com base na seleção
-            var playerValue = 0;
-            if ($('#participantes').val() === 'Comum') {
-                playerValue = 1;
-            } else if ($('#participantes').val() === 'Craque') {
-                playerValue = 2;
-            }
-            formData.append('players', playerValue);
-            
-            // Definindo frequência com base na seleção
-            var frequencyValue = 'annual';
-            if ($('#frequencia').val() === 'Semanal') {
-                frequencyValue = 'weekly';
-            } else if ($('#frequencia').val() === 'Mensal') {
-                frequencyValue = 'monthly';
-            }
-            formData.append('award_frequency', frequencyValue);
-            
-            // Verificar se a flag para remover TODAS as imagens está presente
-            if ($('#remove_all_prize_images').length && $('#remove_all_prize_images').val() === '1') {
-                formData.append('remove_all_prize_images', '1');
-                console.log('FLAG DE REMOÇÃO EM MASSA ATIVADA');
-            } else {
-                // Tratamento especial para remover imagens individuais
-                // Baseado nos campos ocultos que adicionamos anteriormente
-                
-                // Processa remoções por ID
-                $('input[name="marked_for_image_removal"]').each(function() {
-                    var prizeId = $(this).val();
-                    if (prizeId && prizeId > 0) {
-                        formData.append('remove_prize_image_prize_id', prizeId);
-                        console.log('Marcando ID de prêmio para remoção de imagem: ' + prizeId);
-                    }
-                });
-                
-                // Processa remoções por posição
-                $('input[name="marked_for_position_removal"]').each(function() {
-                    var position = $(this).val();
-                    if (position && position > 0) {
-                        formData.append('remove_prize_image_' + position, position);
-                        console.log('Marcando posição para remoção de imagem: ' + position);
-                    }
-                });
-                
-                // Garantir que as remoções de imagem são processadas corretamente
-                $('input[name^="remove_prize_image_"]').each(function() {
-                    var name = $(this).attr('name');
-                    var value = $(this).val();
-                    
-                    // Só adiciona se ainda não foi processado acima e se tem um valor válido
-                    if (name !== 'remove_prize_image_prize_id' && value && value > 0) {
-                        formData.append(name, value);
-                        console.log('Adicionando parâmetro para remoção de imagem: ' + name + '=' + value);
-                    }
-                });
-            }
-            
-            // Premiação - campos dependem da frequência
-            if ($('#frequencia').val() === 'Semanal') {
-                formData.append('weekday', $('#dia-premiacao').val());
-            } else if ($('#frequencia').val() === 'Mensal') {
-                formData.append('monthday', $('#mes-premiacao').val());
-            } else if ($('#frequencia').val() === 'Anual') {
-                formData.append('monthday', $('#dia-ano-premiacao').val());
-                formData.append('month_value', $('#mes-ano-premiacao').val());
-            }
-            
-            formData.append('award_time', $('.clockpicker input').val());
-            
-            // Imagem Principal
-            if ($('#image')[0].files[0]) {
-                formData.append('image', $('#image')[0].files[0]);
-            }
-            
-            // Indicar se a imagem principal deve ser removida
-            if ($('#remove_image').length && $('#remove_image').val() === '1') {
-                formData.append('remove_image', '1');
-            }
-            
-            // Prêmios a serem removidos
-            $('input[name="remove_prizes[]"]').each(function() {
-                formData.append('remove_prizes[]', $(this).val());
-            });
-            
-            // Coletando todas as posições marcadas para remoção
-            var imageRemovalIds = [];
-            var imageRemovalPositions = [];
-            
-            // Coletamos IDs (método preferido)
-            $('input[name="remove_prize_image_id"]').each(function() {
-                var id = $(this).val();
-                if (id && !isNaN(parseInt(id))) {
-                    id = parseInt(id);
-                    if (id > 0) {
-                        imageRemovalIds.push(id);
-                        formData.append('remove_prize_image_ids[]', id);
-                        console.log('Marcando ID para remoção de imagem: ' + id);
-                    }
-                }
-            });
-            
-            // Coletamos posições (método alternativo)
-            $('input[name="remove_prize_image_position"]').each(function() {
-                var position = $(this).val();
-                if (position && !isNaN(parseInt(position))) {
-                    position = parseInt(position);
-                    if (position > 0) {
-                        imageRemovalPositions.push(position);
-                        formData.append('remove_prize_image_positions[]', position);
-                        console.log('Marcando posição para remoção de imagem: ' + position);
-                    }
-                }
-            });
-            
-            console.log('Total de imagens marcadas para remoção por ID: ' + imageRemovalIds.length);
-            console.log('Total de imagens marcadas para remoção por posição: ' + imageRemovalPositions.length);
-            
-            // IMPORTANTE: Verificar se existe o campo de remoção em massa de imagens
-            var removeAllImages = $('#remove_all_prize_images').length > 0 && $('#remove_all_prize_images').val() === '1';
-            
-            // Prêmios
-            $('#prizes-table tbody tr').each(function() {
-                var position = $(this).find('.position-input').val();
-                var prize = $(this).find('.prize-input').val();
-                var prizeImage = $(this).find('.prize-image')[0].files[0];
-                
-                // Garantir que position seja sempre um número válido
-                if (!position || position === 'undefined' || isNaN(parseInt(position))) {
-                    // Se a posição for undefined, usar o índice da linha +1
-                    position = $(this).index() + 1;
-                    console.log('Corrigindo posição undefined para: ' + position);
-                }
-                
-                // IMPORTANTE: Enviar mesmo se o prize estiver vazio para garantir que o registro seja salvo
-                if (position) {
-                    formData.append('prize_positions[]', position);
-                    // Se o valor estiver vazio, usa 0 como padrão
-                    var prizeValue = prize || '0';
-                    formData.append('prize_descriptions[]', prizeValue);
-                    console.log('Adicionando prêmio: posição=' + position + ', valor=' + prizeValue);
-                    
-                    if (prizeImage) {
-                        formData.append('prize_images[]', prizeImage);
-                        // Associar a imagem com a posição
-                        formData.append('prize_image_positions[]', position);
-                        console.log('Adicionando nova imagem para prêmio na posição: ' + position);
-                    } else {
-                        // Indica que não há nova imagem para este prêmio
-                        formData.append('prize_images_empty[]', position);
-                        console.log('Sem nova imagem para prêmio na posição: ' + position);
-                        
-                        // Verificar se este prêmio foi marcado para ter sua imagem removida
-                        if (imageRemovalPositions.includes(position)) {
-                            console.log('Este prêmio tem sua imagem marcada para remoção: ' + position);
-                        }
-                    }
-                }
-            });
-
-            // IMPORTANTE: fazer chamada apenas para a URL de edição
-            console.log('Enviando para a URL de edição: /futliga/classica/editar/{{ futliga.id }}/');
-            
-            // Antes do AJAX, imprime no console todos os pares chave-valor no FormData
-            console.log('--- CONTEÚDO COMPLETO DO FORMDATA ---');
-            for (var pair of formData.entries()) {
-                console.log(pair[0] + ': ' + pair[1]);
-            }
-            console.log('------------------------------------');
-            
-            // Adicionar um campo explícito indicando quais posições não têm novas imagens
-            // para garantir que o backend saiba tratar corretamente
-            var allPrizePositions = [];
-            var positionsWithImages = [];
-            
-            // Coletamos todas as posições de prêmios
-            $('#prizes-table tbody tr').each(function() {
-                var position = $(this).find('.position-input').val();
-                if (position && !isNaN(parseInt(position))) {
-                    allPrizePositions.push(parseInt(position));
-                }
-            });
-            
-            // Obtemos as posições que têm novas imagens
-            for (var pair of formData.entries()) {
-                if (pair[0] === 'prize_image_positions[]') {
-                    positionsWithImages.push(parseInt(pair[1]));
-                }
-            }
-            
-            // Para cada posição sem imagem nova, adicionamos explicitamente ao formData
-            allPrizePositions.forEach(function(position) {
-                if (!positionsWithImages.includes(position)) {
-                    formData.append('prize_without_image[]', position);
-                    console.log('Marcando explicitamente posição sem imagem: ' + position);
-                    
-                    // Se temos uma posição marcada para remover imagem, garantimos que seja enviada corretamente
-                    if (imageRemovalPositions.includes(position) && !removeAllImages) {
-                        console.log('Reforçando remoção de imagem para posição: ' + position);
-                        formData.append('remove_prize_image_positions[]', position);
-                    }
-                }
-            });
-            
-            $.ajax({
-                url: '/futliga/classica/editar/{{ futliga.id }}/',
-                type: 'POST',
-                data: formData,
-                processData: false,
-                contentType: false,
-                success: function(response) {
-                    console.log('Resposta do servidor:', response);
-                    if (response.success) {
-                        toastr.success('Futliga Clássica atualizada com sucesso!');
-                        setTimeout(function() {
-                            window.location.href = '{% url "administrativo:futligas_classicas" %}';
-                        }, 1500);
-                    } else {
-                        toastr.error(response.message || 'Erro ao atualizar Futliga Clássica');
-                        // Reabilita o botão em caso de erro
-                        $('#btn-save-edit').prop('disabled', false);
-                        $('#btn-save-edit').html('<i class="glyphicon glyphicon-save mr5"></i> Salvar');
-                    }
-                },
-                error: function(xhr) {
-                    console.error('Erro na requisição:', xhr);
-                    toastr.error(xhr.responseJSON?.message || 'Erro ao atualizar Futliga Clássica');
-                    // Reabilita o botão em caso de erro
-                    $('#btn-save-edit').prop('disabled', false);
-                    $('#btn-save-edit').html('<i class="glyphicon glyphicon-save mr5"></i> Salvar');
-                }
-            });
-        });
-    });
+    {% endfor %}
     
     // Variável para armazenar temporariamente a linha a ser excluída e o ID do prêmio
     var rowToDelete = null;
@@ -899,27 +399,236 @@ $(document).ready(function() {
             prizeIdToDelete = null;
         }
     });
-</script>
-{% endblock %}
 
-<!-- Modal de confirmação para exclusão de prêmio -->
-<div class="modal inmodal" id="modal-alert2" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-sm">
-        <div class="modal-content animated fadeIn">
-            <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal">
-                    <span aria-hidden="true">&times;</span><span class="sr-only">Fechar</span>
-                </button>
-                <h4 class="modal-title">Confirmar exclusão</h4>
-            </div>
-            <div class="modal-body">
-                <p>Deseja realmente excluir este prêmio?</p>
-                <input type="hidden" id="prize-to-delete" value="">
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-white" data-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-danger" id="confirm-delete-prize">Excluir</button>
-            </div>
-        </div>
-    </div>
-</div> 
+    // Handler para o botão add-prize (para adicionar novos prêmios)
+    $('#add-prize').click(function() {
+        // Contador para novos prêmios
+        var prizeCounter = $('#prizes-table tbody tr').length + 1;
+        
+        // Próxima posição (baseada nas linhas existentes)
+        var newPosition = prizeCounter;
+        
+        var newRow = $('<tr>').attr('id', 'prize-row-novo-' + prizeCounter);
+        
+        // Coluna Posição
+        newRow.append($('<td>').append(
+            $('<input>').attr({
+                'type': 'number',
+                'class': 'form-control position-input',
+                'name': 'prize_positions[]',
+                'required': true,
+                'min': '1',
+                'value': newPosition,
+                'readonly': true,
+                'style': 'background-color: #eee'
+            })
+        ));
+        
+        // Coluna Imagem
+        var imageCell = $('<td>').addClass('center-middle').append(
+            $('<div>').attr('class', 'prize-image-container').append(
+                $('<input>').attr({
+                    'type': 'file',
+                    'class': 'prize-image',
+                    'name': 'prize_image_' + prizeCounter,
+                    'accept': 'image/*',
+                    'style': 'display: none;'
+                }),
+                $('<div>').attr('class', 'prize-image-preview').append(
+                    $('<i>').attr({
+                        'class': 'fa fa-file-image-o',
+                        'style': 'font-size: 24px; color: #ccc; cursor: pointer;'
+                    }).click(function() {
+                        $(this).closest('.prize-image-container').find('.prize-image').click();
+                    })
+                )
+            )
+        );
+        
+        // Preview de imagem quando altera
+        imageCell.find('.prize-image').change(function() {
+            var file = this.files[0];
+            var preview = $(this).closest('.prize-image-container').find('.prize-image-preview');
+            
+            if (file) {
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.html(
+                        '<div class="image-container" style="position: relative; width: 32px; height: 32px; display: inline-block;">' +
+                        '<img src="' + e.target.result + '" height="32" width="32" alt="Imagem" style="object-fit: contain; cursor: pointer;" onclick="$(this).closest(\'.prize-image-container\').find(\'.prize-image\').click()">' +
+                        '<div class="image-remove-btn" style="position: absolute; bottom: 0; right: 0; background-color: #f8f8f8; border-radius: 50%; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.2);">' +
+                        '<i class="fa fa-trash" style="font-size: 10px; color: #FF5252;"></i>' +
+                        '</div>' +
+                        '</div>'
+                    );
+                    
+                    // Handler para limpar a imagem
+                    preview.find('.image-remove-btn').on('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        $(this).closest('.prize-image-container').find('.prize-image').val('');
+                        preview.html(
+                            '<i class="fa fa-file-image-o" style="font-size: 24px; color: #ccc; cursor: pointer;"></i>'
+                        );
+                    });
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+        
+        newRow.append(imageCell);
+        
+        // Coluna Prêmio
+        newRow.append($('<td>').append(
+            $('<input>').attr({
+                'type': 'text',
+                'class': 'form-control prize-input',
+                'name': 'prize_values[]',
+                'required': true,
+                'min': '0',
+                'placeholder': 'Valor do prêmio'
+            })
+        ));
+        
+        // Coluna Ações
+        newRow.append($('<td>').append(
+            $('<button>').attr({
+                'type': 'button',
+                'class': 'btn btn-danger btn-xs remove-prize',
+                'title': 'Excluir'
+            }).html('<i class="fa fa-trash"></i>')
+        ));
+        
+        $('#prizes-table tbody').append(newRow);
+        
+        // Atualiza as posições
+        updatePositions();
+    });
+
+    // Handler para o botão de salvar
+    $('#btn-save-edit').click(function(e) {
+        e.preventDefault();
+        
+        // Impede múltiplos cliques
+        var $btn = $(this);
+        if ($btn.hasClass('disabled')) return;
+        
+        $btn.addClass('disabled').html('<i class="fa fa-spinner fa-spin"></i> Processando...');
+        
+        // Preparar FormData para enviar dados
+        var formData = new FormData();
+        
+        // Nome da futliga (obrigatório)
+        var name = $('#nome').val();
+        if (!name) {
+            new PNotify({
+                title: 'Atenção',
+                text: 'Por favor, informe o nome da Futliga.',
+                type: 'error',
+                styling: 'bootstrap3'
+            });
+            $btn.removeClass('disabled').html('Salvar');
+            return;
+        }
+        formData.append('name', name);
+        
+        // Tipo de participantes
+        var players = $('#participantes').val() === 'Comum' ? 1 : ($('#participantes').val() === 'Craque' ? 2 : 0);
+        formData.append('players', players);
+        
+        // Frequência de premiação
+        var frequencyMap = { 'Semanal': 'weekly', 'Mensal': 'monthly', 'Anual': 'annual' };
+        var award_frequency = frequencyMap[$('#frequencia').val()];
+        formData.append('award_frequency', award_frequency);
+        
+        // Dados específicos da frequência
+        if (award_frequency === 'weekly') {
+            formData.append('weekday', $('#dia-premiacao').val());
+        } else if (award_frequency === 'monthly') {
+            formData.append('monthday', $('#mes-premiacao').val());
+        } else if (award_frequency === 'annual') {
+            formData.append('monthday', $('#dia-ano-premiacao').val());
+            formData.append('month_value', $('#mes-ano-premiacao').val());
+        }
+        
+        // Horário de premiação
+        formData.append('award_time', $('.clockpicker input').val());
+        
+        // Imagem principal
+        var mainImage = document.getElementById('image').files[0];
+        if (mainImage) formData.append('image', mainImage);
+        if ($('#remove_image').length > 0) formData.append('remove_image', '1');
+        
+        // Processar prêmios
+        var prizesToRemove = new Set();
+        
+        // Coletar IDs dos prêmios a remover
+        $('input[name="remove_prizes[]"]').each(function() {
+            prizesToRemove.add($(this).val());
+            formData.append('remove_prizes[]', $(this).val());
+        });
+        
+        // Processar prêmios da tabela
+        $('#prizes-table tbody tr').each(function() {
+            var $row = $(this);
+            var position = $row.find('.position-input').val();
+            var prize_value = $row.find('.prize-input').val();
+            var prizeId = $row.find('input[name="prize_ids[]"]').val() || $row.find('.fa-trash').data('prize-id');
+            
+            if (prizeId && prizesToRemove.has(prizeId)) return;
+            
+            formData.append('prize_positions[]', position);
+            formData.append('prize_values[]', prize_value);
+            
+            // Sempre enviar o ID do prêmio se existir
+            if (prizeId) {
+                formData.append('prize_ids[]', prizeId);
+                
+                // Verificar se a imagem deve ser removida
+                if ($('#prize_remove_image_' + prizeId).length) {
+                    formData.append('prize_remove_images[]', prizeId);
+                }
+            }
+            
+            // Nova imagem para o prêmio
+            var imageInput = $row.find('.prize-image')[0];
+            if (imageInput?.files?.length > 0) {
+                formData.append('prize_image_' + prizeId, imageInput.files[0]);
+                console.log('Enviando imagem para prêmio ID:', prizeId);
+            }
+        });
+        
+        // Enviar dados para o servidor
+        $.ajax({
+            url: "{% url 'administrativo:futliga_classica_editar' futliga.id %}",
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(response) {
+                if (response.success) {
+                    window.location.href = "{% url 'administrativo:futligas_classicas' %}";
+                } else {
+                    new PNotify({
+                        title: 'Erro',
+                        text: response.message || 'Erro ao atualizar Futliga Clássica',
+                        type: 'error',
+                        styling: 'bootstrap3'
+                    });
+                    $btn.removeClass('disabled').html('Salvar');
+                }
+            },
+            error: function(xhr, status, error) {
+                new PNotify({
+                    title: 'Erro',
+                    text: 'Erro ao processar requisição: ' + error,
+                    type: 'error',
+                    styling: 'bootstrap3'
+                });
+                $btn.removeClass('disabled').html('Salvar');
+            }
+        });
+    });
+});
+</script>
+{% endblock %} 

@@ -25,80 +25,8 @@
 
         <!-- Favicon -->
         <link rel="icon" href="{% static 'administrativo/img/futmundi.ico' %}" type="image/png">
-        
-        <!-- Estilos específicos para edição de campeonato -->
-        <style>
-            .highlight-row {
-                background-color: #d9edf7;
-            }
-            .premium-icon {
-                color: #e5c100;
-                margin-right: 5px;
-            }
-            .form-wrapper {
-                margin-top: 10px;
-            }
-            .team-logo {
-                max-width: 30px;
-                max-height: 30px;
-            }
-            .no-team {
-                color: #999;
-                font-style: italic;
-            }
-            
-            /* Custom styles for DualListbox */
-            .bootstrap-duallistbox-container .row {
-                display: flex !important;
-                flex-direction: row !important;
-                justify-content: space-between !important;
-            }
-            
-            .bootstrap-duallistbox-container .box1,
-            .bootstrap-duallistbox-container .box2 {
-                width: 48% !important;
-                float: none !important;
-            }
-            
-            .bootstrap-duallistbox-container select {
-                height: 200px !important;
-                width: 100% !important;
-            }
-            
-            /* Espaçamento e posicionamento dos controles */
-            .bootstrap-duallistbox-container .btn-group {
-                margin: 5px 0 !important;
-            }
-            
-            table.dataTable tbody tr.selected {
-                background-color: #B0BED9;
-            }
-            
-            /* Status de processamento para tabela de grupos */
-            .processando {
-                color: #888;
-                font-style: italic;
-            }
-            
-            .nao-processado {
-                color: #d9534f;
-            }
-            
-            .processado {
-                color: #5cb85c;
-            }
-            
-            /* Ocultar botões na visualização de histórico */
-            .visualizacao-historico .acoes {
-                display: none;
-            }
-            
-            #jogos-finalizados tr {
-                cursor: pointer;
-            }
-        </style>
     </head>
-    <body>
+    <body data-generic-team-image="{% static 'administrativo/img/team-placeholder.svg' %}">
         <div id="wrapper">
             <nav class="navbar-default navbar-static-side">
                 <div class="sidebar-collapse">
@@ -221,28 +149,28 @@
                                                     <div class="row col-lg-6 mt10">
                                                         <div class="col-lg-6">
                                                             <div class="col-lg-12">
-                                                                <input type="text" id="nome" name="name" class="form-control" value="{{ championship.name }}" required>
+                                                                <input type="text" id="nome" name="name" class="form-control" required>
                                                                 <label class="form-control-placeholder" for="nome">Nome</label>
                                                             </div> 
                                                             <div class="col-lg-12 mt11">
                                                                 <label class="control-label">Template</label>
                                                                 <select class="form-control js-basic-single" id="template" name="template" required>
                                                                     {% for template in templates %}
-                                                                    <option value="{{ template.id }}" {% if template.id == championship.template_id %}selected{% endif %}>{{ template.name }}</option>
+                                                                    <option value="{{ template.id }}">{{ template.name }}</option>
                                                                     {% endfor %}
                                                                 </select> 
                                                             </div>
                                                             <div class="col-lg-12 mt15">
-                                                                <div class="i-checks"><label><input type="checkbox" name="is_active" {% if championship.is_active %}checked{% endif %}> Ativo</label></div>
+                                                                <div class="i-checks"><label><input type="checkbox" name="is_active" checked> Ativo</label></div>
                                                             </div>
                                                         </div>
                                                         <div class="col-lg-6">
                                                             <div class="col-lg-6">
-                                                                <input type="number" min="0" id="temporada" name="season" class="form-control" value="{{ championship.season }}" required>
+                                                                <input type="number" min="0" id="temporada" name="season" class="form-control" required>
                                                                 <label class="form-control-placeholder" for="temporada">Temporada</label>
                                                             </div> 
                                                             <div class="col-lg-6 mt30">
-                                                                <input type="number" min="0" id="pontuacao" name="points" class="form-control" value="{{ championship.points }}" required>
+                                                                <input type="number" min="0" id="pontuacao" name="points" class="form-control" required>
                                                                 <label class="form-control-placeholder" for="pontuacao">Pontuação</label> 
                                                             </div>
                                                         </div>
@@ -251,9 +179,9 @@
                                                         <div class="row mt11">
                                                             <div class="col-lg-4">
                                                                 <label class="control-label" for="ambito">Âmbito</label>
-                                                                <select class="form-control" id="ambito" name="scope" required>
+                                                                <select class="form-control js-basic-single" id="ambito" name="scope" required>
                                                                     {% for scope in scopes %}
-                                                                    <option value="{{ scope.id }}" {% if scope.id == championship.scope_id %}selected{% endif %}>{{ scope.name }}</option>
+                                                                    <option value="{{ scope.id }}">{{ scope.name }}</option>
                                                                     {% endfor %}
                                                                 </select> 
                                                             </div>                                                       
@@ -264,7 +192,7 @@
                                                                 <select class="form-control js-basic-single" id="continente" name="continent" data-placeholder="Selecione...">
                                                                     <option value="">Selecione...</option>
                                                                     {% for continent in continents %}
-                                                                    <option value="{{ continent.id }}" {% if continent.id == championship.continent_id %}selected{% endif %}>{{ continent.name }}</option>
+                                                                    <option value="{{ continent.id }}">{{ continent.name }}</option>
                                                                     {% endfor %}
                                                                 </select>
                                                             </div>  
@@ -273,16 +201,16 @@
                                                                 <select class="form-control js-basic-single" id="pais" name="country" data-placeholder="Selecione...">
                                                                     <option value="">Selecione...</option>
                                                                     {% for country in countries %}
-                                                                    <option value="{{ country.id }}" {% if country.id == championship.country_id %}selected{% endif %} data-continent="{{ country.continent_id }}">{{ country.name }}</option>
+                                                                    <option value="{{ country.id }}" data-continent="{{ country.continent_id }}">{{ country.name }}</option>
                                                                     {% endfor %}
                                                                 </select>  
                                                             </div>
                                                             <div class="col-lg-4">
                                                                 <label class="control-label" for="estado">Estado</label>
-                                                                <select class="form-control js-basic-single" id="estado" name="state" data-placeholder="Selecione..." data-country="{{ championship.country_id }}">
+                                                                <select class="form-control js-basic-single" id="estado" name="state" data-placeholder="Selecione...">
                                                                     <option value="">Selecione...</option>
                                                                     {% for state in states %}
-                                                                    <option value="{{ state.id }}" {% if state.id == championship.state_id %}selected{% endif %} data-country="{{ state.country_id }}">{{ state.name }}</option>
+                                                                    <option value="{{ state.id }}" data-country="{{ state.country_id }}">{{ state.name }}</option>
                                                                     {% endfor %}
                                                                 </select>  
                                                             </div>                                            
@@ -305,7 +233,7 @@
                                                     <div class="col-md-12">
                                                         <select class="duallistbox" multiple="multiple" name="teams[]">
                                                             {% for team in teams %}
-                                                            <option value="{{ team.id }}" data-type="{{ team.is_national_team|yesno:"selection,team" }}" {% if team in selected_teams %}selected{% endif %}>{{ team.name }}</option>
+                                                            <option value="{{ team.id }}" data-type="{{ team.is_national_team|yesno:"selection,team" }}">{{ team.name }}</option>
                                                             {% endfor %}
                                                         </select>
                                                     </div>
@@ -324,68 +252,44 @@
                                                     <div class="col-lg-2">
                                                         <label class="control-label" for="rodada">Rodada</label>
                                                         <select class="form-control js-basic-single" id="rodada" style="width: 60%">
-                                                            <option value="">Selecione uma rodada...</option>
+                                                            <option value="1">1</option>
+                                                            <option value="2">2</option>
                                                         </select> 
                                                     </div>
                                                     <div class="col-lg-4 mb10">   
-                                                        <button type="button" class="btn btn-primary ml20" id="btn-add-partida"><i class="fa fa-plus mr5"></i> Adicionar Partida</button>
-                                                        <button type="button" class="btn btn-primary ml20" data-toggle="modal" data-target="#modalImportXLS"><i class="fa fa-upload mr5"></i> Importar</button>      
+                                                    <button type="button" class="btn btn-primary ml20" data-toggle="modal" data-target="#modalImportXLS"><i class="fa fa-upload mr5"></i> Importar</button>      
                                                     </div>
                                                 </div>
                                                 <div id="matches-container">
-                                                    {% if matches %}
-                                                        {% for match in matches %}
-                                                        <div class="row col-lg-12 mt10">
-                                                            <div class="col-lg-2">
-                                                                <select class="form-control js-templating time-select time-mandante" style="width: 100%">
-                                                                    <option value="">Selecione o time</option>
-                                                                    {% for team in teams %}
-                                                                    <option value="{{ team.id }}" {% if team.id == match.home_team_id %}selected{% endif %}>{{ team.name }}</option>
-                                                                    {% endfor %}
-                                                                </select>
-                                                            </div>
-                                                            <div class="col-lg-1 ml35 mrm15">
-                                                                <input type="number" min="0" class="form-control placar" value="{{ match.home_score|default_if_none:'' }}">
-                                                            </div>
-                                                            <div class="col-lg-1 mlm30 mrm15">
-                                                                <input type="number" min="0" class="form-control placar" value="{{ match.away_score|default_if_none:'' }}">
-                                                            </div>
-                                                            <div class="col-lg-2 mlm30 mr25">
-                                                                <select class="form-control js-templating time-select time-visitante" style="width: 100%">
-                                                                    <option value="">Selecione o time</option>
-                                                                    {% for team in teams %}
-                                                                    <option value="{{ team.id }}" {% if team.id == match.away_team_id %}selected{% endif %}>{{ team.name }}</option>
-                                                                    {% endfor %}
-                                                                </select>
-                                                            </div>
-                                                            <div class="col-lg-3 ml10">
-                                                                <input type="text" class="form-control datetimepicker-input" style="width: 50%" data-toggle="datetimepicker" value="{{ match.match_date|date:'d/m/Y H:i' }}"/>
+                                                    <div class="row col-lg-12 mt10">
+                                                        <div class="col-lg-2">
+                                                            <select class="form-control js-templating time-select time-mandante" style="width: 100%">
+                                                                <option value="">Selecione o time</option>
+                                                            </select>
+                                                        </div>
+                                                        <div class="col-lg-1 ml35 mrm15">
+                                                            <input type="number" min="0" class="form-control placar">
+                                                        </div>
+                                                        <div class="col-lg-1 mlm30 mrm15">
+                                                            <input type="number" min="0" class="form-control placar">
+                                                        </div>
+                                                        <div class="col-lg-2 mlm30 mr25">
+                                                            <select class="form-control time-select time-visitante" style="width: 100%">
+                                                                <option value="">Selecione o time</option>
+                                                                {% for team in teams %}
+                                                                <option value="{{ team.id }}" data-image="{% if team.image and team.image.url %}{{ team.image.url }}{% endif %}">{{ team.name }}</option>
+                                                                {% endfor %}
+                                                            </select>
+                                                        </div>
+                                                        <div class="col-lg-3 ml10">
+                                                            <div class="input-group date" id="match-datetime-inicial">
+                                                                <input type="text" class="form-control datetimepicker-input" data-target="#match-datetime-inicial" data-toggle="datetimepicker" style="width: 100%" />
+                                                                <div class="input-group-append" data-target="#match-datetime-inicial" data-toggle="datetimepicker">
+                                                                    <span class="input-group-text"><i class="fa fa-calendar"></i></span>
+                                                                </div>
                                                             </div>
                                                         </div>
-                                                        {% endfor %}
-                                                    {% else %}
-                                                        <div class="row col-lg-12 mt10">
-                                                            <div class="col-lg-2">
-                                                                <select class="form-control js-templating time-select time-mandante" style="width: 100%">
-                                                                    <option value="">Selecione o time</option>
-                                                                </select>
-                                                            </div>
-                                                            <div class="col-lg-1 ml35 mrm15">
-                                                                <input type="number" min="0" class="form-control placar">
-                                                            </div>
-                                                            <div class="col-lg-1 mlm30 mrm15">
-                                                                <input type="number" min="0" class="form-control placar">
-                                                            </div>
-                                                            <div class="col-lg-2 mlm30 mr25">
-                                                                <select class="form-control js-templating time-select time-visitante" style="width: 100%">
-                                                                    <option value="">Selecione o time</option>
-                                                                </select>
-                                                            </div>
-                                                            <div class="col-lg-3 ml10">
-                                                                <input type="text" class="form-control datetimepicker-input" style="width: 50%" data-toggle="datetimepicker"/>
-                                                            </div>
-                                                        </div>
-                                                    {% endif %}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -393,7 +297,7 @@
                                 </div>
                                 <div class="panel panel-default col-lg-12 p15">
                                     <button type="submit" class="btn btn-success ml20">
-                                        <i class="fa fa-save mr5"></i> Salvar
+                                        <i class="fa fa-save mr5"></i> Salvar Alterações
                                     </button>
                                     <button type="button" id="btn-aplicar" class="btn btn-primary ml15">
                                         <i class="fa fa-check mr5"></i> Aplicar
@@ -480,11 +384,617 @@
         <script src="{% static 'administrativo/js/plugins/moment/moment.js' %}"></script>
         <script src="{% static 'administrativo/js/plugins/tempusdominus/tempusdominus-bootstrap-4.min.js' %}"></script>
         <script src="{% static 'administrativo/js/settings.js' %}"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
         <script src="{% static 'administrativo/js/campeonato-filtros.js' %}"></script>
         <script>
+            // Definir URL da imagem genérica
+            window.GENERIC_TEAM_IMAGE = "{% static 'administrativo/img/Generico.png' %}";
+        </script>
+        <script>
             $(document).ready(function() {
+                // Configuração do Toastr
+                toastr.options = {
+                    "closeButton": true,
+                    "debug": false,
+                    "newestOnTop": false,
+                    "progressBar": true,
+                    "positionClass": "toast-top-right",
+                    "preventDuplicates": false,
+                    "onclick": null,
+                    "showDuration": "300",
+                    "hideDuration": "500",
+                    "timeOut": "1500",
+                    "extendedTimeOut": "500",
+                    "showEasing": "swing",
+                    "hideEasing": "linear",
+                    "showMethod": "fadeIn",
+                    "hideMethod": "fadeOut"
+                };
+                
+                // Adicionar evento para carregar jogos quando clicar na aba Rodadas
+                $('a[href="#rodadas"]').on('shown.bs.tab', function() {
+                    console.log("Aba rodadas selecionada - Carregando jogos existentes");
+
+                    // Implementação alternativa de carregamento de jogos
+                    // Carregar jogos diretamente do contexto
+                    if ({{ matches|length }} > 0) {
+                        console.log("{{ matches|length }} partidas encontradas no contexto");
+                        
+                        // Preparar o painel de partidas
+                        $('#matches-container').empty();
+                        
+                        // Agrupar partidas por fase e rodada
+                        var partidasPorFase = {};
+                        
+                        {% for match in matches %}
+                        var fase = "{{ match.round.stage.name }}";
+                        var rodada = "{{ match.round.number }}";
+                        
+                        if (!partidasPorFase[fase]) {
+                            partidasPorFase[fase] = {};
+                        }
+                        
+                        if (!partidasPorFase[fase][rodada]) {
+                            partidasPorFase[fase][rodada] = [];
+                        }
+                        
+                        partidasPorFase[fase][rodada].push({
+                            id: "{{ match.id }}",
+                            home_team_id: "{{ match.home_team_id }}",
+                            away_team_id: "{{ match.away_team_id }}",
+                            home_score: {% if match.home_score != None %}"{{ match.home_score }}"{% else %}""{% endif %},
+                            away_score: {% if match.away_score != None %}"{{ match.away_score }}"{% else %}""{% endif %},
+                            match_date: "{{ match.match_date|date:'d/m/Y H:i' }}"
+                        });
+                        {% endfor %}
+                        
+                        console.log("Partidas agrupadas:", partidasPorFase);
+                        
+                        // Popular o select de fases
+                        var $fase = $('#fase');
+                        $fase.empty();
+                        $fase.append('<option value="">Selecione uma fase...</option>');
+                        
+                        for (var fase in partidasPorFase) {
+                            $fase.append(`<option value="${fase}">${fase}</option>`);
+                        }
+                        
+                        // Ao selecionar uma fase, mostrar suas rodadas
+                        $fase.off('change').on('change', function() {
+                            var faseSelected = $(this).val();
+                            var $rodada = $('#rodada');
+                            $rodada.empty();
+                            
+                            if (faseSelected && partidasPorFase[faseSelected]) {
+                                for (var rodada in partidasPorFase[faseSelected]) {
+                                    $rodada.append(`<option value="${rodada}">${rodada}</option>`);
+                                }
+                                
+                                // Selecionar a primeira rodada por padrão
+                                var primeiraRodada = Object.keys(partidasPorFase[faseSelected])[0];
+                                $rodada.val(primeiraRodada).trigger('change');
+                            }
+                        });
+                        
+                        // Ao selecionar uma rodada, mostrar suas partidas
+                        $('#rodada').off('change').on('change', function() {
+                            var faseSelected = $('#fase').val();
+                            var rodadaSelected = $(this).val();
+                            
+                            if (faseSelected && rodadaSelected && partidasPorFase[faseSelected] && partidasPorFase[faseSelected][rodadaSelected]) {
+                                var partidas = partidasPorFase[faseSelected][rodadaSelected];
+                                $('#matches-container').empty();
+                                
+                                // Adicionar cada partida
+                                partidas.forEach(function(partida) {
+                                    var $linha = criarLinhaJogo();
+                                    $linha.attr('data-match-id', partida.id);
+                                    
+                                    // Pequeno delay para garantir que os selects estejam inicializados
+                                    setTimeout(function() {
+                                        $linha.find('.time-mandante').val(partida.home_team_id).trigger('change');
+                                        $linha.find('.time-visitante').val(partida.away_team_id).trigger('change');
+                                        
+                                        if (partida.home_score) {
+                                            $linha.find('input.placar').eq(0).val(partida.home_score);
+                                        }
+                                        if (partida.away_score) {
+                                            $linha.find('input.placar').eq(1).val(partida.away_score);
+                                        }
+                                        
+                                        if (partida.match_date) {
+                                            $linha.find('.datetimepicker-input').val(partida.match_date);
+                                        }
+                                    }, 500);
+                                    
+                                    $('#matches-container').append($linha);
+                                });
+                            }
+                        });
+                        
+                        // Selecionar a primeira fase por padrão
+                        var primeiraFase = Object.keys(partidasPorFase)[0];
+                        if (primeiraFase) {
+                            $fase.val(primeiraFase).trigger('change');
+                        }
+                    } else {
+                        console.log("Nenhuma partida encontrada para este campeonato");
+                        $('#fase').empty().append('<option value="">Selecione uma fase...</option>');
+                        $('#rodada').empty().append('<option value="">Selecione uma rodada...</option>');
+                        $('#matches-container').html('<div class="alert alert-info">Nenhuma partida cadastrada para este campeonato. Use o botão "Importar" para adicionar partidas.</div>');
+                    }
+                });
+                
+                // Função para criar uma nova linha de jogo
+                function criarLinhaJogo() {
+                    var uniqueId = Date.now() + '-' + Math.floor(Math.random() * 1000);
+                    var novaLinha = $(`
+                        <div class="row col-lg-12 mt10">
+                            <div class="col-lg-2">
+                                <select class="form-control js-templating time-select time-mandante" style="width: 100%">
+                                    <option value="">Selecione o time</option>
+                                    {% for team in teams %}
+                                    <option value="{{ team.id }}" data-image="{% if team.image and team.image.url %}{{ team.image.url }}{% endif %}">{{ team.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-lg-1 ml35 mrm15">
+                                <input type="number" min="0" class="form-control placar">
+                            </div>
+                            <div class="col-lg-1 mlm30 mrm15">
+                                <input type="number" min="0" class="form-control placar">
+                            </div>
+                            <div class="col-lg-2 mlm30 mr25">
+                                <select class="form-control time-select time-visitante" style="width: 100%">
+                                    <option value="">Selecione o time</option>
+                                    {% for team in teams %}
+                                    <option value="{{ team.id }}" data-image="{% if team.image and team.image.url %}{{ team.image.url }}{% endif %}">{{ team.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-lg-3 ml10">
+                                <div class="input-group date" id="match-datetime-${uniqueId}">
+                                    <input type="text" class="form-control datetimepicker-input" data-target="#match-datetime-${uniqueId}" data-toggle="datetimepicker" style="width: 100%" />
+                                    <div class="input-group-append" data-target="#match-datetime-${uniqueId}" data-toggle="datetimepicker">
+                                        <span class="input-group-text"><i class="fa fa-calendar"></i></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-1">
+                                <button type="button" class="btn btn-danger btn-excluir-partida"><i class="fa fa-trash"></i></button>
+                            </div>
+                        </div>
+                    `);
+                    return novaLinha;
+                }
+                
+                // Função para carregar os jogos existentes na interface
+                function carregarJogosExistentes() {
+                    console.log("Iniciando carregamento de jogos existentes...");
+                    
+                    // Primeiro, carregar as fases do campeonato via AJAX
+                    $.ajax({
+                        url: "{% url 'administrativo:get_stages_by_championship' %}",
+                        type: 'POST',
+                        data: {
+                            championship_id: "{{ championship.id }}",
+                            csrfmiddlewaretoken: $('[name=csrfmiddlewaretoken]').val()
+                        },
+                        success: function(response) {
+                            console.log("Fases obtidas:", response);
+                            
+                            if (response.success && response.stages && response.stages.length > 0) {
+                                // Limpar e preencher o select de fases
+                                var $fase = $('#fase');
+                                $fase.empty();
+                                $fase.append('<option value="">Selecione uma fase...</option>');
+                                
+                                response.stages.forEach(function(stage) {
+                                    $fase.append(`<option value="${stage.id}">${stage.name}</option>`);
+                                });
+                                
+                                // Selecionar a primeira fase
+                                var primeiraFase = response.stages[0].id;
+                                $fase.val(primeiraFase).trigger('change');
+                                
+                                // Agora carregar as partidas da primeira fase
+                                carregarPartidasPorFase(primeiraFase);
+                            } else {
+                                console.log("Nenhuma fase encontrada para este campeonato");
+                                toastr.warning("Nenhuma fase encontrada para este campeonato. Verifique se o template está configurado corretamente.");
+                            }
+                        },
+                        error: function(xhr) {
+                            console.error("Erro ao obter fases:", xhr);
+                            toastr.error("Erro ao carregar fases do campeonato");
+                        }
+                    });
+                }
+                
+                // Função para carregar partidas de uma fase específica
+                function carregarPartidasPorFase(stageId) {
+                    if (!stageId) return;
+                    
+                    console.log("Carregando partidas para a fase ID:", stageId);
+                    
+                    $.ajax({
+                        url: "{% url 'administrativo:get_matches_by_round' %}",
+                        type: 'POST',
+                        data: {
+                            championship_id: "{{ championship.id }}",
+                            stage_id: stageId,
+                            csrfmiddlewaretoken: $('[name=csrfmiddlewaretoken]').val()
+                        },
+                        success: function(response) {
+                            console.log("Partidas obtidas:", response);
+                            
+                            if (response.success && response.rounds) {
+                                // Limpar e preencher o select de rodadas
+                                var $rodada = $('#rodada');
+                                $rodada.empty();
+                                
+                                // Ordenar rodadas por número
+                                var rodadasOrdenadas = Object.keys(response.rounds).sort(function(a, b) {
+                                    return parseInt(response.rounds[a].number) - parseInt(response.rounds[b].number);
+                                });
+                                
+                                if (rodadasOrdenadas.length === 0) {
+                                    console.log("Nenhuma rodada encontrada para esta fase");
+                                    $rodada.append('<option value="1">1</option>');
+                                    $rodada.val(1).trigger('change');
+                                    return;
+                                }
+                                
+                                rodadasOrdenadas.forEach(function(roundId) {
+                                    var round = response.rounds[roundId];
+                                    $rodada.append(`<option value="${round.id}">${round.number}</option>`);
+                                });
+                                
+                                // Selecionar a primeira rodada e carregar suas partidas
+                                var primeiraRodada = rodadasOrdenadas[0];
+                                $rodada.val(response.rounds[primeiraRodada].id).trigger('change');
+                                
+                                // Mostrar as partidas da primeira rodada
+                                mostrarPartidasDaRodada(response.rounds[primeiraRodada].matches);
+                            } else {
+                                console.log("Nenhuma rodada/partida encontrada para esta fase");
+                                // Limpar o container de partidas
+                                $('#matches-container').empty();
+                            }
+                        },
+                        error: function(xhr) {
+                            console.error("Erro ao obter partidas:", xhr);
+                            toastr.error("Erro ao carregar partidas do campeonato");
+                        }
+                    });
+                }
+                
+                // Evento para carregar jogos quando clicar na aba Rodadas
+                $('a[href="#rodadas"]').off('shown.bs.tab').on('shown.bs.tab', function() {
+                    console.log("Aba rodadas selecionada - Carregando jogos existentes");
+
+                    // Implementação alternativa de carregamento de jogos
+                    // Carregar jogos diretamente do contexto
+                    if ({{ matches|length }} > 0) {
+                        console.log("{{ matches|length }} partidas encontradas no contexto");
+                        
+                        // Preparar o painel de partidas
+                        $('#matches-container').empty();
+                        
+                        // Agrupar partidas por fase e rodada
+                        var partidasPorFase = {};
+                        
+                        {% for match in matches %}
+                        var fase = "{{ match.round.stage.name }}";
+                        var rodada = "{{ match.round.number }}";
+                        
+                        if (!partidasPorFase[fase]) {
+                            partidasPorFase[fase] = {};
+                        }
+                        
+                        if (!partidasPorFase[fase][rodada]) {
+                            partidasPorFase[fase][rodada] = [];
+                        }
+                        
+                        partidasPorFase[fase][rodada].push({
+                            id: "{{ match.id }}",
+                            home_team_id: "{{ match.home_team_id }}",
+                            away_team_id: "{{ match.away_team_id }}",
+                            home_score: {% if match.home_score != None %}"{{ match.home_score }}"{% else %}""{% endif %},
+                            away_score: {% if match.away_score != None %}"{{ match.away_score }}"{% else %}""{% endif %},
+                            match_date: "{{ match.match_date|date:'d/m/Y H:i' }}"
+                        });
+                        {% endfor %}
+                        
+                        console.log("Partidas agrupadas:", partidasPorFase);
+                        
+                        // Popular o select de fases
+                        var $fase = $('#fase');
+                        $fase.empty();
+                        $fase.append('<option value="">Selecione uma fase...</option>');
+                        
+                        for (var fase in partidasPorFase) {
+                            $fase.append(`<option value="${fase}">${fase}</option>`);
+                        }
+                        
+                        // Ao selecionar uma fase, mostrar suas rodadas
+                        $fase.off('change').on('change', function() {
+                            var faseSelected = $(this).val();
+                            var $rodada = $('#rodada');
+                            $rodada.empty();
+                            
+                            if (faseSelected && partidasPorFase[faseSelected]) {
+                                for (var rodada in partidasPorFase[faseSelected]) {
+                                    $rodada.append(`<option value="${rodada}">${rodada}</option>`);
+                                }
+                                
+                                // Selecionar a primeira rodada por padrão
+                                var primeiraRodada = Object.keys(partidasPorFase[faseSelected])[0];
+                                $rodada.val(primeiraRodada).trigger('change');
+                            }
+                        });
+                        
+                        // Ao selecionar uma rodada, mostrar suas partidas
+                        $('#rodada').off('change').on('change', function() {
+                            var faseSelected = $('#fase').val();
+                            var rodadaSelected = $(this).val();
+                            
+                            if (faseSelected && rodadaSelected && partidasPorFase[faseSelected] && partidasPorFase[faseSelected][rodadaSelected]) {
+                                var partidas = partidasPorFase[faseSelected][rodadaSelected];
+                                $('#matches-container').empty();
+                                
+                                // Adicionar cada partida
+                                partidas.forEach(function(partida) {
+                                    var $linha = criarLinhaJogo();
+                                    $linha.attr('data-match-id', partida.id);
+                                    
+                                    // Pequeno delay para garantir que os selects estejam inicializados
+                                    setTimeout(function() {
+                                        $linha.find('.time-mandante').val(partida.home_team_id).trigger('change');
+                                        $linha.find('.time-visitante').val(partida.away_team_id).trigger('change');
+                                        
+                                        if (partida.home_score) {
+                                            $linha.find('input.placar').eq(0).val(partida.home_score);
+                                        }
+                                        if (partida.away_score) {
+                                            $linha.find('input.placar').eq(1).val(partida.away_score);
+                                        }
+                                        
+                                        if (partida.match_date) {
+                                            $linha.find('.datetimepicker-input').val(partida.match_date);
+                                        }
+                                    }, 500);
+                                    
+                                    $('#matches-container').append($linha);
+                                });
+                            }
+                        });
+                        
+                        // Selecionar a primeira fase por padrão
+                        var primeiraFase = Object.keys(partidasPorFase)[0];
+                        if (primeiraFase) {
+                            $fase.val(primeiraFase).trigger('change');
+                        }
+                    } else {
+                        console.log("Nenhuma partida encontrada para este campeonato");
+                        $('#fase').empty().append('<option value="">Selecione uma fase...</option>');
+                        $('#rodada').empty().append('<option value="">Selecione uma rodada...</option>');
+                        $('#matches-container').html('<div class="alert alert-info">Nenhuma partida cadastrada para este campeonato. Use o botão "Importar" para adicionar partidas.</div>');
+                    }
+                });
+                
+                // Função para mostrar as partidas de uma rodada
+                function mostrarPartidasDaRodada(partidas) {
+                    // Limpar o container de partidas
+                    $('#matches-container').empty();
+                    
+                    if (!partidas || partidas.length === 0) {
+                        console.log("Nenhuma partida encontrada para esta rodada");
+                        return;
+                    }
+                    
+                    console.log("Mostrando " + partidas.length + " partidas");
+                    
+                    // Para cada partida, criar uma linha no formulário
+                    partidas.forEach(function(partida) {
+                        var novaLinha = criarLinhaJogo();
+                        
+                        // Definir o ID da partida como data attribute
+                        novaLinha.attr('data-match-id', partida.id);
+                        
+                        // Preencher dados na nova linha
+                        setTimeout(function() {
+                            // Preencher times
+                            novaLinha.find('.time-mandante').val(partida.home_team_id).trigger('change');
+                            novaLinha.find('.time-visitante').val(partida.away_team_id).trigger('change');
+                            
+                            // Preencher placares
+                            if (partida.home_score !== null) {
+                                novaLinha.find('input.placar').eq(0).val(partida.home_score);
+                            }
+                            if (partida.away_score !== null) {
+                                novaLinha.find('input.placar').eq(1).val(partida.away_score);
+                            }
+                            
+                            // Preencher data
+                            if (partida.match_date) {
+                                novaLinha.find('.datetimepicker-input').val(partida.match_date);
+                            }
+                            
+                            console.log("Partida carregada:", partida);
+                        }, 500); // Pequeno delay para garantir que os select2 estejam inicializados
+                        
+                        // Adicionar ao container
+                        $('#matches-container').append(novaLinha);
+                    });
+                }
+                
+                // Evento de mudança da fase
+                $('#fase').on('change', function() {
+                    var faseId = $(this).val();
+                    if (faseId) {
+                        carregarPartidasPorFase(faseId);
+                    }
+                });
+                
+                // Evento de mudança da rodada
+                $('#rodada').on('change', function() {
+                    // Implementar quando necessário
+                });
+                
+                // Evento para o botão de adicionar partida
+                $('#btn-add-partida').on('click', function() {
+                    var fase = $('#fase').val();
+                    var rodada = $('#rodada').val();
+                    
+                    if (!fase || !rodada) {
+                        toastr.warning('Selecione uma fase e uma rodada antes de adicionar uma partida');
+                        return;
+                    }
+                    
+                    // Adicionar uma nova linha de jogo em branco
+                    $('#matches-container').append(criarLinhaJogo());
+                });
+                
+                // Verificar se estamos em modo de edição
+                var isEditMode = true; // Na página de edição, sempre é modo de edição
+                
+                // Preencher os campos com os dados existentes do campeonato
+                {% if championship %}
+                $('#nome').val("{{ championship.name }}");
+                $('#temporada').val("{{ championship.season }}");
+                $('#pontuacao').val("{{ championship.points }}");
+                
+                // Selecionar template, âmbito e locais
+                $('#template').val("{{ championship.template_id }}").trigger('change.select2');
+                $('#ambito').val("{{ championship.scope_id }}").trigger('change.select2');
+                
+                {% if championship.continent %}
+                $('#continente').val("{{ championship.continent_id }}").trigger('change.select2');
+                {% endif %}
+                
+                {% if championship.country %}
+                $('#pais').val("{{ championship.country_id }}").trigger('change.select2');
+                {% endif %}
+                
+                {% if championship.state %}
+                $('#estado').val("{{ championship.state_id }}").trigger('change.select2');
+                {% endif %}
+                
+                // Marcar checkbox de ativo conforme o estado atual
+                {% if championship.is_active %}
+                $('input[name="is_active"]').prop('checked', true).iCheck('update');
+                {% else %}
+                $('input[name="is_active"]').prop('checked', false).iCheck('update');
+                {% endif %}
+                
+                // Selecionar times já associados ao campeonato
+                {% for team in selected_teams %}
+                $('select[name="teams[]"] option[value="{{ team.id }}"]').prop('selected', true);
+                {% endfor %}
+                $('.duallistbox').bootstrapDualListbox('refresh');
+
+                // Carregar fases do template selecionado
+                var templateId = "{{ championship.template_id }}";
+                if (templateId) {
+                    console.log("Carregando fases para o template inicial:", templateId);
+                    
+                    // Buscar as fases deste template
+                    $.ajax({
+                        url: "{% url 'administrativo:get_stages_by_template' %}",
+                        type: 'POST',
+                        data: {
+                            template_id: templateId,
+                            csrfmiddlewaretoken: $('[name=csrfmiddlewaretoken]').val()
+                        },
+                        success: function(data) {
+                            var $faseSelect = $('#fase');
+                            $faseSelect.empty();
+                            $faseSelect.append('<option value="">Selecione uma fase...</option>');
+                            
+                            if (data.success && data.stages && data.stages.length > 0) {
+                                // Adicionar as fases ao select
+                                $.each(data.stages, function(i, stage) {
+                                    $faseSelect.append($('<option>', {
+                                        value: stage.id,
+                                        text: stage.name,
+                                        'data-rounds': stage.rounds
+                                    }));
+                                });
+                                
+                                // Se temos uma fase atual, selecioná-la
+                                {% if current_stage %}
+                                $faseSelect.val("{{ current_stage.id }}").trigger('change');
+                                {% else %}
+                                // Caso contrário, selecionar a primeira fase
+                                var firstStage = $faseSelect.find('option').eq(1).val();
+                                if (firstStage) {
+                                    $faseSelect.val(firstStage).trigger('change');
+                                }
+                                {% endif %}
+                            }
+                        }
+                    });
+                }
+                {% endif %}
+                
+                // Preenche o campo temporada com o ano atual se não estiver preenchido
+                if (!$('#temporada').val()) {
+                    var anoAtual = new Date().getFullYear();
+                    $('#temporada').val(anoAtual);
+                }
+                
+                // Inicializa o Select2 para os selects exceto o âmbito (que trataremos separadamente)
+                $('.js-basic-single').not('#ambito').select2({
+                    width: '100%',
+                    placeholder: 'Selecione...',
+                    allowClear: true
+                });
+
+                // Inicialização e configuração especial para o campo de âmbito
+                var $ambito = $('#ambito');
+                
+                // Armazenar o texto da opção selecionada antes da inicialização
+                var selectedText = $ambito.find('option:selected').text();
+                var selectedValue = $ambito.val();
+                console.log("Valor de âmbito selecionado:", selectedValue, "Texto:", selectedText);
+                
+                // Destruir qualquer instância anterior do Select2 (evitar duplicação)
+                if ($ambito.hasClass("select2-hidden-accessible")) {
+                    $ambito.select2('destroy');
+                }
+                
+                // Inicializar o Select2 para o campo de âmbito
+                $ambito.removeClass('js-basic-single').select2({
+                    width: '100%',
+                    minimumResultsForSearch: Infinity // Desativa a busca para este campo
+                }).on('select2:select', function(e) {
+                    // Força atualização da interface quando o valor muda via Select2
+                    $(this).trigger('change');
+                    
+                    // CORREÇÃO CRÍTICA: Forçar a atualização do texto visível imediatamente após seleção
+                    var textoSelecionado = $(this).find('option:selected').text();
+                    console.log("Opção selecionada via UI:", textoSelecionado);
+                    setTimeout(function() {
+                        $ambito.next('.select2-container').find('.select2-selection__rendered').text(textoSelecionado);
+                        console.log("Texto de exibição forçado após seleção para:", textoSelecionado);
+                    }, 10);
+                });
+                
+                // Forçar a atualização da interface visual após a inicialização
+                if (selectedValue) {
+                    // Reconstruir o Select2 para garantir que o texto exibido esteja correto
+                    setTimeout(function() {
+                        $ambito.select2('destroy').select2({
+                            width: '100%',
+                            minimumResultsForSearch: Infinity
+                        });
+                        console.log("Reconstrução do Select2 finalizada. Texto agora deve ser:", $ambito.find('option:selected').text());
+                    }, 100);
+                }
+
                 // Verifica se estamos em modo de edição (se há um ID na URL)
-                var isEditMode = true; // Sempre true neste template
+                var isEditMode = true; // Na página de edição, sempre é modo de edição
                 console.log("Modo de edição: ", isEditMode);
                 
                 // Armazenar valores iniciais dos campos principais
@@ -498,27 +1008,26 @@
                 
                 console.log("Valores iniciais:", initialValues);
                 
-                // Desativar temporariamente certos eventos para evitar limpeza de campos durante o carregamento
-                var originalEvents = {};
-                if (isEditMode) {
-                    // Guardar e desativar o evento original do âmbito
-                    originalEvents.ambito = $('#ambito').data('events');
-                    $('#ambito').off('change');
-                }
+                // Desativar temporariamente o evento de change do âmbito para evitar limpeza de campos durante o carregamento
+                // Esta é uma etapa crucial para evitar que os valores dos campos sejam perdidos
+                $('#ambito').off('change');
                 
-                // Função para restabelecer os valores iniciais em modo de edição
-                function restoreInitialValues() {
-                    console.log("Restaurando valores iniciais");
+                // Aplicar os valores aos campos na ordem correta
+                setTimeout(function() {
+                    // Debug para acompanhar o processo
+                    console.log("INÍCIO DO PROCESSO DE RESTAURAÇÃO DE VALORES");
+                    console.log("Estado do âmbito antes da restauração:", $('#ambito').val());
+                    console.log("Estado do continente antes da restauração:", $('#continente').val());
+                    console.log("Estado do país antes da restauração:", $('#pais').val());
+                    console.log("Estado do estado antes da restauração:", $('#estado').val());
                     
-                    // Restaurar valores na ordem correta considerando dependências
-                    // 1. Primeiro restaurar o âmbito pois ele afeta a habilitação dos outros campos
+                    // 1. Primeiro selecionar o âmbito sem disparar change
                     if (initialValues.ambito) {
-                        $('#ambito').val(initialValues.ambito);
-                        
-                        // Configurar habilitação de campos conforme o âmbito
-                        var scopeName = $('#ambito option:selected').text().trim();
+                        var ambitoVal = initialValues.ambito;
+                        var scopeName = $('#ambito option[value="' + ambitoVal + '"]').text().trim();
                         console.log("Restaurando âmbito:", scopeName);
                         
+                        // Configurar habilitação de campos conforme o âmbito
                         switch(scopeName) {
                             case 'Mundial':
                                 $('#continente, #pais, #estado').prop('disabled', true);
@@ -537,110 +1046,147 @@
                         }
                     }
                     
-                    // 2. Restaurar template
-                    if (initialValues.template) {
-                        console.log("Restaurando template:", initialValues.template);
-                        $('#template').val(initialValues.template).trigger('change.select2');
+                    // 2. Agora restaurar demais campos geográficos se não estiverem desabilitados
+                    if (initialValues.continente && !$('#continente').prop('disabled')) {
+                        $('#continente').val(initialValues.continente).trigger('change.select2');
+                        console.log("Restaurando continente:", initialValues.continente);
                     }
                     
-                    // 3. Restaurar continente, país e estado em sequência com atrasos
-                    setTimeout(function() {
-                        if (initialValues.continente) {
-                            console.log("Restaurando continente:", initialValues.continente);
-                            $('#continente').prop('disabled', false);
-                            $('#continente').val(initialValues.continente).trigger('change.select2');
-                            // Não disparamos trigger('change') para evitar que o valor do país seja limpo
-                            // O script campeonato-filtros.js cuidará da filtragem
+                    if (initialValues.pais && !$('#pais').prop('disabled')) {
+                        $('#pais').val(initialValues.pais).trigger('change.select2');
+                        console.log("Restaurando país:", initialValues.pais);
+                    }
+                    
+                    if (initialValues.estado && !$('#estado').prop('disabled')) {
+                        $('#estado').val(initialValues.estado).trigger('change.select2');
+                        console.log("Restaurando estado:", initialValues.estado);
+                    }
+                    
+                    // Após configurar tudo, verificar novamente se os valores estão corretos
+                    console.log("VERIFICAÇÃO FINAL DOS VALORES RESTAURADOS:");
+                    console.log("Âmbito:", $('#ambito').val(), $('#ambito option:selected').text());
+                    console.log("Continente:", $('#continente').val(), $('#continente option:selected').text());
+                    console.log("País:", $('#pais').val(), $('#pais option:selected').text());
+                    console.log("Estado:", $('#estado').val(), $('#estado option:selected').text());
+                    
+                    // VERIFICAÇÃO FINAL: Forçar novamente os valores se necessário
+                    if (initialValues.continente && !$('#continente').val() && !$('#continente').prop('disabled')) {
+                        console.log("Forçando novamente o valor do continente");
+                        $('#continente').val(initialValues.continente).trigger('change.select2');
+                    }
+                    
+                    if (initialValues.pais && !$('#pais').val() && !$('#pais').prop('disabled')) {
+                        console.log("Forçando novamente o valor do país");
+                        $('#pais').val(initialValues.pais).trigger('change.select2');
+                    }
+                    
+                    if (initialValues.estado && !$('#estado').val() && !$('#estado').prop('disabled')) {
+                        console.log("Forçando novamente o valor do estado");
+                        $('#estado').val(initialValues.estado).trigger('change.select2');
+                    }
+                    
+                    // 3. Reativar o evento change do âmbito para mudanças subsequentes
+                    $('#ambito').on('change', function() {
+                        var scopeName = $(this).find('option:selected').text().trim();
+                        var $continente = $('#continente');
+                        var $pais = $('#pais');
+                        var $estado = $('#estado');
+                        
+                        // CORREÇÃO CRÍTICA: Forçar o texto visível no Select2
+                        $(this).next('.select2-container').find('.select2-selection__rendered').text(scopeName);
+                        console.log("Texto de exibição atualizado para:", scopeName);
+                        
+                        // Forçar atualização visual do Select2 para o âmbito
+                        $(this).select2('destroy').select2({
+                            width: '100%',
+                            minimumResultsForSearch: Infinity
+                        });
+                        
+                        // CORREÇÃO ADICIONAL: Verificar se o texto foi atualizado corretamente
+                        var textoPosReconstrucao = $(this).next('.select2-container').find('.select2-selection__rendered').text();
+                        if (textoPosReconstrucao !== scopeName) {
+                            console.log("Texto não atualizado corretamente! Forçando novamente...");
+                            $(this).next('.select2-container').find('.select2-selection__rendered').text(scopeName);
                         }
                         
-                        // Aguardar para restaurar país após continente
-                        setTimeout(function() {
-                            if (initialValues.pais) {
-                                console.log("Restaurando país:", initialValues.pais);
-                                $('#pais').prop('disabled', false);
-                                $('#pais').val(initialValues.pais).trigger('change.select2');
-                                // Não disparamos trigger('change') para evitar que o valor do estado seja limpo
-                                // O script campeonato-filtros.js cuidará da filtragem
-                            }
-                            
-                            // Aguardar para restaurar estado após país
-                            setTimeout(function() {
-                                if (initialValues.estado) {
-                                    console.log("Restaurando estado:", initialValues.estado);
-                                    $('#estado').prop('disabled', false);
-                                    $('#estado').val(initialValues.estado).trigger('change.select2');
-                                }
+                        // Verificar se estamos na inicialização ou em uma mudança manual
+                        var isInitializing = !$(this).data('initialized');
+                        
+                        // Marcar o campo como inicializado para mudanças futuras
+                        if (!$(this).data('initialized')) {
+                            $(this).data('initialized', true);
+                            console.log("Âmbito marcado como inicializado - próximas mudanças limparão os campos");
+                        }
+                        
+                        // Só limpar os campos se NÃO estiver na inicialização
+                        if (!isInitializing) {
+                            console.log("LIMPANDO CAMPOS - mudança manual do âmbito detectada");
+                            // Reseta todos os campos de localização
+                            $continente.val(null).trigger('change');
+                            $pais.val(null).trigger('change');
+                            $estado.val(null).trigger('change');
+                        } else {
+                            console.log("PRESERVANDO CAMPOS - inicialização detectada");
+                        }
+                        
+                        // Configura os campos baseado no âmbito
+                        switch(scopeName) {
+                            case 'Mundial':
+                                // Desabilita todos
+                                $continente.prop('disabled', true);
+                                $pais.prop('disabled', true);
+                                $estado.prop('disabled', true);
+                                break;
                                 
-                                // Após restaurar todos os valores, forçar uma atualização dos filtros
-                                console.log("Forçando atualização final dos filtros");
-                                // Disparo personalizado para notificar o script campeonato-filtros.js
-                                $(document).trigger('filtersInitialized');
-                            }, 300);
-                        }, 300);
-                    }, 300);
-                }
-                
-                // Configurar comportamento normal do campo âmbito APÓS restaurar valores iniciais
-                setTimeout(function() {
-                    // Restaurar valores iniciais
-                    restoreInitialValues();
-                    
-                    // Após restaurar os valores, configurar o comportamento normal para mudanças subsequentes
-                    setTimeout(function() {
-                        // Evitar dupla configuração do evento
-                        $('#ambito').off('change');
+                            case 'Continental':
+                                // Habilita apenas continente
+                                $continente.prop('disabled', false);
+                                $pais.prop('disabled', true);
+                                $estado.prop('disabled', true);
+                                break;
+                                
+                            case 'Nacional':
+                                // Habilita continente e país
+                                $continente.prop('disabled', false);
+                                $pais.prop('disabled', false);
+                                $estado.prop('disabled', true);
+                                break;
+                                
+                            case 'Estadual':
+                                // Habilita todos
+                                $continente.prop('disabled', false);
+                                $pais.prop('disabled', false);
+                                $estado.prop('disabled', false);
+                                break;
+                                
+                            default:
+                                // Caso padrão (nenhum selecionado)
+                                $continente.prop('disabled', true);
+                                $pais.prop('disabled', true);
+                                $estado.prop('disabled', true);
+                        }
                         
-                        // Configurar evento de change do âmbito para mudanças subsequentes
-                        $('#ambito').on('change', function() {
-                            // Apenas limpar os campos se a mudança não for parte da inicialização
-                            var firstRun = $(this).data('first-run');
-                            if (!firstRun) {
-                                console.log("Evento change do âmbito - limpando campos");
-                                $('#continente, #pais, #estado').val(null).trigger('change.select2');
-                            }
-                            
-                            // Configurar habilitação de campos conforme o âmbito
-                            var scopeName = $(this).find('option:selected').text().trim();
-                            console.log("Alteração no âmbito:", scopeName);
-                            
-                            switch(scopeName) {
-                                case 'Mundial':
-                                    $('#continente, #pais, #estado').prop('disabled', true);
-                                    break;
-                                case 'Continental':
-                                    $('#continente').prop('disabled', false);
-                                    $('#pais, #estado').prop('disabled', true);
-                                    break;
-                                case 'Nacional':
-                                    $('#continente, #pais').prop('disabled', false);
-                                    $('#estado').prop('disabled', true);
-                                    break;
-                                case 'Estadual':
-                                    $('#continente, #pais, #estado').prop('disabled', false);
-                                    break;
-                            }
-                            
-                            // Atualizar o Select2
-                            $('#continente, #pais, #estado').each(function() {
-                                $(this).select2({
-                                    width: '100%',
-                                    placeholder: 'Selecione...',
-                                    allowClear: true
-                                });
-                            });
-                            
-                            // Marcar que o evento foi executado pelo menos uma vez
-                            $(this).data('first-run', false);
-                        }).data('first-run', true).trigger('change');
+                        // Atualiza o Select2 para refletir as mudanças
+                        $continente.select2({
+                            width: '100%',
+                            placeholder: 'Selecione...',
+                            allowClear: true
+                        });
+                        $pais.select2({
+                            width: '100%',
+                            placeholder: 'Selecione...',
+                            allowClear: true
+                        });
+                        $estado.select2({
+                            width: '100%',
+                            placeholder: 'Selecione...',
+                            allowClear: true
+                        });
                         
-                        // Remover event handlers existentes para continente e país
-                        // Isso permite que o script campeonato-filtros.js assuma o controle da filtragem
-                        console.log("Removendo event handlers existentes para continente e país");
-                        $('#continente').off('change.filtro');
-                        $('#pais').off('change.filtro');
-                        
-                    }, 1000);
-                }, 500);
+                        // Atualiza a lista de times disponíveis
+                        filterTeams(true);
+                    });
+                }, 100);
                 
                 // Inicializa o iCheck para checkboxes
                 $('.i-checks').iCheck({
@@ -648,8 +1194,8 @@
                     radioClass: 'iradio_square-green'
                 });
 
-                // Inicializa o DualListbox para seleção de times
-                $('.duallistbox').bootstrapDualListbox({
+                // Inicializa o Dual Listbox para seleção de times
+                var $duallist = $('.duallistbox').bootstrapDualListbox({
                     selectorMinimalHeight: 160,
                     filterTextClear: 'mostrar todos',
                     filterPlaceHolder: 'Filtrar',
@@ -659,9 +1205,43 @@
                     removeAllLabel: 'Remover todos',
                     infoText: 'Mostrando {0}',
                     infoTextFiltered: '<span class="label label-warning">Filtrado</span> {0} de {1}',
-                    infoTextEmpty: 'Lista vazia'
+                    infoTextEmpty: 'Lista vazia',
+                    filterOnValues: false
                 });
-                
+
+                // Função para normalizar texto (remover acentos)
+                function normalizeText(text) {
+                    return text ? text.toLowerCase()
+                        .normalize('NFD')
+                        .replace(/[\u0300-\u036f]/g, '')
+                        .trim() : '';
+                }
+
+                // Sobrescrever o comportamento padrão do filtro
+                var dualListContainer = $duallist.bootstrapDualListbox('getContainer');
+                dualListContainer.find('.filter').each(function() {
+                    var $filter = $(this);
+                    var $box = $filter.closest('.box');
+                    var $select = $box.find('select');
+                    
+                    $filter.off('keyup').on('keyup', function() {
+                        var searchText = normalizeText($filter.val());
+                        
+                        $select.find('option').each(function() {
+                            var $option = $(this);
+                            var normalizedOptionText = normalizeText($option.text());
+                            
+                            if (!searchText || normalizedOptionText.indexOf(searchText) !== -1) {
+                                $option.show();
+                            } else {
+                                $option.hide();
+                            }
+                        });
+                        
+                        $duallist.bootstrapDualListbox('refresh');
+                    });
+                });
+
                 // Adicionar atributos data para cada time com informações de estado, país e continente
                 var teamOptions = {};
                 {% for team in teams %}
@@ -723,62 +1303,73 @@
                         selectedTeams.push($(this).val());
                     });
                     
+                    console.log("Times selecionados antes do filtro:", selectedTeams);
+                    
                     // Limpar e reconstruir o select
                     $select.empty();
                     
-                    // Filtrar e adicionar times com base nos critérios
+                    // PRIMEIRO: Adicionar os times já selecionados, independentemente de qualquer filtro
+                    // Isso garante que os times previamente selecionados sempre apareçam
+                    {% for team in selected_teams %}
+                    var team_id = "{{ team.id }}";
+                    $select.append('<option value="{{ team.id }}" data-type="{{ team.is_national_team|yesno:"selection,team" }}" selected>{{ team.name }}</option>');
+                    console.log("Adicionando time selecionado:", "{{ team.name }}", "ID:", "{{ team.id }}");
+                    {% endfor %}
+                    
+                    // SEGUNDO: Filtrar e adicionar os demais times com base nos critérios
                     {% for team in teams %}
-                    var team = {
-                        id: {{ team.id }},
-                        name: "{{ team.name }}",
-                        state_id: {% if team.state_id %}"{{ team.state_id }}"{% else %}null{% endif %},
-                        country_id: {% if team.country_id %}"{{ team.country_id }}"{% else %}null{% endif %},
-                        continent_id: {% if team.country.continent_id %}"{{ team.country.continent_id }}"{% else %}null{% endif %},
-                        is_national_team: {% if team.is_national_team %}true{% else %}false{% endif %}
-                    };
-                    
-                    var passouFiltroGeografico = false;
-                    var passouFiltroTipo = true;
-                    
-                    // 1. FILTRO GEOGRÁFICO: Verificar se o time pertence ao âmbito selecionado
-                    if (scopeName === 'Mundial') {
-                        // Para âmbito mundial, não filtra por geografia
-                        passouFiltroGeografico = true;
-                    } else if (scopeName === 'Continental') {
-                        // No âmbito continental, filtrar pelo continente selecionado
-                        if (continentId && team.continent_id === continentId) {
+                    // Não adicionar novamente os times que já foram adicionados como selecionados
+                    if (!selectedTeams.includes("{{ team.id }}")) {
+                        var team = {
+                            id: {{ team.id }},
+                            name: "{{ team.name }}",
+                            state_id: {% if team.state_id %}"{{ team.state_id }}"{% else %}null{% endif %},
+                            country_id: {% if team.country_id %}"{{ team.country_id }}"{% else %}null{% endif %},
+                            continent_id: {% if team.country.continent_id %}"{{ team.country.continent_id }}"{% else %}null{% endif %},
+                            is_national_team: {% if team.is_national_team %}true{% else %}false{% endif %}
+                        };
+                        
+                        var passouFiltroGeografico = false;
+                        var passouFiltroTipo = true;
+                        
+                        // 1. FILTRO GEOGRÁFICO: Verificar se o time pertence ao âmbito selecionado
+                        if (scopeName === 'Mundial') {
+                            // Para âmbito mundial, não filtra por geografia
                             passouFiltroGeografico = true;
+                        } else if (scopeName === 'Continental') {
+                            // No âmbito continental, filtrar pelo continente selecionado
+                            if (continentId && team.continent_id === continentId) {
+                                passouFiltroGeografico = true;
+                            }
+                        } else if (scopeName === 'Nacional') {
+                            // No âmbito nacional, filtrar pelo país selecionado
+                            if (countryId && team.country_id === countryId) {
+                                passouFiltroGeografico = true;
+                            }
+                        } else if (scopeName === 'Estadual') {
+                            // No âmbito estadual, filtrar pelo estado selecionado
+                            if (stateId && team.state_id === stateId) {
+                                passouFiltroGeografico = true;
+                            }
                         }
-                    } else if (scopeName === 'Nacional') {
-                        // No âmbito nacional, filtrar pelo país selecionado
-                        if (countryId && team.country_id === countryId) {
-                            passouFiltroGeografico = true;
+                        
+                        // 2. FILTRO DE TIPO: Verificar se corresponde ao tipo selecionado (times/seleções)
+                        var isSelection = team.is_national_team;
+                        if (filterType === 'teams' && isSelection) {
+                            passouFiltroTipo = false;
+                        } else if (filterType === 'selections' && !isSelection) {
+                            passouFiltroTipo = false;
                         }
-                    } else if (scopeName === 'Estadual') {
-                        // No âmbito estadual, filtrar pelo estado selecionado
-                        if (stateId && team.state_id === stateId) {
-                            passouFiltroGeografico = true;
+                        
+                        // 3. REGRA ESPECIAL: Nunca mostrar seleções no âmbito estadual
+                        if (scopeName === 'Estadual' && isSelection) {
+                            passouFiltroTipo = false;
                         }
-                    }
-                    
-                    // 2. FILTRO DE TIPO: Verificar se corresponde ao tipo selecionado (times/seleções)
-                    var isSelection = team.is_national_team;
-                    if (filterType === 'teams' && isSelection) {
-                        passouFiltroTipo = false;
-                    } else if (filterType === 'selections' && !isSelection) {
-                        passouFiltroTipo = false;
-                    }
-                    
-                    // 3. REGRA ESPECIAL: Nunca mostrar seleções no âmbito estadual
-                    if (scopeName === 'Estadual' && isSelection) {
-                        passouFiltroTipo = false;
-                    }
-                    
-                    // Adicionar o time se passou em todos os filtros
-                    if (passouFiltroGeografico && passouFiltroTipo) {
-                        var selected = selectedTeams.includes("{{ team.id }}");
-                        $select.append('<option value="{{ team.id }}" data-type="{{ team.is_national_team|yesno:"selection,team" }}" ' + 
-                            (selected ? 'selected' : '') + '>{{ team.name }}</option>');
+                        
+                        // Adicionar o time se passou em todos os filtros
+                        if (passouFiltroGeografico && passouFiltroTipo) {
+                            $select.append('<option value="{{ team.id }}" data-type="{{ team.is_national_team|yesno:"selection,team" }}">{{ team.name }}</option>');
+                        }
                     }
                     {% endfor %}
                     
@@ -787,6 +1378,8 @@
                     
                     // Resetar flag após aplicar os filtros
                     needsRefreshTeams = false;
+                    
+                    console.log("Times selecionados após filtro:", $select.val());
                 }
                 
                 // Associar eventos de mudança aos selects da aba Geral
@@ -806,62 +1399,12 @@
                     // Se estamos entrando na aba Times, forçar atualização dos filtros
                     if ($(e.target).attr('href') === '#times') {
                         filterTeams(true); // Forçar atualização ao entrar na aba Times
-                        
-                        // Garantir que a DualListbox seja reinicializada corretamente na aba times
-                        setTimeout(function() {
-                            var $select = $('.duallistbox');
-                            if ($select.data('bootstrapDualListbox')) {
-                                $select.bootstrapDualListbox('refresh');
-                                
-                                // Ajustar o layout para exibição horizontal
-                                fixDualListBoxLayout();
-                                
-                                console.log("DualListbox reinicializada na aba times");
-                            } else {
-                                console.log("Inicializando DualListbox na aba times");
-                                $select.bootstrapDualListbox({
-                                    nonSelectedListLabel: 'Disponíveis',
-                                    selectedListLabel: 'Selecionados',
-                                    preserveSelectionOnMove: 'moved',
-                                    moveOnSelect: false
-                                });
-                                
-                                // Ajustar o layout para exibição horizontal
-                                fixDualListBoxLayout();
-                            }
-                        }, 200);
                     }
                 });
                 
-                // Função para corrigir o layout da DualListbox para horizontal
-                function fixDualListBoxLayout() {
-                    // Garantir que os contêineres estejam lado a lado
-                    $('.bootstrap-duallistbox-container .row').css('display', 'flex');
-                    $('.bootstrap-duallistbox-container .row').css('flex-direction', 'row');
-                    $('.bootstrap-duallistbox-container .row').css('margin', '0');
-                    
-                    // Ajustar largura das caixas
-                    $('.bootstrap-duallistbox-container .box1, .bootstrap-duallistbox-container .box2').css('width', '45%');
-                    $('.bootstrap-duallistbox-container .box1, .bootstrap-duallistbox-container .box2').css('margin', '0 10px');
-                    $('.bootstrap-duallistbox-container .box1, .bootstrap-duallistbox-container .box2').css('float', 'none');
-                    
-                    // Ajustar altura das listas
-                    $('.bootstrap-duallistbox-container select').css('height', '200px');
-                    
-                    console.log("Layout da DualListbox ajustado para exibição horizontal");
-                }
-                
-                // Aplicar o filtro inicial
-                filterTeams(true);
-
-                // Certificar que todas as abas estão inicializadas corretamente
-                // Isso resolve problemas de layout com abas escondidas
-                $('.nav-tabs a').each(function() {
-                    if (!$(this).hasClass('active')) {
-                        // Marca a aba como visitada para que o Bootstrap a inicialize corretamente
-                        $(this).attr('data-visited', 'true');
-                    }
-                });
+                // NÃO aplicar o filtro inicial automaticamente, apenas preparar a interface
+                // filterTeams(true);  // <-- Esta linha está comentada para evitar problemas com times já selecionados
+                console.log("Configuração de times concluída, filtros serão aplicados apenas em mudanças subsequentes");
 
                 // Função para processar o arquivo Excel
                 function processExcelFile(file) {
@@ -951,6 +1494,7 @@
 
                     // Função auxiliar para criar uma nova linha de rodada
                     function criarLinhaRodada() {
+                        var uniqueId = Date.now() + '-' + Math.floor(Math.random() * 1000);
                         return $(`
                             <div class="row col-lg-12 mt10">
                                 <div class="col-lg-2">
@@ -965,12 +1509,17 @@
                                     <input type="number" min="0" class="form-control placar">
                                 </div>
                                 <div class="col-lg-2 mlm30 mr25">
-                                    <select class="form-control js-templating time-select time-visitante" style="width: 100%">
+                                    <select class="form-control time-select time-visitante" style="width: 100%">
                                         <option value="">Selecione o time</option>
                                     </select>
                                 </div>
                                 <div class="col-lg-3 ml10">
-                                    <input type="text" class="form-control datetimepicker-input" style="width: 50%" data-toggle="datetimepicker"/>
+                                    <div class="input-group date" id="match-datetime-${uniqueId}">
+                                        <input type="text" class="form-control datetimepicker-input" data-target="#match-datetime-${uniqueId}" data-toggle="datetimepicker" style="width: 100%" />
+                                        <div class="input-group-append" data-target="#match-datetime-${uniqueId}" data-toggle="datetimepicker">
+                                            <span class="input-group-text"><i class="fa fa-calendar"></i></span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         `);
@@ -1022,10 +1571,26 @@
                             escapeMarkup: function(m) { return m; }
                         });
 
-                        $linha.find('.datetimepicker-input').datetimepicker({
-                            format: 'DD/MM/YYYY HH:mm',
-                            locale: 'pt-br'
-                        });
+                        // Inicializar o datepicker
+                        var dateContainer = $linha.find('.date');
+                        var dateId = dateContainer.attr('id');
+                        if (dateId) {
+                            $('#' + dateId).datetimepicker({
+                                format: 'DD/MM/YYYY HH:mm',
+                                locale: 'pt-br',
+                                icons: {
+                                    time: 'fa fa-clock-o',
+                                    date: 'fa fa-calendar',
+                                    up: 'fa fa-chevron-up',
+                                    down: 'fa fa-chevron-down',
+                                    previous: 'fa fa-chevron-left',
+                                    next: 'fa fa-chevron-right',
+                                    today: 'fa fa-check',
+                                    clear: 'fa fa-trash',
+                                    close: 'fa fa-times'
+                                }
+                            });
+                        }
 
                         // Seleciona os times corretos
                         setTimeout(() => {
@@ -1045,119 +1610,939 @@
                 // Função para coletar dados das partidas
                 function coletarDadosPartidas() {
                     var matches = [];
+                    var faseId = $('#fase').val();
+                    var rodadaId = $('#rodada').val();
+                    var championshipId = "{{ championship.id }}";
+                    
+                    console.log("===================== INÍCIO COLETA DE PARTIDAS =====================");
+                    console.log("ID do Campeonato:", championshipId);
+                    console.log("ID da Fase:", faseId);
+                    console.log("ID da Rodada:", rodadaId);
+                    
+                    // Validar se temos fase e rodada selecionados
+                    if (!faseId || !rodadaId) {
+                        console.warn("ERRO: Fase ou rodada não selecionadas");
+                        return matches;
+                    }
+                    
+                    // Contar quantas linhas de partidas existem
+                    var totalLinhas = $('#matches-container .row.col-lg-12.mt10').length;
+                    console.log("Total de linhas de partidas encontradas:", totalLinhas);
                     
                     // Cada linha de partida na interface
-                    $('.row.col-lg-12.mt10').each(function(index) {
+                    $('#matches-container .row.col-lg-12.mt10').each(function(index) {
                         var $row = $(this);
-                        var stage = $('#fase').val();
-                        var round = $('#rodada').val();
-                        var homeTeam = $row.find('.time-mandante').val();
-                        var awayTeam = $row.find('.time-visitante').val();
+                        // Forçar uma atualização dos selects antes de pegar os valores
+                        var $mandante = $row.find('.time-mandante');
+                        var $visitante = $row.find('.time-visitante');
+                        
+                        // Pegar valores diretamente
+                        var homeTeamId = $mandante.val();
+                        var awayTeamId = $visitante.val();
                         var homeScore = $row.find('input.placar').eq(0).val();
                         var awayScore = $row.find('input.placar').eq(1).val();
                         var matchDate = $row.find('.datetimepicker-input').val();
+                        var matchId = $row.data('match-id'); // Pegar o ID da partida se existir
+                        
+                        console.log(`\n---- PARTIDA #${index + 1} ----`);
+                        console.log("Time Mandante ID:", homeTeamId);
+                        console.log("Time Visitante ID:", awayTeamId);
+                        console.log("Placar Mandante:", homeScore);
+                        console.log("Placar Visitante:", awayScore);
+                        console.log("Data da Partida:", matchDate);
+                        console.log("ID da Partida:", matchId || "Nova partida");
+                        
+                        // Verificar se os selects de times estão funcionando corretamente
+                        var mandanteText = $mandante.find('option:selected').text();
+                        var visitanteText = $visitante.find('option:selected').text();
+                        console.log("Nome do Time Mandante:", mandanteText);
+                        console.log("Nome do Time Visitante:", visitanteText);
                         
                         // Só adiciona se tiver pelo menos os times selecionados
-                        if (homeTeam && awayTeam) {
-                            matches.push({
-                                stage: stage,
-                                round: round,
-                                home_team: homeTeam,
-                                away_team: awayTeam,
+                        if (homeTeamId && awayTeamId) {
+                            var matchData = {
+                                stage_id: faseId,
+                                round_id: rodadaId,
+                                championship_id: championshipId,
+                                home_team_id: homeTeamId,
+                                away_team_id: awayTeamId,
                                 home_score: homeScore || null,
                                 away_score: awayScore || null,
                                 match_date: matchDate || null
-                            });
+                            };
+                            
+                            // Adicionar o ID da partida se existir (importante para atualização)
+                            if (matchId) {
+                                matchData.id = matchId;
+                            }
+                            
+                            matches.push(matchData);
+                            console.log("✓ Partida adicionada com sucesso!");
+                        } else {
+                            console.warn("✗ Partida ignorada - Times não selecionados corretamente!");
+                            // Depurar problema de seleção
+                            console.log("Valor do select mandante:", $mandante.val());
+                            console.log("HTML do select mandante:", $mandante.html().substring(0, 100) + "...");
+                            console.log("Valor do select visitante:", $visitante.val());
+                            console.log("HTML do select visitante:", $visitante.html().substring(0, 100) + "...");
                         }
                     });
                     
-                    // Adiciona campo oculto com JSON ou atualiza se já existir
-                    var matchesJson = JSON.stringify(matches);
-                    var $matchesInput = $('#matches-data');
-                    
-                    if ($matchesInput.length) {
-                        $matchesInput.val(matchesJson);
-                    } else {
-                        $('<input>').attr({
-                            type: 'hidden',
-                            id: 'matches-data',
-                            name: 'matches',
-                            value: matchesJson
-                        }).appendTo('#form-campeonato');
-                    }
-                    
-                    console.log("Dados das partidas coletados:", matches);
+                    console.log(`\nTotal de partidas coletadas: ${matches.length} de ${totalLinhas}`);
+                    console.log("===================== FIM COLETA DE PARTIDAS =====================");
+                    return matches;
                 }
+
+                // Interceptar o envio do formulário padrão
+                $('#form-campeonato').on('submit', function(e) {
+                    e.preventDefault(); // Impedir o envio tradicional do formulário
+                    
+                    console.log("===================== ENVIO DE FORMULÁRIO =====================");
+                    
+                    // Forçar uma atualização final dos selects
+                    atualizarTodosSelects();
+                    
+                    // Aguardar um momento para garantir que os selects estejam atualizados
+                    setTimeout(function() {
+                        // Coletar dados das partidas
+                        var matches = coletarDadosPartidas();
+                        console.log("Partidas coletadas para envio:", matches.length);
+                        
+                        if (matches.length === 0 && $('.nav-tabs .active').attr('href') === '#rodadas') {
+                            toastr.warning("Não há jogos para salvar. Verifique se você selecionou os times corretamente.");
+                            return;
+                        }
+                        
+                        // Criar FormData a partir do formulário
+                        var formData = new FormData($('#form-campeonato')[0]);
+                        
+                        // MODIFICAÇÃO: Adicionar partidas de várias formas para garantir compatibilidade
+                        // 1. JSON completo
+                        var matchesJson = JSON.stringify(matches);
+                        formData.append('matches', matchesJson);
+                        
+                        // 2. Formato de campo individual para cada partida (para compatibilidade)
+                        matches.forEach(function(match, index) {
+                            for (var key in match) {
+                                formData.append(`matches[${index}][${key}]`, match[key]);
+                            }
+                        });
+                        
+                        // 3. Campo adicional para número de partidas 
+                        formData.append('match_count', matches.length);
+                        
+                        console.log("JSON das partidas enviado:", matchesJson);
+                        console.log("Número de partidas enviadas:", matches.length);
+                        
+                        // Verificar todos os campos do FormData
+                        console.log("Campos do FormData:");
+                        for (var pair of formData.entries()) {
+                            if (pair[0] === 'matches') {
+                                console.log(pair[0] + ': [JSON com ' + matches.length + ' partidas]');
+                            } else {
+                                console.log(pair[0] + ': ' + pair[1]);
+                            }
+                        }
+                        
+                        // Enviar via AJAX
+                        $.ajax({
+                            url: $('#form-campeonato').attr('action'),
+                            type: 'POST',
+                            data: formData,
+                            processData: false,
+                            contentType: false,
+                            success: function(response) {
+                                console.log("===================== RESPOSTA DO SERVIDOR =====================");
+                                console.log("Status:", response.success ? "SUCESSO" : "ERRO");
+                                console.log("Mensagem:", response.message);
+                                console.log("Resposta completa:", response);
+                                
+                                if (response.success) {
+                                    // Exibir mensagem de sucesso
+                                    toastr.success(response.message || "Campeonato salvo com sucesso!");
+                                    
+                                    // Redirecionar se uma URL foi fornecida
+                                    if (response.redirect_url) {
+                                        console.log("Redirecionando para:", response.redirect_url);
+                                        setTimeout(function() {
+                                            window.location.href = response.redirect_url;
+                                        }, 1000);
+                                    }
+                                } else {
+                                    // Exibir mensagem de erro
+                                    toastr.error(response.message || "Erro ao salvar campeonato!");
+                                }
+                                console.log("===================================================================");
+                            },
+                            error: function(xhr, status, error) {
+                                console.error("===================== ERRO DO SERVIDOR =====================");
+                                console.error("Status HTTP:", xhr.status);
+                                console.error("Texto do erro:", error);
+                                console.error("Resposta do servidor:", xhr.responseText);
+                                
+                                try {
+                                    var jsonResponse = JSON.parse(xhr.responseText);
+                                    console.error("Erro decodificado:", jsonResponse);
+                                    toastr.error(jsonResponse.message || "Erro ao salvar campeonato!");
+                                } catch (e) {
+                                    console.error("Não foi possível decodificar a resposta como JSON:", e);
+                                    toastr.error("Erro ao salvar campeonato!");
+                                }
+                                console.error("===================================================================");
+                            }
+                        });
+                    }, 300);
+                    
+                    return false; // Impedir o envio do formulário
+                });
 
                 // Handler para o botão "Aplicar"
                 $('#btn-aplicar').on('click', function() {
-                    console.log("Botão Aplicar clicado - Enviando formulário via AJAX");
+                    console.log("===================== APLICAR ALTERAÇÕES =====================");
                     
-                    // Coletar dados das partidas se necessário
-                    coletarDadosPartidas();
+                    // Forçar uma atualização final dos selects
+                    atualizarTodosSelects();
                     
-                    // Criar FormData a partir do formulário
-                    var formData = new FormData($('#form-campeonato')[0]);
+                    // Aguardar um momento para garantir que os selects estejam atualizados
+                    setTimeout(function() {
+                        // Coletar dados das partidas
+                        var matches = coletarDadosPartidas();
+                        console.log("Partidas coletadas para aplicar:", matches.length);
+                        
+                        // Se não houver partidas e estivermos na aba de partidas, avisar
+                        if (matches.length === 0 && $('.nav-tabs .active').attr('href') === '#rodadas') {
+                            toastr.warning("Não há jogos para salvar ou a fase/rodada não está selecionada");
+                            return;
+                        }
+                        
+                        // Criar FormData a partir do formulário
+                        var formData = new FormData($('#form-campeonato')[0]);
+                        
+                        // MODIFICAÇÃO: Adicionar partidas de várias formas para garantir compatibilidade
+                        // 1. JSON completo
+                        var matchesJson = JSON.stringify(matches);
+                        formData.append('matches', matchesJson);
+                        
+                        // 2. Formato de campo individual para cada partida (para compatibilidade)
+                        matches.forEach(function(match, index) {
+                            for (var key in match) {
+                                formData.append(`matches[${index}][${key}]`, match[key]);
+                            }
+                        });
+                        
+                        // 3. Campo adicional para número de partidas 
+                        formData.append('match_count', matches.length);
+                        
+                        console.log("JSON das partidas para aplicar:", matchesJson);
+                        console.log("Número de partidas enviadas:", matches.length);
+                        
+                        // Verificar todos os campos do FormData
+                        console.log("Campos do FormData (Aplicar):");
+                        for (var pair of formData.entries()) {
+                            if (pair[0] === 'matches') {
+                                console.log(pair[0] + ': [JSON com ' + matches.length + ' partidas]');
+                            } else {
+                                console.log(pair[0] + ': ' + pair[1]);
+                            }
+                        }
+                        
+                        // Adicionar parâmetro para indicar que é uma requisição "Aplicar"
+                        formData.append('apply_only', 'true');
+                        
+                        $.ajax({
+                            url: $('#form-campeonato').attr('action'),
+                            type: 'POST',
+                            data: formData,
+                            processData: false,
+                            contentType: false,
+                            success: function(response) {
+                                console.log("===================== RESPOSTA DO SERVIDOR (APLICAR) =====================");
+                                console.log("Status:", response.success ? "SUCESSO" : "ERRO");
+                                console.log("Mensagem:", response.message);
+                                console.log("Resposta completa:", response);
+                                
+                                // Sempre mostra mensagem de sucesso
+                                toastr.success("Campeonato atualizado com sucesso!");
+                                
+                                // Recarregar a página após um breve delay para mostrar as alterações
+                                setTimeout(function() {
+                                    window.location.reload();
+                                }, 1500);
+                            },
+                            error: function(xhr, status, error) {
+                                console.error("===================== ERRO DO SERVIDOR (APLICAR) =====================");
+                                console.error("Status HTTP:", xhr.status);
+                                console.error("Texto do erro:", error);
+                                console.error("Resposta do servidor:", xhr.responseText);
+                                
+                                try {
+                                    var jsonResponse = JSON.parse(xhr.responseText);
+                                    console.error("Erro decodificado:", jsonResponse);
+                                    toastr.error(jsonResponse.message || "Erro ao atualizar campeonato!");
+                                } catch (e) {
+                                    console.error("Não foi possível decodificar a resposta como JSON:", e);
+                                    toastr.error("Erro ao atualizar campeonato!");
+                                }
+                                console.error("===================================================================");
+                            }
+                        });
+                    }, 300);
+                });
+
+                // Handler para remover partidas existentes
+                $('.remove-match').on('click', function() {
+                    $(this).closest('.match-row').remove();
+                });
+
+                function formatTeamOption(team) {
+                    if (!team.id) {
+                        return team.text;
+                    }
                     
-                    // Adicionar parâmetro para indicar que é uma requisição "Aplicar"
-                    formData.append('apply_only', 'true');
+                    // Buscar o elemento option original para pegar o data-image se existir
+                    var $originalOption = $(team.element);
+                    var imageUrl = $originalOption.data('image');
                     
-                    $.ajax({
-                        url: $('#form-campeonato').attr('action'),
-                        type: 'POST',
-                        data: formData,
-                        processData: false,
-                        contentType: false,
-                        success: function(response) {
-                            // Sempre mostra mensagem de sucesso
-                            toastr.success("Campeonato atualizado com sucesso!");
+                    // Se não tiver imagem, usar a imagem genérica
+                    if (!imageUrl) {
+                        imageUrl = window.GENERIC_TEAM_IMAGE;
+                    }
+                    
+                    return $(
+                        '<span><img src="' + imageUrl + '" class="team-select-img" /> ' + team.text + '</span>'
+                    );
+                }
+
+                // Adicionar estilo para a imagem no select
+                $('<style>')
+                    .text(
+                        '.team-select-img { ' +
+                        '    width: 25px; ' +
+                        '    height: 25px; ' +
+                        '    border-radius: 50%; ' +
+                        '    margin-right: 8px; ' +
+                        '    object-fit: cover; ' +
+                        '}'
+                    )
+                    .appendTo('head');
+
+                // Atualizar a função de inicialização dos selects de times
+                function inicializarSelectTimes() {
+                    $('.time-select').select2({
+                        width: '100%',
+                        placeholder: 'Selecione o time',
+                        allowClear: true,
+                        templateResult: formatTeamOption,
+                        templateSelection: formatTeamOption,
+                        escapeMarkup: function(m) { return m; }
+                    });
+                }
+
+                // Variável global para armazenar os times já selecionados na rodada atual
+                var timesSelecionados = [];
+
+                // Função para atualizar todos os selects com base nos times já selecionados
+                function atualizarTodosSelects() {
+                    // Coletar todos os times já selecionados na rodada
+                    timesSelecionados = [];
+                    
+                    // Verificar cada select de time mandante e visitante
+                    $('.time-mandante, .time-visitante').each(function() {
+                        var timeId = $(this).val();
+                        if (timeId && timeId !== '') {
+                            timesSelecionados.push(timeId);
+                        }
+                    });
+                    
+                    console.log("Times já selecionados:", timesSelecionados);
+                    
+                    // Criar uma cópia de todas as opções de times originais se ainda não tivermos
+                    if (!window.allTeamOptions) {
+                        window.allTeamOptions = [];
+                        
+                        // Obter todas as opções do primeiro select (que deve conter todos os times)
+                        var $firstSelect = $('.time-mandante').first();
+                        
+                        $firstSelect.find('option').each(function() {
+                            var $option = $(this);
+                            var timeId = $option.val();
+                            var timeName = $option.text();
+                            var timeImage = $option.data('image');
                             
-                            // Recarregar a página após um breve delay
-                            setTimeout(function() {
-                                window.location.reload();
-                            }, 1500);
-                        },
-                        error: function(xhr, status, error) {
-                            // Mesmo em caso de erro, mostra mensagem de sucesso
-                            toastr.success("Campeonato atualizado com sucesso!");
+                            // Não incluir a opção vazia (Selecione o time)
+                            if (timeId) {
+                                window.allTeamOptions.push({
+                                    id: timeId,
+                                    text: timeName,
+                                    image: timeImage
+                                });
+                            }
+                        });
+                        
+                        console.log("Todos os times cacheados:", window.allTeamOptions);
+                    }
+                    
+                    // Atualizar cada select
+                    $('.time-mandante, .time-visitante').each(function() {
+                        var $select = $(this);
+                        var timeAtual = $select.val(); // Preservar o time atual selecionado
+                        
+                        // Destruir o select2 antes de manipular as opções
+                        $select.select2('destroy');
+                        
+                        // Limpar todas as opções exceto a primeira (Selecione o time)
+                        $select.find('option:not(:first)').remove();
+                        
+                        // Adicionar apenas as opções de times disponíveis
+                        window.allTeamOptions.forEach(function(team) {
+                            // Só adiciona se o time não estiver selecionado em outro select ou se for o atual deste select
+                            if (!timesSelecionados.includes(team.id) || team.id === timeAtual) {
+                                var $option = $('<option>', {
+                                    value: team.id,
+                                    text: team.text
+                                });
+                                
+                                // Adicionar data-image se existir
+                                if (team.image) {
+                                    $option.attr('data-image', team.image);
+                                }
+                                
+                                $select.append($option);
+                            }
+                        });
+                        
+                        // Recriar o select2
+                        $select.select2({
+                            width: '100%',
+                            placeholder: 'Selecione o time',
+                            allowClear: true,
+                            templateResult: formatTeamOption,
+                            templateSelection: formatTeamOption,
+                            escapeMarkup: function(m) { return m; }
+                        });
+                        
+                        // Restaurar o valor selecionado, se ainda estiver disponível
+                        if (timeAtual) {
+                            $select.val(timeAtual).trigger('change.select2');
+                        }
+                    });
+                }
+
+                // Atualizar a função de criar linha de jogo para incluir as imagens dos times e o filtro de times
+                function criarLinhaJogo(match) {
+                    console.log("Criando nova linha de jogo", match ? "com dados existentes" : "vazia");
+                    
+                    // Extrair IDs dos times se existirem
+                    var homeTeamId = match ? (match.home_team_id || match.team_home_id || match.team_home) : null;
+                    var awayTeamId = match ? (match.away_team_id || match.team_away_id || match.team_away) : null;
+                    
+                    // Certificar-se de que os IDs são strings
+                    homeTeamId = homeTeamId ? String(homeTeamId) : null;
+                    awayTeamId = awayTeamId ? String(awayTeamId) : null;
+                    
+                    console.log("Time mandante ID:", homeTeamId);
+                    console.log("Time visitante ID:", awayTeamId);
+                    console.log("Dados completos da partida:", match);
+                    
+                    var uniqueId = Date.now() + '-' + Math.floor(Math.random() * 1000);
+                    var matchId = match && match.id ? match.id : null;
+                    
+                    // Verificar se é um jogo novo gerado pelo servidor (ID começa com "new_")
+                    var isNewMatch = matchId && String(matchId).startsWith('new_');
+                    if (isNewMatch) {
+                        console.log("Detectado jogo novo gerado pelo servidor com ID:", matchId);
+                    }
+                    
+                    // Exibir nome dos times para debug
+                    var homeName = match && match.home_team_name ? match.home_team_name : "(Sem nome)";
+                    var awayName = match && match.away_team_name ? match.away_team_name : "(Sem nome)";
+                    console.log(`Nomes dos times: Mandante=${homeName}, Visitante=${awayName}`);
+                    
+                    // Criar HTML dos times com os valores já pré-selecionados
+                    var homeTeamHtml = '<option value="">Selecione o time</option>';
+                    var awayTeamHtml = '<option value="">Selecione o time</option>';
+                    
+                    // Array para debug
+                    var timesDisponiveis = [];
+                    
+                    {% for team in teams %}
+                    // Realizar comparação como string para garantir compatibilidade
+                    var teamId = "{{ team.id }}";
+                    var teamName = "{{ team.name }}";
+                    
+                    timesDisponiveis.push({id: teamId, name: teamName});
+                    
+                    // Verificações extras para debug
+                    var isHomeSelected = homeTeamId && homeTeamId === teamId;
+                    var isAwaySelected = awayTeamId && awayTeamId === teamId;
+                    
+                    if (isHomeSelected || isAwaySelected) {
+                        console.log(`Time: ID=${teamId}, Nome=${teamName}`);
+                        console.log(`Mandante: ${isHomeSelected ? "SELECIONADO" : "não"} (${homeTeamId} === ${teamId})`);
+                        console.log(`Visitante: ${isAwaySelected ? "SELECIONADO" : "não"} (${awayTeamId} === ${teamId})`);
+                    }
+                    
+                    // Time mandante - marcar como selecionado se for o time correto
+                    homeTeamHtml += '<option value="' + teamId + '" ' + 
+                        (isHomeSelected ? 'selected="selected"' : '') + 
+                        ' data-image="{% if team.image and team.image.url %}{{ team.image.url }}{% endif %}">{{ team.name }}</option>';
+                    
+                    // Time visitante - marcar como selecionado se for o time correto
+                    awayTeamHtml += '<option value="' + teamId + '" ' + 
+                        (isAwaySelected ? 'selected="selected"' : '') + 
+                        ' data-image="{% if team.image and team.image.url %}{{ team.image.url }}{% endif %}">{{ team.name }}</option>';
+                    {% endfor %}
+                    
+                    console.log("Times disponíveis:", timesDisponiveis.length);
+                    console.log("Time mandante presente na lista:", homeTeamId ? timesDisponiveis.some(t => t.id === homeTeamId) : "N/A");
+                    console.log("Time visitante presente na lista:", awayTeamId ? timesDisponiveis.some(t => t.id === awayTeamId) : "N/A");
+                    
+                    // Criar o HTML da linha com as opções de times já pré-selecionadas
+                    var $linha = $(`
+                        <div class="row col-lg-12 mt10" ${matchId ? 'data-match-id="' + matchId + '"' : ''}>
+                            <div class="col-lg-2">
+                                <select class="form-control time-select time-mandante" style="width: 100%">
+                                    ${homeTeamHtml}
+                                </select>
+                            </div>
+                            <div class="col-lg-1 ml35 mrm15">
+                                <input type="number" min="0" class="form-control placar" value="${match && match.home_score !== null && match.home_score !== '' ? match.home_score : ''}">
+                            </div>
+                            <div class="col-lg-1 mlm30 mrm15">
+                                <input type="number" min="0" class="form-control placar" value="${match && match.away_score !== null && match.away_score !== '' ? match.away_score : ''}">
+                            </div>
+                            <div class="col-lg-2 mlm30 mr25">
+                                <select class="form-control time-select time-visitante" style="width: 100%">
+                                    ${awayTeamHtml}
+                                </select>
+                            </div>
+                            <div class="col-lg-3 ml10">
+                                <div class="input-group date" id="match-datetime-${uniqueId}">
+                                    <input type="text" class="form-control datetimepicker-input" data-target="#match-datetime-${uniqueId}" data-toggle="datetimepicker" style="width: 100%" value="${match && match.match_date ? match.match_date : ''}" />
+                                    <div class="input-group-append" data-target="#match-datetime-${uniqueId}" data-toggle="datetimepicker">
+                                        <span class="input-group-text"><i class="fa fa-calendar"></i></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-1">
+                                <button type="button" class="btn btn-danger btn-excluir-partida"><i class="fa fa-trash"></i></button>
+                            </div>
+                        </div>
+                    `);
+                    
+                    // *** IMPORTANTE: Armazenar os IDs dos times para verificação depois da inicialização do Select2 ***
+                    $linha.data('home-team-id', homeTeamId);
+                    $linha.data('away-team-id', awayTeamId);
+                    
+                    // PRIMEIRO: Verificar que os valores foram definidos corretamente nos selects HTML antes do Select2
+                    var $homeSel = $linha.find('.time-mandante');
+                    var $awaySel = $linha.find('.time-visitante');
+                    
+                    console.log("Valores antes do Select2:");
+                    console.log("Mandante selecionado HTML:", $homeSel.val());
+                    console.log("Visitante selecionado HTML:", $awaySel.val());
+                    
+                    // Inicializar os selects
+                    $linha.find('.time-select').each(function() {
+                        $(this).select2({
+                            width: '100%',
+                            placeholder: 'Selecione o time',
+                            allowClear: true,
+                            templateResult: formatTeamOption,
+                            templateSelection: formatTeamOption,
+                            escapeMarkup: function(m) { return m; }
+                        });
+                    });
+
+                    // Verificar se o Select2 manteve os valores selecionados após inicialização
+                    console.log("Valores após inicialização Select2:");
+                    console.log("Mandante selecionado após Select2:", $homeSel.val());
+                    console.log("Visitante selecionado após Select2:", $awaySel.val());
+                    
+                    // CORREÇÃO FUNDAMENTAL: Se os valores foram perdidos após o Select2,
+                    // forçar novamente a seleção correta
+                    if (homeTeamId && $homeSel.val() !== homeTeamId) {
+                        console.log("Corrigindo seleção mandante:", homeTeamId);
+                        $homeSel.val(homeTeamId).trigger('change');
+                    }
+                    
+                    if (awayTeamId && $awaySel.val() !== awayTeamId) {
+                        console.log("Corrigindo seleção visitante:", awayTeamId);
+                        $awaySel.val(awayTeamId).trigger('change');
+                    }
+                    
+                    // Confirmar novamente os valores após as correções
+                    console.log("Valores após correções:");
+                    console.log("Mandante:", $homeSel.val(), $homeSel.find('option:selected').text());
+                    console.log("Visitante:", $awaySel.val(), $awaySel.find('option:selected').text());
+                    
+                    // Para partidas existentes, fazer uma verificação adicional após um pequeno delay
+                    if (matchId) {
+                        setTimeout(function() {
+                            // Verificação final e correção se necessário
+                            if (homeTeamId && $homeSel.val() !== homeTeamId) {
+                                console.log("CORREÇÃO FINAL Mandante:", homeTeamId);
+                                $homeSel.val(homeTeamId).trigger('change');
+                                // Método mais direto se o select2 não estiver cooperando
+                                $homeSel.find('option').prop('selected', false);
+                                $homeSel.find('option[value="' + homeTeamId + '"]').prop('selected', true);
+                                $homeSel.trigger('change');
+                            }
                             
-                            // Recarregar a página após um breve delay
-                            setTimeout(function() {
-                                window.location.reload();
-                            }, 1500);
+                            if (awayTeamId && $awaySel.val() !== awayTeamId) {
+                                console.log("CORREÇÃO FINAL Visitante:", awayTeamId);
+                                $awaySel.val(awayTeamId).trigger('change');
+                                // Método mais direto se o select2 não estiver cooperando
+                                $awaySel.find('option').prop('selected', false);
+                                $awaySel.find('option[value="' + awayTeamId + '"]').prop('selected', true);
+                                $awaySel.trigger('change');
+                            }
+                        }, 500);
+                    }
+                    
+                    // Adicionar evento para excluir a partida
+                    $linha.find('.btn-excluir-partida').on('click', function() {
+                        $linha.remove();
+                    });
+                    
+                    // Inicializar o datepicker
+                    var dateId = $linha.find('.date').attr('id');
+                    $('#' + dateId).datetimepicker({
+                        format: 'DD/MM/YYYY HH:mm',
+                        locale: 'pt-br',
+                        icons: {
+                            time: 'fa fa-clock-o',
+                            date: 'fa fa-calendar',
+                            up: 'fa fa-chevron-up',
+                            down: 'fa fa-chevron-down',
+                            previous: 'fa fa-chevron-left',
+                            next: 'fa fa-chevron-right',
+                            today: 'fa fa-check',
+                            clear: 'fa fa-trash',
+                            close: 'fa fa-times'
+                        }
+                    });
+                    
+                    return $linha;
+                }
+
+                // Atualizar o estilo das imagens para garantir que apareçam corretamente
+                $('<style>')
+                    .text(`
+                        .team-select-img {
+                            width: 25px;
+                            height: 25px;
+                            border-radius: 50%;
+                            margin-right: 8px;
+                            object-fit: cover;
+                            vertical-align: middle;
+                        }
+                        .select2-container--default .select2-selection--single {
+                            height: 38px;
+                            padding: 4px;
+                        }
+                        .select2-container--default .select2-selection--single .select2-selection__rendered {
+                            line-height: 28px;
+                        }
+                        .select2-results__option {
+                            padding: 6px;
+                            display: flex;
+                            align-items: center;
+                        }
+                    `)
+                    .appendTo('head');
+
+                // Carregar jogos ao selecionar uma rodada
+                $('#rodada').on('change', function() {
+                    var rodadaId = $(this).val();
+                    var faseId = $('#fase').val();
+                    
+                    console.log("===================== CARREGANDO JOGOS =====================");
+                    console.log("ID da Rodada:", rodadaId);
+                    console.log("ID da Fase:", faseId);
+                    console.log("ID do Campeonato:", "{{ championship.id }}");
+                    
+                    // Verificar se temos o atributo data-template-stage-id na fase selecionada
+                    var faseOption = $('#fase option:selected');
+                    var templateStageId = faseOption.data('template-stage-id');
+                    console.log("ID da Fase do Template (se existir):", templateStageId);
+                    
+                    // Limpar a lista de times selecionados quando mudar de rodada
+                    timesSelecionados = [];
+                    
+                    if (rodadaId && faseId) {
+                        console.log("Carregando jogos para rodada:", rodadaId, "e fase:", faseId);
+                        
+                        // Limpar o container de jogos primeiro
+                        $('#matches-container').html('<div class="text-center"><i class="fa fa-spinner fa-spin fa-2x"></i> Carregando jogos...</div>');
+                        
+                        // Primeiro, obter o ID da fase do campeonato correspondente à fase do template
+                        var championship_id = "{{ championship.id }}";
+                        
+                        // Verificar se temos fase do campeonato ou fase do template
+                        var ehFaseTemplate = faseId.toString().indexOf('template_') !== -1;
+                        
+                        if (!championship_id) {
+                            console.error("ID do campeonato não definido.");
+                            $('#matches-container').html('<div class="alert alert-danger">Não foi possível carregar os jogos. ID do campeonato não definido.</div>');
+                            return;
+                        }
+                        
+                        // Função para buscar jogos usando o ID da fase
+                        function buscarJogos(idFase) {
+                            $.ajax({
+                                url: "{% url 'administrativo:get_matches_by_round' %}",
+                                type: 'POST',
+                                data: {
+                                    round_id: rodadaId,
+                                    stage_id: idFase,
+                                    championship_id: championship_id,
+                                    csrfmiddlewaretoken: $('[name=csrfmiddlewaretoken]').val()
+                                },
+                                success: function(data) {
+                                    console.log("Resposta do servidor para jogos:", data);
+                                    
+                                    // Limpar o container
+                                    $('#matches-container').empty();
+                                    
+                                    if (data.success) {
+                                        if (!data.matches || data.matches.length === 0) {
+                                            // Se não houver jogos, mostrar mensagem e adicionar um jogo em branco
+                                            $('#matches-container').append(
+                                                '<div class="alert alert-warning mb-3">' +
+                                                'Nenhum jogo encontrado para esta rodada. Você pode adicionar jogos manualmente usando o botão "Adicionar Partida".' +
+                                                '</div>'
+                                            );
+                                            // Adicionar um jogo em branco
+                                            $('#matches-container').append(criarLinhaJogo());
+                                        } else {
+                                            console.log("Encontrados " + data.matches.length + " jogos para a rodada. Criando linhas...");
+                                            
+                                            // Exibir o total de jogos recebidos
+                                            console.log("===== TOTAL DE JOGOS RECEBIDOS: " + data.matches.length + " =====");
+                                            
+                                            // Examinar cada jogo
+                                            for (var i = 0; i < data.matches.length; i++) {
+                                                console.log("Jogo #" + (i+1) + ":", data.matches[i]);
+                                            }
+                                            
+                                            // Limpar o container para garantir
+                                            $('#matches-container').empty();
+                                            
+                                            // Criar uma linha para cada jogo
+                                            for (var i = 0; i < data.matches.length; i++) {
+                                                var match = data.matches[i];
+                                                console.log("Processando jogo #" + (i+1) + ":", match);
+                                                
+                                                // Verificar se é um jogo vazio (ID começa com new_)
+                                                var isNewMatch = match.id && String(match.id).startsWith('new_');
+                                                if (isNewMatch) {
+                                                    console.log("Jogo #" + (i+1) + " é um jogo vazio com ID: " + match.id);
+                                                }
+                                                
+                                                // Criar a linha para o jogo
+                                                var $linha = criarLinhaJogo(match);
+                                                $('#matches-container').append($linha);
+                                                
+                                                // Log após adicionar
+                                                console.log("Adicionada linha para jogo #" + (i+1) + ", total agora: " + 
+                                                    $('#matches-container .row.col-lg-12.mt10').length);
+                                            }
+                                            
+                                            // Verificação final
+                                            console.log("Verificação final do container:");
+                                            console.log("- Total de jogos recebidos do servidor: " + data.matches.length);
+                                            console.log("- Total de linhas no container: " + $('#matches-container .row.col-lg-12.mt10').length);
+                                            
+                                            // Verificar se todos os jogos foram adicionados
+                                            if ($('#matches-container .row.col-lg-12.mt10').length !== data.matches.length) {
+                                                console.error("ERRO: Número de linhas no container não corresponde ao número de jogos!");
+                                                console.log("Conteúdo do container HTML: " + $('#matches-container').html());
+                                            }
+                                            
+                                            // Inicializar os select2
+                                            inicializarSelectTimes();
+                                        }
+                                    } else {
+                                        console.error("Erro ao buscar jogos:", data.message);
+                                        // Em caso de erro, mostrar mensagem e adicionar um jogo em branco
+                                        $('#matches-container').append(
+                                            '<div class="alert alert-danger mb-3">' +
+                                            'Erro ao carregar jogos. Você pode adicionar jogos manualmente usando o botão "Adicionar Partida".' +
+                                            '</div>'
+                                        );
+                                        $('#matches-container').append(criarLinhaJogo());
+                                    }
+                                },
+                                error: function(xhr, status, error) {
+                                    console.error("Erro ao carregar jogos:", error);
+                                    console.error("Status:", status);
+                                    console.error("Resposta:", xhr.responseText);
+                                    
+                                    // Em caso de erro, mostrar mensagem e adicionar um jogo em branco
+                                    $('#matches-container').html(
+                                        '<div class="alert alert-danger mb-3">' +
+                                        'Erro ao carregar jogos. Você pode adicionar jogos manualmente usando o botão "Adicionar Partida".' +
+                                        '</div>'
+                                    );
+                                    $('#matches-container').append(criarLinhaJogo());
+                                }
+                            });
+                        }
+                        
+                        // Buscar as fases do campeonato para encontrar o ID correspondente
+                        $.ajax({
+                            url: "{% url 'administrativo:get_stages_by_championship' %}",
+                            type: 'POST',
+                            data: {
+                                championship_id: championship_id,
+                                csrfmiddlewaretoken: $('[name=csrfmiddlewaretoken]').val()
+                            },
+                            success: function(data) {
+                                if (data.success && data.stages && data.stages.length > 0) {
+                                    console.log("Fases do campeonato:", data.stages);
+                                    
+                                    // Procurar a fase correspondente pelo template_stage_id
+                                    var fase_campeonato = null;
+                                    for (var i = 0; i < data.stages.length; i++) {
+                                        if (data.stages[i].template_stage_id === faseId) {
+                                            fase_campeonato = data.stages[i];
+                                            break;
+                                        }
+                                    }
+                                    
+                                    if (fase_campeonato) {
+                                        console.log("Fase do campeonato encontrada:", fase_campeonato);
+                                        // Usar o ID da fase do campeonato
+                                        buscarJogos(fase_campeonato.id);
+                                    } else {
+                                        console.log("Fase do campeonato não encontrada, usando o ID da fase do template:", faseId);
+                                        // Usar o ID da fase do template
+                                        buscarJogos(faseId);
+                                    }
+                                } else {
+                                    console.log("Nenhuma fase do campeonato encontrada, usando o ID da fase do template:", faseId);
+                                    buscarJogos(faseId);
+                                }
+                            },
+                            error: function() {
+                                console.error("Erro ao buscar fases do campeonato, usando o ID da fase do template:", faseId);
+                                buscarJogos(faseId);
+                            }
+                        });
+                    } else {
+                        $('#matches-container').html('<div class="alert alert-info">Selecione uma fase e rodada para visualizar os jogos.</div>');
+                    }
+                });
+
+                // Atualizar o handler do botão de adicionar partida para usar a nova função
+                $('#btn-add-partida').on('click', function() {
+                    var fase = $('#fase').val();
+                    var rodada = $('#rodada').val();
+                    
+                    if (!fase || !rodada) {
+                        toastr.warning('Selecione uma fase e uma rodada antes de adicionar uma partida');
+                        return;
+                    }
+                    
+                    // Adicionar uma nova linha de jogo em branco
+                    $('#matches-container').append(criarLinhaJogo());
+                });
+
+                // Inicializa os componentes na carga da página
+                inicializarSelectTimes();
+                
+                // Inicializa todos os datepickers existentes na página
+                $('.date').each(function() {
+                    var $container = $(this);
+                    var id = $container.attr('id');
+                    
+                    if (!id) {
+                        id = 'date-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
+                        $container.attr('id', id);
+                    }
+                    
+                    // Adiciona os atributos data necessários para os elementos internos
+                    $container.find('.datetimepicker-input').attr({
+                        'data-target': '#' + id,
+                        'data-toggle': 'datetimepicker'
+                    });
+                    $container.find('.input-group-append').attr({
+                        'data-target': '#' + id,
+                        'data-toggle': 'datetimepicker'
+                    });
+                    
+                    // Inicializa o datepicker
+                    $('#' + id).datetimepicker({
+                        format: 'DD/MM/YYYY HH:mm',
+                        locale: 'pt-br',
+                        icons: {
+                            time: 'fa fa-clock-o',
+                            date: 'fa fa-calendar',
+                            up: 'fa fa-chevron-up',
+                            down: 'fa fa-chevron-down',
+                            previous: 'fa fa-chevron-left',
+                            next: 'fa fa-chevron-right',
+                            today: 'fa fa-check',
+                            clear: 'fa fa-trash',
+                            close: 'fa fa-times'
                         }
                     });
                 });
 
-                // Handler para o formulário
-                $('#form-campeonato').on('submit', function(e) {
-                    e.preventDefault();
+                // Carregar fases ao selecionar um template
+                $('#template').on('change', function() {
+                    var templateId = $(this).val();
                     
-                    // Coletar dados das partidas
-                    coletarDadosPartidas();
-                    
-                    // Criar FormData
-                    var formData = new FormData(this);
-                    
-                    $.ajax({
-                        url: $(this).attr('action'),
-                        type: 'POST',
-                        data: formData,
-                        processData: false,
-                        contentType: false,
-                        success: function(response) {
-                            toastr.success("Campeonato atualizado com sucesso!");
-                            setTimeout(function() {
-                                window.location.href = "{% url 'administrativo:campeonatos' %}";
-                            }, 1500);
-                        },
-                        error: function(xhr, status, error) {
-                            toastr.success("Campeonato atualizado com sucesso!");
-                            setTimeout(function() {
-                                window.location.href = "{% url 'administrativo:campeonatos' %}";
-                            }, 1500);
-                        }
-                    });
+                    if (templateId) {
+                        console.log("Template selecionado:", templateId);
+                        
+                        // Limpar o select de fases primeiro
+                        var $faseSelect = $('#fase');
+                        $faseSelect.empty().append('<option value="">Carregando...</option>');
+                        
+                        // Como estamos em modo de edição, vamos buscar as fases do campeonato e não do template
+                        console.log("Buscando fases do campeonato com ID:", "{{ championship.id }}");
+                        
+                        $.ajax({
+                            url: "{% url 'administrativo:get_stages_by_championship' %}",
+                            type: 'POST',
+                            data: {
+                                championship_id: "{{ championship.id }}",
+                                csrfmiddlewaretoken: $('[name=csrfmiddlewaretoken]').val()
+                            },
+                            success: function(data) {
+                                $faseSelect.empty();
+                                $faseSelect.append('<option value="">Selecione uma fase...</option>');
+                                
+                                if (data.success && data.stages && data.stages.length > 0) {
+                                    console.log("Fases encontradas para o campeonato:", data.stages);
+                                    
+                                    // Adicionar as fases ao select
+                                    $.each(data.stages, function(i, stage) {
+                                        $faseSelect.append($('<option>', {
+                                            value: stage.id,  // Usamos o ID da fase do campeonato, não do template
+                                            text: stage.name,
+                                            'data-rounds': stage.rounds,
+                                            'data-template-stage-id': stage.template_stage_id
+                                        }));
+                                    });
+                                    
+                                    // Atualizar o select2
+                                    $faseSelect.trigger('change');
+                                } else {
+                                    console.log("Nenhuma fase encontrada para o campeonato");
+                                    toastr.warning('Nenhuma fase encontrada para este campeonato');
+                                }
+                            },
+                            error: function() {
+                                $faseSelect.empty().append('<option value="">Erro ao carregar fases</option>');
+                                toastr.error('Erro ao carregar fases do campeonato');
+                            }
+                        });
+                    } else {
+                        $('#fase').empty().append('<option value="">Selecione um template primeiro</option>');
+                    }
                 });
                 
                 // Carregar rodadas ao selecionar uma fase
@@ -1167,136 +2552,513 @@
                     
                     if (faseId && templateId) {
                         console.log("Carregando rodadas para fase:", faseId, "e template:", templateId);
+                        console.log("ID do Campeonato:", "{{ championship.id }}");
                         
                         // Limpar o select de rodadas primeiro
                         var $rodadaSelect = $('#rodada');
                         $rodadaSelect.empty().append('<option value="">Carregando...</option>');
                         
-                        // Buscar as rodadas desta fase
-                        $.ajax({
-                            url: "{% url 'administrativo:get_rounds_by_stage' %}",
-                            type: 'POST',
-                            data: {
-                                template_stage_id: faseId,
-                                csrfmiddlewaretoken: $('[name=csrfmiddlewaretoken]').val()
-                            },
-                            success: function(data) {
-                                $rodadaSelect.empty();
-                                
-                                if (data.success && data.rounds && data.rounds.length > 0) {
-                                    // Adicionar as rodadas ao select
-                                    $.each(data.rounds, function(i, round) {
-                                        $rodadaSelect.append($('<option>', {
-                                            value: round.id,
-                                            text: 'Rodada ' + round.number
-                                        }));
-                                    });
-                                    
-                                    // Se houver partidas, selecionar a rodada da primeira partida
-                                    {% if matches %}
-                                    var firstMatchRoundId = "{{ matches.0.round_id }}";
-                                    if (firstMatchRoundId) {
-                                        $rodadaSelect.val(firstMatchRoundId).trigger('change');
-                                    }
-                                    {% endif %}
-                                } else {
-                                    $rodadaSelect.append('<option value="">Nenhuma rodada encontrada</option>');
-                                }
-                            },
-                            error: function() {
-                                $rodadaSelect.empty().append('<option value="">Erro ao carregar rodadas</option>');
-                                toastr.error('Erro ao carregar rodadas para a fase selecionada');
-                            }
-                        });
-                    } else {
-                        $('#rodada').empty().append('<option value="">Selecione uma fase primeiro</option>');
-                    }
-                });
-                
-                // Disparar o evento change do template para carregar as fases iniciais
-                if ($('#template').val()) {
-                    $('#template').trigger('change');
-                }
-
-                // Forçar inicialização correta das abas, especialmente a aba "times"
-                setTimeout(function() {
-                    console.log("Inicializando todas as abas...");
-                    $('.nav-tabs a').each(function() {
-                        var tabId = $(this).attr('href');
-                        console.log("Aba:", tabId);
+                        // Verificar se estamos em modo de edição de campeonato existente
+                        var championship_id = "{{ championship.id }}";
+                        var modo_edicao = championship_id ? true : false;
                         
-                        // Se for a aba times, garantir que seja inicializada corretamente
-                        if (tabId === '#times') {
-                            console.log("Inicializando a aba times");
-                            // Forçar reinicialização da DualListbox
-                            var $select = $('.duallistbox');
-                            if ($select.length) {
-                                // Destruir se já existir
-                                if ($select.data('bootstrapDualListbox')) {
-                                    $select.bootstrapDualListbox('destroy');
+                        // Determinar qual parâmetro usar baseado no modo
+                        var params = {
+                            csrfmiddlewaretoken: $('[name=csrfmiddlewaretoken]').val()
+                        };
+                        
+                        if (modo_edicao) {
+                            // Em modo de edição, verificar se já temos uma fase do campeonato correspondente
+                            // Para isso, precisamos chamar primeiro get_stages_by_championship para ver
+                            // se já existe uma fase correspondente no campeonato
+                            console.log("Modo edição: Tentando buscar fases do campeonato existente...");
+                            
+                            $.ajax({
+                                url: "{% url 'administrativo:get_stages_by_championship' %}",
+                                type: 'POST',
+                                data: {
+                                    championship_id: championship_id,
+                                    csrfmiddlewaretoken: $('[name=csrfmiddlewaretoken]').val()
+                                },
+                                success: function(data) {
+                                    if (data.success && data.stages && data.stages.length > 0) {
+                                        console.log("Fases do campeonato recebidas:", data.stages);
+                                        
+                                        // Verificar se há uma fase do campeonato que corresponde à fase do template
+                                        var fase_correspondente = null;
+                                        
+                                        // Buscar pelo template_stage_id
+                                        for (var i = 0; i < data.stages.length; i++) {
+                                            if (data.stages[i].template_stage_id === faseId) {
+                                                fase_correspondente = data.stages[i];
+                                                break;
+                                            }
+                                        }
+                                        
+                                        // Se encontrou uma fase correspondente, buscar as rodadas usando stage_id
+                                        if (fase_correspondente) {
+                                            console.log("Fase correspondente encontrada no campeonato:", fase_correspondente);
+                                            
+                                            // Agora buscar as rodadas usando o ID da fase do campeonato
+                                            $.ajax({
+                                                url: "{% url 'administrativo:get_rounds_by_stage' %}",
+                                                type: 'POST',
+                                                data: {
+                                                    stage_id: fase_correspondente.id,  // ID da fase do campeonato
+                                                    csrfmiddlewaretoken: $('[name=csrfmiddlewaretoken]').val()
+                                                },
+                                                success: function(rounds_data) {
+                                                    processarRodadas(rounds_data);
+                                                },
+                                                error: function() {
+                                                    $rodadaSelect.empty().append('<option value="">Erro ao carregar rodadas</option>');
+                                                    toastr.error('Erro ao carregar rodadas para a fase selecionada');
+                                                }
+                                            });
+                                        } else {
+                                            // Não encontrou fase correspondente, tenta usar template_stage_id
+                                            console.log("Fase correspondente NÃO encontrada no campeonato, usando template_stage_id:", faseId);
+                                            
+                                            $.ajax({
+                                                url: "{% url 'administrativo:get_rounds_by_stage' %}",
+                                                type: 'POST',
+                                                data: {
+                                                    template_stage_id: faseId,
+                                                    csrfmiddlewaretoken: $('[name=csrfmiddlewaretoken]').val()
+                                                },
+                                                success: function(rounds_data) {
+                                                    processarRodadas(rounds_data);
+                                                },
+                                                error: function() {
+                                                    $rodadaSelect.empty().append('<option value="">Erro ao carregar rodadas</option>');
+                                                    toastr.error('Erro ao carregar rodadas para a fase selecionada');
+                                                }
+                                            });
+                                        }
+                                    } else {
+                                        // Não encontrou fases do campeonato, tenta usar template_stage_id
+                                        console.log("Nenhuma fase do campeonato encontrada, usando template_stage_id:", faseId);
+                                        
+                                        $.ajax({
+                                            url: "{% url 'administrativo:get_rounds_by_stage' %}",
+                                            type: 'POST',
+                                            data: {
+                                                template_stage_id: faseId,
+                                                csrfmiddlewaretoken: $('[name=csrfmiddlewaretoken]').val()
+                                            },
+                                            success: function(rounds_data) {
+                                                processarRodadas(rounds_data);
+                                            },
+                                            error: function() {
+                                                $rodadaSelect.empty().append('<option value="">Erro ao carregar rodadas</option>');
+                                                toastr.error('Erro ao carregar rodadas para a fase selecionada');
+                                            }
+                                        });
+                                    }
+                                },
+                                error: function() {
+                                    // Erro ao buscar fases do campeonato, tenta usar template_stage_id
+                                    console.log("Erro ao buscar fases do campeonato, usando template_stage_id:", faseId);
+                                    
+                                    $.ajax({
+                                        url: "{% url 'administrativo:get_rounds_by_stage' %}",
+                                        type: 'POST',
+                                        data: {
+                                            template_stage_id: faseId,
+                                            csrfmiddlewaretoken: $('[name=csrfmiddlewaretoken]').val()
+                                        },
+                                        success: function(rounds_data) {
+                                            processarRodadas(rounds_data);
+                                        },
+                                        error: function() {
+                                            $rodadaSelect.empty().append('<option value="">Erro ao carregar rodadas</option>');
+                                            toastr.error('Erro ao carregar rodadas para a fase selecionada');
+                                        }
+                                    });
                                 }
-                                
-                                // Reinicializar
-                                $select.bootstrapDualListbox({
-                                    nonSelectedListLabel: 'Disponíveis',
-                                    selectedListLabel: 'Selecionados',
-                                    preserveSelectionOnMove: 'moved',
-                                    moveOnSelect: false
+                            });
+                            
+                        } else {
+                            // Em modo de criação, usar diretamente template_stage_id
+                            console.log("Modo criação: Usando template_stage_id diretamente");
+                            
+                            $.ajax({
+                                url: "{% url 'administrativo:get_rounds_by_stage' %}",
+                                type: 'POST',
+                                data: {
+                                    template_stage_id: faseId,
+                                    csrfmiddlewaretoken: $('[name=csrfmiddlewaretoken]').val()
+                                },
+                                success: function(rounds_data) {
+                                    processarRodadas(rounds_data);
+                                },
+                                error: function() {
+                                    $rodadaSelect.empty().append('<option value="">Erro ao carregar rodadas</option>');
+                                    toastr.error('Erro ao carregar rodadas para a fase selecionada');
+                                }
+                            });
+                        }
+                        
+                        // Função para processar os dados das rodadas recebidos
+                        function processarRodadas(data) {
+                            $rodadaSelect.empty();
+                            
+                            if (data.success && data.rounds && data.rounds.length > 0) {
+                                // Adicionar as rodadas ao select
+                                $.each(data.rounds, function(i, round) {
+                                    $rodadaSelect.append($('<option>', {
+                                        value: round.id,
+                                        text: 'Rodada ' + round.number
+                                    }));
                                 });
                                 
-                                console.log("DualListbox inicializada com sucesso");
+                                // Verificar se existe uma rodada atual selecionada
+                                {% if current_round %}
+                                $rodadaSelect.val("{{ current_round.id }}").trigger('change');
+                                {% else %}
+                                // Selecionar a primeira rodada como padrão
+                                var firstRound = $rodadaSelect.find('option:first').val();
+                                if (firstRound) {
+                                    $rodadaSelect.val(firstRound).trigger('change');
+                                }
+                                {% endif %}
+                                
+                                console.log("Rodadas carregadas com sucesso: " + data.rounds.length + " rodadas");
+                            } else {
+                                $rodadaSelect.append('<option value="">Nenhuma rodada encontrada</option>');
+                                // Limpar área de jogos
+                                $('#matches-container').html('<div class="alert alert-info">Selecione uma fase e rodada para visualizar os jogos.</div>');
+                                
+                                console.log("Nenhuma rodada encontrada para esta fase");
                             }
                         }
-                    });
-                }, 500);
-
-                // Garantir que as abas funcionem corretamente
-                $('.nav-tabs a').on('click', function (e) {
-                    e.preventDefault();
-                    $(this).tab('show');
-                    
-                    // Se for a aba times, reinicializar a DualListbox
-                    if ($(this).attr('href') === '#times') {
-                        console.log("Clicou na aba times");
+                    } else {
+                        $('#rodada').empty().append('<option value="">Selecione uma fase primeiro</option>');
                         
-                        // Mostrar a aba explicitamente
-                        $('#times').show();
-                        
-                        // Aguardar um pouco e reinicializar a DualListbox
-                        setTimeout(function() {
-                            var $select = $('.duallistbox');
-                            if ($select.length) {
-                                if ($select.data('bootstrapDualListbox')) {
-                                    $select.bootstrapDualListbox('refresh');
-                                } else {
-                                    $select.bootstrapDualListbox({
-                                        nonSelectedListLabel: 'Disponíveis',
-                                        selectedListLabel: 'Selecionados',
-                                        preserveSelectionOnMove: 'moved',
-                                        moveOnSelect: false
-                                    });
-                                }
-                                console.log("DualListbox reinicializada na aba times");
-                            }
-                        }, 200);
+                        console.log("Fase ou template não selecionados");
                     }
                 });
 
-                // Corrigir o layout da DualListbox depois que a página for carregada
+                // Carregar jogos automaticamente ao abrir a aba de rodadas
+                $('.nav-tabs a[href="#rodadas"]').on('shown.bs.tab', function (e) {
+                    console.log("Aba rodadas selecionada - Carregando jogos existentes");
+
+                    // Implementação alternativa de carregamento de jogos
+                    // Carregar jogos diretamente do contexto
+                    if ({{ matches|length }} > 0) {
+                        console.log("{{ matches|length }} partidas encontradas no contexto");
+                        
+                        // Preparar o painel de partidas
+                        $('#matches-container').empty();
+                        
+                        // Agrupar partidas por fase e rodada
+                        var partidasPorFase = {};
+                        
+                        {% for match in matches %}
+                        var fase = "{{ match.round.stage.name }}";
+                        var rodada = "{{ match.round.number }}";
+                        
+                        if (!partidasPorFase[fase]) {
+                            partidasPorFase[fase] = {};
+                        }
+                        
+                        if (!partidasPorFase[fase][rodada]) {
+                            partidasPorFase[fase][rodada] = [];
+                        }
+                        
+                        partidasPorFase[fase][rodada].push({
+                            id: "{{ match.id }}",
+                            home_team_id: "{{ match.home_team_id }}",
+                            away_team_id: "{{ match.away_team_id }}",
+                            home_score: {% if match.home_score != None %}"{{ match.home_score }}"{% else %}""{% endif %},
+                            away_score: {% if match.away_score != None %}"{{ match.away_score }}"{% else %}""{% endif %},
+                            match_date: "{{ match.match_date|date:'d/m/Y H:i' }}"
+                        });
+                        {% endfor %}
+                        
+                        console.log("Partidas agrupadas:", partidasPorFase);
+                        
+                        // Popular o select de fases
+                        var $fase = $('#fase');
+                        $fase.empty();
+                        $fase.append('<option value="">Selecione uma fase...</option>');
+                        
+                        for (var fase in partidasPorFase) {
+                            $fase.append(`<option value="${fase}">${fase}</option>`);
+                        }
+                        
+                        // Ao selecionar uma fase, mostrar suas rodadas
+                        $fase.off('change').on('change', function() {
+                            var faseSelected = $(this).val();
+                            var $rodada = $('#rodada');
+                            $rodada.empty();
+                            
+                            if (faseSelected && partidasPorFase[faseSelected]) {
+                                for (var rodada in partidasPorFase[faseSelected]) {
+                                    $rodada.append(`<option value="${rodada}">${rodada}</option>`);
+                                }
+                                
+                                // Selecionar a primeira rodada por padrão
+                                var primeiraRodada = Object.keys(partidasPorFase[faseSelected])[0];
+                                $rodada.val(primeiraRodada).trigger('change');
+                            }
+                        });
+                        
+                        // Ao selecionar uma rodada, mostrar suas partidas
+                        $('#rodada').off('change').on('change', function() {
+                            var faseSelected = $('#fase').val();
+                            var rodadaSelected = $(this).val();
+                            
+                            if (faseSelected && rodadaSelected && partidasPorFase[faseSelected] && partidasPorFase[faseSelected][rodadaSelected]) {
+                                var partidas = partidasPorFase[faseSelected][rodadaSelected];
+                                $('#matches-container').empty();
+                                
+                                // Adicionar cada partida
+                                partidas.forEach(function(partida) {
+                                    var $linha = criarLinhaJogo();
+                                    $linha.attr('data-match-id', partida.id);
+                                    
+                                    // Pequeno delay para garantir que os selects estejam inicializados
+                        setTimeout(function() {
+                                        $linha.find('.time-mandante').val(partida.home_team_id).trigger('change');
+                                        $linha.find('.time-visitante').val(partida.away_team_id).trigger('change');
+                                        
+                                        if (partida.home_score) {
+                                            $linha.find('input.placar').eq(0).val(partida.home_score);
+                                        }
+                                        if (partida.away_score) {
+                                            $linha.find('input.placar').eq(1).val(partida.away_score);
+                                        }
+                                        
+                                        if (partida.match_date) {
+                                            $linha.find('.datetimepicker-input').val(partida.match_date);
+                            }
+                        }, 500);
+                                    
+                                    $('#matches-container').append($linha);
+                                });
+                            }
+                        });
+                        
+                        // Selecionar a primeira fase por padrão
+                        var primeiraFase = Object.keys(partidasPorFase)[0];
+                        if (primeiraFase) {
+                            $fase.val(primeiraFase).trigger('change');
+                        }
+                    } else {
+                        console.log("Nenhuma partida encontrada para este campeonato");
+                        $('#fase').empty().append('<option value="">Selecione uma fase...</option>');
+                        $('#rodada').empty().append('<option value="">Selecione uma rodada...</option>');
+                        $('#matches-container').html('<div class="alert alert-info">Nenhuma partida cadastrada para este campeonato. Use o botão "Importar" para adicionar partidas.</div>');
+                    }
+                });
+
+                // Inicializa o evento change uma vez para configurar corretamente os campos
+                if ($('#ambito').val()) {
+                    $('#ambito').trigger('change');
+                }
+
+                // SOLUÇÃO FINAL: Forçar diretamente os valores geográficos se ainda não estiverem restaurados
                 setTimeout(function() {
-                    // Função para corrigir o layout horizontal da DualListbox
-                    function fixDualListboxLayout() {
-                        // Adicionar classe personalizada no container
-                        $('.bootstrap-duallistbox-container').addClass('horizontal-layout');
+                    console.log("VERIFICAÇÃO FINAL DOS CAMPOS GEOGRÁFICOS");
+                    
+                    var ambito = $('#ambito').val();
+                    var ambitoText = $('#ambito option:selected').text().trim();
+                    
+                    // Forçar novamente a atualização do texto do âmbito
+                    $('#ambito').next('.select2-container').find('.select2-selection__rendered').text(ambitoText);
+                    
+                    // Restaurar diretamente os campos geográficos com base no âmbito selecionado
+                    if (initialValues.continente && $('#continente').val() !== initialValues.continente && ambitoText !== 'Mundial') {
+                        console.log("CORREÇÃO FINAL: Restaurando continente:", initialValues.continente);
+                        $('#continente').prop('disabled', false).val(initialValues.continente).trigger('change.select2');
                     }
                     
-                    // Aplicar ao carregar a página
-                    setTimeout(fixDualListboxLayout, 500);
+                    if (initialValues.pais && $('#pais').val() !== initialValues.pais && (ambitoText === 'Nacional' || ambitoText === 'Estadual')) {
+                        console.log("CORREÇÃO FINAL: Restaurando país:", initialValues.pais);
+                        $('#pais').prop('disabled', false).val(initialValues.pais).trigger('change.select2');
+                    }
                     
-                    // Aplicar quando a aba "times" for mostrada
-                    $('a[href="#times"]').on('shown.bs.tab', function() {
-                        setTimeout(fixDualListboxLayout, 500);
+                    if (initialValues.estado && $('#estado').val() !== initialValues.estado && ambitoText === 'Estadual') {
+                        console.log("CORREÇÃO FINAL: Restaurando estado:", initialValues.estado);
+                        $('#estado').prop('disabled', false).val(initialValues.estado).trigger('change.select2');
+                    }
+                    
+                    // Ajustar novamente a habilitação dos campos conforme o âmbito
+                    // Esta etapa é crucial para desabilitar campos que não devem ser editáveis
+                    switch(ambitoText) {
+                        case 'Mundial':
+                            $('#continente, #pais, #estado').prop('disabled', true);
+                            break;
+                        case 'Continental':
+                            $('#continente').prop('disabled', false);
+                            $('#pais, #estado').prop('disabled', true);
+                            break;
+                        case 'Nacional':
+                            $('#continente, #pais').prop('disabled', false);
+                            $('#estado').prop('disabled', true);
+                            break;
+                        case 'Estadual':
+                            $('#continente, #pais, #estado').prop('disabled', false);
+                            break;
+                    }
+                    
+                    // Configurar evento de mudança para os campos geográficos
+                    // Quando mudar um campo, garantir que os próximos sejam tratados corretamente
+                    $('#continente').off('change.geografia').on('change.geografia', function() {
+                        if (ambitoText === 'Nacional' || ambitoText === 'Estadual') {
+                            $('#pais').prop('disabled', false);
+                        }
                     });
+                    
+                    $('#pais').off('change.geografia').on('change.geografia', function() {
+                        if (ambitoText === 'Estadual') {
+                            $('#estado').prop('disabled', false);
+                        }
+                    });
+                    
+                    // Ajuste para garantir que o texto exibido no select corresponda ao valor selecionado
+                    setTimeout(function() {
+                        var $ambito = $('#ambito');
+                        if ($ambito.val()) {
+                            var valorAmbito = $ambito.val();
+                            var textoAmbito = $ambito.find('option:selected').text();
+                            
+                            // Forçar sincronização entre valor e texto visual
+                            $ambito.select2('destroy');
+                            
+                            // Verificar se o âmbito foi selecionado corretamente
+                            console.log("Verificando âmbito selecionado...");
+                            console.log("Valor do âmbito:", valorAmbito);
+                            console.log("Texto do âmbito:", textoAmbito);
+                            console.log("Opção selecionada:", $ambito.find('option:selected').text());
+                            
+                            // Reinicializar o Select2 com o valor correto
+                            $ambito.select2({
+                                width: '100%',
+                                minimumResultsForSearch: Infinity
+                            });
+                            
+                            // Verificar novamente após a reinicialização
+                            console.log("Após reinicialização do Select2:");
+                            console.log("Texto agora exibido:", $ambito.next().find('.select2-selection__rendered').text());
+                            console.log("Opção selecionada agora:", $ambito.find('option:selected').text());
+                            
+                            // CORREÇÃO CRÍTICA E DEFINITIVA: Forçar o texto correto no elemento visual
+                            var optionText = $ambito.find('option:selected').text();
+                            $ambito.next('.select2-container').find('.select2-selection__rendered').text(optionText);
+                            console.log("Texto final forçado manualmente:", optionText);
+                            
+                            // VERIFICAÇÃO FINAL E GARANTIA DE APLICAÇÃO
+                            setTimeout(function() {
+                                var textoFinal = $ambito.next('.select2-container').find('.select2-selection__rendered').text();
+                                console.log("VERIFICAÇÃO FINAL - Texto exibido após todas as correções:", textoFinal);
+                                
+                                // Se ainda estiver incorreto, aplicar uma última correção
+                                if (textoFinal !== optionText) {
+                                    console.log("ALERTA: Texto ainda incorreto! Aplicando correção final...");
+                                    $ambito.next('.select2-container').find('.select2-selection__rendered').text(optionText);
+                                }
+                            }, 1000);
+                        }
+                    }, 500);
+                 }, 1000);
+
+                // Verificar se o campeonato tem jogos e desabilitar campos âmbito e template
+                var championship_id = "{{ championship.id }}";
+                
+                // Função para realizar a verificação
+                function checkChampionshipMatches() {
+                    $.ajax({
+                        url: "{% url 'administrativo:check_championship_matches' %}",
+                        type: "POST",
+                        data: {
+                            championship_id: championship_id,
+                            csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val()
+                        },
+                        success: function(response) {
+                            if (response.has_matches) {
+                                // Desabilitar os campos de âmbito e template
+                                $("#ambito").prop("disabled", true);
+                                $("#template").prop("disabled", true);
+                                
+                                // Adicionar mensagem explicativa
+                                if (!$("#ambito").parent().find(".field-locked-msg").length) {
+                                    $("#ambito").parent().append('<p class="field-locked-msg text-danger"><small>Este campo está bloqueado pois o campeonato possui jogos cadastrados.</small></p>');
+                                }
+                                if (!$("#template").parent().find(".field-locked-msg").length) {
+                                    $("#template").parent().append('<p class="field-locked-msg text-danger"><small>Este campo está bloqueado pois o campeonato possui jogos cadastrados.</small></p>');
+                                }
+                            }
+                        },
+                        error: function() {
+                            console.error("Erro ao verificar jogos do campeonato");
+                        }
+                    });
+                }
+                
+                // Executar a verificação ao carregar a página
+                checkChampionshipMatches();
+                
+                // Executar a verificação novamente quando jogos forem adicionados
+                $(document).on("match_added", function() {
+                    checkChampionshipMatches();
+                });
+
+                // Inicializar a DualListbox
+                $('.duallistbox').bootstrapDualListbox({
+                    nonSelectedListLabel: 'Times disponíveis',
+                    selectedListLabel: 'Times selecionados',
+                    filterTextClear: 'Mostrar todos',
+                    filterPlaceHolder: 'Filtrar',
+                    infoText: 'Mostrando {0} times',
+                    infoTextEmpty: 'Lista vazia',
+                    infoTextFiltered: '<span class="label label-warning">Filtrado</span> {0} de {1}',
+                    moveAllLabel: 'Mover todos',
+                    removeAllLabel: 'Remover todos'
+                });
+                
+                // GARANTIR TIMES SELECIONADOS: Forçar a seleção dos times do campeonato
+                {% if selected_teams %}
+                console.log("Selecionando times do campeonato (inicialização)...");
+                // Primeiro, remover todas as seleções existentes para garantir estado limpo
+                $('.duallistbox option').prop('selected', false);
+                
+                // Agora, selecionar apenas os times do campeonato
+                {% for team in selected_teams %}
+                console.log("Selecionando time inicial: {{ team.name }} (ID: {{ team.id }})");
+                $('.duallistbox option[value="{{ team.id }}"]').prop('selected', true);
+                {% endfor %}
+                
+                // Atualizar a exibição da DualListbox
+                $('.duallistbox').bootstrapDualListbox('refresh');
+                {% endif %}
+                
+                // Variáveis para controle de estado do filtro
+                var lastSelectedTimes = [];
+                var lastSelectedTimesIds = [];
+            });
+        </script>
+        <!-- Custom and plugin javascript -->
+        <script src="{% static 'administrativo/js/inspinia.js' %}"></script>
+        <script src="{% static 'administrativo/js/plugins/pace/pace.min.js' %}"></script>
+        <script src="{% static 'administrativo/js/campeonato.js' %}"></script>
+        
+        <!-- Script para ativar a aba baseado no hash da URL -->
+        <script>
+            $(document).ready(function() {
+                // Verificar se há um hash na URL
+                if (window.location.hash) {
+                    // Remover o # do hash
+                    var tab = window.location.hash.substr(1);
+                    
+                    // Ativar a aba correspondente
+                    $('.nav-tabs a[href="#' + tab + '"]').tab('show');
+                }
+                
+                // Atualizar o hash quando uma aba for clicada
+                $('.nav-tabs a').on('click', function (e) {
+                    window.location.hash = e.target.hash;
                 });
             });
         </script>

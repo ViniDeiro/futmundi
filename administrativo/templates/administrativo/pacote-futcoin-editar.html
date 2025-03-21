@@ -197,7 +197,6 @@
                                                 <input type="hidden" name="end_date" id="hidden_end_date">
                                                 <input type="hidden" name="android_product_code" id="hidden_android_product_code">
                                                 <input type="hidden" name="ios_product_code" id="hidden_ios_product_code">
-                                                <input type="hidden" name="gateway_product_code" id="hidden_gateway_product_code">
                                                 
                                                 <div class="row">
                                                     <div class="col-lg-6">
@@ -348,10 +347,6 @@
                                                                 <div class="col-lg-4">
                                                                     <input type="text" id="ios-product-code" name="ios_product_code" class="form-control" value="{{ package.ios_product_code }}">
                                                                     <label class="form-control-placeholder" for="ios-product-code">Código do Produto (iOS)</label>
-                                                                </div>
-                                                                <div class="col-lg-4">
-                                                                    <input type="text" id="gateway-product-code" name="gateway_product_code" class="form-control" value="{{ package.gateway_product_code }}">
-                                                                    <label class="form-control-placeholder" for="gateway-product-code">Código do Produto (Gateway)</label>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -528,9 +523,6 @@
                 $('#etiqueta').val(packageData.label || '');
                 $('#id3 input').val(packageData.color_text_label || '#FFFFFF');
                 $('#id4 input').val(packageData.color_background_label || '#FFFFFF');
-                $('#android-product-code').val(packageData.android_product_code || '');
-                $('#ios-product-code').val(packageData.ios_product_code || '');
-                $('#gateway-product-code').val(packageData.gateway_product_code || '');
                 $('.i-checks input[type="checkbox"]').prop('checked', packageData.enabled);
                 
                 // Atualiza os colorpickers após definir os valores
@@ -676,7 +668,6 @@
                 
                 $('#hidden_android_product_code').val($('#android-product-code').val());
                 $('#hidden_ios_product_code').val($('#ios-product-code').val());
-                $('#hidden_gateway_product_code').val($('#gateway-product-code').val());
 
                 // Cria o FormData com todos os campos do formulário
                 var formData = new FormData();
@@ -708,7 +699,6 @@
                 formData.append('color_background_label', $('#id4 input').val());
                 formData.append('android_product_code', $('#android-product-code').val());
                 formData.append('ios_product_code', $('#ios-product-code').val());
-                formData.append('gateway_product_code', $('#gateway-product-code').val());
                 formData.append('enabled', $('.i-checks input[type="checkbox"]').prop('checked'));
                 
                 // Adiciona as datas formatadas
@@ -749,9 +739,8 @@
                             name === 'promotional_price' || name === 'content' || name === 'bonus' || 
                             name === 'show_to' || name === 'label' || name === 'color_text_label' || 
                             name === 'color_background_label' || name === 'android_product_code' || 
-                            name === 'ios_product_code' || name === 'gateway_product_code' || 
-                            name === 'enabled' || name === 'start_date' || name === 'end_date' || 
-                            name === 'image' || name === 'should_remove_image' || 
+                            name === 'ios_product_code' || name === 'enabled' || name === 'start_date' || 
+                            name === 'end_date' || name === 'image' || name === 'should_remove_image' || 
                             name === 'csrfmiddlewaretoken') {
                             return;
                         }
@@ -910,7 +899,6 @@
                 console.log('Data de Término:', $('#end-date-input').val());
                 console.log('Código Android:', $('#android-product-code').val());
                 console.log('Código iOS:', $('#ios-product-code').val());
-                console.log('Código Gateway:', $('#gateway-product-code').val());
 
                 // Setup CSRF token for AJAX requests
                 $.ajaxSetup({
@@ -983,7 +971,6 @@
                     
                     $('#hidden_android_product_code').val($('#android-product-code').val());
                     $('#hidden_ios_product_code').val($('#ios-product-code').val());
-                    $('#hidden_gateway_product_code').val($('#gateway-product-code').val());
                     
                     console.log('Formulário submetido com campos ocultos preenchidos');
                     return true;
@@ -1070,6 +1057,25 @@
                     $('#image').val('');
                     $('#should_remove_image').val('yes');
                     $('#image-preview').html('<i class="fa fa-file-image-o" style="font-size: 48px; color: #ccc; cursor: pointer;" onclick="document.getElementById(\'image\').click()"></i>');
+                });
+
+                // Validação antes de enviar o formulário
+                $('#btn-salvar').click(function(e) {
+                    e.preventDefault();
+                    
+                    var tipo = $('#tipo').val();
+                    var hasError = false;
+                    
+                    // Validação para data de pacotes promocionais
+                    if ((tipo === 'Promocional' || tipo === 'promocional') && (!$('#start-date-input').val() || !$('#end-date-input').val())) {
+                        toastr.error('As datas de início e término são obrigatórias para pacotes promocionais.');
+                        $('#start-date-input').focus();
+                        hasError = true;
+                    }
+                    
+                    if (!hasError) {
+                        $('#package-form').submit();
+                    }
                 });
             });
         </script>

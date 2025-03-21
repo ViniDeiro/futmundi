@@ -144,7 +144,7 @@
                                             <div class="col-lg-4">
                                                 <form id="form-futliga" class="mt10">
                                                     {% csrf_token %}
-                                                    <div class="form-group col-lg-6">
+                                                    <div class="form-group col-lg-6 ml15">
                                                         <input type="text" id="name" class="form-control" required>
                                                         <label class="form-control-placeholder" for="name">Nome</label>
                                                     </div>
@@ -391,6 +391,145 @@
     <!-- Futligas Jogadores Script -->
     <script src="{% static 'administrativo/js/futligas-jogadores.js' %}"></script>
     
+    <!-- Log de diagnóstico para imagens -->
+    <script>
+        // Monitora tentativas de salvamento e estado das imagens
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log("Inicialização de log de diagnóstico para imagens de níveis");
+            
+            // Monitora o clique no botão de salvar
+            $('#successToast').on('click', function() {
+                console.log("[DIAGNÓSTICO-IMAGEM] Iniciando salvamento...");
+                
+                // Registra estado atual das imagens de cada nível
+                let niveisComImagens = 0;
+                let imagensNiveis = {};
+                
+                $('#table tbody tr').each(function() {
+                    const nivelId = $(this).data('id');
+                    const nivelNome = $(this).find('td:eq(0)').text().trim();
+                    const temImagem = $(this).find('td:eq(1)').data('has-image') || $(this).find('td:eq(1) img').length > 0;
+                    const imagemSrc = temImagem ? $(this).find('td:eq(1) img').attr('src') : null;
+                    
+                    imagensNiveis[nivelId] = {
+                        nome: nivelNome,
+                        temImagem: temImagem,
+                        imagemUrl: imagemSrc ? (imagemSrc.substring(0, 30) + '...') : null
+                    };
+                    
+                    if (temImagem) niveisComImagens++;
+                    
+                    console.log(`[DIAGNÓSTICO-IMAGEM] PRÉ-SALVAMENTO: Nível ID=${nivelId}, Nome=${nivelNome}, Tem imagem=${temImagem}`);
+                });
+                
+                console.log(`[DIAGNÓSTICO-IMAGEM] PRÉ-SALVAMENTO: Total de ${niveisComImagens} níveis com imagens de ${Object.keys(imagensNiveis).length} níveis`);
+                
+                // Armazenar estado para verificar depois do AJAX
+                window._diagnosticoEstadoAnterior = imagensNiveis;
+            });
+            
+            // Sobrescreve o método de sucesso do AJAX para fazer diagnóstico após salvamento
+            const ajaxOriginal = $.ajax;
+            $.ajax = function(settings) {
+                // Se for uma requisição de salvamento
+                if (settings.url && settings.url.indexOf('/futligas/jogadores/salvar/') !== -1) {
+                    console.log("[DIAGNÓSTICO-IMAGEM] Interceptando requisição de salvamento AJAX");
+                    
+                    // Guarda referências aos callbacks originais
+                    const successOriginal = settings.success;
+                    const completeOriginal = settings.complete;
+                    
+                    // Sobrescreve o callback de sucesso
+                    settings.success = function(response) {
+                        // Chama callback original primeiro
+                        if (successOriginal) successOriginal(response);
+                        
+                        // Verifica estado após salvamento (com delay para garantir que a tabela foi atualizada)
+                        setTimeout(function() {
+                            console.log("[DIAGNÓSTICO-IMAGEM] Verificando estado das imagens após salvamento");
+                            
+                            let niveisComImagens = 0;
+                            let imagensNiveis = {};
+                            
+                            $('#table tbody tr').each(function() {
+                                const nivelId = $(this).data('id');
+                                const nivelNome = $(this).find('td:eq(0)').text().trim();
+                                const temImagem = $(this).find('td:eq(1)').data('has-image') || $(this).find('td:eq(1) img').length > 0;
+                                const imagemSrc = temImagem ? $(this).find('td:eq(1) img').attr('src') : null;
+                                
+                                imagensNiveis[nivelId] = {
+                                    nome: nivelNome,
+                                    temImagem: temImagem,
+                                    imagemUrl: imagemSrc ? (imagemSrc.substring(0, 30) + '...') : null
+                                };
+                                
+                                if (temImagem) niveisComImagens++;
+                                
+                                // Verificar se a imagem foi perdida
+                                const estadoAnterior = window._diagnosticoEstadoAnterior && window._diagnosticoEstadoAnterior[nivelId];
+                                const imagemPerdida = estadoAnterior && estadoAnterior.temImagem && !temImagem;
+                                
+                                console.log(`[DIAGNÓSTICO-IMAGEM] PÓS-SALVAMENTO: Nível ID=${nivelId}, Nome=${nivelNome}, Tem imagem=${temImagem}${imagemPerdida ? ' (IMAGEM PERDIDA!)' : ''}`);
+                            });
+                            
+                            console.log(`[DIAGNÓSTICO-IMAGEM] PÓS-SALVAMENTO: Total de ${niveisComImagens} níveis com imagens de ${Object.keys(imagensNiveis).length} níveis`);
+                            
+                            // Identifica níveis que perderam imagens
+                            if (window._diagnosticoEstadoAnterior) {
+                                let niveisPerdidos = [];
+                                
+                                Object.keys(window._diagnosticoEstadoAnterior).forEach(id => {
+                                    const antes = window._diagnosticoEstadoAnterior[id];
+                                    const depois = imagensNiveis[id];
+                                    
+                                    if (antes.temImagem && (!depois || !depois.temImagem)) {
+                                        niveisPerdidos.push(antes.nome || id);
+                                    }
+                                });
+                                
+                                if (niveisPerdidos.length > 0) {
+                                    console.error(`[DIAGNÓSTICO-IMAGEM] ALERTA! ${niveisPerdidos.length} níveis perderam suas imagens após salvamento: ${niveisPerdidos.join(', ')}`);
+                                }
+                            }
+                        }, 1000);
+                    };
+                    
+                    // Sobrescreve o callback complete
+                    settings.complete = function(xhr, status) {
+                        console.log(`[DIAGNÓSTICO-IMAGEM] Requisição AJAX completada com status: ${status}`);
+                        
+                        // Extrai e analisa o corpo da resposta
+                        try {
+                            const response = JSON.parse(xhr.responseText);
+                            console.log(`[DIAGNÓSTICO-IMAGEM] Resposta analisada: success=${response.success}, levels=${response.levels ? response.levels.length : 'N/A'}`);
+                            
+                            // Se há levels na resposta, verifica quais têm imagens
+                            if (response.levels) {
+                                let niveisComImagensResposta = 0;
+                                
+                                response.levels.forEach(nivel => {
+                                    const temImagem = !!nivel.image;
+                                    console.log(`[DIAGNÓSTICO-IMAGEM] RESPOSTA: Nível ID=${nivel.id}, Nome=${nivel.name}, Tem imagem=${temImagem}`);
+                                    if (temImagem) niveisComImagensResposta++;
+                                });
+                                
+                                console.log(`[DIAGNÓSTICO-IMAGEM] RESPOSTA: Total de ${niveisComImagensResposta} níveis com imagens de ${response.levels.length} níveis na resposta`);
+                            }
+                        } catch (e) {
+                            console.error(`[DIAGNÓSTICO-IMAGEM] Erro ao analisar resposta: ${e.message}`);
+                        }
+                        
+                        // Chama callback original
+                        if (completeOriginal) completeOriginal(xhr, status);
+                    };
+                }
+                
+                // Chama o AJAX original
+                return ajaxOriginal.call(this, settings);
+            };
+        });
+    </script>
+    
     <!-- Modal de Confirmação de Exclusão -->
     <div class="modal inmodal" id="modalConfirmDelete" tabindex="-1" role="dialog" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-sm">
@@ -400,7 +539,7 @@
                     <h4 class="modal-title">Tem certeza?</h4>
                 </div>
                 <div class="modal-body">
-                    <p>Tem certeza que deseja excluir o nível <strong id="levelNameToDelete"></strong>?</p>
+                    <p>Tem certeza que deseja excluir <span id="itemTypeText">o nível</span> <strong id="levelNameToDelete"></strong>?</p>
                     <p class="text-danger">Esta ação não poderá ser desfeita.</p>
                 </div>
                 <div class="modal-footer">
@@ -454,5 +593,148 @@
             </div>
         </div>
     </div>
+    <!-- Script para prevenir popup duplicado na exclusão de prêmios -->
+    <script>
+        // Solução rápida para evitar o popup duplicado
+        document.addEventListener('DOMContentLoaded', function() {
+            // Sobrescreve o confirm() apenas para botões de excluir prêmio
+            const originalConfirm = window.confirm;
+            window.confirm = function(message) {
+                // Se a mensagem for sobre exclusão de prêmio, ignora o popup e usa o modal
+                if (message && message.includes('excluir este prêmio')) {
+                    // Não mostra o popup e deixa o modal ser mostrado em vez disso
+                    return false;
+                }
+                
+                // Para outros casos, usa o confirm normal
+                return originalConfirm.apply(this, arguments);
+            };
+            
+            console.log('[FIX-PREMIO] Método confirm sobrescrito para evitar popup duplicado');
+        });
+    </script>
+    
+    <!-- Implementação exata como em campeonatos -->
+    <script>
+        $(document).ready(function() {
+            console.log('[CAMPEONATO-STYLE] Inicializando exclusão estilo campeonatos');
+            
+            // Interceptar cliques em botões de exclusão de prêmios
+            $(document).on('click', 'button[data-premio-id], a[data-premio-id], .btn-excluir-premio', function(e) {
+                e.preventDefault();
+                
+                // Obter o ID do prêmio do botão
+                const premioId = $(this).data('premio-id') || $(this).data('id');
+                
+                console.log('[CAMPEONATO-STYLE] Botão de exclusão clicado, ID:', premioId);
+                
+                if (!premioId) {
+                    toastr.error('Erro: ID do prêmio não encontrado');
+                    return;
+                }
+                
+                // Configurar o modal de confirmação
+                $('#levelNameToDelete').text('este prêmio');
+                $('#itemTypeText').text('o prêmio');
+                
+                // Mostrar o modal
+                $('#modalConfirmDelete').modal('show');
+                
+                // Sobrescrever o botão de confirmação
+                $('#confirmDeleteButton').off('click').on('click', function() {
+                    // Fechar o modal
+                    $('#modalConfirmDelete').modal('hide');
+                    
+                    // Mostrar indicador de progresso
+                    toastr.info('Excluindo prêmio...');
+                    
+                    // Obter token CSRF
+                    const csrftoken = $('input[name="csrfmiddlewaretoken"]').val();
+                    
+                    // Enviar requisição AJAX para excluir o prêmio
+                    $.ajax({
+                        url: '/futligas/jogadores/premios/excluir/',
+                        type: 'POST',
+                        data: {
+                            id: premioId,
+                            csrfmiddlewaretoken: csrftoken
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                toastr.success('Prêmio excluído com sucesso!');
+                                
+                                // Recarregar a página
+                                setTimeout(function() {
+                                    location.reload();
+                                }, 1000);
+                            } else {
+                                toastr.error(response.error || 'Erro ao excluir prêmio');
+                            }
+                        },
+                        error: function(xhr, status, error) {
+                            console.error('Erro na exclusão:', xhr.responseText);
+                            toastr.error('Erro ao excluir prêmio. Tente novamente.');
+                        }
+                    });
+                });
+            });
+            
+            // Compatibilidade com a função global
+            window.excluirPremio = function(premioId) {
+                if (!premioId) {
+                    toastr.error('Erro: ID do prêmio não encontrado');
+                    return;
+                }
+                
+                // Configurar o modal de confirmação
+                $('#levelNameToDelete').text('este prêmio');
+                $('#itemTypeText').text('o prêmio');
+                
+                // Mostrar o modal
+                $('#modalConfirmDelete').modal('show');
+                
+                // Sobrescrever o botão de confirmação
+                $('#confirmDeleteButton').off('click').on('click', function() {
+                    // Fechar o modal
+                    $('#modalConfirmDelete').modal('hide');
+                    
+                    // Mostrar indicador de progresso
+                    toastr.info('Excluindo prêmio...');
+                    
+                    // Obter token CSRF
+                    const csrftoken = $('input[name="csrfmiddlewaretoken"]').val();
+                    
+                    // Enviar requisição AJAX para excluir o prêmio
+                    $.ajax({
+                        url: '/futligas/jogadores/premios/excluir/',
+                        type: 'POST',
+                        data: {
+                            id: premioId,
+                            csrfmiddlewaretoken: csrftoken
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                toastr.success('Prêmio excluído com sucesso!');
+                                
+                                // Recarregar a página
+                                setTimeout(function() {
+                                    location.reload();
+                                }, 1000);
+                            } else {
+                                toastr.error(response.error || 'Erro ao excluir prêmio');
+                            }
+                        },
+                        error: function(xhr, status, error) {
+                            console.error('Erro na exclusão:', xhr.responseText);
+                            toastr.error('Erro ao excluir prêmio. Tente novamente.');
+                        }
+                    });
+                });
+            };
+            
+            // Registrar a inicialização
+            console.log('[CAMPEONATO-STYLE] Implementação estilo campeonatos inicializada');
+        });
+    </script>
 </body>
 </html>

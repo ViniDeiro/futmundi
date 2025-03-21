@@ -56,7 +56,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "administrativo.middleware.AuthRequiredMiddleware",  # Middleware personalizado para autenticação
+    'administrativo.middleware.ApiDebugMiddleware',
 ]
 
 ROOT_URLCONF = "futmundi.urls"

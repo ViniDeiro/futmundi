@@ -138,52 +138,108 @@ $(document).ready(function() {
         }
     });
 
-    // Handler para mudança no tipo do plano
-    function atualizarCamposTipo() {
-        var tipo = $('#tipo').val();
+    // Controle de visibilidade baseado no tipo
+    $('#tipo').change(function() {
+        var tipo = $(this).val();
         
-        console.log('Atualizando campos para o tipo:', tipo);
-        
-        // Esconde todos os campos especiais sempre
-        $('.label-fields, #etiqueta, .date-fields, label[for="etiqueta"]').hide();
-        $('#etiqueta').val('');
-        
-        // Reseta cores para padrão
-        $('#id3').colorpicker('setValue', '#FFFFFF');
-        $('#id4').colorpicker('setValue', '#CC000C');
-        
-        // Só mostra campos se tiver um tipo selecionado
-        if (tipo === 'Padrão') {
-            console.log('Tipo Padrão: mostrando campos de etiqueta');
-            $('#etiqueta, label[for="etiqueta"]').show();
+        if (tipo === '') {
+            // Quando for Selecione, oculta todos os campos
+            $('.date-fields').hide();
+            $('.label-fields').hide();
+            $('.beneficio-fields').hide();
+            $('.novos-usuarios-fields').hide();
+            $('#etiqueta').closest('.form-group').hide();
+            $('#bloco-beneficio-futcoins').hide();
+        } else if (tipo === 'Padrão') {
+            // Quando for Padrão, mostra etiqueta mas oculta campos de data
+            $('.date-fields').hide();
             $('.label-fields').show();
-        } 
-        else if (tipo === 'Promocional') {
-            console.log('Tipo Promocional: mostrando campos de etiqueta e data');
-            $('#etiqueta, label[for="etiqueta"]').show();
-            $('.label-fields').show();
+            $('.beneficio-fields').hide();
+            $('.novos-usuarios-fields').hide();
+            $('#etiqueta').closest('.form-group').show();
+            $('#bloco-beneficio-futcoins').hide();
+            
+            // Limpa os valores da etiqueta
+            $('#etiqueta').val('');
+            
+            // Define as cores e atualiza os colorpickers
+            setTimeout(function() {
+                $('#id3 input').val('#FFFFFF');
+                $('#id4 input').val('#FFFFFF');
+                $('#id3').colorpicker('setValue', '#FFFFFF');
+                $('#id4').colorpicker('setValue', '#FFFFFF');
+                
+                // Atualiza também o fundo do indicador de cor
+                $('#id3 .input-group-addon i').css('background-color', '#FFFFFF');
+                $('#id4 .input-group-addon i').css('background-color', '#FFFFFF');
+            }, 100);
+        } else if (tipo === 'Promocional') {
+            // Quando for Promocional, mostra todos os campos e define valores padrão
             $('.date-fields').show();
+            $('.label-fields').show();
+            $('.beneficio-fields').hide();
+            $('.novos-usuarios-fields').hide();
+            $('#etiqueta').closest('.form-group').show();
+            $('#bloco-beneficio-futcoins').hide();
+            
+            // Define valores padrão para a etiqueta
             $('#etiqueta').val('OFERTA ESPECIAL');
             
-            // Define valores padrão para as cores
-            $('#id3').colorpicker('setValue', '#FFFFFF');
-            $('#id4').colorpicker('setValue', '#CC000C');
+            // Define as cores e atualiza os colorpickers
+            setTimeout(function() {
+                $('#id3 input').val('#FFFFFF');
+                $('#id4 input').val('#CC000C');
+                $('#id3').colorpicker('setValue', '#FFFFFF');
+                $('#id4').colorpicker('setValue', '#CC000C');
+                
+                // Atualiza também o fundo do indicador de cor
+                $('#id3 .input-group-addon i').css('background-color', '#FFFFFF');
+                $('#id4 .input-group-addon i').css('background-color', '#CC000C');
+            }, 100);
+        } else if (tipo === 'Novos Jogadores') {
+            // Quando for Novos Jogadores, mostra campos específicos
+            $('.date-fields').hide(); // Oculta campos de data
+            $('.label-fields').show();
+            $('.beneficio-fields').hide();
+            $('.novos-usuarios-fields').show();
+            $('#etiqueta').closest('.form-group').show();
+            $('#bloco-beneficio-futcoins').show();
             
-            // Atualiza o visual dos colorpickers
-            $('#id3 .input-group-addon i').css('background-color', '#FFFFFF');
-            $('#id4 .input-group-addon i').css('background-color', '#CC000C');
+            // Define valores padrão para a etiqueta
+            $('#etiqueta').val('NOVOS JOGADORES');
             
-            console.log('Valores definidos para colorpickers:');
-            console.log('Cor texto etiqueta:', $('#id3 input').val());
-            console.log('Cor fundo etiqueta:', $('#id4 input').val());
+            // Define as cores e atualiza os colorpickers
+            setTimeout(function() {
+                $('#id3 input').val('#FFFFFF');
+                $('#id4 input').val('#CCA53F');
+                $('#id3').colorpicker('setValue', '#FFFFFF');
+                $('#id4').colorpicker('setValue', '#CCA53F');
+                
+                // Atualiza também o fundo do indicador de cor
+                $('#id3 .input-group-addon i').css('background-color', '#FFFFFF');
+                $('#id4 .input-group-addon i').css('background-color', '#CCA53F');
+            }, 100);
+            
+            // Define valores padrão para os campos específicos
+            $('#dias-promocao').val(30);
+            
+            // Carrega os pacotes de futcoins ativos em ordem alfabética
+            carregarPacotesFutcoins();
+            
+            $('#renovacoes-pacote').val(1);
+            
+            // Garante que não haja valores negativos
+            $('#dias-promocao, #renovacoes-pacote').on('input', function() {
+                var value = parseInt($(this).val());
+                if (value < 0 || isNaN(value)) {
+                    $(this).val(1);
+                }
+            });
         }
-    }
+    });
 
-    // Registra o handler de mudança
-    $('#tipo').on('change', atualizarCamposTipo);
-    
-    // Executa a função quando a página carrega
-    atualizarCamposTipo();
+    // Dispara o evento change do tipo para configurar visibilidade inicial
+    $('#tipo').trigger('change');
 
     // Preview da imagem
     $('#image').on('change', function() {
@@ -211,25 +267,76 @@ $(document).ready(function() {
     });
 
     // Botão Cancelar
-    $('.btn-danger').on('click', function() {
+    $('.btn-danger').click(function() {
+        // Redireciona para a URL de cancelamento
         window.location.href = $('#cancel-url').data('url');
     });
 
     // Botão Salvar
-    $('#btn-salvar').on('click', function() {
-        const formData = new FormData();
+    $('#btn-salvar').click(function() {
+        // Cria um objeto FormData para enviar os dados, incluindo arquivos
+        var formData = new FormData();
         
-        // Dados básicos
-        formData.append('name', $('#nome').val());
-        formData.append('plan', $('#plano').val());
-        formData.append('billing_cycle', $('#vigencia').val());
-        formData.append('enabled', $('#enabled').prop('checked'));
-        formData.append('tipo', $('#tipo').val());
+        // Dados do pacote
+        var nome = $('#nome').val();
+        var enabled = $('#enabled').is(':checked');
+        var tipo = $('#tipo').val();
         
-        // Etiqueta e cores (sempre envia, independente do tipo)
-        const etiqueta = $('#etiqueta').val() || '';
+        // Converter o valor "Novos Jogadores" para um valor válido no backend
+        if (tipo === 'Novos Jogadores') {
+            console.log('Convertendo "Novos Jogadores" para valor válido aceito pelo backend');
+            tipo = 'Dias Promoção Novos Jogadores'; // Valor que o backend aceita
+        }
+        
+        var plano = $('#plano').val();
+        var ciclo = $('#vigencia').val();
+        var etiqueta = $('#etiqueta').val();
+        
+        // Log dos valores para depuração
+        console.log('--- DEPURAÇÃO DOS CAMPOS ---');
+        console.log('Nome:', nome);
+        console.log('Enabled:', enabled);
+        console.log('Tipo selecionado:', $('#tipo').val());
+        console.log('Tipo (package_type) enviado:', tipo);
+        console.log('Plano:', plano);
+        console.log('Ciclo de Faturamento (billing_cycle):', ciclo);
+        console.log('Etiqueta:', etiqueta);
+        console.log('Elementos no DOM:');
+        console.log('- #nome existe:', $('#nome').length > 0);
+        console.log('- #enabled existe:', $('#enabled').length > 0);
+        console.log('- #tipo existe:', $('#tipo').length > 0);
+        console.log('- #plano existe:', $('#plano').length > 0);
+        console.log('- #vigencia existe:', $('#vigencia').length > 0);
+        console.log('- #etiqueta existe:', $('#etiqueta').length > 0);
+        
+        formData.append('name', nome);
+        formData.append('enabled', enabled);
+        
+        // Garantir que o tipo seja enviado com ambos os nomes possíveis
+        // para compatibilidade com o backend
+        formData.append('package_type', tipo);
+        formData.append('tipo', tipo);  // Adiciona uma cópia com este nome alternativo
+        
+        // Log dos campos de package_type
+        console.log('Valor final do package_type:', tipo);
+        console.log('Valor no DOM (#tipo):', $('#tipo').val());
+        
+        formData.append('plan', plano);
+        formData.append('billing_cycle', ciclo);
         formData.append('label', etiqueta);
-        console.log('Valor da etiqueta:', etiqueta);
+        
+        // Validação para package_type e billing_cycle (campos que estavam faltando)
+        if (!tipo) {
+            toastr.error('O campo Tipo é obrigatório');
+            $('#tipo').focus();
+            return;
+        }
+        
+        if (!ciclo) {
+            toastr.error('O campo Vigência é obrigatório');
+            $('#vigencia').focus();
+            return;
+        }
         
         // Obter os valores diretamente dos inputs dentro dos colorpickers
         const colorTextLabelRaw = $('#id3 input').val();
@@ -278,10 +385,9 @@ $(document).ready(function() {
         formData.append('show_to', $('#exibir-para').val());
         formData.append('android_product_code', $('#codigo-android').val() || '');
         formData.append('apple_product_code', $('#codigo-apple').val() || '');
-        formData.append('gateway_product_code', $('#codigo-gateway').val() || '');
         
-        // Validação das datas para planos promocionais
-        if ($('#tipo').val() === 'Promocional') {
+        // Validação das datas para pacotes promocionais e Dias Promoção Novos Jogadores
+        if ($('#tipo').val() === 'Promocional' || $('#tipo').val() === 'Novos Jogadores' || tipo === 'Dias Promoção Novos Jogadores') {
             var startDate = $('#datetimepicker').val();
             var endDate = $('#datetimepicker2').val();
             
@@ -294,20 +400,93 @@ $(document).ready(function() {
                 endDateValue: $('#datetimepicker2').val()
             });
             
-            if (!startDate) {
-                toastr.error('A Data de Início é obrigatória para pacotes promocionais');
-                $('#datetimepicker').focus();
+            // Para o tipo "Novos Jogadores", definir datas padrão se não estiverem preenchidas
+            if ($('#tipo').val() === 'Novos Jogadores' && (!startDate || !endDate)) {
+                console.log('Definindo datas padrão para Novos Jogadores');
+                
+                // Data de início: hoje
+                var hoje = moment().format('DD/MM/YYYY HH:mm');
+                
+                // Data de término: 1 ano no futuro
+                var umAnoFuturo = moment().add(1, 'year').format('DD/MM/YYYY HH:mm');
+                
+                if (!startDate) {
+                    startDate = hoje;
+                    $('#datetimepicker').val(startDate);
+                    console.log('Data de início definida como:', startDate);
+                }
+                
+                if (!endDate) {
+                    endDate = umAnoFuturo;
+                    $('#datetimepicker2').val(endDate);
+                    console.log('Data de término definida como:', endDate);
+                }
+            } else {
+                // Validação normal para outros tipos
+                if (!startDate) {
+                    toastr.error('A Data de Início é obrigatória para este tipo de pacote');
+                    $('#datetimepicker').focus();
+                    return;
+                }
+                if (!endDate) {
+                    toastr.error('A Data de Término é obrigatória para este tipo de pacote');
+                    $('#datetimepicker2').focus();
+                    return;
+                }
+            }
+            
+            // Adiciona as datas ao formData
+            formData.append('start_date', startDate);
+            formData.append('end_date', endDate);
+        }
+        
+        // Validação específica por tipo
+        if ($('#tipo').val() === 'Promocional' || $('#tipo').val() === 'Novos Jogadores') {
+            if (!$('#etiqueta').val()) {
+                toastr.error('O campo Etiqueta é obrigatório para este tipo de pacote');
+                $('#etiqueta').focus();
                 return;
             }
-            if (!endDate) {
-                toastr.error('A Data de Término é obrigatória para pacotes promocionais');
-                $('#datetimepicker2').focus();
+        }
+        
+        // Validação específica para Novos Jogadores
+        if ($('#tipo').val() === 'Novos Jogadores') {
+            var diasPromocao = $('#dias-promocao').val();
+            var beneficioFutcoins = $('#beneficio-futcoins').val();
+            var qtdRenovacoesNovos = $('#renovacoes-pacote').val();
+            
+            if (!diasPromocao) {
+                toastr.error('O campo Dias Promoção é obrigatório para este tipo de pacote');
+                $('#dias-promocao').focus();
+                return;
+            }
+            if (!beneficioFutcoins) {
+                toastr.error('O campo Benefício Pacote Futcoins é obrigatório para este tipo de pacote');
+                $('#beneficio-futcoins').focus();
+                return;
+            }
+            if (!qtdRenovacoesNovos) {
+                toastr.error('O campo Qtde Renovações Pacote é obrigatório para este tipo de pacote');
+                $('#renovacoes-pacote').focus();
                 return;
             }
             
-            // Adiciona as datas ao formData sem conversão
-            formData.append('start_date', startDate);
-            formData.append('end_date', endDate);
+            // Verifica se os valores são positivos
+            if (parseInt(diasPromocao) <= 0) {
+                toastr.error('O campo Dias Promoção deve ser maior que zero');
+                $('#dias-promocao').focus();
+                return;
+            }
+            if (parseInt(qtdRenovacoesNovos) <= 0) {
+                toastr.error('O campo Qtde Renovações Pacote deve ser maior que zero');
+                $('#renovacoes-pacote').focus();
+                return;
+            }
+            
+            // Adiciona os campos específicos ao formData
+            formData.append('promotion_days', diasPromocao);
+            formData.append('futcoins_package_benefit', beneficioFutcoins);
+            formData.append('package_renewals', qtdRenovacoesNovos);
         }
         
         // Imagem
@@ -322,23 +501,25 @@ $(document).ready(function() {
         // Validação dos campos obrigatórios
         if (!$('#nome').val()) {
             toastr.error('O campo Nome é obrigatório');
+            $('#nome').focus();
+            return;
+        }
+        if (!$('#tipo').val()) {
+            toastr.error('O campo Tipo é obrigatório');
+            $('#tipo').focus();
             return;
         }
         if (!$('#preco-padrao').val()) {
             toastr.error('O campo Preço Padrão é obrigatório');
+            $('#preco-padrao').focus();
             return;
         }
-        if ($('#tipo').val() === 'Promocional') {
-            if (!$('#etiqueta').val()) {
-                toastr.error('O campo Etiqueta é obrigatório para pacotes promocionais');
-                return;
-            }
-            if (!$('#preco-promocional').val()) {
-                toastr.error('O campo Preço Promocional é obrigatório para pacotes promocionais');
-                return;
-            }
+        if (!$('#preco-promocional').val()) {
+            toastr.error('O campo Preço Promocional é obrigatório');
+            $('#preco-promocional').focus();
+            return;
         }
-
+        
         // Desabilita o botão durante o envio
         const btn = $(this);
         btn.prop('disabled', true);
@@ -347,6 +528,39 @@ $(document).ready(function() {
         console.log('Dados do FormData:');
         for (let pair of formData.entries()) {
             console.log(pair[0] + ': ' + pair[1]);
+        }
+        
+        // Verificação final dos campos obrigatórios
+        console.log('Verificação final de campos obrigatórios:');
+        var temTipo = false;
+        var temCiclo = false;
+        
+        for (let pair of formData.entries()) {
+            if ((pair[0] === 'package_type' || pair[0] === 'tipo') && pair[1]) {
+                temTipo = true;
+                console.log(pair[0] + ' está presente com valor:', pair[1]);
+            }
+            if (pair[0] === 'billing_cycle' && pair[1]) {
+                temCiclo = true;
+                console.log('billing_cycle está presente com valor:', pair[1]);
+            }
+        }
+        
+        if (!temTipo || !temCiclo) {
+            console.error('CAMPOS OBRIGATÓRIOS FALTANDO NA SUBMISSÃO:');
+            if (!temTipo) console.error('- package_type/tipo está ausente');
+            if (!temCiclo) console.error('- billing_cycle está ausente');
+            
+            // Adicionando manualmente se estiver faltando
+            if (!temTipo && $('#tipo').val()) {
+                formData.append('package_type', $('#tipo').val());
+                formData.append('tipo', $('#tipo').val());
+                console.log('Adicionando package_type e tipo manualmente:', $('#tipo').val());
+            }
+            if (!temCiclo && $('#vigencia').val()) {
+                formData.append('billing_cycle', $('#vigencia').val());
+                console.log('Adicionando billing_cycle manualmente:', $('#vigencia').val());
+            }
         }
         
         // Envia os dados
@@ -442,4 +656,50 @@ $(document).ready(function() {
             }
         });
     });
+
+    // Função para carregar pacotes de futcoins ativos
+    function carregarPacotesFutcoins(callback) {
+        console.log('Iniciando carregamento de pacotes futcoins...');
+        $.ajax({
+            url: '/administrativo/api/pacotes-futcoins-ativos/',
+            type: 'GET',
+            dataType: 'json',
+            success: function(response) {
+                if (response.success) {
+                    console.log('Pacotes futcoins carregados com sucesso:', response);
+                    
+                    // Limpa o dropdown e adiciona a opção padrão
+                    $('#beneficio-futcoins').empty();
+                    $('#beneficio-futcoins').append('<option value="">Selecione um pacote</option>');
+                    
+                    // Verifica se os pacotes estão em "packages" ou "pacotes"
+                    var listaPacotes = response.packages || response.pacotes || [];
+                    console.log('Lista de pacotes encontrada:', listaPacotes);
+                    
+                    // Adiciona os pacotes em ordem alfabética
+                    var pacotes = listaPacotes.sort(function(a, b) {
+                        return a.name.localeCompare(b.name);
+                    });
+                    
+                    // Adiciona cada pacote ao dropdown
+                    pacotes.forEach(function(pacote) {
+                        $('#beneficio-futcoins').append(`<option value="${pacote.id}">${pacote.name}</option>`);
+                    });
+                    
+                    console.log('Dropdown de pacotes futcoins preenchido com', pacotes.length, 'pacotes');
+                    
+                    // Se houver um callback, chama-o após o carregamento
+                    if (typeof callback === 'function') {
+                        console.log('Chamando callback após carregar pacotes futcoins');
+                        callback();
+                    }
+                } else {
+                    console.error('Erro ao carregar pacotes futcoins:', response.message);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Erro na requisição de pacotes futcoins:', error);
+            }
+        });
+    }
 }); 

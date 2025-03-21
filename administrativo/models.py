@@ -613,6 +613,7 @@ class FutcoinPackage(models.Model):
     PACKAGE_TYPE_CHOICES = [
         ('padrao', 'Padrão'),
         ('promocional', 'Promocional'),
+        ('dias promocao novos jogadores', 'Dias Promoção Novos Jogadores')
     ]
     
     SHOW_TO_CHOICES = [
@@ -624,7 +625,7 @@ class FutcoinPackage(models.Model):
     name = models.CharField(max_length=255, verbose_name='Nome')
     image = models.ImageField(upload_to='futcoins/packages/', null=True, blank=True, verbose_name='Imagem')
     enabled = models.BooleanField(default=True, verbose_name='Ativo')
-    package_type = models.CharField(max_length=20, choices=PACKAGE_TYPE_CHOICES, default='padrao', verbose_name='Tipo')
+    package_type = models.CharField(max_length=30, choices=PACKAGE_TYPE_CHOICES, default='padrao', verbose_name='Tipo')
     label = models.CharField(max_length=50, null=True, blank=True, verbose_name='Etiqueta')
     color_text_label = models.CharField(max_length=7, default='#000000', verbose_name='Cor do Texto da Etiqueta')
     color_background_label = models.CharField(max_length=7, default='#FFFFFF', verbose_name='Cor de Fundo da Etiqueta')
@@ -655,8 +656,8 @@ class FutcoinPackage(models.Model):
         errors = {}
         
         # Validação do tipo de pacote e etiqueta
-        if self.package_type == 'promocional' and not self.label:
-            errors['label'] = 'A etiqueta é obrigatória para pacotes promocionais.'
+        if self.package_type in ['promocional', 'dias promocao novos jogadores'] and not self.label:
+            errors['label'] = f'A etiqueta é obrigatória para pacotes {self.package_type}.'
         
         # Validação do preço promocional
         if self.promotional_price is not None:
@@ -665,12 +666,12 @@ class FutcoinPackage(models.Model):
             if self.promotional_price >= self.full_price:
                 errors['promotional_price'] = 'O preço promocional deve ser menor que o preço padrão. Por favor, verifique os valores informados.'
         
-        # Validação das datas para pacotes promocionais
-        if self.package_type == 'promocional':
+        # Validação das datas para pacotes promocionais e novos jogadores
+        if self.package_type in ['promocional', 'dias promocao novos jogadores']:
             if not self.start_date:
-                errors['start_date'] = 'A data de início é obrigatória para pacotes promocionais.'
+                errors['start_date'] = f'A data de início é obrigatória para pacotes {self.package_type}.'
             if not self.end_date:
-                errors['end_date'] = 'A data de término é obrigatória para pacotes promocionais.'
+                errors['end_date'] = f'A data de término é obrigatória para pacotes {self.package_type}.'
         
         # Validação geral das datas
         if self.start_date and self.end_date and self.start_date > self.end_date:
@@ -743,7 +744,8 @@ class Plan(models.Model):
     
     PACKAGE_TYPE_CHOICES = [
         ('Padrão', 'Padrão'),
-        ('Promocional', 'Promocional')
+        ('Promocional', 'Promocional'),
+        ('Dias Promoção Novos Jogadores', 'Dias Promoção Novos Jogadores')
     ]
     
     SHOW_TO_CHOICES = [
@@ -762,7 +764,7 @@ class Plan(models.Model):
     image = models.ImageField(upload_to='plans/', null=True, blank=True, verbose_name='Imagem')
     enabled = models.BooleanField(default=True, verbose_name='Ativo')
     package_type = models.CharField(
-        max_length=20,
+        max_length=30,
         choices=PACKAGE_TYPE_CHOICES,
         verbose_name='Tipo do Pacote'
     )
@@ -801,8 +803,8 @@ class Plan(models.Model):
         errors = {}
         
         # Validação do tipo de pacote e etiqueta
-        if self.package_type == 'Promocional' and not self.label:
-            errors['label'] = 'A etiqueta é obrigatória para pacotes promocionais.'
+        if self.package_type in ['Promocional', 'Dias Promoção Novos Jogadores'] and not self.label:
+            errors['label'] = f'A etiqueta é obrigatória para pacotes {self.package_type}.'
         
         # Validação do preço promocional
         if self.promotional_price is not None:
@@ -811,12 +813,12 @@ class Plan(models.Model):
             if self.promotional_price >= self.full_price:
                 errors['promotional_price'] = 'O preço promocional deve ser menor que o preço padrão. Por favor, verifique os valores informados.'
         
-        # Validação das datas para pacotes promocionais
-        if self.package_type == 'Promocional':
+        # Validação das datas para pacotes promocionais e novos jogadores
+        if self.package_type in ['Promocional', 'Dias Promoção Novos Jogadores']:
             if not self.start_date:
-                errors['start_date'] = 'A data de início é obrigatória para pacotes promocionais.'
+                errors['start_date'] = f'A data de início é obrigatória para pacotes {self.package_type}.'
             if not self.end_date:
-                errors['end_date'] = 'A data de término é obrigatória para pacotes promocionais.'
+                errors['end_date'] = f'A data de término é obrigatória para pacotes {self.package_type}.'
         
         # Validação geral das datas
         if self.start_date and self.end_date and self.start_date > self.end_date:
