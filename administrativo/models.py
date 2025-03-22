@@ -786,6 +786,12 @@ class Plan(models.Model):
     apple_product_code = models.CharField(max_length=100, null=True, blank=True, verbose_name='Código do Produto (Apple)')
     gateway_product_code = models.CharField(max_length=100, null=True, blank=True, verbose_name='Código do Produto (Gateway)')
     promotional_price_validity = models.IntegerField(null=True, blank=True, verbose_name='Validade do Preço Promocional')
+    
+    # Campos específicos para o tipo "Dias Promoção Novos Jogadores"
+    promotion_days = models.IntegerField(null=True, blank=True, verbose_name='Dias Promoção')
+    futcoins_package_benefit = models.IntegerField(null=True, blank=True, verbose_name='Benefício Pacote Futcoins')
+    package_renewals = models.IntegerField(null=True, blank=True, verbose_name='Qtde Renovações Pacote')
+    
     created_at = models.DateTimeField(default=timezone.now, verbose_name='Criado em')
     updated_at = models.DateTimeField(auto_now=True, verbose_name='Atualizado em')
 

@@ -1,0 +1,617 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Futligas Jogadores</title>
+
+    <link href="{% static 'administrativo/css/bootstrap.min.css' %}" rel="stylesheet">
+    <link href="{% static 'administrativo/font-awesome/css/font-awesome.css' %}" rel="stylesheet">
+    <link href="{% static 'administrativo/css/plugins/toastr/toastr.min.css' %}" rel="stylesheet">
+    <link href="{% static 'administrativo/css/plugins/clockpicker/clockpicker.css' %}" rel="stylesheet">
+    <link href="{% static 'administrativo/css/plugins/iCheck/custom.css' %}" rel="stylesheet">
+    <link href="{% static 'administrativo/css/plugins/jasny/jasny-bootstrap.min.css' %}" rel="stylesheet">
+    <link href="{% static 'administrativo/css/animate.css' %}" rel="stylesheet">
+    <link href="{% static 'administrativo/css/style.css' %}" rel="stylesheet">
+    <!-- Custom -->
+    <link href="{% static 'administrativo/css/custom.css' %}" rel="stylesheet">
+    <!-- Favicon -->
+    <link rel="icon" href="{% static 'administrativo/img/futmundi.ico' %}" type="image/png">
+</head>
+<body>
+    <!-- CSRF Token para requisições AJAX -->
+    {% csrf_token %}
+    
+    <div id="wrapper">
+        <nav class="navbar-default navbar-static-side">
+            <div class="sidebar-collapse">
+                <ul class="nav metismenu" id="side-menu">
+                    <li class="nav-header">
+                        <div class="dropdown profile-element">
+                            <a href="{% url 'administrativo:usuarios' %}">
+                                <img src="{% static 'administrativo/img/logo.svg' %}" alt="Futmundi logo">
+                            </a>
+                        </div>
+                        <div class="logo-element">
+                            <a href="{% url 'administrativo:usuarios' %}">
+                                <img src="{% static 'administrativo/img/logosm.svg' %}" alt="Futmundi logo">
+                            </a>
+                        </div>
+                    </li>
+                    <li class="active">
+                        <a href="{% url 'administrativo:usuarios' %}"><i class="fa fa-user"></i> <span class="nav-label">Usuários</span></a>
+                    </li>
+                    <li>
+                        <a href="#"><i class="fa fa-trophy"></i> <span class="nav-label">Campeonatos</span><span class="fa arrow"></span></a>
+                        <ul class="nav nav-second-level collapse">
+                            <li><a href="{% url 'administrativo:ambitos' %}">Âmbitos</a></li>
+                            <li><a href="{% url 'administrativo:campeonatos' %}">Campeonatos</a></li>
+                            <li><a href="{% url 'administrativo:templates' %}">Templates</a></li>
+                            <li><a href="{% url 'administrativo:times' %}">Times</a></li>
+                        </ul>
+                    </li>
+                    <li>
+                        <a href="#"><i class="fa fa-shopping-cart"></i> <span class="nav-label">Pacotes</span><span class="fa arrow"></span></a>
+                        <ul class="nav nav-second-level collapse">
+                            <li><a href="{% url 'administrativo:futcoins' %}">Futcoins</a></li>
+                            <li><a href="{% url 'administrativo:planos' %}">Planos</a></li>
+                        </ul>
+                    </li>
+                    <li>
+                        <a href="#"><i class="fa fa-diamond"></i> <span class="nav-label">Futligas</span><span class="fa arrow"></span></a>
+                        <ul class="nav nav-second-level collapse">
+                            <li><a href="{% url 'administrativo:futligas_classicas' %}">Clássicas</a></li>
+                            <li><a href="{% url 'administrativo:futligas_jogadores' %}">Jogadores</a></li>
+                        </ul>
+                    </li>
+                    <li>
+                        <a href="#"><i class="fa fa-globe"></i> <span class="nav-label">Locais</span><span class="fa arrow"></span></a>
+                        <ul class="nav nav-second-level collapse">
+                            <li><a href="{% url 'administrativo:continentes' %}">Continentes</a></li>
+                            <li><a href="{% url 'administrativo:paises' %}">Países</a></li>
+                            <li><a href="{% url 'administrativo:estados' %}">Estados</a></li>
+                        </ul>
+                    </li>
+                    <li>
+                        <a href="#"><i class="fa fa-gear"></i> <span class="nav-label">Configurações</span><span class="fa arrow"></span></a>
+                        <ul class="nav nav-second-level collapse">
+                            <li><a href="{% url 'administrativo:parametros' %}">Parâmetros</a></li>
+                            <li><a href="{% url 'administrativo:termo' %}">Termo</a></li>
+                            <li><a href="{% url 'administrativo:notificacoes' %}">Notificações</a></li>
+                        </ul>
+                    </li>
+                    <li>
+                        <a href="{% url 'administrativo:relatorios' %}"><i class="fa fa-pie-chart"></i> <span class="nav-label">Relatórios</span></a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+        <div id="page-wrapper" class="gray-bg">
+            <div class="row border-bottom">
+                <nav class="navbar navbar-static-top" style="margin-bottom: 0">
+                    <div class="navbar-header">
+                        <a class="navbar-minimalize minimalize-styl-2 btn btn-success " href="#"><i class="fa fa-bars"></i> </a>
+                    </div>
+                    <ul class="nav navbar-top-links navbar-right">
+                        <li>
+                            <span class="m-r-sm text-muted welcome-message">Andrews Cristhian</span>
+                        </li>
+                        <li class="dropdown">
+                            <a class="dropdown-toggle count-info" data-toggle="dropdown" href="#">
+                                <i class="fa fa-gear"></i>
+                            </a>
+                            <ul class="dropdown-menu dropdown-alerts">
+                                <li>
+                                    <a href="{% url 'administrativo:administradores' %}" class="dropdown-item">
+                                        <div>
+                                            <i class="fa fa-users"></i> Administradores
+                                        </div>
+                                    </a>
+                                </li>
+                                <li class="dropdown-divider"></li>
+                                <li>
+                                    <a href="{% url 'administrativo:logout' %}" class="dropdown-item">
+                                        <div>
+                                            <i class="fa fa-sign-out"></i> Sair
+                                        </div>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+            <div class="row wrapper border-bottom white-bg page-heading">
+                <div class="col-lg-10">
+                    <h2>Futligas Jogadores</h2>
+                </div>
+            </div>
+            <div class="wrapper wrapper-content">
+                <div class="row">
+                    <div class="col-lg-12">
+                        <div class="tabs-container">
+                            <ul class="nav nav-tabs" role="tablist">
+                                <li><a class="nav-link active" data-toggle="tab" href="#requisitos">Requisitos</a></li>
+                                <li><a class="nav-link" data-toggle="tab" href="#premios">Prêmios</a></li>
+                                <li><a class="nav-link" data-toggle="tab" href="#premiacao">Premiação</a></li>
+                            </ul>
+                            <div class="tab-content">
+                                <div id="requisitos" class="tab-pane active">
+                                    <div class="panel-body">
+                                        <div class="row">
+                                            <div class="col-lg-4">
+                                                <form id="form-futliga" class="mt10">
+                                                    {% csrf_token %}
+                                                    <div class="form-group col-lg-6">
+                                                        <input type="text" id="name" class="form-control" required>
+                                                        <label class="form-control-placeholder" for="name">Nome</label>
+                                                    </div>
+                                                    <div class="card ui-card-shadow ui-widget ui-widget-content ui-corner-all card-small ml15">
+                                                        <div class="card-heading">
+                                                            <h5>Imagem</h5>
+                                                        </div>
+                                                        <div class="card-content text-center">
+                                                            <div id="image-preview" style="display: flex; align-items: center; justify-content: center; padding: 0 10px 10px 10px; margin-top: -7px;">
+                                                                <i class="fa fa-file-image-o" style="font-size: 32px; color: #ccc; cursor: pointer;" onclick="document.getElementById('image').click()"></i>
+                                                            </div>
+                                                            <input type="file" id="image" name="image" class="input-image" accept="image/*" style="display: none;">
+                                                        </div>
+                                                    </div>
+                                                    <div class="form-group mt10">
+                                                        <div class="col-lg-12">
+                                                            <div class="row">
+                                                                <div class="col-lg-6">
+                                                                    <input type="number" min="0" id="players" class="form-control" required>
+                                                                    <label class="form-control-placeholder" for="players">Qtde Participantes</label>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="form-group mt10">
+                                                        <div class="col-lg-12">
+                                                            <div class="row">
+                                                                <div class="col-lg-6">
+                                                                    <input type="number" min="0" id="premium_players" class="form-control" required>
+                                                                    <label class="form-control-placeholder" for="premium_players">Qtde Craques</label>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="form-group mt20">
+                                                        <div class="col-lg-12">
+                                                            <div class="row">
+                                                                <div class="col-lg-6 mt5">
+                                                                    <div class="i-checks"><label> <input type="checkbox" id="owner_premium"> Dono Craque</label></div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-lg-12 mt25">
+                                                            <button type="submit" id="submit-btn" class="btn btn-primary"><i class="fa fa-plus mr5"></i> Adicionar</button>
+                                                            <button type="button" id="btn-importar" class="btn btn-primary ml20"><i class="fa fa-upload mr5"></i> Importar</button>
+                                                        </div>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                            <div class="col-lg-8">
+                                                <div class="group-options-right">
+                                                    <a class="btn btn-default btn-sm" title="Exportar"><i class="glyphicon glyphicon-download-alt"></i></a>
+                                                </div>
+                                                <div class="table-responsive">
+                                                    <table id="table" class="table table-bordered table-hover">
+                                                        <thead>
+                                                            <tr>
+                                                                <th class="per20">Nível</th>
+                                                                <th class="per15 center-middle">Imagem</th>
+                                                                <th class="per15">Participantes</th>
+                                                                <th class="per10">Craques</th>
+                                                                <th class="per15">Dono Craque</th>
+                                                                <th class="per15">Ações</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <!-- Os dados serão inseridos dinamicamente pelo JavaScript -->
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="premios" class="tab-pane">
+                                    <div class="panel-body">
+                                        <div class="table-responsive">
+                                            <table class="table table-bordered table-hover" id="premiosTable">
+                                                <thead>
+                                                    <tr>
+                                                        <th class="per15">Posição</th>
+                                                        <th class="per15 center-middle">Imagem</th>
+                                                        <!-- As colunas de níveis serão adicionadas dinamicamente pelo JavaScript -->
+                                                        <th class="per15">Ações</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <!-- Os dados serão inseridos dinamicamente pelo JavaScript -->
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        <div class="row col-lg-12 mt15 mb20">
+                                            <button type="button" class="btn btn-primary btn-adicionar-premio"><i class="fa fa-plus mr5"></i> Adicionar</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="premiacao" class="tab-pane">
+                                    <div class="panel-body">
+                                        <div class="row">
+                                            <div class="col-lg-6">
+                                                <div class="ibox-title">
+                                                    <h5>Ranking Semanal</h5>
+                                                    <form class="mt15">
+                                                        <div class="form-group col-lg-12">
+                                                            <div class="row">
+                                                                <div class="form-group col-lg-4">
+                                                                    <label class="control-label" for="dia-premiacao">Dia da Semana</label>
+                                                                    <select class="form-control js-example-basic-single"
+                                                                            id="dia-premiacao" style="width: 80%">
+                                                                        <option value="Segunda">Segunda</option>
+                                                                        <option value="Terça">Terça</option>
+                                                                        <option value="Quarta">Quarta</option>
+                                                                        <option value="Quinta">Quinta</option>
+                                                                        <option value="Sexta">Sexta</option>
+                                                                        <option value="Sábado">Sábado</option>
+                                                                        <option value="Domingo">Domingo</option>
+                                                                    </select>
+                                                                </div>
+                                                                <div class="form-group col-lg-4">
+                                                                    <label class="control-label" for="hora-premiacao">
+                                                                        Horário
+                                                                        Premiação
+                                                                    </label>
+                                                                    <div class="input-group clockpicker" data-autoclose="true" style="width: 80%">
+                                                                        <input type="text" class="form-control">
+                                                                        <span class="input-group-addon">
+                                                                            <span class="fa fa-clock-o"></span>
+                                                                        </span>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                            <div class="col-lg-6">
+                                                <div class="ibox-title">
+                                                    <h5>Ranking Temporada</h5>
+                                                    <form class="mt15">
+                                                        <div class="form-group col-lg-12">
+                                                            <div class="row">
+                                                                <div class="form-group col-lg-4">
+                                                                    <label class="control-label" for="mes-ano-premiacao">Mês do Ano</label>
+                                                                    <select class="form-control js-example-basic-single"
+                                                                            id="mes-ano-premiacao" style="width: 80%">
+                                                                        <option value="Janeiro">Janeiro</option>
+                                                                        <option value="Fevereiro">Fevereiro</option>
+                                                                        <option value="Março">Março</option>
+                                                                        <option value="Abril">Abril</option>
+                                                                        <option value="Maio">Maio</option>
+                                                                        <option value="Junho">Junho</option>
+                                                                        <option value="Julho">Julho</option>
+                                                                        <option value="Agosto">Agosto</option>
+                                                                        <option value="Setembro">Setembro</option>
+                                                                        <option value="Outubro">Outubro</option>
+                                                                        <option value="Novembro">Novembro</option>
+                                                                        <option value="Dezembro">Dezembro</option>
+                                                                    </select>
+                                                                </div>
+                                                                <div class="form-group col-lg-4">
+                                                                    <label class="control-label" for="dia-ano-premiacao">Dia do Ano</label>
+                                                                    <select class="form-control js-example-basic-single"
+                                                                            id="dia-ano-premiacao" style="width: 80%">
+                                                                        <option value="1">1</option>
+                                                                        <option value="2">2</option>
+                                                                        <option value="3">3</option>
+                                                                        <option value="4">4</option>
+                                                                        <option value="5">5</option>
+                                                                        <option value="6">6</option>
+                                                                        <option value="7">7</option>
+                                                                        <option value="8">8</option>
+                                                                        <option value="9">9</option>
+                                                                        <option value="10">10</option>
+                                                                        <option value="11">11</option>
+                                                                        <option value="12">12</option>
+                                                                        <option value="13">13</option>
+                                                                        <option value="14">14</option>
+                                                                        <option value="15">15</option>
+                                                                        <option value="16">16</option>
+                                                                        <option value="17">17</option>
+                                                                        <option value="18">18</option>
+                                                                        <option value="19">19</option>
+                                                                        <option value="20">20</option>
+                                                                        <option value="21">21</option>
+                                                                        <option value="22">22</option>
+                                                                        <option value="23">23</option>
+                                                                        <option value="24">24</option>
+                                                                        <option value="25">25</option>
+                                                                        <option value="26">26</option>
+                                                                        <option value="27">27</option>
+                                                                        <option value="28">28</option>
+                                                                        <option value="29">29</option>
+                                                                        <option value="30">30</option>
+                                                                        <option value="31">31</option>
+                                                                    </select>
+                                                                </div>
+                                                                <div class="form-group col-lg-4">
+                                                                    <label class="control-label" for="hora-premiacao">
+                                                                        Horário
+                                                                        Premiação
+                                                                    </label>
+                                                                    <div class="input-group clockpicker" data-autoclose="true" style="width: 80%">
+                                                                        <input type="text" class="form-control">
+                                                                        <span class="input-group-addon">
+                                                                            <span class="fa fa-clock-o"></span>
+                                                                        </span>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="panel panel-default col-lg-12 mtm25 p15">
+                            <button type="button" class="btn btn-success ml20" id="successToast"><i class="glyphicon glyphicon-save mr5"></i> Salvar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Mainly scripts -->
+    <script src="{% static 'administrativo/js/jquery-3.4.1.min.js' %}"></script>
+    <script src="{% static 'administrativo/js/popper.min.js' %}"></script>
+    <script src="{% static 'administrativo/js/bootstrap.js' %}"></script>
+    <script src="{% static 'administrativo/js/plugins/metisMenu/jquery.metisMenu.js' %}"></script>
+    <script src="{% static 'administrativo/js/plugins/slimscroll/jquery.slimscroll.min.js' %}"></script>
+    <!-- Custom and plugin javascript -->
+    <script src="{% static 'administrativo/js/inspinia.js' %}"></script>
+    <script src="{% static 'administrativo/js/plugins/pace/pace.min.js' %}"></script>
+    <script src="{% static 'administrativo/js/plugins/toastr/toastr.min.js' %}"></script>
+    <script src="{% static 'administrativo/js/plugins/jasny/jasny-bootstrap.min.js' %}"></script>
+    <script src="{% static 'administrativo/js/plugins/iCheck/icheck.min.js' %}"></script>
+    <script src="{% static 'administrativo/js/plugins/tablednd/jquery.tablednd.min.js' %}"></script>
+    <script src="{% static 'administrativo/js/plugins/clockpicker/clockpicker.js' %}"></script>
+    <script src="{% static 'administrativo/js/settings.js' %}"></script>
+    <!-- Adiciona biblioteca XLSX para importação e exportação de Excel -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- Futligas Jogadores Script -->
+    <script src="{% static 'administrativo/js/futligas-jogadores.js' %}"></script>
+    
+    <!-- Log de diagnóstico para imagens -->
+    <script>
+        // Monitora tentativas de salvamento e estado das imagens
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log("Inicialização de log de diagnóstico para imagens de níveis");
+            
+            // Monitora o clique no botão de salvar
+            $('#successToast').on('click', function() {
+                console.log("[DIAGNÓSTICO-IMAGEM] Iniciando salvamento...");
+                
+                // Registra estado atual das imagens de cada nível
+                let niveisComImagens = 0;
+                let imagensNiveis = {};
+                
+                $('#table tbody tr').each(function() {
+                    const nivelId = $(this).data('id');
+                    const nivelNome = $(this).find('td:eq(0)').text().trim();
+                    const temImagem = $(this).find('td:eq(1)').data('has-image') || $(this).find('td:eq(1) img').length > 0;
+                    const imagemSrc = temImagem ? $(this).find('td:eq(1) img').attr('src') : null;
+                    
+                    imagensNiveis[nivelId] = {
+                        nome: nivelNome,
+                        temImagem: temImagem,
+                        imagemUrl: imagemSrc ? (imagemSrc.substring(0, 30) + '...') : null
+                    };
+                    
+                    if (temImagem) niveisComImagens++;
+                    
+                    console.log(`[DIAGNÓSTICO-IMAGEM] PRÉ-SALVAMENTO: Nível ID=${nivelId}, Nome=${nivelNome}, Tem imagem=${temImagem}`);
+                });
+                
+                console.log(`[DIAGNÓSTICO-IMAGEM] PRÉ-SALVAMENTO: Total de ${niveisComImagens} níveis com imagens de ${Object.keys(imagensNiveis).length} níveis`);
+                
+                // Armazenar estado para verificar depois do AJAX
+                window._diagnosticoEstadoAnterior = imagensNiveis;
+            });
+            
+            // Sobrescreve o método de sucesso do AJAX para fazer diagnóstico após salvamento
+            const ajaxOriginal = $.ajax;
+            $.ajax = function(settings) {
+                // Se for uma requisição de salvamento
+                if (settings.url && settings.url.indexOf('/futligas/jogadores/salvar/') !== -1) {
+                    console.log("[DIAGNÓSTICO-IMAGEM] Interceptando requisição de salvamento AJAX");
+                    
+                    // Guarda referências aos callbacks originais
+                    const successOriginal = settings.success;
+                    const completeOriginal = settings.complete;
+                    
+                    // Sobrescreve o callback de sucesso
+                    settings.success = function(response) {
+                        // Chama callback original primeiro
+                        if (successOriginal) successOriginal(response);
+                        
+                        // Verifica estado após salvamento (com delay para garantir que a tabela foi atualizada)
+                        setTimeout(function() {
+                            console.log("[DIAGNÓSTICO-IMAGEM] Verificando estado das imagens após salvamento");
+                            
+                            let niveisComImagens = 0;
+                            let imagensNiveis = {};
+                            
+                            $('#table tbody tr').each(function() {
+                                const nivelId = $(this).data('id');
+                                const nivelNome = $(this).find('td:eq(0)').text().trim();
+                                const temImagem = $(this).find('td:eq(1)').data('has-image') || $(this).find('td:eq(1) img').length > 0;
+                                const imagemSrc = temImagem ? $(this).find('td:eq(1) img').attr('src') : null;
+                                
+                                imagensNiveis[nivelId] = {
+                                    nome: nivelNome,
+                                    temImagem: temImagem,
+                                    imagemUrl: imagemSrc ? (imagemSrc.substring(0, 30) + '...') : null
+                                };
+                                
+                                if (temImagem) niveisComImagens++;
+                                
+                                // Verificar se a imagem foi perdida
+                                const estadoAnterior = window._diagnosticoEstadoAnterior && window._diagnosticoEstadoAnterior[nivelId];
+                                const imagemPerdida = estadoAnterior && estadoAnterior.temImagem && !temImagem;
+                                
+                                console.log(`[DIAGNÓSTICO-IMAGEM] PÓS-SALVAMENTO: Nível ID=${nivelId}, Nome=${nivelNome}, Tem imagem=${temImagem}${imagemPerdida ? ' (IMAGEM PERDIDA!)' : ''}`);
+                            });
+                            
+                            console.log(`[DIAGNÓSTICO-IMAGEM] PÓS-SALVAMENTO: Total de ${niveisComImagens} níveis com imagens de ${Object.keys(imagensNiveis).length} níveis`);
+                            
+                            // Identifica níveis que perderam imagens
+                            if (window._diagnosticoEstadoAnterior) {
+                                let niveisPerdidos = [];
+                                
+                                Object.keys(window._diagnosticoEstadoAnterior).forEach(id => {
+                                    const antes = window._diagnosticoEstadoAnterior[id];
+                                    const depois = imagensNiveis[id];
+                                    
+                                    if (antes.temImagem && (!depois || !depois.temImagem)) {
+                                        niveisPerdidos.push(antes.nome || id);
+                                    }
+                                });
+                                
+                                if (niveisPerdidos.length > 0) {
+                                    console.error(`[DIAGNÓSTICO-IMAGEM] ALERTA! ${niveisPerdidos.length} níveis perderam suas imagens após salvamento: ${niveisPerdidos.join(', ')}`);
+                                }
+                            }
+                        }, 1000);
+                    };
+                    
+                    // Sobrescreve o callback complete
+                    settings.complete = function(xhr, status) {
+                        console.log(`[DIAGNÓSTICO-IMAGEM] Requisição AJAX completada com status: ${status}`);
+                        
+                        // Extrai e analisa o corpo da resposta
+                        try {
+                            const response = JSON.parse(xhr.responseText);
+                            console.log(`[DIAGNÓSTICO-IMAGEM] Resposta analisada: success=${response.success}, levels=${response.levels ? response.levels.length : 'N/A'}`);
+                            
+                            // Se há levels na resposta, verifica quais têm imagens
+                            if (response.levels) {
+                                let niveisComImagensResposta = 0;
+                                
+                                response.levels.forEach(nivel => {
+                                    const temImagem = !!nivel.image;
+                                    console.log(`[DIAGNÓSTICO-IMAGEM] RESPOSTA: Nível ID=${nivel.id}, Nome=${nivel.name}, Tem imagem=${temImagem}`);
+                                    if (temImagem) niveisComImagensResposta++;
+                                });
+                                
+                                console.log(`[DIAGNÓSTICO-IMAGEM] RESPOSTA: Total de ${niveisComImagensResposta} níveis com imagens de ${response.levels.length} níveis na resposta`);
+                            }
+                        } catch (e) {
+                            console.error(`[DIAGNÓSTICO-IMAGEM] Erro ao analisar resposta: ${e.message}`);
+                        }
+                        
+                        // Chama callback original
+                        if (completeOriginal) completeOriginal(xhr, status);
+                    };
+                }
+                
+                // Chama o AJAX original
+                return ajaxOriginal.call(this, settings);
+            };
+        });
+    </script>
+    
+    <!-- Modal de Confirmação de Exclusão -->
+    <div class="modal inmodal" id="modalConfirmDelete" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content animated fadeIn">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                    <h4 class="modal-title">Tem certeza?</h4>
+                </div>
+                <div class="modal-body">
+                    <p>Tem certeza que deseja excluir o nível <strong id="levelNameToDelete"></strong>?</p>
+                    <p class="text-danger">Esta ação não poderá ser desfeita.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-danger" id="confirmDeleteButton">Excluir</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal de Importação -->
+    <div class="modal inmodal" id="modalImport" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content animated fadeIn">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                    <h4 class="modal-title">Importar Níveis</h4>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="importFile">Selecione o arquivo</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" readonly>
+                            <div class="input-group-append">
+                                <span class="input-group-text btn btn-default btn-file">
+                                    <span class="fileinput-new">Selecionar arquivo</span>
+                                    <span class="fileinput-exists">Alterar</span>
+                                    <input type="file" id="importFile" name="file" accept=".xlsx,.xls" required/>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="background-color: #d9edf7; border: 1px solid #bce8f1; border-radius: 4px; padding: 15px; margin-top: 15px; color: #31708f;">
+                        <h5><strong>Instruções:</strong></h5>
+                        <p>O arquivo Excel deve conter as seguintes colunas:</p>
+                        <ul>
+                            <li><strong>Nível</strong> - Nome do nível</li>
+                            <li><strong>Participantes</strong> - Quantidade de participantes</li>
+                            <li><strong>Craques</strong> - Quantidade de craques</li>
+                            <li><strong>Dono Craque</strong> - Valores "Sim" ou "Não"</li>
+                            <li>Colunas adicionais com posições (1, 2, 3, etc.) para prêmios</li>
+                        </ul>
+                        <p><small>Observação: Não é possível importar imagens via Excel.</small></p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="confirmImportButton">Importar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal de Confirmação de Exclusão de Prêmio -->
+    <div class="modal inmodal" id="confirmDeletePrizeModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content animated fadeIn">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                    <h4 class="modal-title">Tem certeza?</h4>
+                </div>
+                <div class="modal-body">
+                    <p id="confirmDeletePrizeText">Tem certeza que deseja excluir este prêmio?</p>
+                    <p class="text-danger">Esta ação não poderá ser desfeita.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-danger" id="confirmDeletePrize">Excluir</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

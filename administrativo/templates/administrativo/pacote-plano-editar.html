@@ -84,6 +84,11 @@
         $('body').append('<input type="hidden" id="hidden_color_text_label">');
         $('body').append('<input type="hidden" id="hidden_color_background_label">');
         
+        // Adiciona campos ocultos para valores de novos jogadores
+        $('body').append('<input type="hidden" id="hidden_promotion_days">');
+        $('body').append('<input type="hidden" id="hidden_futcoins_package_benefit">');
+        $('body').append('<input type="hidden" id="hidden_package_renewals">');
+        
         // Configura os datepickers
         $('#datetimepicker, #datetimepicker2').datetimepicker({
             format: 'DD/MM/YYYY HH:mm',
@@ -113,13 +118,38 @@
         console.log('- futcoins_package_benefit:', planData.futcoins_package_benefit);
         console.log('- package_renewals:', planData.package_renewals);
         
+        // ARMAZENAR VALORES EM CAMPOS OCULTOS
+        $('#hidden_promotion_days').val(planData.promotion_days || '');
+        $('#hidden_futcoins_package_benefit').val(planData.futcoins_package_benefit || '');
+        $('#hidden_package_renewals').val(planData.package_renewals || '');
+        
+        // MOSTRAR ESTADO INICIAL DOS CAMPOS OCULTOS
+        console.log('VALORES ARMAZENADOS NOS CAMPOS OCULTOS:');
+        console.log('- hidden_promotion_days:', $('#hidden_promotion_days').val());
+        console.log('- hidden_futcoins_package_benefit:', $('#hidden_futcoins_package_benefit').val());
+        console.log('- hidden_package_renewals:', $('#hidden_package_renewals').val());
+        
         // INSERINDO VALORES DIRETAMENTE NOS ELEMENTOS HTML NO MOMENTO DA INICIALIZAÇÃO
-        if (planData.promotion_days) {
+        // Garantir que os elementos existam primeiro (verificação de segurança)
+        if (document.getElementById('dias-promocao') && planData.promotion_days) {
             document.getElementById('dias-promocao').value = planData.promotion_days;
+            console.log('Valor de dias-promocao definido diretamente:', planData.promotion_days);
+        } else {
+            console.log('Elemento dias-promocao não encontrado ou não há valor para promotion_days');
         }
         
-        if (planData.package_renewals) {
+        if (document.getElementById('renovacoes-pacote') && planData.package_renewals) {
             document.getElementById('renovacoes-pacote').value = planData.package_renewals;
+            console.log('Valor de renovacoes-pacote definido diretamente:', planData.package_renewals);
+        } else {
+            console.log('Elemento renovacoes-pacote não encontrado ou não há valor para package_renewals');
+        }
+        
+        // Garantir que os campos sejam visíveis se tiver valores
+        if (planData.promotion_days || planData.package_renewals || planData.futcoins_package_benefit) {
+            console.log('Mostrando campos de Novos Jogadores porque existem valores');
+            $('.novos-usuarios-fields').show();
+            $('#bloco-beneficio-futcoins').show();
         }
         
         // Preencher campos básicos
@@ -465,11 +495,18 @@
             var tipo = $('#tipo').val();
             console.log('Função atualizarCamposTipo sobrescrita. Tipo:', tipo);
             
+            // Salvar valores atuais para campos específicos de Novos Jogadores
+            var valoresNovosJogadores = {
+                diasPromocao: $('#dias-promocao').val(),
+                beneficioFutcoins: $('#beneficio-futcoins').val(),
+                renovacoesPacote: $('#renovacoes-pacote').val()
+            };
+            
+            console.log('Salvando valores atuais antes de atualizar campos:', valoresNovosJogadores);
+            
             // Esconde todos os campos especiais
             $('.label-fields, #etiqueta, .date-fields, label[for="etiqueta"]').hide();
-            
-            // NÃO limpa o valor da etiqueta na edição
-            // $('#etiqueta').val('');  // <- Esta linha foi removida
+            $('.novos-usuarios-fields, #bloco-beneficio-futcoins').hide();
             
             // Só mostra campos se tiver um tipo selecionado
             if (tipo === 'Padrão') {
@@ -530,10 +567,45 @@
                     $('#id4').colorpicker('setValue', '#CCA53F');
                 }
                 
-                // Carrega os pacotes de futcoins ativos
-                if (typeof carregarPacotesFutcoins === 'function') {
-                    carregarPacotesFutcoins();
-                }
+                // IMPORTANTE: Restaurar valores específicos para Novos Jogadores
+                setTimeout(function() {
+                    // Restaurar valores apenas se existirem valores anteriores
+                    if (valoresNovosJogadores.diasPromocao) {
+                        $('#dias-promocao').val(valoresNovosJogadores.diasPromocao);
+                        console.log('Restaurando dias-promocao:', valoresNovosJogadores.diasPromocao);
+                    } else if (planData.promotion_days) {
+                        $('#dias-promocao').val(planData.promotion_days);
+                        console.log('Usando dias-promocao dos dados originais:', planData.promotion_days);
+                    }
+                    
+                    if (valoresNovosJogadores.renovacoesPacote) {
+                        $('#renovacoes-pacote').val(valoresNovosJogadores.renovacoesPacote);
+                        console.log('Restaurando renovacoes-pacote:', valoresNovosJogadores.renovacoesPacote);
+                    } else if (planData.package_renewals) {
+                        $('#renovacoes-pacote').val(planData.package_renewals);
+                        console.log('Usando package_renewals dos dados originais:', planData.package_renewals);
+                    }
+                    
+                    // Carregar pacotes de futcoins sem perder seleção atual
+                    if (typeof carregarPacotesFutcoins === 'function') {
+                        var valorAtual = valoresNovosJogadores.beneficioFutcoins || planData.futcoins_package_benefit;
+                        if (valorAtual) {
+                            console.log('Preservando benefício futcoins:', valorAtual);
+                            var oldFn = carregarPacotesFutcoins;
+                            carregarPacotesFutcoins = function() {
+                                oldFn();
+                                setTimeout(function() {
+                                    $('#beneficio-futcoins').val(valorAtual);
+                                    console.log('Restaurado beneficio-futcoins após carregamento:', valorAtual);
+                                }, 300);
+                            };
+                        }
+                        carregarPacotesFutcoins();
+                    } else if (planData.futcoins_package_benefit) {
+                        // Usar função específica de edição
+                        setTimeout(carregarESetarPacoteFutcoins, 300);
+                    }
+                }, 200);
             }
         };
         
@@ -544,6 +616,12 @@
             console.log('Botão salvar clicado na edição');
             console.log('Valor do campo código Android antes do envio:', $('#codigo-android').val());
             console.log('Valor do campo código Apple antes do envio:', $('#codigo-apple').val());
+            
+            // IMPORTANTE: Log específico dos valores de campos de Novos Jogadores
+            console.log('VALORES DOS CAMPOS DE NOVOS JOGADORES ANTES DO ENVIO:');
+            console.log('- Dias Promoção:', $('#dias-promocao').val());
+            console.log('- Benefício Futcoins:', $('#beneficio-futcoins').val());
+            console.log('- Renovações Pacote:', $('#renovacoes-pacote').val());
             
             // Continua com o comportamento original
             var $btn = $(this);
@@ -640,25 +718,61 @@
             if (startDate) formData.append('start_date', startDate);
             if (endDate) formData.append('end_date', endDate);
             
-            // Campos específicos para Novos Jogadores
-            if ($('#tipo').val() === 'Novos Jogadores' || tipo === 'Dias Promoção Novos Jogadores') {
-                // Dias Promoção
-                var diasPromocao = $('#dias-promocao').val();
-                if (diasPromocao) {
-                    formData.append('promotion_days', diasPromocao);
-                }
-                
-                // Benefício Pacote Futcoins
-                var beneficioFutcoins = $('#beneficio-futcoins').val();
-                if (beneficioFutcoins) {
-                    formData.append('futcoins_package_benefit', beneficioFutcoins);
-                }
-                
-                // Qtde Renovações Pacote
-                var qtdeRenovacoes = $('#renovacoes-pacote').val();
-                if (qtdeRenovacoes) {
-                    formData.append('package_renewals', qtdeRenovacoes);
-                }
+            // Dias Promoção
+            var diasPromocao = $('#dias-promocao').val();
+            if (diasPromocao) {
+                // Remover zeros à esquerda para evitar problemas de conversão de octal
+                diasPromocao = parseInt(diasPromocao, 10).toString();
+                formData.append('promotion_days', diasPromocao);
+                console.log('Adicionando promotion_days ao FormData:', diasPromocao);
+            } else if (planData.promotion_days) {
+                // Remover zeros à esquerda para evitar problemas de conversão de octal
+                var daysValue = parseInt(planData.promotion_days, 10).toString();
+                formData.append('promotion_days', daysValue);
+                console.log('Usando promotion_days dos dados originais:', daysValue);
+            } else if ($('#hidden_promotion_days').val()) {
+                // Remover zeros à esquerda para evitar problemas de conversão de octal
+                var hiddenValue = parseInt($('#hidden_promotion_days').val(), 10).toString();
+                formData.append('promotion_days', hiddenValue);
+                console.log('Usando promotion_days do campo oculto:', hiddenValue);
+            }
+            
+            // Benefício Pacote Futcoins
+            var beneficioFutcoins = $('#beneficio-futcoins').val();
+            if (beneficioFutcoins) {
+                // Remover zeros à esquerda para evitar problemas de conversão de octal
+                beneficioFutcoins = parseInt(beneficioFutcoins, 10).toString();
+                formData.append('futcoins_package_benefit', beneficioFutcoins);
+                console.log('Adicionando futcoins_package_benefit ao FormData:', beneficioFutcoins);
+            } else if (planData.futcoins_package_benefit) {
+                // Remover zeros à esquerda para evitar problemas de conversão de octal
+                var futcoinsValue = parseInt(planData.futcoins_package_benefit, 10).toString();
+                formData.append('futcoins_package_benefit', futcoinsValue);
+                console.log('Usando futcoins_package_benefit dos dados originais:', futcoinsValue);
+            } else if ($('#hidden_futcoins_package_benefit').val()) {
+                // Remover zeros à esquerda para evitar problemas de conversão de octal
+                var hiddenValue = parseInt($('#hidden_futcoins_package_benefit').val(), 10).toString();
+                formData.append('futcoins_package_benefit', hiddenValue);
+                console.log('Usando futcoins_package_benefit do campo oculto:', hiddenValue);
+            }
+            
+            // Qtde Renovações Pacote
+            var qtdeRenovacoes = $('#renovacoes-pacote').val();
+            if (qtdeRenovacoes) {
+                // Remover zeros à esquerda para evitar problemas de conversão de octal
+                qtdeRenovacoes = parseInt(qtdeRenovacoes, 10).toString();
+                formData.append('package_renewals', qtdeRenovacoes);
+                console.log('Adicionando package_renewals ao FormData:', qtdeRenovacoes);
+            } else if (planData.package_renewals) {
+                // Remover zeros à esquerda para evitar problemas de conversão de octal
+                var renewalsValue = parseInt(planData.package_renewals, 10).toString();
+                formData.append('package_renewals', renewalsValue);
+                console.log('Usando package_renewals dos dados originais:', renewalsValue);
+            } else if ($('#hidden_package_renewals').val()) {
+                // Remover zeros à esquerda para evitar problemas de conversão de octal
+                var hiddenValue = parseInt($('#hidden_package_renewals').val(), 10).toString();
+                formData.append('package_renewals', hiddenValue);
+                console.log('Usando package_renewals do campo oculto:', hiddenValue);
             }
             
             // Outros campos
@@ -667,11 +781,14 @@
             // Códigos de produto - Adicionando logs para depuração
             var androidCode = $('#codigo-android').val() || '';
             var appleCode = $('#codigo-apple').val() || '';
+            var gatewayCode = $('#codigo-gateway').val() || planData.gateway_product_code || '';
             console.log('Código Android a ser enviado:', androidCode);
             console.log('Código Apple a ser enviado:', appleCode);
+            console.log('Código Gateway a ser enviado:', gatewayCode);
             
             formData.append('android_product_code', androidCode);
             formData.append('apple_product_code', appleCode);
+            formData.append('gateway_product_code', gatewayCode);
             
             // Imagem
             var imageFile = $('#image')[0].files[0];
@@ -681,6 +798,12 @@
             
             // Adiciona o campo para remoção de imagem
             formData.append('should_remove_image', $('#should_remove_image').val());
+            
+            // Log para visualizar todos os pares chave/valor do FormData
+            console.log('Dados sendo enviados:');
+            for (var pair of formData.entries()) {
+                console.log(pair[0] + ': ' + pair[1]);
+            }
             
             // Envia os dados
             $.ajax({
@@ -710,6 +833,82 @@
             });
             
             return false; // Impede o comportamento padrão
+        });
+        
+        // GARANTIR QUE OS VALORES DE NOVOS JOGADORES SEJAM PRESERVADOS
+        var preservarValoresNovosJogadores = function() {
+            // Armazenar valores atuais
+            var valoresSalvos = {
+                diasPromocao: $('#dias-promocao').val(),
+                beneficioFutcoins: $('#beneficio-futcoins').val(),
+                renovacoesPacote: $('#renovacoes-pacote').val()
+            };
+            
+            console.log('Preservando valores de Novos Jogadores:', valoresSalvos);
+            
+            // Detectar quando o tipo mudar
+            $('#tipo').on('change', function() {
+                var tipo = $(this).val();
+                
+                // Só restaurar se o tipo for Novos Jogadores
+                if (tipo === 'Novos Jogadores') {
+                    // Dar tempo para outros scripts executarem
+                    setTimeout(function() {
+                        // Restaurar valores
+                        if (valoresSalvos.diasPromocao) {
+                            $('#dias-promocao').val(valoresSalvos.diasPromocao);
+                        }
+                        
+                        if (valoresSalvos.renovacoesPacote) {
+                            $('#renovacoes-pacote').val(valoresSalvos.renovacoesPacote);
+                        }
+                        
+                        if (valoresSalvos.beneficioFutcoins) {
+                            $('#beneficio-futcoins').val(valoresSalvos.beneficioFutcoins);
+                        }
+                        
+                        console.log('Valores restaurados após mudança de tipo para Novos Jogadores');
+                    }, 200);
+                }
+            });
+        };
+        
+        // Inicializar preservation logic
+        setTimeout(preservarValoresNovosJogadores, 500);
+        
+        // Garantir que os campos específicos de Novos Jogadores sejam tratados adequadamente
+        var verificarCamposNovosJogadores = function() {
+            if ((planData.package_type === 'Dias Promoção Novos Jogadores' || planData.package_type === 'Novos Jogadores') && 
+                $('#tipo').val() === 'Novos Jogadores') {
+                
+                // Garantir que os campos apareçam
+                $('.novos-usuarios-fields').show();
+                $('#bloco-beneficio-futcoins').show();
+                
+                // Forçar os valores corretos
+                if (planData.promotion_days) {
+                    $('#dias-promocao').val(planData.promotion_days);
+                    console.log('FORÇANDO dias-promocao:', planData.promotion_days);
+                }
+                
+                if (planData.package_renewals) {
+                    $('#renovacoes-pacote').val(planData.package_renewals);
+                    console.log('FORÇANDO renovacoes-pacote:', planData.package_renewals);
+                }
+                
+                // Recarregar benefício futcoins
+                if (planData.futcoins_package_benefit) {
+                    setTimeout(carregarESetarPacoteFutcoins, 300);
+                }
+            }
+        };
+        
+        // Verificar campos após carregamento inicial
+        setTimeout(verificarCamposNovosJogadores, 800);
+        
+        // Verificar novamente após alteração do tipo
+        $('#tipo').on('change', function() {
+            setTimeout(verificarCamposNovosJogadores, 300);
         });
     });
 </script>

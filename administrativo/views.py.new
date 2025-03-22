@@ -1508,21 +1508,6 @@ def pacote_plano_novo(request):
                 gateway_product_code=data.get('gateway_product_code')
             )
             
-            # Adiciona os campos específicos para o tipo "Dias Promoção Novos Jogadores"
-            if data.get('tipo') == 'Dias Promoção Novos Jogadores':
-                # Tenta obter os valores dos campos específicos e converte para inteiro se existir
-                try:
-                    if data.get('promotion_days'):
-                        plan.promotion_days = int(data.get('promotion_days'))
-                    
-                    if data.get('futcoins_package_benefit'):
-                        plan.futcoins_package_benefit = int(data.get('futcoins_package_benefit'))
-                    
-                    if data.get('package_renewals'):
-                        plan.package_renewals = int(data.get('package_renewals'))
-                except (ValueError, TypeError) as e:
-                    print(f"Erro ao converter campos específicos: {str(e)}")
-            
             # Tratamento da imagem
             if 'image' in files:
                 # Validação do tamanho da imagem
@@ -4231,27 +4216,6 @@ def plano_editar(request, id):
                 plan.apple_product_code = data.get('apple_product_code')
                 plan.gateway_product_code = data.get('gateway_product_code')
                 
-                # Tratamento de campos específicos para "Dias Promoção Novos Jogadores"
-                if plan.package_type == 'Dias Promoção Novos Jogadores':
-                    try:
-                        # Processa os campos específicos, se fornecidos
-                        if data.get('promotion_days'):
-                            plan.promotion_days = int(data.get('promotion_days'))
-                        else:
-                            plan.promotion_days = None
-                            
-                        if data.get('futcoins_package_benefit'):
-                            plan.futcoins_package_benefit = int(data.get('futcoins_package_benefit'))
-                        else:
-                            plan.futcoins_package_benefit = None
-                            
-                        if data.get('package_renewals'):
-                            plan.package_renewals = int(data.get('package_renewals'))
-                        else:
-                            plan.package_renewals = None
-                    except (ValueError, TypeError) as e:
-                        print(f"Erro ao processar campos específicos: {str(e)}")
-                
                 # Tratamento da imagem
                 if 'image' in files:
                     # Validação do tamanho da imagem
@@ -5065,27 +5029,6 @@ def plano_editar(request, id):
                 plan.apple_product_code = data.get('apple_product_code')
                 plan.gateway_product_code = data.get('gateway_product_code')
                 
-                # Tratamento de campos específicos para "Dias Promoção Novos Jogadores"
-                if plan.package_type == 'Dias Promoção Novos Jogadores':
-                    try:
-                        # Processa os campos específicos, se fornecidos
-                        if data.get('promotion_days'):
-                            plan.promotion_days = int(data.get('promotion_days'))
-                        else:
-                            plan.promotion_days = None
-                            
-                        if data.get('futcoins_package_benefit'):
-                            plan.futcoins_package_benefit = int(data.get('futcoins_package_benefit'))
-                        else:
-                            plan.futcoins_package_benefit = None
-                            
-                        if data.get('package_renewals'):
-                            plan.package_renewals = int(data.get('package_renewals'))
-                        else:
-                            plan.package_renewals = None
-                    except (ValueError, TypeError) as e:
-                        print(f"Erro ao processar campos específicos: {str(e)}")
-                
                 # Tratamento da imagem
                 if 'image' in files:
                     # Validação do tamanho da imagem
@@ -5141,10 +5084,6 @@ def plano_editar(request, id):
             'android_product_code': plan.android_product_code,
             'apple_product_code': plan.apple_product_code,
             'gateway_product_code': plan.gateway_product_code,
-            # Campos específicos para "Dias Promoção Novos Jogadores"
-            'promotion_days': plan.promotion_days,
-            'futcoins_package_benefit': plan.futcoins_package_benefit,
-            'package_renewals': plan.package_renewals,
         }
         
         # Debug do valor de enabled

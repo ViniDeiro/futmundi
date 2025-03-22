@@ -1,0 +1,21 @@
+Código correto para o bloco try/except:
+
+                                    try:
+                                        stage = ChampionshipStage.objects.create(
+                                            championship=championship,
+                                            name=ts.name,
+                                            template_stage=ts,
+                                            order=ts.order
+                                        )
+                                        print(f"DEBUG: Fase criada com sucesso, ID: {stage.id}")
+                                        
+                                        # IMPORTANTE: Criar todas as rodadas para esta fase
+                                        print(f"DEBUG: Criando {ts.rounds} rodadas para a fase {stage.name}")
+                                        for round_number in range(1, ts.rounds + 1):
+                                            ChampionshipRound.objects.create(
+                                                championship=championship,
+                                                stage=stage,
+                                                number=round_number
+                                            )
+                                            print(f"DEBUG: Rodada {round_number} criada com sucesso")
+                                    except Exception as e:

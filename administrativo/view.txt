@@ -4608,6 +4608,39 @@ def plano_editar(request, id):
                 plan.enabled = data.get('enabled', '').lower() == 'true'
                 plan.package_type = data.get('tipo')  # Corrigido de package_type para tipo
                 
+                # Processamento dos campos específicos para Novos Jogadores
+                if data.get('promotion_days'):
+                    try:
+                        # Remove zeros à esquerda antes da conversão
+                        value = str(data.get('promotion_days')).lstrip('0')
+                        if not value:
+                            value = '0'
+                        plan.promotion_days = int(value)
+                        print(f"DEBUG - promotion_days definido como: {plan.promotion_days}")
+                    except (ValueError, TypeError) as e:
+                        print(f"DEBUG - ERRO ao converter promotion_days: {data.get('promotion_days')} - {str(e)}")
+
+                if data.get('futcoins_package_benefit'):
+                    try:
+                        # Remove zeros à esquerda antes da conversão
+                        value = str(data.get('futcoins_package_benefit')).lstrip('0')
+                        if not value:
+                            value = '0'
+                        plan.futcoins_package_benefit = int(value)
+                        print(f"DEBUG - futcoins_package_benefit definido como: {plan.futcoins_package_benefit}")
+                    except (ValueError, TypeError) as e:
+                        print(f"DEBUG - ERRO ao converter futcoins_package_benefit: {data.get('futcoins_package_benefit')} - {str(e)}")
+
+                if data.get('package_renewals'):
+                    try:
+                        # Remove zeros à esquerda antes da conversão
+                        value = str(data.get('package_renewals')).lstrip('0')
+                        if not value:
+                            value = '0'
+                        plan.package_renewals = int(value)
+                        print(f"DEBUG - package_renewals definido como: {plan.package_renewals}")
+                    except (ValueError, TypeError) as e:
+                        print(f"DEBUG - ERRO ao converter package_renewals: {data.get('package_renewals')} - {str(e)}")
                 # Processamento da etiqueta e cores - Garantindo que os valores sejam processados corretamente
                 plan.label = data.get('label', '')
                 
@@ -4756,6 +4789,9 @@ def plano_editar(request, id):
             'android_product_code': plan.android_product_code,
             'apple_product_code': plan.apple_product_code,
             'gateway_product_code': plan.gateway_product_code,
+            'promotion_days': plan.promotion_days if hasattr(plan, 'promotion_days') else None,
+            'futcoins_package_benefit': plan.futcoins_package_benefit if hasattr(plan, 'futcoins_package_benefit') else None,
+            'package_renewals': plan.package_renewals if hasattr(plan, 'package_renewals') else None,
         }
         
         # Debug do valor de enabled
@@ -21910,8 +21946,53 @@ def get_matches_by_round(request):
                     }
                     
                     matches_data.append(match_data)
+                # Verificar se o número de jogos é menor que o esperado pelo template
+                expected_matches_per_round = 0
                 
-                print(f"DEBUG: Retornando {len(matches_data)} partidas encontradas")
+                # Buscar o número esperado de jogos por rodada do template
+                template = championship.template
+                if template and championship_stage:
+                    # Buscar fase correspondente no template
+                    template_stage = TemplateStage.objects.filter(
+                        template=template,
+                        name=championship_stage.name
+                    ).first()
+                    
+                    if template_stage:
+                        expected_matches_per_round = template_stage.matches_per_round
+                        print(f"DEBUG: Número esperado de jogos por rodada: {expected_matches_per_round}")
+                
+                # Se não encontramos pelo nome, tentar pelo ID diretamente
+                if expected_matches_per_round == 0 and stage_id:
+                    try:
+                        template_stage = TemplateStage.objects.get(id=stage_id)
+                        expected_matches_per_round = template_stage.matches_per_round
+                        print(f"DEBUG: Número esperado de jogos por rodada (via ID): {expected_matches_per_round}")
+                    except TemplateStage.DoesNotExist:
+                        pass
+                
+                # Se encontramos menos jogos do que o esperado, adicionar jogos vazios
+                if expected_matches_per_round > 0 and len(matches_data) < expected_matches_per_round:
+                    print(f"DEBUG: Encontrados apenas {len(matches_data)} jogos, adicionando {expected_matches_per_round - len(matches_data)} jogos vazios")
+                    
+                    for i in range(len(matches_data), expected_matches_per_round):
+                        # Criar um jogo vazio com ID temporário
+                        matches_data.append({
+                            'id': f'new_{i}',
+                            'home_team_id': None,
+                            'away_team_id': None,
+                            'home_team_name': None,
+                            'away_team_name': None,
+                            'home_score': None,
+                            'away_score': None,
+                            'match_date': None,
+                            'round_id': round_id if round_id and not round_id.startswith('new_') else None,
+                            'round_number': round_obj.number if 'round_obj' in locals() and round_obj else None,
+                            'stage_id': str(championship_stage.id) if championship_stage else None,
+                            'stage_name': championship_stage.name if championship_stage else None
+                        })
+                    
+                    print(f"DEBUG: Retornando total de {len(matches_data)} partidas (incluindo vazias)")
                 
                 # Verificação final das partidas para garantir integridade dos dados
                 for i, match_data in enumerate(matches_data):
@@ -22134,7 +22215,7 @@ def get_stages_by_championship(request):
                 stages_data.append({
                     'id': stage.id,
                     'name': stage.name,
-                    'rounds': stage.rounds,
+                    'rounds': ChampionshipRound.objects.filter(stage=stage).count(),
                     'template_stage_id': template_stage_id  # ID da fase correspondente no template
                 })
                 print(f"DEBUG: Fase {stage.name} (ID: {stage.id}) - Template stage ID: {template_stage_id}")
