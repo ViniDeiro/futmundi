@@ -465,6 +465,18 @@ $(document).ready(function() {
             var startDate = $('#datetimepicker').val();
             var endDate = $('#datetimepicker2').val();
             
+            if (!startDate) {
+                toastr.error('A Data de Início é obrigatória para pacotes promocionais');
+                $('#datetimepicker').focus();
+                return;
+            }
+            
+            if (!endDate) {
+                toastr.error('A Data de Término é obrigatória para pacotes promocionais');
+                $('#datetimepicker2').focus();
+                return;
+            }
+            
             if (startDate) {
                 var startDateFormatted = convertDateFormat(startDate);
                 if (startDateFormatted) {
@@ -481,6 +493,24 @@ $(document).ready(function() {
         } else if (planType === 'Dias Promoção Novos Jogadores' || isNovosJogadores) {
             // Campos específicos para Novos Jogadores
             console.log('[DEBUG] Adicionando campos específicos para Novos Jogadores');
+            
+            // Datas opcionais para Novos Jogadores
+            var startDate = $('#datetimepicker').val();
+            var endDate = $('#datetimepicker2').val();
+            
+            if (startDate) {
+                var startDateFormatted = convertDateFormat(startDate);
+                if (startDateFormatted) {
+                    formData.append('start_date', startDateFormatted);
+                }
+            }
+            
+            if (endDate) {
+                var endDateFormatted = convertDateFormat(endDate);
+                if (endDateFormatted) {
+                    formData.append('end_date', endDateFormatted);
+                }
+            }
             
             // Dias Promoção
             var diasPromocao = $('#dias-promocao').val();

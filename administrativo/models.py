@@ -830,7 +830,7 @@ class Plan(models.Model):
                 errors['promotional_price'] = 'O preço promocional deve ser menor que o preço padrão. Por favor, verifique os valores informados.'
         
         # Validação das datas para pacotes promocionais e novos jogadores
-        if self.package_type in ['Promocional', 'Dias Promoção Novos Jogadores']:
+        if self.package_type in ['Promocional']:
             if not self.start_date:
                 errors['start_date'] = f'A data de início é obrigatória para pacotes {self.package_type}.'
             if not self.end_date:

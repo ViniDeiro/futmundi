@@ -1510,19 +1510,6 @@ def pacote_plano_novo(request):
             
             # Adiciona os campos específicos para o tipo "Dias Promoção Novos Jogadores"
             if data.get('tipo') == 'Dias Promoção Novos Jogadores':
-                # Verifica se as datas estão preenchidas para esse tipo de pacote
-                if not start_date or not end_date:
-                    error_messages = {}
-                    if not start_date:
-                        error_messages['start_date'] = ['A data de início é obrigatória para pacotes Dias Promoção Novos Jogadores.']
-                    if not end_date:
-                        error_messages['end_date'] = ['A data de término é obrigatória para pacotes Dias Promoção Novos Jogadores.']
-                    
-                    return JsonResponse({
-                        'success': False,
-                        'message': f'Erro ao criar plano: {error_messages}'
-                    })
-                
                 # Tenta obter os valores dos campos específicos e converte para inteiro se existir
                 try:
                     if data.get('promotion_days'):
@@ -4371,19 +4358,7 @@ def plano_editar(request, id):
                 
                 # Tratamento de campos específicos para "Dias Promoção Novos Jogadores"
                 if plan.package_type == 'Dias Promoção Novos Jogadores':
-                    # Verifica se as datas estão preenchidas para esse tipo de pacote
-                    if not plan.start_date or not plan.end_date:
-                        error_messages = {}
-                        if not plan.start_date:
-                            error_messages['start_date'] = ['A data de início é obrigatória para pacotes Dias Promoção Novos Jogadores.']
-                        if not plan.end_date:
-                            error_messages['end_date'] = ['A data de término é obrigatória para pacotes Dias Promoção Novos Jogadores.']
-                        
-                        return JsonResponse({
-                            'success': False,
-                            'message': f'Erro ao atualizar plano: {error_messages}'
-                        })
-                    
+                    # Tenta obter os valores dos campos específicos e converte para inteiro se existir
                     try:
                         # Processa os campos específicos, se fornecidos
                         if data.get('promotion_days'):
@@ -5218,21 +5193,8 @@ def plano_editar(request, id):
                 
                 # Tratamento de campos específicos para "Dias Promoção Novos Jogadores"
                 if plan.package_type == 'Dias Promoção Novos Jogadores':
-                    # Verifica se as datas estão preenchidas para esse tipo de pacote
-                    if not plan.start_date or not plan.end_date:
-                        error_messages = {}
-                        if not plan.start_date:
-                            error_messages['start_date'] = ['A data de início é obrigatória para pacotes Dias Promoção Novos Jogadores.']
-                        if not plan.end_date:
-                            error_messages['end_date'] = ['A data de término é obrigatória para pacotes Dias Promoção Novos Jogadores.']
-                        
-                        return JsonResponse({
-                            'success': False,
-                            'message': f'Erro ao atualizar plano: {error_messages}'
-                        })
-                    
+                    # Tenta obter os valores dos campos específicos e converte para inteiro se existir
                     try:
-                        # Processa os campos específicos, se fornecidos
                         if data.get('promotion_days'):
                             plan.promotion_days = int(data.get('promotion_days'))
                         else:

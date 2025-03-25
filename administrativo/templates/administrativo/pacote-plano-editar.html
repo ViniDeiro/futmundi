@@ -692,28 +692,7 @@
             console.log('Data de início a ser enviada:', startDate);
             console.log('Data de término a ser enviada:', endDate);
             
-            // Para o tipo "Novos Jogadores", definir datas padrão se não estiverem preenchidas
-            if ($('#tipo').val() === 'Novos Jogadores' && (!startDate || !endDate)) {
-                console.log('Definindo datas padrão para Novos Jogadores');
-                
-                // Data de início: hoje
-                var hoje = moment().format('DD/MM/YYYY HH:mm');
-                
-                // Data de término: 1 ano no futuro
-                var umAnoFuturo = moment().add(1, 'year').format('DD/MM/YYYY HH:mm');
-                
-                if (!startDate) {
-                    startDate = hoje;
-                    $('#datetimepicker').val(startDate);
-                    console.log('Data de início definida como:', startDate);
-                }
-                
-                if (!endDate) {
-                    endDate = umAnoFuturo;
-                    $('#datetimepicker2').val(endDate);
-                    console.log('Data de término definida como:', endDate);
-                }
-            }
+            // As datas não são mais obrigatórias para o tipo "Novos Jogadores"
             
             if (startDate) formData.append('start_date', startDate);
             if (endDate) formData.append('end_date', endDate);
