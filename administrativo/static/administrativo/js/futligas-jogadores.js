@@ -4529,37 +4529,19 @@ $(document).ready(function() {
                 deleted_prize_ids: []
             };
             
-            // URLs baseadas no nome da função Django (futliga_jogador_salvar)
-            let urls = [
-                '/futliga_jogador_salvar/',                // Nome direto da função
-                '/administrativo/futliga_jogador_salvar/', // Com prefixo administrativo
-                '/futligas_jogadores/salvar/',             // Versão com underscore
-                '/administrativo/futligas_jogadores/salvar/', // Versão com prefixo e underscore
-                '/futligas/jogadores/salvar/',             // URL relativa tradicional
-                '/administrativo/futligas/jogadores/salvar/' // URL com prefixo administrativo
-            ];
+            /// Usar apenas a URL correta registrada no urls.py
+            const urls = ['/administrativo/futligas/jogadores/salvar/'];
+            console.log('[DEBUG] Usando URL fixa correta registrada no Django: ' + urls[0]);
             
-            // Verificar se temos uma URL bem-sucedida anterior
-            try {
-                const ultimaUrlSucesso = localStorage.getItem('ultimaUrlSalvamentoBemSucedida');
-                if (ultimaUrlSucesso) {
-                    console.log('[DEBUG] Encontrada URL bem-sucedida anterior: ' + ultimaUrlSucesso);
-                    
-                    // Adicionar a URL bem-sucedida como primeira opção
-                    urls = [ultimaUrlSucesso, ...urls.filter(url => url !== ultimaUrlSucesso)];
-                }
-            } catch (e) {
-                console.error('[DEBUG] Erro ao recuperar última URL bem-sucedida:', e);
-            }
-            
-            if (urlIndex >= urls.length) {
+            // Não precisamos mais verificar várias URLs
+            if (urlIndex > 0) {
                 clearTimeout(buttonRestoreTimeout);
                 $btn.html(originalHtml).prop('disabled', false);
-                toastr.error('Erro ao salvar. Todas as URLs tentadas falharam.');
+                toastr.error('Erro ao salvar. Verifique sua conexão e tente novamente.');
                 return;
             }
             
-            const url = urls[urlIndex];
+            const url = urls[0];
             console.log('[DEBUG] Tentando URL: ' + url);
             
             // Fazer a requisição
