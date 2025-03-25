@@ -2666,7 +2666,7 @@ $(document).ready(function() {
                 // Recuperar o valor armazenado para este nível e posição
                 let valorArmazenado = valoresAtuais[position] && valoresAtuais[position][levelName] !== undefined 
                     ? valoresAtuais[position][levelName] 
-                    : 1000; // Valor padrão
+                    : 0; // Alterado de 1000 para 0 como valor padrão
                 
                 $row.append(`
                     <td class="premio-valor">
@@ -3445,12 +3445,12 @@ $(document).ready(function() {
                                 } else {
                                     console.log(`[DEBUG] Não foi encontrado input para nível ${nivel.name} na posição ${position}`);
                                     // Definir valor padrão para garantir que todos os níveis tenham um valor
-                                    prizeValues[nivel.cleanName] = 1000;
+                                    prizeValues[nivel.cleanName] = 0; // Alterado de 1000 para 0
                                 }
                             }
                         } catch(e) {
                             console.error(`[DEBUG] Erro ao processar nível ${nivel.name}:`, e);
-                            prizeValues[nivel.cleanName] = 1000; // Valor padrão em caso de erro
+                            prizeValues[nivel.cleanName] = 0; // Alterado de 1000 para 0 em caso de erro
                         }
                     }
                     

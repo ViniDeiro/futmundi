@@ -1857,13 +1857,34 @@ def futliga_classica_editar(request, futliga_id):
                     
                     # Mapeia nós novos prêmios para posições
                     prize_image_positions = {}
+                    
+                    # NOVO CÓDIGO: Verifica diretamente arquivos com prefixo prize_image_pos_ para novos prêmios
+                    print("[DEBUG] Verificando arquivos de imagem para novos prêmios...")
+                    for file_key in request.FILES:
+                        # Se a chave segue o padrão 'prize_image_pos_XXX' (para novos prêmios)
+                        if file_key.startswith('prize_image_pos_'):
+                            try:
+                                # Extrai a posição do prêmio da chave
+                                position_str = file_key.replace('prize_image_pos_', '')
+                                print(f"[DEBUG] Processando arquivo para novo prêmio com chave {file_key}, posição: {position_str}")
+                                
+                                # Adiciona ao dicionário de posições com imagens
+                                prize_image_positions[position_str] = request.FILES[file_key]
+                            except Exception as e:
+                                print(f"[DEBUG] Erro ao processar imagem para novo prêmio {file_key}: {str(e)}")
+                    
+                    # Código que recebe posições explícitas para novos prêmios (mantendo para compatibilidade)
                     if 'prize_image_positions[]' in request.POST:
                         image_positions = request.POST.getlist('prize_image_positions[]')
                         prize_files = request.FILES.getlist('prize_images[]')
                         
+                        print(f"[DEBUG] Posições marcadas para novas imagens: {image_positions}")
+                        print(f"[DEBUG] Arquivos de imagem encontrados: {len(prize_files)}")
+                        
                         for i, pos in enumerate(image_positions):
                             if i < len(prize_files):
                                 prize_image_positions[pos] = prize_files[i]
+                                print(f"[DEBUG] Mapeando posição {pos} para arquivo de imagem {i}")
                     
                     # ADICIONAR AQUI: Verifica arquivos de imagem com nome no formato prize_image_ID
                     # Este bloco processa imagens para prêmios existentes
