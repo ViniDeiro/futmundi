@@ -7,8 +7,9 @@ class ApiDebugMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
-        # Processa apenas requisições para o endpoint de futligas jogadores
-        if '/futligas/jogadores/salvar/' in request.path:
+        # Processa requisições para o endpoint de futligas jogadores (com ou sem prefixo administrativo)
+        if '/futligas/jogadores/salvar/' in request.path or '/administrativo/futligas/jogadores/salvar/' in request.path:
+            print(f"\n[API-DEBUG] Detectada requisição para futligas jogadores: {request.path}")
             return self.process_futligas_request(request)
         else:
             # Para outras requisições, apenas passa adiante
@@ -51,6 +52,11 @@ class ApiDebugMiddleware:
                             for prize in body_copy['prizes']:
                                 if 'image' in prize and prize['image'] and isinstance(prize['image'], str) and prize['image'].startswith('data:'):
                                     prize['image'] = "[IMAGEM BASE64]"
+                        
+                        if 'levels' in body_copy:
+                            for level in body_copy['levels']:
+                                if 'image' in level and level['image'] and isinstance(level['image'], str) and level['image'].startswith('data:'):
+                                    level['image'] = "[IMAGEM BASE64]"
                     
                     print(f"[API-DEBUG] Corpo: {json.dumps(body_copy, indent=2)}")
                 else:

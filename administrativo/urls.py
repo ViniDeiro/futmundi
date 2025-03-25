@@ -1,9 +1,59 @@
 from django.urls import path
 from . import views
+from django.contrib import admin
+from django.urls import path, include
+from rest_framework import routers
+from .api.auth import LoginView, TokenRefreshView, TokenVerifyView
+from .api.users import UserViewSet
+from .api.predictions import PredictionViewSet
+from .api.matches import MatchViewSet
+from .api.championships import ChampionshipViewSet
+from .api.futligas import FutligaViewSet
+from .api.leaderboards import LeaderboardViewSet
+from django.conf import settings
+from django.conf.urls.static import static
+from drf_yasg.views import get_schema_view
+from drf_yasg import openapi
+from rest_framework import permissions
 
 app_name = 'administrativo'
 
+# Configurar Swagger/OpenAPI
+schema_view = get_schema_view(
+    openapi.Info(
+        title="Futmundi API",
+        default_version='v1',
+        description="API para o aplicativo de bolão de futebol Futmundi",
+        terms_of_service="https://www.futmundi.com.br/terms/",
+        contact=openapi.Contact(email="suporte@futmundi.com.br"),
+        license=openapi.License(name="Proprietário"),
+    ),
+    public=True,
+    permission_classes=(permissions.AllowAny,),
+)
+
+router = routers.DefaultRouter()
+router.register(r'users', UserViewSet)
+router.register(r'predictions', PredictionViewSet)
+router.register(r'matches', MatchViewSet)
+router.register(r'championships', ChampionshipViewSet)
+router.register(r'futligas', FutligaViewSet)
+router.register(r'leaderboards', LeaderboardViewSet, basename='leaderboards')
+
 urlpatterns = [
+    path('admin/', admin.site.urls),
+    
+    # API endpoints
+    path('api/', include(router.urls)),
+    path('api/login/', LoginView.as_view(), name='login'),
+    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('api/token/verify/', TokenVerifyView.as_view(), name='token_verify'),
+    
+    # Documentação Swagger/OpenAPI
+    path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
+    path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
+    path('swagger<format>/', schema_view.without_ui(cache_timeout=0), name='schema-json'),
+    
     path('', views.usuarios, name='index'),
     path('usuarios/', views.usuarios, name='usuarios'),
     path('usuario-editar/', views.usuario_editar, name='usuario_editar'),
@@ -74,6 +124,7 @@ urlpatterns = [
     path('futliga/classica/excluir-em-massa/', views.futliga_classica_excluir_em_massa, name='futliga_classica_excluir_em_massa'),
     path('futligas/jogadores/', views.futligas_jogadores, name='futligas_jogadores'),
     path('futligas/jogadores/dados/', views.futliga_jogador_dados, name='futliga_jogador_dados'),
+    path('administrativo/futligas/jogadores/salvar/', views.futliga_jogador_salvar, name='futliga_jogador_salvar_full'),
     path('futligas/jogadores/salvar/', views.futliga_jogador_salvar, name='futliga_jogador_salvar'),
     path('futligas/jogadores/excluir/', views.futliga_jogador_excluir, name='futliga_jogador_excluir_json'),
     path('futligas/jogadores/nivel/<int:nivel_id>/', views.futliga_jogador_nivel_excluir, name='futliga_jogador_nivel_excluir'),
@@ -83,6 +134,7 @@ urlpatterns = [
     path('futligas/jogadores/importar/', views.futliga_jogador_importar, name='futliga_jogador_importar'),
     path('futligas/jogadores/exportar/', views.futliga_jogador_exportar, name='futliga_jogador_exportar'),
     path('futligas/jogadores/premio/<int:premio_id>/', views.futliga_premio_excluir, name='futliga_premio_excluir'),
+    path('futligas/jogadores/premios/excluir/', views.futliga_jogador_premio_excluir, name='futliga_jogador_premio_excluir'),
     path('futligas/niveis/', views.futliga_niveis, name='futligas_niveis'),
     path('futligas/premiacao/salvar/', views.futliga_premiacao_salvar, name='futliga_premiacao_salvar'),
     path('futligas/premio/novo/', views.futliga_premio_novo, name='futliga_premio_novo'),
@@ -139,4 +191,10 @@ urlpatterns = [
     path('logout/', views.logout, name='logout'),
     path('api/pacotes-futcoins-ativos/', views.pacotes_futcoins_ativos, name='pacotes_futcoins_ativos'),
 
-    path('administrativo/api/pacotes-futcoins-ativos/', views.pacotes_futcoins_ativos, name='pacotes_futcoins_ativos_alt'),] 
+    path('administrativo/api/pacotes-futcoins-ativos/', views.pacotes_futcoins_ativos, name='pacotes_futcoins_ativos_alt'),
+]
+
+# Servir arquivos estáticos durante o desenvolvimento
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT) 

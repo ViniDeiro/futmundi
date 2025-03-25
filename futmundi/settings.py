@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 
 from pathlib import Path
 import os
+from datetime import timedelta
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -42,6 +43,8 @@ INSTALLED_APPS = [
     # Third party apps
     "rest_framework",
     "corsheaders",
+    "rest_framework_simplejwt",  # Adicionado para autenticação JWT
+    "drf_yasg",  # Adicionado para documentação Swagger
     
     # Apps locais
     "administrativo.apps.AdministrativoConfig",
@@ -157,11 +160,40 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # REST Framework settings
 REST_FRAMEWORK = {
-    'DEFAULT_PERMISSION_CLASSES': [
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ),
+    'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
-    ],
+    ),
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 10
+    'PAGE_SIZE': 10,
+}
+
+# Swagger settings
+SWAGGER_SETTINGS = {
+    'SECURITY_DEFINITIONS': {
+        'Bearer': {
+            'type': 'apiKey',
+            'name': 'Authorization',
+            'in': 'header'
+        }
+    },
+    'USE_SESSION_AUTH': False,
+}
+
+# JWT Settings
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),  # Token de acesso expira em 60 minutos
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=30),    # Token de refresh expira em 30 dias
+    'ROTATE_REFRESH_TOKENS': True,                   # Gera novos refresh tokens quando o refresh é usado
+    'BLACKLIST_AFTER_ROTATION': False,               # Não blacklistar tokens após rotação (simplificação)
+    'ALGORITHM': 'HS256',                            # Algoritmo de assinatura
+    'SIGNING_KEY': SECRET_KEY,                       # Chave de assinatura
+    'AUTH_HEADER_TYPES': ('Bearer',),                # Tipo de header de autorização
+    'USER_ID_FIELD': 'id',                           # Campo de ID do usuário
+    'USER_ID_CLAIM': 'user_id',                      # Claim para o ID do usuário
 }
 
 # Session settings
@@ -185,9 +217,38 @@ AUTHENTICATION_BACKENDS = [
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",  # React frontend
     "http://127.0.0.1:3000",
+    "http://localhost:19000",  # Expo em desenvolvimento
+    "http://localhost:19001",
+    "http://localhost:19002",
+    "http://localhost:19006",  # Expo web
+    "exp://localhost:19000",   # Expo em dispositivos
+    "exp://127.0.0.1:19000"
 ]
 
+CORS_ALLOW_ALL_ORIGINS = True  # Para desenvolvimento - remover em produção
 CORS_ALLOW_CREDENTIALS = True
+
+# Configurações adicionais para CORS
+CORS_ALLOW_METHODS = [
+    "DELETE",
+    "GET",
+    "OPTIONS",
+    "PATCH",
+    "POST",
+    "PUT",
+]
+
+CORS_ALLOW_HEADERS = [
+    "accept",
+    "accept-encoding",
+    "authorization",
+    "content-type",
+    "dnt",
+    "origin",
+    "user-agent",
+    "x-csrftoken",
+    "x-requested-with",
+]
 
 # Upload settings
 DATA_UPLOAD_MAX_NUMBER_FILES = 1000  # Aumenta o limite para 1000 arquivos

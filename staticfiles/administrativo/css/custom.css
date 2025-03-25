@@ -503,3 +503,84 @@ input::-webkit-inner-spin-button {
     max-height: 30px !important;
     object-fit: contain;
 }
+
+/* Estilos para o layout horizontal da DualListbox */
+/* Garante que as listas fiquem lado a lado */
+.bootstrap-duallistbox-container .row {
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    margin: 0 !important;
+}
+
+/* Define o tamanho das caixas */
+.bootstrap-duallistbox-container .box1,
+.bootstrap-duallistbox-container .box2 {
+    width: 47% !important;
+    float: none !important;
+    margin: 0 !important;
+}
+
+/* Ajusta a altura das listas */
+.bootstrap-duallistbox-container select {
+    height: 250px !important;
+    width: 100% !important;
+}
+
+/* Remove margens estranhas e elementos extras que podem afetar o layout */
+.bootstrap-duallistbox-container .clear1,
+.bootstrap-duallistbox-container .clear2 {
+    display: none !important;
+}
+
+/* Melhora o espaçamento dos botões */
+.bootstrap-duallistbox-container .btn-group {
+    margin: 5px 0 !important;
+}
+
+/* Adiciona scroll horizontal nas listas se necessário e previne overflow */
+.bootstrap-duallistbox-container .box1,
+.bootstrap-duallistbox-container .box2,
+.bootstrap-duallistbox-container select {
+    overflow-x: auto !important;
+}
+
+/* Esconde os botões de seta única (move/remove) */
+.bootstrap-duallistbox-container .btn-group .btn.move,
+.bootstrap-duallistbox-container .btn-group .btn.remove {
+    display: none !important;
+}
+
+/* Aumenta o tamanho dos botões de seta dupla para melhor visibilidade */
+.bootstrap-duallistbox-container .btn-group .btn.moveall,
+.bootstrap-duallistbox-container .btn-group .btn.removeall {
+    width: 100% !important;
+    margin: 5px 0 !important;
+    font-weight: bold !important;
+}
+
+/* Alinha a caixa "Filtrar por" com "Disponíveis" */
+.filter-container {
+    padding-left: 0 !important;
+    margin-left: 0 !important;
+}
+
+/* Alinha todos os elementos do DualListbox para melhor consistência */
+.bootstrap-duallistbox-container .row label,
+.bootstrap-duallistbox-container label,
+.bootstrap-duallistbox-container select,
+.bootstrap-duallistbox-container .filter-container,
+.bootstrap-duallistbox-container .form-group {
+    padding-left: 0 !important;
+}
+
+/* Elimina margens extras do elemento que contém "Filtrar por" */
+.form-group[class*="col-"] {
+    padding-left: 0 !important;
+}
+
+/* Ajusta a largura do select "Filtrar por" */
+select.form-control:not(.duallistbox) {
+    padding-left: 0 !important;
+    margin-left: 0 !important;
+}

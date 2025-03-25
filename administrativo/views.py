@@ -1821,58 +1821,52 @@ def futliga_classica_editar(request, futliga_id):
                         except (ValueError, TypeError):
                             print(f"[DEBUG] Posição inválida para remoção: {position}")
                 
-                # Imagens de prêmios que devem ser removidas individualmente
-                if 'remove_prize_images[]' in request.POST and not remove_all_prize_images:
-                    # Obtém as posições dos prêmios que devem ter suas imagens removidas
-                    prize_positions_for_image_removal = request.POST.getlist('remove_prize_images[]')
-                    
-                    print(f"[DEBUG] Posições marcadas para remoção de imagem: {', '.join(prize_positions_for_image_removal)}")
-                    
-                    # Para cada posição marcada para remoção de imagem
-                    for position in prize_positions_for_image_removal:
+                # Obtenção dos IDs dos prêmios para remoção de imagem
+                prize_ids_for_image_removal = []
+                if 'remove_prize_images[]' in request.POST:
+                    prize_ids_for_image_removal = request.POST.getlist('remove_prize_images[]')
+                    print(f"[DEBUG] IDs dos prêmios marcados para remoção de imagem: {prize_ids_for_image_removal}")
+                
+                # Processando a remoção de imagens para prêmios existentes
+                print(f"[DEBUG] Total de {len(prize_ids_for_image_removal)} prêmios marcados para remoção de imagem")
+                for prize_id in prize_ids_for_image_removal:
+                    try:
+                        # Valida e converte o ID do prêmio
+                        if not prize_id.isdigit():
+                            print(f"[DEBUG] ID inválido para remoção de imagem: {prize_id}")
+                            continue
+                        
+                        prize_id_int = int(prize_id)
+                        
+                        # Busca o prêmio pelo ID
                         try:
-                            # Verifica se a posição é um número válido
-                            try:
-                                if not position or position == 'undefined' or not position.isdigit():
-                                    print(f"[DEBUG] Posição inválida ('{position}'), pulando")
-                                    continue
-                                position_int = int(position)
-                            except (ValueError, TypeError):
-                                print(f"[DEBUG] Posição inválida ('{position}'), pulando")
-                                continue
+                            prize = StandardLeaguePrize.objects.get(id=prize_id_int, league=futliga)
                             
-                            # Busca o prêmio pela posição
-                            prize = StandardLeaguePrize.objects.get(position=position_int, league=futliga)
-                            
+                            # Se o prêmio existe e tem uma imagem, remove
                             if prize.image:
-                                # Guarda o caminho da imagem se existir
-                                image_path = prize.image.path if hasattr(prize.image, 'path') else None
-                                
-                                # Remove a imagem do modelo
-                                prize.image.delete(save=False)
-                                prize.image = None
-                                prize.save(update_fields=['image'])
-                                
-                                print(f"[DEBUG] Imagem removida do prêmio ID={prize.id}, posição={position_int}")
-                                
-                                # Tenta remover o arquivo físico, se possível
-                                if image_path and os.path.exists(image_path):
-                                    try:
-                                        os.remove(image_path)
-                                        print(f"[DEBUG] Arquivo físico removido: {image_path}")
-                                    except Exception as e:
-                                        print(f"[DEBUG] Erro ao remover arquivo físico: {str(e)}")
+                                print(f"[DEBUG] Removendo imagem do prêmio ID={prize_id_int}, posição={prize.position}")
+                                prize.image.delete()
+                                prize.save()
                             else:
-                                print(f"[DEBUG] Prêmio ID={prize.id}, posição={position_int} não tem imagem para remover")
+                                print(f"[DEBUG] Prêmio ID={prize_id_int}, posição={prize.position} não tem imagem para remover")
                         except StandardLeaguePrize.DoesNotExist:
-                            print(f"[DEBUG] Prêmio na posição {position} não encontrado")
-                        except Exception as e:
-                            print(f"[DEBUG] Erro ao processar remoção de imagem posição {position}: {str(e)}")
+                            print(f"[DEBUG] Prêmio ID={prize_id_int} não encontrado para remoção de imagem")
+                    except Exception as e:
+                        print(f"[DEBUG] Erro ao processar remoção de imagem para prêmio ID={prize_id}: {str(e)}")
                 
                 # Processa os prêmios existentes e novos
                 if 'prize_positions[]' in request.POST:
                     positions = request.POST.getlist('prize_positions[]')
                     prizes = request.POST.getlist('prize_descriptions[]')
+                    prize_ids = request.POST.getlist('prize_ids[]', [])
+                    
+                    # Lista de IDs que foram removidos
+                    removed_prize_ids = []
+                    if 'remove_prizes[]' in request.POST:
+                        removed_prize_ids = [int(id) for id in request.POST.getlist('remove_prizes[]') if id.isdigit()]
+                    
+                    print(f"[DEBUG] IDs de prêmios a serem atualizados: {prize_ids}")
+                    print(f"[DEBUG] IDs de prêmios removidos: {removed_prize_ids}")
                     
                     # Mapeia nós novos prêmios para posições
                     prize_image_positions = {}
@@ -1884,30 +1878,85 @@ def futliga_classica_editar(request, futliga_id):
                             if i < len(prize_files):
                                 prize_image_positions[pos] = prize_files[i]
                     
+                    # ADICIONAR AQUI: Verifica arquivos de imagem com nome no formato prize_image_ID
+                    # Este bloco processa imagens para prêmios existentes
+                    print("[DEBUG] Verificando arquivos de imagem para prêmios...")
+                    print(f"[DEBUG] Chaves em request.FILES: {list(request.FILES.keys())}")
+                    
+                    for file_key in request.FILES:
+                        # Se a chave segue o padrão 'prize_image_XXX'
+                        if file_key.startswith('prize_image_'):
+                            try:
+                                # Extrai o ID do prêmio da chave
+                                prize_id = file_key.replace('prize_image_', '')
+                                
+                                print(f"[DEBUG] Processando arquivo com chave {file_key}, ID: {prize_id}")
+                                
+                                # Verifica se é um ID válido
+                                if prize_id.isdigit():
+                                    prize_id = int(prize_id)
+                                    
+                                    # Procura o prêmio no banco
+                                    try:
+                                        prize = StandardLeaguePrize.objects.get(id=prize_id, league=futliga)
+                                        
+                                        # Se o prêmio existe, atualiza sua imagem
+                                        if prize.image:
+                                            # Remove a imagem anterior
+                                            prize.image.delete(save=False)
+                                        
+                                        # Atualiza a imagem
+                                        prize.image = request.FILES[file_key]
+                                        prize.save()
+                                        
+                                        print(f"[DEBUG] Imagem atualizada para o prêmio ID={prize_id}, posição={prize.position}")
+                                    except StandardLeaguePrize.DoesNotExist:
+                                        print(f"[DEBUG] Prêmio ID={prize_id} não encontrado para atualização de imagem")
+                            except Exception as e:
+                                print(f"[DEBUG] Erro ao processar imagem {file_key}: {str(e)}")
+                    
                     # Lista de posições explicitamente marcadas como sem imagem
                     positions_without_image = []
                     if 'prize_without_image[]' in request.POST:
                         positions_without_image = [str(pos) for pos in request.POST.getlist('prize_without_image[]')]
                         print(f"[DEBUG] Posições explicitamente marcadas como sem imagem: {', '.join(positions_without_image)}")
                     
-                    for i, position in enumerate(positions):
-                        if i < len(prizes):
-                            prize_value = prizes[i]
-                            
-                            # Garantir que position seja sempre um número inteiro válido
+                    # Dicionário para rastrear prêmios existentes pelo ID
+                    existing_prizes = {}
+                    for prize_id in prize_ids:
+                        if prize_id.isdigit() and int(prize_id) not in removed_prize_ids:
                             try:
-                                position = int(position)
-                                if position <= 0:
-                                    position = i + 1  # Usar o índice +1 como posição válida
-                                    print(f"[DEBUG] Posição inválida (<=0), corrigindo para {position}")
-                            except (ValueError, TypeError):
-                                position = i + 1  # Se não for conversível para inteiro, usar o índice
-                                print(f"[DEBUG] Posição inválida (não numérica), corrigindo para {position}")
+                                prize_obj = StandardLeaguePrize.objects.get(id=int(prize_id), league=futliga)
+                                existing_prizes[int(prize_id)] = prize_obj
+                            except StandardLeaguePrize.DoesNotExist:
+                                print(f"[DEBUG] Prêmio ID={prize_id} não encontrado")
+                    
+                    # Atualizar prêmios existentes e criar novos apenas quando necessário
+                    for i, (position, prize_value) in enumerate(zip(positions, prizes)):
+                        if i < len(prize_ids) and prize_ids[i].isdigit():
+                            prize_id = int(prize_ids[i])
                             
-                            # Tenta encontrar um prêmio existente nessa posição
-                            try:
-                                prize_obj = StandardLeaguePrize.objects.get(position=position, league=futliga)
-                                # Atualiza valor
+                            # Pula se o prêmio foi removido
+                            if prize_id in removed_prize_ids:
+                                print(f"[DEBUG] Pulando prêmio ID={prize_id} pois está marcado para remoção")
+                                continue
+                            
+                            # Se o prêmio existe, atualize-o
+                            if prize_id in existing_prizes:
+                                prize_obj = existing_prizes[prize_id]
+                                
+                                # Garantir que position seja sempre um número inteiro válido
+                                try:
+                                    position = int(position)
+                                    if position <= 0:
+                                        position = i + 1  # Usar o índice +1 como posição válida
+                                        print(f"[DEBUG] Posição inválida (<=0), corrigindo para {position}")
+                                except (ValueError, TypeError):
+                                    position = i + 1  # Se não for conversível para inteiro, usar o índice
+                                    print(f"[DEBUG] Posição inválida (não numérica), corrigindo para {position}")
+                                
+                                # Atualiza posição e valor
+                                prize_obj.position = position
                                 prize_obj.prize = prize_value
                                 
                                 # Se tiver uma nova imagem para esta posição, atualiza
@@ -1931,22 +1980,52 @@ def futliga_classica_editar(request, futliga_id):
                                             should_remove_image = True
                                             print(f"[DEBUG] Posição {position} encontrada em remove_prize_images[]")
                                     
-                                    # Se não está na flag de remoção em massa e deve remover a imagem
-                                    if should_remove_image and not remove_all_prize_images:
-                                        print(f"[DEBUG] Removendo imagem do prêmio na posição {position} que foi marcado para remoção")
-                                        prize_obj.image.delete(save=False)
-                                        prize_obj.image = None
-                                    # Ou se está apenas marcado como "sem imagem"
-                                    elif not should_remove_image:
-                                        print(f"[DEBUG] Removendo imagem do prêmio na posição {position} que foi explicitamente marcado como sem imagem")
-                                        prize_obj.image.delete(save=False)
-                                        prize_obj.image = None
+                                    # Remover a imagem independentemente de outras condições se estiver em positions_without_image
+                                    print(f"[DEBUG] Removendo imagem do prêmio na posição {position} que foi marcado como sem imagem")
+                                    prize_obj.image.delete(save=False)
+                                    prize_obj.image = None
                                 
                                 # Salva o prêmio
                                 prize_obj.save()
+                                print(f"[DEBUG] Prêmio existente ID={prize_id} atualizado com sucesso")
+                            else:
+                                print(f"[DEBUG] Prêmio ID={prize_id} mencionado nos IDs mas não encontrado no banco")
+                        else:
+                            # Novo prêmio (sem ID) - criar apenas se não for uma atualização de posição
+                            # Garantir que position seja sempre um número inteiro válido
+                            try:
+                                position = int(position)
+                                if position <= 0:
+                                    position = i + 1  # Usar o índice +1 como posição válida
+                                    print(f"[DEBUG] Posição inválida (<=0), corrigindo para {position}")
+                            except (ValueError, TypeError):
+                                position = i + 1  # Se não for conversível para inteiro, usar o índice
+                                print(f"[DEBUG] Posição inválida (não numérica), corrigindo para {position}")
+                            
+                            # Verifica se é uma posição atual (atualização) ou nova criação
+                            existing_position = StandardLeaguePrize.objects.filter(
+                                position=position, 
+                                league=futliga
+                            ).exclude(id__in=removed_prize_ids).first()
+                            
+                            if existing_position:
+                                # Atualiza o prêmio existente nesta posição
+                                existing_position.prize = prize_value
                                 
-                            except StandardLeaguePrize.DoesNotExist:
-                                # Cria um novo prêmio
+                                # Se tiver uma nova imagem para esta posição, atualiza
+                                if str(position) in prize_image_positions:
+                                    # Remove a imagem anterior se existir
+                                    if existing_position.image:
+                                        existing_position.image.delete(save=False)
+                                    
+                                    # Adiciona a nova imagem
+                                    existing_position.image = prize_image_positions[str(position)]
+                                
+                                # Salva o prêmio
+                                existing_position.save()
+                                print(f"[DEBUG] Prêmio existente na posição {position} atualizado com sucesso")
+                            else:
+                                # Cria um novo prêmio apenas se não encontrar nenhum na posição
                                 prize_obj = StandardLeaguePrize(
                                     league=futliga,
                                     position=position,
@@ -1959,6 +2038,7 @@ def futliga_classica_editar(request, futliga_id):
                                 
                                 # Salva o novo prêmio
                                 prize_obj.save()
+                                print(f"[DEBUG] Novo prêmio criado na posição {position}")
                 
                 return JsonResponse({'success': True})
         except Exception as e:
@@ -2008,6 +2088,7 @@ def futliga_jogador_salvar(request):
         # Processa os níveis
         print(f"\n[DEBUG-PREMIO] Iniciando processamento de níveis...", flush=True)
         created_levels = {}
+        saved_levels = []
         
         with transaction.atomic():
             # Primeiro, exclui os níveis existentes
@@ -2041,6 +2122,14 @@ def futliga_jogador_salvar(request):
                             level.save()
                             
                     created_levels[level_data['name']] = level
+                    saved_levels.append({
+                        'id': level.id,
+                        'name': level.name,
+                        'players': level.players,
+                        'premium_players': level.premium_players,
+                        'owner_premium': level.owner_premium,
+                        'image': level.image.url if level.image else None
+                    })
                     print(f"[DEBUG-PREMIO] Nível {level_data['name']} criado com sucesso", flush=True)
                 except Exception as e:
                     print(f"[DEBUG-PREMIO] ERRO ao criar nível {level_data['name']}: {str(e)}", flush=True)
@@ -2048,6 +2137,7 @@ def futliga_jogador_salvar(request):
             
             # Processa os prêmios
             print(f"\n[DEBUG-PREMIO] Iniciando processamento de prêmios...", flush=True)
+            saved_prizes = []
             
             # CORREÇÃO: Exclui todos os prêmios existentes para a liga 6 (exceto os que estão sendo atualizados)
             print(f"[DEBUG-PREMIO] Excluindo prêmios existentes da liga 6 para evitar conflitos de posição", flush=True)
@@ -2072,6 +2162,7 @@ def futliga_jogador_salvar(request):
                         prize = CustomLeaguePrize.objects.create(position=prize_data['position'], league=league)
                             
                     # Processa a imagem do prêmio
+                    prize_image_url = None
                     if prize_data.get('image'):
                         print(f"[DEBUG-PREMIO] Processando imagem para prêmio posição {prize_data['position']}", flush=True)
                         if prize_data['image'].startswith('data:image'):
@@ -2079,11 +2170,15 @@ def futliga_jogador_salvar(request):
                             ext = format.split('/')[-1]
                             data_img = ContentFile(base64.b64decode(imgstr), name=f'prize_{prize_data["position"]}.{ext}')
                             prize.image.save(f'prize_{prize_data["position"]}.{ext}', data_img, save=True)
+                            prize_image_url = prize.image.url if prize.image else None
                         elif prize_data['image'].startswith('/media/'):
                             prize.image = prize_data['image'].replace('/media/', '', 1)
                             prize.save()
+                            prize_image_url = prize_data['image']
                     
                     # Cria os valores para cada nível
+                    prize_values = {}
+                    saved_prize_values = []
                     for level_name, value in prize_data['values'].items():
                         if level_name in created_levels:
                             print(f"[DEBUG-PREMIO] Definindo valor {value} para nível {level_name}", flush=True)
@@ -2100,21 +2195,39 @@ def futliga_jogador_salvar(request):
                                 print(f"[DEBUG-PREMIO] Valor atualizado para o prêmio {prize.id}, nível {level_name}", flush=True)
                             else:
                                 # Criar novo valor
-                                CustomLeaguePrizeValue.objects.create(
+                                prize_value = CustomLeaguePrizeValue.objects.create(
                                     prize=prize,
                                     level=created_levels[level_name],
                                     value=value
                                 )
                                 print(f"[DEBUG-PREMIO] Novo valor criado para o prêmio {prize.id}, nível {level_name}", flush=True)
+                            
+                            # Armazena o valor para retornar na resposta
+                            prize_values[level_name] = value
+                            saved_prize_values.append({
+                                'level_id': created_levels[level_name].id,
+                                'level_name': level_name,
+                                'value': value
+                            })
                         else:
                             print(f"[DEBUG-PREMIO] AVISO: Nível {level_name} não encontrado para prêmio {prize_data['position']}", flush=True)
-                            
+                
+                    # Adiciona o prêmio à lista de retorno
+                    saved_prizes.append({
+                        'id': prize.id,
+                        'position': prize_data['position'],
+                        'image': prize_image_url,
+                        'values': prize_values,
+                        'prize_values': saved_prize_values  # Inclui os objetos de valores para compatibilidade
+                    })
+                    
                     print(f"[DEBUG-PREMIO] Prêmio posição {prize_data['position']} criado com sucesso", flush=True)
                 except Exception as e:
                     print(f"[DEBUG-PREMIO] ERRO ao criar prêmio posição {prize_data['position']}: {str(e)}", flush=True)
                     raise
             
             # Processa a configuração de premiação
+            award_config = None
             if data.get('award_config'):
                 print("\n[DEBUG-PREMIO] Processando configuração de premiação...", flush=True)
                 try:
@@ -2133,6 +2246,11 @@ def futliga_jogador_salvar(request):
                     params.season_award_time = season['time']
                     params.save()
                     
+                    award_config = {
+                        'weekly': weekly,
+                        'season': season
+                    }
+                    
                     print("[DEBUG-PREMIO] Configuração de premiação salva com sucesso", flush=True)
                 except Exception as e:
                     print(f"[DEBUG-PREMIO] ERRO ao salvar configuração de premiação: {str(e)}", flush=True)
@@ -2140,7 +2258,14 @@ def futliga_jogador_salvar(request):
                     
         print("\n[DEBUG-PREMIO] ==================== SALVAMENTO CONCLUÍDO COM SUCESSO ====================", flush=True)
         sys.stdout.flush()
-        return JsonResponse({'success': True})
+        
+        # Retorna os dados salvos para atualizar a interface
+        return JsonResponse({
+            'success': True,
+            'levels': saved_levels,
+            'prizes': saved_prizes,
+            'award_config': award_config
+        })
         
     except json.JSONDecodeError as e:
         print(f"\n[DEBUG-PREMIO] ERRO ao decodificar JSON: {str(e)}", flush=True)
@@ -4173,7 +4298,7 @@ def plano_editar(request, id):
                         r, g, b = map(int, rgb_match.groups())
                         return f'#{r:02x}{g:02x}{b:02x}'.upper()
                     
-                    # Se for rgba, remove o canal alpha e converte para hex
+                    # Se estiver no formato RGBA(r,g,b,a), remove o canal alpha e converte para hex
                     rgba_match = re.match(r'rgba\((\d+),\s*(\d+),\s*(\d+),\s*[\d.]+\)', color)
                     if rgba_match:
                         r, g, b = map(int, rgba_match.groups())
@@ -7025,7 +7150,7 @@ def futliga_jogador_exportar(request):
         
     except Exception as e:
         return JsonResponse({'success': False, 'message': f'Erro ao exportar: {str(e)}'})
-# Adicionar estas novas funções após a função campeonato_editar
+
 @login_required
 def get_rounds_by_stage(request):
     """
@@ -7035,51 +7160,107 @@ def get_rounds_by_stage(request):
         stage_id = request.POST.get('stage_id')
         template_id = request.POST.get('template_id')
         template_stage_id = request.POST.get('template_stage_id')
+        championship_id = request.POST.get('championship_id')  # Adicionado para garantir contexto
+        
+        print(f"DEBUG: get_rounds_by_stage chamado com stage_id={stage_id}, template_id={template_id}, template_stage_id={template_stage_id}, championship_id={championship_id}")
         
         try:
             if stage_id:
                 # Caso seja uma fase existente
-                stage = ChampionshipStage.objects.get(id=stage_id)
-                rounds = ChampionshipRound.objects.filter(stage=stage).order_by('number')
-                
-                rounds_data = [{'id': r.id, 'number': r.number} for r in rounds]
-                
-                return JsonResponse({
-                    'success': True,
-                    'rounds': rounds_data
-                })
-            elif template_stage_id:
+                try:
+                    stage = ChampionshipStage.objects.get(id=stage_id)
+                    print(f"DEBUG: Fase encontrada: {stage.name} (ID: {stage.id})")
+                    
+                    # Verificar se há rodadas para esta fase
+                    rounds = ChampionshipRound.objects.filter(stage=stage).order_by('number')
+                    print(f"DEBUG: Encontradas {rounds.count()} rodadas para esta fase")
+                    
+                    if rounds.count() == 0 and championship_id:
+                        # Se não encontrou rodadas, mas temos ID do campeonato, tentar criar rodadas padrão
+                        print(f"DEBUG: Nenhuma rodada encontrada. Tentando criar rodadas padrão...")
+                        
+                        # Verificar se há um template associado ao campeonato
+                        try:
+                            championship = Championship.objects.get(id=championship_id)
+                            if championship.template:
+                                # Tentar encontrar a fase correspondente no template
+                                template_stage = TemplateStage.objects.filter(
+                                    template=championship.template,
+                                    name=stage.name
+                                ).first()
+                                
+                                if template_stage and template_stage.rounds > 0:
+                                    print(f"DEBUG: Usando template para gerar rodadas simuladas. Template tem {template_stage.rounds} rodadas configuradas.")
+                                    # Gerar rodadas simuladas baseadas no template
+                                    rounds_data = [{'id': f'new_{i}', 'number': i} for i in range(1, template_stage.rounds + 1)]
+                                    return JsonResponse({
+                                        'success': True,
+                                        'rounds': rounds_data
+                                    })
+                        except Championship.DoesNotExist:
+                            print(f"DEBUG: Campeonato com ID={championship_id} não encontrado")
+                    
+                    # Se chegarmos aqui, usamos as rodadas existentes ou retornamos uma lista vazia
+                    rounds_data = [{'id': r.id, 'number': r.number} for r in rounds]
+                    
+                    print(f"DEBUG: Retornando {len(rounds_data)} rodadas: {rounds_data}")
+                    return JsonResponse({
+                        'success': True,
+                        'rounds': rounds_data
+                    })
+                except ChampionshipStage.DoesNotExist:
+                    print(f"DEBUG: Fase com ID={stage_id} não encontrada")
+                    # Tentar verificar se é uma fase de template
+                    try:
+                        template_stage = TemplateStage.objects.get(id=stage_id)
+                        print(f"DEBUG: Encontrada fase de template: {template_stage.name}")
+                        # Usar isso como template_stage_id
+                        template_stage_id = stage_id
+                    except TemplateStage.DoesNotExist:
+                        pass
+            
+            if template_stage_id:
                 # Caso seja uma nova fase baseada em template_stage
-                template_stage = TemplateStage.objects.get(id=template_stage_id)
-                
-                # Gera rodadas simuladas baseadas no template_stage
-                rounds_data = [{'id': f'new_{i}', 'number': i} for i in range(1, template_stage.rounds + 1)]
-                
-                return JsonResponse({
-                    'success': True,
-                    'rounds': rounds_data
-                })
+                try:
+                    template_stage = TemplateStage.objects.get(id=template_stage_id)
+                    print(f"DEBUG: Fase de template encontrada: {template_stage.name} com {template_stage.rounds} rodadas")
+                    
+                    # Gera rodadas simuladas baseadas no template_stage
+                    rounds_data = [{'id': f'new_{i}', 'number': i} for i in range(1, template_stage.rounds + 1)]
+                    
+                    print(f"DEBUG: Retornando {len(rounds_data)} rodadas simuladas")
+                    return JsonResponse({
+                        'success': True,
+                        'rounds': rounds_data
+                    })
+                except TemplateStage.DoesNotExist:
+                    print(f"DEBUG: Template_stage com ID={template_stage_id} não encontrado")
                 
             elif template_id:
-                # Caso seja uma nova fase, mas só temos template_id e stage_name
-                # Este caso podemos ignorar pois já implementamos o template_stage_id acima
+                # Caso seja uma nova fase, mas só temos template_id
+                print(f"DEBUG: Recebido apenas template_id={template_id} sem stage_id ou template_stage_id")
                 return JsonResponse({
                     'success': False,
-                    'message': 'É necessário informar o template_stage_id'
+                    'message': 'É necessário informar o template_stage_id ou stage_id'
                 })
                 
+            # Se não temos nenhum ID válido
+            print("DEBUG: Nenhum ID válido de fase fornecido")
             return JsonResponse({
                 'success': False,
-                'message': 'Nenhuma rodada encontrada'
+                'message': 'Nenhuma fase encontrada. Verifique os parâmetros.'
             })
             
         except (ChampionshipStage.DoesNotExist, TemplateStage.DoesNotExist) as e:
+            print(f"DEBUG: Erro ao buscar fase: {str(e)}")
             return JsonResponse({
                 'success': False,
                 'message': f'Erro ao buscar rodadas: {str(e)}'
             })
         except Exception as e:
             print(f"DEBUG: Erro inesperado em get_rounds_by_stage: {str(e)}")
+            import traceback
+            print(traceback.format_exc())
             return JsonResponse({
                 'success': False,
                 'message': f'Erro inesperado: {str(e)}'
@@ -7625,6 +7806,67 @@ def futliga_premio_excluir(request, premio_id):
     except Exception as e:
         print(f"\n[DEBUG-PREMIO] Erro ao excluir prêmio: {str(e)}", flush=True)
         return JsonResponse({'success': False, 'message': f'Erro ao excluir prêmio: {str(e)}'}, status=500)
+
+@login_required
+@csrf_exempt
+def futliga_jogador_premio_excluir(request):
+    """
+    Exclui um prêmio específico de Futliga Jogadores imediatamente.
+    """
+    try:
+        print("\n[DEBUG-PREMIO] ========== INÍCIO DO PROCESSO DE EXCLUSÃO DE PRÊMIO ==========")
+        print(f"[DEBUG-PREMIO] Método da requisição: {request.method}")
+        print(f"[DEBUG-PREMIO] Headers: {dict(request.headers)}")
+        
+        # Log de todos os dados recebidos
+        if request.method == 'POST':
+            print(f"[DEBUG-PREMIO] Dados POST: {request.POST}")
+            print(f"[DEBUG-PREMIO] Conteúdo do body: {request.body.decode('utf-8')}")
+        
+        premio_id = request.POST.get('id')
+        print(f"[DEBUG-PREMIO] ID do prêmio recebido: {premio_id} (tipo: {type(premio_id).__name__})")
+        
+        if not premio_id:
+            print("[DEBUG-PREMIO] ERRO: ID do prêmio não fornecido")
+            return JsonResponse({'success': False, 'error': 'ID do prêmio não fornecido'}, status=400)
+            
+        print(f"[DEBUG-PREMIO] Tentando excluir prêmio ID {premio_id}")
+        
+        try:
+            # Converte o ID para inteiro para garantir que é um número válido
+            premio_id_int = int(premio_id)
+            print(f"[DEBUG-PREMIO] ID convertido para inteiro: {premio_id_int}")
+            
+            # Tenta buscar o prêmio
+            premio = PlayerLeaguePrize.objects.get(id=premio_id_int)
+            print(f"[DEBUG-PREMIO] Prêmio encontrado: ID={premio.id}")
+            
+            # Tenta excluir o prêmio
+            premio.delete()
+            print("[DEBUG-PREMIO] Prêmio excluído com sucesso")
+            print("[DEBUG-PREMIO] ========== FIM DO PROCESSO DE EXCLUSÃO ==========\n")
+            
+            return JsonResponse({'success': True, 'message': 'Prêmio excluído com sucesso'})
+            
+        except ValueError as ve:
+            print(f"[DEBUG-PREMIO] ERRO: ID do prêmio inválido - deve ser um número.")
+            print(f"[DEBUG-PREMIO] Detalhes do erro: {str(ve)}")
+            print(f"[DEBUG-PREMIO] Valor tentado: '{premio_id}' (tipo: {type(premio_id).__name__})")
+            print("[DEBUG-PREMIO] ========== FIM COM ERRO ==========\n")
+            return JsonResponse({'success': False, 'error': 'ID do prêmio inválido - deve ser um número'}, status=400)
+            
+        except PlayerLeaguePrize.DoesNotExist:
+            print(f"[DEBUG-PREMIO] ERRO: Prêmio com ID {premio_id_int} não encontrado no banco de dados")
+            print("[DEBUG-PREMIO] ========== FIM COM ERRO ==========\n")
+            return JsonResponse({'success': False, 'error': 'Prêmio não encontrado'}, status=404)
+            
+    except Exception as e:
+        print(f"\n[DEBUG-PREMIO] ERRO CRÍTICO ao excluir prêmio: {str(e)}")
+        print(f"[DEBUG-PREMIO] Tipo do erro: {type(e).__name__}")
+        import traceback
+        print(f"[DEBUG-PREMIO] Stack trace completo:\n{traceback.format_exc()}")
+        print("[DEBUG-PREMIO] ========== FIM COM ERRO CRÍTICO ==========\n")
+        return JsonResponse({'success': False, 'error': f'Erro ao excluir prêmio: {str(e)}'}, status=500)
 
 @login_required
 def pacotes_futcoins_ativos(request):

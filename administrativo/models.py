@@ -42,6 +42,16 @@ class User(AbstractUser):
     packages_spent = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     is_star = models.BooleanField(default=False)
     
+    # Campos para controle de recompensas
+    last_daily_reward = models.DateTimeField(null=True, blank=True)
+    video_rewards_today = models.IntegerField(default=0)
+    last_video_reward_date = models.DateField(null=True, blank=True)
+    
+    # Campos para notificações push
+    push_token = models.CharField(max_length=255, null=True, blank=True)
+    push_platform = models.CharField(max_length=50, null=True, blank=True)
+    push_device_name = models.CharField(max_length=255, null=True, blank=True)
+    
     # Sobrescrevendo os campos ManyToMany do AbstractUser para adicionar related_name
     groups = models.ManyToManyField(
         'auth.Group',
@@ -1225,6 +1235,35 @@ class LeagueInvitation(models.Model):
 
     def __str__(self):
         return f'{self.user.get_full_name() or self.user.username} - {self.invitations} convites'
+
+class LeagueMember(models.Model):
+    """
+    Entidade que representa membros de uma Futliga (Padrão ou Personalizada).
+    """
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='league_memberships',
+        verbose_name='Usuário'
+    )
+    league = models.ForeignKey(
+        'CustomLeague',
+        on_delete=models.CASCADE,
+        related_name='members',
+        verbose_name='Futliga'
+    )
+    is_admin = models.BooleanField(default=False, verbose_name='Administrador')
+    joined_at = models.DateTimeField(default=timezone.now, verbose_name='Data de Entrada')
+    total_points = models.IntegerField(default=0, verbose_name='Pontos Totais')
+
+    class Meta:
+        db_table = 'league_members'
+        verbose_name = 'Membro de Futliga'
+        verbose_name_plural = 'Membros de Futliga'
+        unique_together = ['user', 'league']
+
+    def __str__(self):
+        return f'{self.user.get_full_name() or self.user.username} - {self.league.name}'
 
 class Parameters(models.Model):
     """

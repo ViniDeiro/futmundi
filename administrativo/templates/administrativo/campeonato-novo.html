@@ -2418,6 +2418,19 @@
                     var fase = $('#fase').val();
                     var rodada = $('#rodada').val();
                     
+                    // Garantir que as datas selecionadas nos campos datetimepicker sejam capturadas
+                    $('.datetimepicker-input').each(function() {
+                        var $input = $(this);
+                        var datepickerId = $input.data('target');
+                        var selectedDate = $(datepickerId).datetimepicker('viewDate');
+                        
+                        if (selectedDate && selectedDate.isValid()) {
+                            var formattedDate = selectedDate.format('DD/MM/YYYY HH:mm');
+                            console.log("Atualizando data no input:", formattedDate);
+                            $input.val(formattedDate);
+                        }
+                    });
+                    
                     // Selecionar fase e rodada se necessário, mas sem uso excessivo de setTimeout
                     if (!fase) {
                         console.warn("Nenhuma fase selecionada. Tentando selecionar automaticamente...");

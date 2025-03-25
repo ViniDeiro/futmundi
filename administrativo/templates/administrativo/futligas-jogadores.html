@@ -530,6 +530,201 @@
         });
     </script>
     
+    <!-- Script para corrigir a ordem das colunas na tabela de prêmios -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('[CORREÇÃO-ORDEM] Inicializando script de correção da ordem das colunas');
+            
+            // Função para forçar a ordem correta das colunas na tabela de prêmios
+            // Definida como global para poder ser chamada de outras partes do código
+            window.fixColumnOrder = function() {
+                console.log('[CORREÇÃO-ORDEM] Verificando e corrigindo a ordem das colunas');
+                
+                // Referência à tabela de prêmios
+                const $tablePremios = $('#premiosTable');
+                if (!$tablePremios.length) {
+                    console.log('[CORREÇÃO-ORDEM] Tabela #premiosTable não encontrada');
+                    return;
+                }
+                
+                // Verifica o cabeçalho
+                const $headerRow = $tablePremios.find('thead tr');
+                if (!$headerRow.length) {
+                    console.log('[CORREÇÃO-ORDEM] Linha de cabeçalho não encontrada');
+                    return;
+                }
+                
+                // Obter todas as células do cabeçalho
+                const $headerCells = $headerRow.find('th');
+                console.log('[CORREÇÃO-ORDEM] Células de cabeçalho encontradas:', $headerCells.length);
+                
+                // Verifica se a ordem já está correta
+                const posicaoIndex = $headerCells.index($headerCells.filter(function() {
+                    return $(this).text().trim() === 'Posição';
+                }));
+                
+                const imagemIndex = $headerCells.index($headerCells.filter(function() {
+                    return $(this).hasClass('center-middle') || $(this).text().trim() === 'Imagem';
+                }));
+                
+                console.log('[CORREÇÃO-ORDEM] Índices atuais - Posição:', posicaoIndex, 'Imagem:', imagemIndex);
+                
+                // Se Imagem não estiver logo após Posição, corrigir
+                if (posicaoIndex !== -1 && imagemIndex !== -1 && imagemIndex !== posicaoIndex + 1) {
+                    console.log('[CORREÇÃO-ORDEM] Corrigindo ordem das colunas no cabeçalho');
+                    
+                    // CORREÇÃO: Primeiro salvamos todos os valores atuais para não perdê-los
+                    const valoresAtuais = {};
+                    $tablePremios.find('tbody tr').each(function() {
+                        const $row = $(this);
+                        const position = $row.data('position') || $row.attr('data-position');
+                        valoresAtuais[position] = {};
+                        
+                        $row.find('input[type="number"], input[type="text"]').each(function() {
+                            const $input = $(this);
+                            const nivel = $input.data('nivel');
+                            if (nivel) {
+                                valoresAtuais[position][nivel] = $input.val();
+                            }
+                        });
+                    });
+                    console.log('[CORREÇÃO-ORDEM] Valores atuais salvos:', valoresAtuais);
+                    
+                    // Armazenar referências a todas as células
+                    const headerCells = [];
+                    $headerCells.each(function() {
+                        headerCells.push($(this).detach());
+                    });
+                    
+                    // Reordenar células: Posição, Imagem, [Colunas de Níveis], Ações
+                    const posicaoCell = headerCells[posicaoIndex];
+                    const imagemCell = headerCells[imagemIndex];
+                    const acoesCell = headerCells[headerCells.length - 1];
+                    
+                    // Remover células que serão posicionadas explicitamente
+                    headerCells.splice(Math.max(posicaoIndex, imagemIndex), 1);
+                    headerCells.splice(Math.min(posicaoIndex, imagemIndex), 1);
+                    headerCells.pop(); // Remove a última (Ações)
+                    
+                    // Adicionar na ordem correta
+                    $headerRow.append(posicaoCell);
+                    $headerRow.append(imagemCell);
+                    
+                    // Adicionar colunas de níveis
+                    headerCells.forEach(cell => {
+                        $headerRow.append(cell);
+                    });
+                    
+                    // Adicionar Ações
+                    $headerRow.append(acoesCell);
+                    
+                    console.log('[CORREÇÃO-ORDEM] Cabeçalho reordenado com sucesso');
+                    
+                    // Obter os nomes de níveis atualizados na ordem correta
+                    const niveis = [];
+                    $headerRow.find('th').each(function(index) {
+                        // Ignoramos a primeira (Posição), a segunda (Imagem) e a última (Ações)
+                        if (index > 1 && index < $headerRow.find('th').length - 1) {
+                            niveis.push($(this).text().trim());
+                        }
+                    });
+                    console.log('[CORREÇÃO-ORDEM] Níveis na ordem correta:', niveis);
+                    
+                    // Agora corrigir todas as linhas do corpo da tabela
+                    $tablePremios.find('tbody tr').each(function(rowIndex) {
+                        const $row = $(this);
+                        const position = $row.attr('data-position') || $row.data('position') || (rowIndex + 1);
+                        
+                        console.log(`[CORREÇÃO-ORDEM] Corrigindo ordem das células na linha ${position}`);
+                        
+                        // Salvar as células posição e imagem
+                        const tdPosition = $row.find('td:first-child').detach();
+                        const tdImage = $row.find('td.center-middle').detach();
+                        const tdActions = $row.find('td:last-child').detach();
+                        
+                        // Remover todas as células de valores existentes
+                        $row.find('td:not(:first-child):not(:last-child):not(.center-middle)').remove();
+                        
+                        // Limpar totalmente a linha
+                        $row.empty();
+                        
+                        // Readicionar na ordem correta
+                        $row.append(tdPosition);
+                        $row.append(tdImage);
+                        
+                        // Adicionar células para cada nível com valores preservados
+                        niveis.forEach(nivel => {
+                            // Recuperar valor dos dados salvos, ou usar 1000 como padrão
+                            let valor = 1000;
+                            if (valoresAtuais[position] && valoresAtuais[position][nivel] !== undefined) {
+                                valor = valoresAtuais[position][nivel];
+                            }
+                            
+                            $row.append(`
+                                <td class="premio-valor">
+                                    <input type="number" 
+                                           class="form-control premio-input" 
+                                           data-nivel="${nivel}" 
+                                           value="${valor}" 
+                                           min="0">
+                                </td>
+                            `);
+                        });
+                        
+                        // Adicionar a célula de ações
+                        $row.append(tdActions);
+                    });
+                }
+                
+                console.log('[CORREÇÃO-ORDEM] Verificação e correção da ordem das colunas concluída');
+            };
+            
+            // Chamar a função de correção imediatamente
+            window.fixColumnOrder();
+            
+            // Chamar novamente após um breve atraso para garantir (por segurança)
+            setTimeout(window.fixColumnOrder, 500);
+            
+            // Chamar quando a aba de prêmios for ativada
+            $('a[href="#premios"]').on('shown.bs.tab', function() {
+                console.log('[CORREÇÃO-ORDEM] Aba de prêmios ativada, corrigindo ordem das colunas');
+                window.fixColumnOrder();
+            });
+            
+            // Chamar após o salvamento
+            $('#successToast').on('click', function() {
+                // Aplicamos múltiplas correções em intervalos diferentes para garantir
+                setTimeout(window.fixColumnOrder, 500);
+                setTimeout(window.fixColumnOrder, 1000);
+                setTimeout(window.fixColumnOrder, 2000);
+            });
+            
+            // Adicionar evento para chamada periódica na aba de prêmios
+            setInterval(function() {
+                if ($('a[href="#premios"]').parent().hasClass('active')) {
+                    // Verifica ordem das colunas periodicamente quando a aba de prêmios está ativa
+                    const $headerRow = $('#premiosTable thead tr');
+                    const $headerCells = $headerRow.find('th');
+                    
+                    // Verifica se a ordem já está correta
+                    const posicaoIndex = $headerCells.index($headerCells.filter(function() {
+                        return $(this).text().trim() === 'Posição';
+                    }));
+                    
+                    const imagemIndex = $headerCells.index($headerCells.filter(function() {
+                        return $(this).hasClass('center-middle') || $(this).text().trim() === 'Imagem';
+                    }));
+                    
+                    // Se Imagem não estiver logo após Posição, corrigir
+                    if (posicaoIndex !== -1 && imagemIndex !== -1 && imagemIndex !== posicaoIndex + 1) {
+                        console.log('[CORREÇÃO-ORDEM] Detectado problema de ordem durante verificação periódica');
+                        window.fixColumnOrder();
+                    }
+                }
+            }, 3000); // Verificar a cada 3 segundos
+        });
+    </script>
+    
     <!-- Modal de Confirmação de Exclusão -->
     <div class="modal inmodal" id="modalConfirmDelete" tabindex="-1" role="dialog" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-sm">
@@ -611,6 +806,109 @@
             };
             
             console.log('[FIX-PREMIO] Método confirm sobrescrito para evitar popup duplicado');
+        });
+    </script>
+    
+    <!-- Script para persistir e restaurar valores dos prêmios -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('[FIX-PERSISTÊNCIA] Inicializando sistema de backup dos valores de prêmios');
+            
+            // Depois de qualquer mudança nos valores dos prêmios, salvar em LocalStorage
+            $(document).on('change', '#premiosTable input.premio-valor', function() {
+                try {
+                    const $input = $(this);
+                    const value = $input.val();
+                    const nivel = $input.data('nivel');
+                    const $row = $input.closest('tr');
+                    const position = $row.data('position');
+                    const prizeId = $row.data('id');
+                    
+                    console.log(`[FIX-PERSISTÊNCIA] Valor alterado: posição=${position}, nível=${nivel}, valor=${value}`);
+                    
+                    // Armazenar valores em localStorage
+                    const premioValuesKey = 'premio_values';
+                    let premioValues = {};
+                    
+                    try {
+                        const storedValues = localStorage.getItem(premioValuesKey);
+                        if (storedValues) {
+                            premioValues = JSON.parse(storedValues);
+                        }
+                    } catch (e) {
+                        console.error('[FIX-PERSISTÊNCIA] Erro ao recuperar valores do localStorage:', e);
+                    }
+                    
+                    // Estrutura para armazenar valores de prêmios por posição e nível
+                    if (!premioValues[position]) {
+                        premioValues[position] = {};
+                    }
+                    premioValues[position][nivel] = value;
+                    
+                    localStorage.setItem(premioValuesKey, JSON.stringify(premioValues));
+                    console.log(`[FIX-PERSISTÊNCIA] Valores salvos no localStorage`);
+                } catch (e) {
+                    console.error('[FIX-PERSISTÊNCIA] Erro ao salvar valor:', e);
+                }
+            });
+            
+            // Após processamento da página, restaurar valores do localStorage
+            function restoreValuesFromStorage() {
+                try {
+                    console.log('[FIX-PERSISTÊNCIA] Verificando valores armazenados no localStorage');
+                    const premioValuesKey = 'premio_values';
+                    const storedValues = localStorage.getItem(premioValuesKey);
+                    
+                    if (!storedValues) {
+                        console.log('[FIX-PERSISTÊNCIA] Nenhum valor armazenado encontrado');
+                        return;
+                    }
+                    
+                    const premioValues = JSON.parse(storedValues);
+                    let restoredCount = 0;
+                    
+                    $('#premiosTable tbody tr').each(function() {
+                        const $row = $(this);
+                        const position = $row.data('position');
+                        
+                        // Verificar se temos valores armazenados para esta posição
+                        if (premioValues[position]) {
+                            // Para cada input na linha, verificar se há valor armazenado
+                            $row.find('input.premio-valor').each(function() {
+                                const $input = $(this);
+                                const nivel = $input.data('nivel');
+                                
+                                if (nivel && premioValues[position][nivel]) {
+                                    const storedValue = premioValues[position][nivel];
+                                    $input.val(storedValue);
+                                    restoredCount++;
+                                    console.log(`[FIX-PERSISTÊNCIA] Restaurado valor ${storedValue} para posição ${position}, nível ${nivel}`);
+                                }
+                            });
+                        }
+                    });
+                    
+                    if (restoredCount > 0) {
+                        console.log(`[FIX-PERSISTÊNCIA] Restaurados ${restoredCount} valores do localStorage`);
+                    } else {
+                        console.log('[FIX-PERSISTÊNCIA] Nenhum valor restaurado');
+                    }
+                } catch (e) {
+                    console.error('[FIX-PERSISTÊNCIA] Erro ao restaurar valores:', e);
+                }
+            }
+            
+            // Chamar a restauração quando a aba de prêmios for ativada
+            $('a[href="#premios"]').on('shown.bs.tab', function() {
+                setTimeout(restoreValuesFromStorage, 200);
+            });
+            
+            // Também restaurar após o salvamento
+            $('#successToast').on('click', function() {
+                // Armazenar os valores atuais antes do salvamento
+                console.log('[FIX-PERSISTÊNCIA] Salvando valores atuais antes do envio');
+                $('#premiosTable input.premio-valor').trigger('change');
+            });
         });
     </script>
     
