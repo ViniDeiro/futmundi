@@ -1,6 +1,7 @@
 import json
 import time
 from datetime import datetime
+from django.http import HttpResponse
 
 class ApiDebugMiddleware:
     def __init__(self, get_response):
@@ -8,8 +9,17 @@ class ApiDebugMiddleware:
 
     def __call__(self, request):
         # Processa requisições para o endpoint de futligas jogadores (com ou sem prefixo administrativo)
-        if '/futligas/jogadores/salvar/' in request.path or '/administrativo/futligas/jogadores/salvar/' in request.path:
+        if '/futligas/jogadores/salvar/' in request.path:
             print(f"\n[API-DEBUG] Detectada requisição para futligas jogadores: {request.path}")
+            
+            # Redireciona automaticamente requisições sem o prefixo 'administrativo'
+            if request.path == '/futligas/jogadores/salvar/':
+                print(f"[API-DEBUG] Redirecionando de {request.path} para /administrativo/futligas/jogadores/salvar/")
+                
+                # Preservar o corpo da requisição e o método
+                request.path = '/administrativo/futligas/jogadores/salvar/'
+                request.path_info = '/administrativo/futligas/jogadores/salvar/'
+                
             return self.process_futligas_request(request)
         else:
             # Para outras requisições, apenas passa adiante
