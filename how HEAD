@@ -1,0 +1,5 @@
+[33m372db7e[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m, [m[1;31morigin/master[m[33m)[m Corrigido obrigatoriedade de datas para planos tipo 'Novos Jogadores'
+[33m824eef2[m Readicionando o redirecionamento de /futligas/jogadores/salvar/ para /administrativo/futligas/jogadores/salvar/ no middleware
+[33mbc885ba[m Corrigido todas as funções de salvamento em futligas-jogadores.js para usar URL correta
+[33m9af0284[m Corrigido botão de salvar em futligas-jogadores.js para usar URL correta em todas as funções
+[33md2e7cb7[m Corrigido botão de salvar em futligas-jogadores.js para usar URL correta
