@@ -3635,27 +3635,13 @@ $(document).ready(function() {
         
         // Tenta diferentes URLs caso ocorram erros de conexão
         function tryWithAlternativeURLs(urlIndex = 0) {
-            // Lista de URLs a tentar, em ordem de prioridade
-            const urls = [
-                '/administrativo/futligas/jogadores/salvar/',
-                '/futligas/jogadores/salvar/',
-                window.location.origin + '/administrativo/futligas/jogadores/salvar/',
-                window.location.origin + '/futligas/jogadores/salvar/'
-            ];
+            // Usar apenas a URL correta
+            const url = '/administrativo/futligas/jogadores/salvar/';
+            console.log(`[DEBUG-PREMIO] Usando URL fixa correta: ${url}`);
             
-            if (urlIndex >= urls.length) {
-                console.error('[DEBUG-PREMIO] Todas as URLs alternativas falharam.');
-                toastr.error('Erro ao comunicar com o servidor após múltiplas tentativas. Verifique sua conexão.');
-                $btn.html(originalHtml).prop('disabled', false);
-                return;
-            }
-            
-            const currentUrl = urls[urlIndex];
-            console.log(`[DEBUG-PREMIO] Tentativa ${urlIndex+1}/${urls.length}: ${currentUrl}`);
-            
-            // Enviar requisição AJAX com a URL atual
+            // Enviar requisição AJAX com a URL correta
             $.ajax({
-                url: currentUrl,
+                url: url,
                 type: 'POST',
                 contentType: 'application/json',
                 data: JSON.stringify(payload),
@@ -3684,36 +3670,21 @@ $(document).ready(function() {
                     $btn.html(originalHtml).prop('disabled', false);
                 },
                 error: function(xhr, status, error) {
-                    console.error(`[DEBUG-PREMIO] Erro na requisição AJAX para ${currentUrl}:`, status, error);
+                    console.error(`[DEBUG-PREMIO] Erro na requisição AJAX para ${url}:`, status, error);
                     
                     if (xhr.responseText) {
                         console.error('[DEBUG-PREMIO] Resposta do servidor:', xhr.responseText);
                     }
                     
-                    // Verifica o tipo de erro
-                    if (status === 'timeout') {
-                        console.log('[DEBUG-PREMIO] A requisição atingiu o tempo limite.');
-                        // Removido toastr.warning sobre timeout
-                        tryWithAlternativeURLs(urlIndex + 1);
-                    } else if (xhr.status === 0) {
-                        console.log('[DEBUG-PREMIO] Possível erro de CORS ou rede. Tentando URL alternativa...');
-                        // Removido toastr.warning sobre problemas de conexão
-                        tryWithAlternativeURLs(urlIndex + 1);
-                    } else if (xhr.status === 404) {
-                        console.log('[DEBUG-PREMIO] URL não encontrada. Tentando URL alternativa...');
-                        // Removido toastr.warning sobre endpoint não encontrado
-                        tryWithAlternativeURLs(urlIndex + 1);
-                    } else {
-                        // Para outros erros, mostra o erro e restaura o botão
-                        toastr.error('Erro ao comunicar com o servidor. Verifique o console para mais detalhes.');
-                        $btn.html(originalHtml).prop('disabled', false);
-                    }
+                    // Exibe mensagem de erro e restaura o botão
+                    toastr.error('Erro ao comunicar com o servidor. Verifique o console para mais detalhes.');
+                    $btn.html(originalHtml).prop('disabled', false);
                 }
             });
         }
         
-        // Inicia as tentativas com a primeira URL
-        tryWithAlternativeURLs(0);
+        // Inicia com a URL correta
+        tryWithAlternativeURLs();
     });
 
     // ... existing code ...
@@ -4750,46 +4721,19 @@ $(document).ready(function() {
             ];
             
             if (formatoIndex >= formatosDisponiveis.length) {
-                // Se já tentamos todos os formatos com esta URL, passar para a próxima URL
-                trySaveWithURL(urlIndex + 1, 0);
+                // Se já tentamos todos os formatos, informar o erro
+                clearTimeout(buttonRestoreTimeout);
+                $btn.html(originalHtml).prop('disabled', false);
+                toastr.error('Erro ao salvar. Todos os formatos de dados tentados falharam.');
                 return;
             }
             
             const data = formatosDisponiveis[formatoIndex];
             console.log('[DEBUG] Usando formato de dados:', formatoIndex === 0 ? 'Original' : 'Alternativo');
             
-            // URLs corrigidas considerando o prefixo raiz
-            let urls = [
-                '/futligas/jogadores/salvar/',             // URL sem o prefixo 'administrativo'
-                'salvar/',                                 // URL relativa ao caminho atual
-                './salvar/',                               // URL relativa explícita
-                '../jogadores/salvar/',                    // Um nível acima e de volta
-                'futliga_jogador_salvar/',                 // Nome da função
-                '/futliga_jogador_salvar/'                 // URL com nome da função (com barra inicial)
-            ];
-            
-            // Verificar se temos uma URL bem-sucedida anterior
-            try {
-                const ultimaUrlSucesso = localStorage.getItem('ultimaUrlSalvamentoBemSucedida');
-                if (ultimaUrlSucesso) {
-                    console.log('[DEBUG] Encontrada URL bem-sucedida anterior: ' + ultimaUrlSucesso);
-                    
-                    // Adicionar a URL bem-sucedida como primeira opção
-                    urls = [ultimaUrlSucesso, ...urls.filter(url => url !== ultimaUrlSucesso)];
-                }
-            } catch (e) {
-                console.error('[DEBUG] Erro ao recuperar última URL bem-sucedida:', e);
-            }
-            
-            if (urlIndex >= urls.length) {
-                clearTimeout(buttonRestoreTimeout);
-                $btn.html(originalHtml).prop('disabled', false);
-                toastr.error('Erro ao salvar. Todas as URLs tentadas falharam.');
-                return;
-            }
-            
-            const url = urls[urlIndex];
-            console.log('[DEBUG] Tentando URL: ' + url + ' com formato: ' + (formatoIndex === 0 ? 'Original' : 'Alternativo'));
+            // Usar apenas a URL correta
+            const url = '/administrativo/futligas/jogadores/salvar/';
+            console.log('[DEBUG] Usando URL fixa correta: ' + url);
             
             // Fazer a requisição
             $.ajax({
@@ -4815,13 +4759,12 @@ $(document).ready(function() {
                             setTimeout(window.fixColumnOrder, 500);
                         }
                         
-                        // Armazenar a URL bem-sucedida e o formato em localStorage para futuras requisições
+                        // Armazenar o formato em localStorage para futuras requisições
                         try {
-                            localStorage.setItem('ultimaUrlSalvamentoBemSucedida', url);
                             localStorage.setItem('ultimoFormatoSalvamentoBemSucedido', formatoIndex.toString());
-                            console.log('[DEBUG] URL e formato bem-sucedidos armazenados para uso futuro');
+                            console.log('[DEBUG] Formato bem-sucedido armazenado para uso futuro');
                         } catch (e) {
-                            console.error('[DEBUG] Erro ao armazenar URL e formato bem-sucedidos:', e);
+                            console.error('[DEBUG] Erro ao armazenar formato bem-sucedido:', e);
                         }
                     } else {
                         const errorMsg = response && response.error ? response.error : 'Erro ao salvar dados.';
@@ -4829,7 +4772,7 @@ $(document).ready(function() {
                         console.error('[DEBUG] Erro retornado pelo servidor:', errorMsg);
                         
                         // Tentar com o próximo formato
-                        trySaveWithURL(urlIndex, formatoIndex + 1);
+                        trySaveWithURL(0, formatoIndex + 1);
                     }
                 },
                 error: function(xhr, status, error) {
@@ -4837,179 +4780,7 @@ $(document).ready(function() {
                     console.error('[DEBUG] Status HTTP:', xhr.status);
                     
                     // Tentar com o próximo formato
-                    trySaveWithURL(urlIndex, formatoIndex + 1);
-                },
-                complete: function() {
-                    clearTimeout(buttonRestoreTimeout);
-                    // Sempre restaurar o botão no complete
-                    $btn.html(originalHtml).prop('disabled', false);
-                }
-            });
-        } catch (e) {
-            console.error('[DEBUG] Erro ao tentar salvar:', e);
-            clearTimeout(buttonRestoreTimeout);
-            $btn.html(originalHtml).prop('disabled', false);
-            toastr.error('Erro ao processar dados para salvamento.');
-        }
-    }
-    // ... existing code ...
-
-    function trySaveWithURL(urlIndex = 0, formatoIndex = 0) {
-        console.log('[DEBUG] Iniciando salvamento com URL correta');
-        console.log('[DEBUG] URL da página atual:', window.location.href);
-        console.log('[DEBUG] Pathname:', window.location.pathname);
-        
-        // Referência ao botão
-        const $btn = $('#successToast');
-        const originalHtml = $btn.html();
-        
-        // Atualizar botão
-        $btn.html('<i class="fa fa-spinner fa-spin"></i> Salvando...').prop('disabled', true);
-        
-        // Definir timeout para garantir que o botão será restaurado
-        const buttonRestoreTimeout = setTimeout(function() {
-            $btn.html(originalHtml).prop('disabled', false);
-            console.log('[DEBUG] Timer de segurança acionado - restaurando botão');
-            toastr.error('A operação demorou muito tempo. Tente novamente.');
-        }, 15000); // 15 segundos é tempo suficiente
-        
-        try {
-            // Coletar dados de níveis
-            const level_data = [];
-            $('#table tbody tr').each(function() {
-                const id = $(this).data('id');
-                // CORREÇÃO: Remover o ícone de barras do nome
-                const fullName = $(this).find('td:eq(0)').text().trim();
-                // Extrair apenas o nome real, removendo o ícone de barras "☰"
-                const name = fullName.replace(/^[\s\u2630]+/, '').trim();
-                
-                const players = $(this).find('td:eq(2)').text().trim();
-                const premium_players = $(this).find('td:eq(3)').text().trim();
-                const owner_premium = $(this).find('td:eq(4)').text().trim() === 'Sim';
-                
-                let image = null;
-                const imageElement = $(this).find('td:eq(1) img');
-                if (imageElement.length) {
-                    image = imageElement.attr('src');
-                }
-                
-                level_data.push({
-                    id: id,
-                    name: name,
-                    players: players,
-                    premium_players: premium_players,
-                    owner_premium: owner_premium,
-                    image: image
-                });
-            });
-            
-            // Coletar prêmios do modo antigo - compatível com o servidor
-            const prizes = [];
-            $('#premiosTable tbody tr').each(function() {
-                const $row = $(this);
-                const position = $row.data('position') || parseInt($row.find('td:first').text().replace('°', '')) || 0;
-                const id = $row.data('id') || null;
-                
-                const values = {};
-                
-                // Procurar a imagem do prêmio
-                let image = null;
-                const $imageElement = $row.find('td.center-middle img');
-                if ($imageElement.length) {
-                    image = $imageElement.attr('src');
-                }
-                
-                // Coletar valores para cada nível
-                $row.find('input.premio-input').each(function() {
-                    const $input = $(this);
-                    let nivel = $input.data('nivel');
-                    
-                    // Remover o prefixo ☰ do nome do nível
-                    if (nivel) {
-                        nivel = nivel.replace(/^[\s\u2630☰]+/, '').trim();
-                        
-                        let value = parseInt($input.val() || "0");
-                        if (isNaN(value)) value = 0;
-                        values[nivel] = value;
-                        
-                        console.log(`[DEBUG-PREMIO] Coletado valor ${value} para nível ${nivel} na posição ${position}`);
-                    }
-                });
-                
-                prizes.push({
-                    id: id,
-                    position: position,
-                    image: image,
-                    values: values
-                });
-            });
-            
-            // Premiação
-            const weekRewardDay = $('#dia-premiacao').val();
-            const weekRewardTime = $('.clockpicker input').eq(0).val();
-            const seasonRewardMonth = $('#mes-ano-premiacao').val();
-            const seasonRewardDay = $('#dia-ano-premiacao').val();
-            const seasonRewardTime = $('.clockpicker input').eq(1).val();
-            
-            const award_config = {
-                weekly: {
-                    day: weekRewardDay,
-                    time: weekRewardTime
-                },
-                season: {
-                    month: seasonRewardMonth,
-                    day: seasonRewardDay,
-                    time: seasonRewardTime
-                }
-            };
-            
-            // Dados completos - formato original
-            const data = {
-                levels: level_data,
-                prizes: prizes,
-                award_config: award_config,
-                deleted_prize_ids: []
-            };
-            
-            // URL correta conforme configurado no urls.py
-            const url = '/futligas/jogadores/salvar/';
-            console.log('[DEBUG] Usando URL correta:', url);
-            
-            // Fazer a requisição
-            $.ajax({
-                url: url,
-                type: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify(data),
-                headers: {
-                    'X-CSRFToken': $('[name=csrfmiddlewaretoken]').val(),
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                success: function(response) {
-                    clearTimeout(buttonRestoreTimeout);
-                    $btn.html(originalHtml).prop('disabled', false);
-                    
-                    console.log('[DEBUG] Sucesso! URL funcionou:', url);
-                    console.log('[DEBUG] Resposta do servidor:', response);
-                    
-                    if (response && response.success) {
-                        toastr.success('Dados salvos com sucesso!');
-                        
-                        if (typeof window.fixColumnOrder === 'function') {
-                            setTimeout(window.fixColumnOrder, 500);
-                        }
-                    } else {
-                        const errorMsg = response && response.error ? response.error : 'Erro ao salvar dados.';
-                        toastr.error(errorMsg);
-                        console.error('[DEBUG] Erro retornado pelo servidor:', errorMsg);
-                    }
-                },
-                error: function(xhr, status, error) {
-                    console.error('[DEBUG] Erro na requisição para URL ' + url + ':', status, error);
-                    console.error('[DEBUG] Status HTTP:', xhr.status);
-                    clearTimeout(buttonRestoreTimeout);
-                    $btn.html(originalHtml).prop('disabled', false);
-                    toastr.error('Erro ao salvar dados. Verifique o console para detalhes.');
+                    trySaveWithURL(0, formatoIndex + 1);
                 },
                 complete: function() {
                     clearTimeout(buttonRestoreTimeout);
