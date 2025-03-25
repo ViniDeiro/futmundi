@@ -90,28 +90,14 @@ $(document).ready(function() {
         }
         
         // Função para tentar carregar dados com diferentes URLs
-        function tryLoadFromURL(urlIndex = 0) {
-            // Lista de URLs alternativas para tentar
-            const urls = [
-                '/administrativo/futligas/jogadores/dados/',
-                '/futligas/jogadores/dados/',
-                window.location.origin + '/administrativo/futligas/jogadores/dados/',
-                window.location.origin + '/futligas/jogadores/dados/'
-            ];
-            
-            if (urlIndex >= urls.length) {
-                console.error('[DEBUG-PREMIO] Falha ao carregar dados após tentar todas as URLs alternativas.');
-                $('#table tbody').html('<tr><td colspan="6" class="text-center text-danger"><i class="fa fa-exclamation-triangle"></i> Erro ao carregar dados. Atualize a página ou contate o suporte.</td></tr>');
-                toastr.error('Erro ao carregar dados. Tente recarregar a página.');
-                return;
-            }
-            
-            const currentUrl = urls[urlIndex];
-            console.log(`[DEBUG-PREMIO] Tentando carregar dados da URL (${urlIndex+1}/${urls.length}): ${currentUrl}`);
+        function tryLoadFromURL() {
+            // Usar apenas a URL correta registrada no urls.py
+            const urls = ['/administrativo/futligas/jogadores/dados/'];
+            console.log('[DEBUG] Usando URL fixa correta para carregar dados: ' + urls[0]);
             
             // Faz a requisição AJAX para carregar os dados
             $.ajax({
-                url: currentUrl,
+                url: urls[0],
                 method: 'GET',
                 timeout: 15000, // 15 segundos de timeout
                 headers: {
@@ -356,28 +342,14 @@ $(document).ready(function() {
                     }
                 },
                 error: function(xhr, status, error) {
-                    console.error(`[DEBUG-PREMIO] Erro ao carregar dados da URL ${currentUrl}:`, status, error);
+                    console.error(`[DEBUG-PREMIO] Erro ao carregar dados da URL ${urls[0]}:`, status, error);
                     
                     if (xhr.responseText) {
                         console.error('[DEBUG-PREMIO] Resposta de erro do servidor:', xhr.responseText);
                     }
                     
-                    // Verifica o tipo de erro e tenta a próxima URL
-                    if (status === 'timeout') {
-                        console.log('[DEBUG-PREMIO] A requisição atingiu o tempo limite.');
-                        toastr.warning('A requisição está demorando muito. Tentando URL alternativa...');
-                        tryLoadFromURL(urlIndex + 1);
-                    } else if (xhr.status === 0) {
-                        console.log('[DEBUG-PREMIO] Possível erro de CORS ou rede. Tentando URL alternativa...');
-                        tryLoadFromURL(urlIndex + 1);
-                    } else if (xhr.status === 404) {
-                        console.log('[DEBUG-PREMIO] URL não encontrada. Tentando URL alternativa...');
-                        tryLoadFromURL(urlIndex + 1);
-                    } else {
-                        // Para outros erros, tenta a próxima URL também
-                        console.log('[DEBUG-PREMIO] Erro de servidor. Tentando URL alternativa...');
-                        tryLoadFromURL(urlIndex + 1);
-                    }
+                    $('#table tbody').html('<tr><td colspan="6" class="text-center text-danger"><i class="fa fa-exclamation-triangle"></i> Erro ao carregar dados. Atualize a página ou contate o suporte.</td></tr>');
+                    toastr.error('Erro ao carregar dados. Tente recarregar a página.');
                 }
             });
         }
