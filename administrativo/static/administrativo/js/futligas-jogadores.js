@@ -1993,19 +1993,10 @@ $(document).ready(function() {
                     
                     console.log('[DEBUG] Valores preservados antes do salvamento:', valoresPreservados);
                     
-                const urls = [
-                        `/futligas/jogadores/salvar/`,
-                        `/administrativo/futligas/jogadores/salvar/`
-                ];
-                
-                if (urlIndex >= urls.length) {
-                        console.error('[DEBUG] Todas as URLs de salvamento falharam');
-                        toastr.error('Erro ao salvar os dados. Tente novamente.');
-                    $btn.html(originalHtml).prop('disabled', false);
-                    return;
-                }
-                
-                    const url = urls[urlIndex];
+                    // Usar apenas a URL correta
+                    const url = `/administrativo/futligas/jogadores/salvar/`;
+                    console.log('[DEBUG] Usando URL fixa correta para salvar: ' + url);
+                    
                     $btn.html('<i class="fa fa-spinner fa-spin"></i> Salvando...');
                     $btn.prop('disabled', true);
 
@@ -2119,8 +2110,8 @@ $(document).ready(function() {
                             console.error('[DEBUG] Erro na requisição AJAX:', status, error);
                             console.error('[DEBUG] Resposta de erro:', xhr.responseText);
                             
-                            // Tenta URL alternativa
-                            trySaveWithURL(urlIndex + 1);
+                            // Mostrar erro ao usuário
+                            toastr.error('Erro ao salvar os dados. Verifique o console para mais detalhes.');
                         },
                         complete: function () {
                             // Limpar o timeout já que a requisição foi concluída
@@ -2140,8 +2131,8 @@ $(document).ready(function() {
                 }
             }
             
-            // Inicia o processo de salvamento com a primeira URL
-            trySaveWithURL(0);
+            // Inicia o processo de salvamento
+            trySaveWithURL();
         } catch (error) {
             console.error("[DEBUG-PREMIO] Erro ao preparar dados:", error);
             console.error("[DEBUG-PREMIO] Stack trace:", error.stack);
@@ -4502,8 +4493,8 @@ $(document).ready(function() {
             };
             
             /// Usar apenas a URL correta registrada no urls.py
-            const urls = ['/administrativo/futligas/jogadores/salvar/'];
-            console.log('[DEBUG] Usando URL fixa correta registrada no Django: ' + urls[0]);
+            const urlToUse = '/administrativo/futligas/jogadores/salvar/';
+            console.log('[DEBUG] Usando URL fixa correta registrada no Django: ' + urlToUse);
             
             // Não precisamos mais verificar várias URLs
             if (urlIndex > 0) {
@@ -4513,12 +4504,11 @@ $(document).ready(function() {
                 return;
             }
             
-            const url = urls[0];
-            console.log('[DEBUG] Tentando URL: ' + url);
+            console.log('[DEBUG] Tentando URL: ' + urlToUse);
             
             // Fazer a requisição
             $.ajax({
-                url: url,
+                url: urlToUse,
                 type: 'POST',
                 contentType: 'application/json',
                 data: JSON.stringify(data),
@@ -4530,7 +4520,7 @@ $(document).ready(function() {
                     clearTimeout(buttonRestoreTimeout);
                     $btn.html(originalHtml).prop('disabled', false);
                     
-                    console.log('[DEBUG] Sucesso! URL funcionou: ' + url);
+                    console.log('[DEBUG] Sucesso! URL funcionou: ' + urlToUse);
                     console.log('[DEBUG] Resposta do servidor:', response);
                     
                     if (response && response.success) {
@@ -4542,8 +4532,8 @@ $(document).ready(function() {
                         
                         // Armazenar a URL bem-sucedida em localStorage para futuras requisições
                         try {
-                            localStorage.setItem('ultimaUrlSalvamentoBemSucedida', url);
-                            console.log('[DEBUG] URL bem-sucedida armazenada para uso futuro: ' + url);
+                            localStorage.setItem('ultimaUrlSalvamentoBemSucedida', urlToUse);
+                            console.log('[DEBUG] URL bem-sucedida armazenada para uso futuro: ' + urlToUse);
                         } catch (e) {
                             console.error('[DEBUG] Erro ao armazenar URL bem-sucedida:', e);
                         }
@@ -4554,11 +4544,13 @@ $(document).ready(function() {
                     }
                 },
                 error: function(xhr, status, error) {
-                    console.error('[DEBUG] Erro na requisição para URL ' + url + ':', status, error);
+                    console.error('[DEBUG] Erro na requisição para URL ' + urlToUse + ':', status, error);
                     console.error('[DEBUG] Status HTTP:', xhr.status);
                     
-                    // Tentar próxima URL
-                    trySaveWithURL(urlIndex + 1);
+                    // Mostrar erro ao usuário
+                    clearTimeout(buttonRestoreTimeout);
+                    $btn.html(originalHtml).prop('disabled', false);
+                    toastr.error('Erro ao salvar dados. Verifique o console para detalhes.');
                 },
                 complete: function() {
                     clearTimeout(buttonRestoreTimeout);
@@ -4578,7 +4570,7 @@ $(document).ready(function() {
     $('#successToast').off('click').on('click', function(e) {
         e.preventDefault();
         console.log('[DEBUG-SIMPLES] Botão de salvamento clicado');
-        trySaveWithURL(0);
+        trySaveWithURL();
     });
 
     // ... existing code ...
