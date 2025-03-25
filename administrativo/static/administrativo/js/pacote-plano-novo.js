@@ -231,21 +231,22 @@ $(document).ready(function() {
                 $('#id4 .input-group-addon i').css('background-color', '#CCA53F');
             }, 100);
             
-            // Define valores padrão para os campos específicos
-            $('#dias-promocao').val(30);
-            console.log('[DEBUG] Valor padrão para dias-promocao definido:', $('#dias-promocao').val());
+            // Limpar os valores para que os campos fiquem vazios
+            $('#dias-promocao').val('');
+            console.log('[DEBUG] Campo dias-promocao limpo');
             
             // Carrega os pacotes de futcoins ativos em ordem alfabética
             carregarPacotesFutcoins();
             
-            $('#renovacoes-pacote').val(1);
-            console.log('[DEBUG] Valor padrão para renovacoes-pacote definido:', $('#renovacoes-pacote').val());
+            // Limpar o campo de renovações
+            $('#renovacoes-pacote').val('');
+            console.log('[DEBUG] Campo renovacoes-pacote limpo');
             
             // Garante que não haja valores negativos
             $('#dias-promocao, #renovacoes-pacote').on('input', function() {
                 var value = parseInt($(this).val());
                 if (value < 0 || isNaN(value)) {
-                    $(this).val(1);
+                    $(this).val('');
                 }
             });
         }
