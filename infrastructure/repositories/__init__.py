@@ -1,0 +1,12 @@
+"""
+Repositórios Concretos - Implementações dos repositórios definidos na camada de domínio.
+Estas implementações conectam o domínio com a tecnologia de persistência (Django ORM).
+"""
+
+from infrastructure.repositories.django_championship_repository import DjangoChampionshipRepository
+from infrastructure.repositories.django_futliga_repository import DjangoFutLigaRepository
+from infrastructure.repositories.django_user_repository import DjangoUserRepository
+from infrastructure.repositories.django_prediction_repository import DjangoPredictionRepository
+from infrastructure.repositories.django_template_repository import DjangoTemplateRepository
+from infrastructure.repositories.django_location_repository import DjangoLocationRepository
+from infrastructure.repositories.django_payment_repository import DjangoPaymentRepository 
