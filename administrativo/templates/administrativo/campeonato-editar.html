@@ -179,40 +179,40 @@
                                                         <div class="row mt11">
                                                             <div class="col-lg-4">
                                                                 <label class="control-label" for="ambito">Âmbito</label>
-                                                                <select class="form-control js-basic-single" id="ambito" name="scope" required>
+                                                                <select class="form-control js-basic-single" id="ambito" name="scope" required {% if has_rounds %}disabled{% endif %}>
                                                                     {% for scope in scopes %}
-                                                                    <option value="{{ scope.id }}">{{ scope.name }}</option>
+                                                                    <option value="{{ scope.id }}" {% if championship.scope_id == scope.id %}selected{% endif %}>{{ scope.name }}</option>
                                                                     {% endfor %}
-                                                                </select> 
+                                                                </select>
                                                             </div>                                                       
                                                         </div>
                                                         <div class="row mt11">
                                                             <div class="col-lg-4">
                                                                 <label class="control-label" for="continente">Continente</label>
-                                                                <select class="form-control js-basic-single" id="continente" name="continent" data-placeholder="Selecione...">
+                                                                <select class="form-control js-basic-single" id="continente" name="continent" data-placeholder="Selecione..." {% if has_rounds %}disabled{% endif %}>
                                                                     <option value="">Selecione...</option>
                                                                     {% for continent in continents %}
-                                                                    <option value="{{ continent.id }}">{{ continent.name }}</option>
+                                                                    <option value="{{ continent.id }}" {% if championship.continent_id == continent.id %}selected{% endif %}>{{ continent.name }}</option>
                                                                     {% endfor %}
                                                                 </select>
                                                             </div>  
                                                             <div class="col-lg-4">
                                                                 <label class="control-label" for="pais">País</label>
-                                                                <select class="form-control js-basic-single" id="pais" name="country" data-placeholder="Selecione...">
+                                                                <select class="form-control js-basic-single" id="pais" name="country" data-placeholder="Selecione..." {% if has_rounds %}disabled{% endif %}>
                                                                     <option value="">Selecione...</option>
                                                                     {% for country in countries %}
-                                                                    <option value="{{ country.id }}" data-continent="{{ country.continent_id }}">{{ country.name }}</option>
+                                                                    <option value="{{ country.id }}" data-continent="{{ country.continent_id }}" {% if championship.country_id == country.id %}selected{% endif %}>{{ country.name }}</option>
                                                                     {% endfor %}
-                                                                </select>  
+                                                                </select>
                                                             </div>
                                                             <div class="col-lg-4">
                                                                 <label class="control-label" for="estado">Estado</label>
-                                                                <select class="form-control js-basic-single" id="estado" name="state" data-placeholder="Selecione...">
+                                                                <select class="form-control js-basic-single" id="estado" name="state" data-placeholder="Selecione..." {% if has_rounds %}disabled{% endif %} data-selected-state="{{ championship.state_id }}">
                                                                     <option value="">Selecione...</option>
                                                                     {% for state in states %}
-                                                                    <option value="{{ state.id }}" data-country="{{ state.country_id }}">{{ state.name }}</option>
+                                                                    <option value="{{ state.id }}" data-country="{{ state.country_id }}" {% if championship.state_id == state.id %}selected{% endif %}>{{ state.name }}</option>
                                                                     {% endfor %}
-                                                                </select>  
+                                                                </select>
                                                             </div>                                            
                                                         </div>
                                                     </div>
@@ -861,82 +861,321 @@
                 
                 // Preencher os campos com os dados existentes do campeonato
                 {% if championship %}
+                console.log("=== NOVA ABORDAGEM RADICAL ===");
+                console.log("ID Campeonato: {{ championship.id }}");
+                console.log("ID Estado: {{ championship.state_id }}");
+
+                // PASSO 1: Inicialização básica
                 $('#nome').val("{{ championship.name }}");
                 $('#temporada').val("{{ championship.season }}");
                 $('#pontuacao').val("{{ championship.points }}");
-                
-                // Selecionar template, âmbito e locais
-                $('#template').val("{{ championship.template_id }}").trigger('change.select2');
-                $('#ambito').val("{{ championship.scope_id }}").trigger('change.select2');
-                
-                {% if championship.continent %}
+                $('#template').val("{{ championship.template_id }}");
+
+                // PASSO 2: Primeiro inicializar select2 básicos (exceto estado)
+                $('#template, #ambito, #continente, #pais').select2({
+                    width: '100%',
+                    placeholder: 'Selecione...',
+                    allowClear: true
+                });
+
+                // Configuração especial para âmbito
+                $('#ambito').select2({
+                    width: '100%',
+                    minimumResultsForSearch: Infinity
+                }).val("{{ championship.scope_id }}").trigger('change.select2');
+
+                // PASSO 3: Definir valores do continente e país sem estado
                 $('#continente').val("{{ championship.continent_id }}").trigger('change.select2');
-                {% endif %}
-                
-                {% if championship.country %}
                 $('#pais').val("{{ championship.country_id }}").trigger('change.select2');
-                {% endif %}
-                
-                {% if championship.state %}
-                $('#estado').val("{{ championship.state_id }}").trigger('change.select2');
-                {% endif %}
-                
-                // Marcar checkbox de ativo conforme o estado atual
+
+                // PASSO 4: Mostrar todas as opções de estado antes de manipular
+                $('#estado option').show();
+
+                // PASSO 5: Verificar opções de estado disponíveis (DEBUG)
+                console.log("=== OPÇÕES DE ESTADO DISPONÍVEIS ===");
+                var estadoSelecionado = "{{ championship.state_id }}";
+                var paisSelecionado = "{{ championship.country_id }}";
+                $('#estado option').each(function() {
+                    var $option = $(this);
+                    var value = $option.val();
+                    var text = $option.text();
+                    var dataCountry = $option.data('country');
+                    console.log(`Estado: ${text}, ID: ${value}, Data-Country: ${dataCountry}, Selected: ${value == estadoSelecionado}`);
+                });
+
+                // PASSO 6: Manipulação DOM direta para garantir seleção correta
+                setTimeout(function() {
+                    try {
+                        // Filtrar estados pelo país (necessário para o Select2 funcionar corretamente)
+                        console.log("Filtrando estados para o país ID:", paisSelecionado);
+                        $('#estado option').each(function() {
+                            var $option = $(this);
+                            if ($option.val() === '') return;
+                            
+                            if ($option.data('country') == paisSelecionado) {
+                                $option.show();
+                            } else {
+                                $option.hide();
+                            }
+                        });
+
+                        // DESTRUIR Select2 existente para o estado (importante!)
+                        if ($('#estado').hasClass('select2-hidden-accessible')) {
+                            $('#estado').select2('destroy');
+                        }
+                        
+                        // Definir valor do estado via DOM antes de reinicializar o Select2
+                        console.log("Tentando definir estado ID:", estadoSelecionado);
+                        document.getElementById('estado').value = estadoSelecionado;
+                        
+                        // Verificar se o DOM foi alterado
+                        console.log("Valor atual do elemento DOM:", document.getElementById('estado').value);
+                        
+                        // Agora inicializar o Select2 para o estado
+                        $('#estado').select2({
+                            width: '100%',
+                            placeholder: 'Selecione...',
+                            allowClear: true
+                        });
+                        
+                        // FORÇA BRUTA: Cria o HTML correto diretamente
+                        if (estadoSelecionado) {
+                            var estadoTexto = $('#estado option[value="' + estadoSelecionado + '"]').text();
+                            console.log("Texto do estado selecionado:", estadoTexto);
+                            
+                            // Força bruta: modificar o HTML gerado pelo Select2
+                            var htmlSelect2 = '<span class="select2-selection__rendered" title="' + estadoTexto + '" id="select2-estado-container">' + estadoTexto + '</span>';
+                            $('#estado').next('.select2-container').find('.select2-selection__rendered').replaceWith(htmlSelect2);
+                        }
+                    } catch (e) {
+                        console.error("Erro ao manipular estado:", e);
+                    }
+                }, 1000);
+
+                // Configurar habilitação baseada no âmbito
+                var ambitoText = $('#ambito option:selected').text().trim();
+                if (ambitoText === 'Mundial') {
+                    $('#continente, #pais, #estado').prop('disabled', true);
+                } else if (ambitoText === 'Continental') {
+                    $('#continente').prop('disabled', false);
+                    $('#pais, #estado').prop('disabled', true);
+                } else if (ambitoText === 'Nacional') {
+                    $('#continente, #pais').prop('disabled', false);
+                    $('#estado').prop('disabled', true);
+                } else if (ambitoText === 'Estadual') {
+                    $('#continente, #pais, #estado').prop('disabled', false);
+                }
+
+                // Configurar eventos de mudança (simplificado)
+                setTimeout(function() {
+                    // Eventos básicos de mudança
+                    $('#ambito').on('change', function() {
+                        var ambitoText = $(this).find('option:selected').text().trim();
+                        if (ambitoText === 'Mundial') {
+                            $('#continente, #pais, #estado').val('').prop('disabled', true).trigger('change.select2');
+                        } else if (ambitoText === 'Continental') {
+                            $('#continente').prop('disabled', false);
+                            $('#pais, #estado').val('').prop('disabled', true).trigger('change.select2');
+                        } else if (ambitoText === 'Nacional') {
+                            $('#continente, #pais').prop('disabled', false);
+                            $('#estado').val('').prop('disabled', true).trigger('change.select2');
+                        } else if (ambitoText === 'Estadual') {
+                            $('#continente, #pais, #estado').prop('disabled', false);
+                        }
+                        filterTeams(true);
+                    });
+                    
+                    $('#continente').on('change', function() {
+                        var continentId = $(this).val();
+                        $('#pais, #estado').val('').trigger('change.select2');
+                        
+                        if (continentId) {
+                            $('#pais option').each(function() {
+                                var $option = $(this);
+                                if ($option.val() === '') return;
+                                
+                                if ($option.data('continent') == continentId) {
+                                    $option.show();
+                                } else {
+                                    $option.hide();
+                                }
+                            });
+                        } else {
+                            $('#pais option').show();
+                        }
+                        filterTeams(true);
+                    });
+                    
+                    $('#pais').on('change', function() {
+                        var countryId = $(this).val();
+                        $('#estado').val('').trigger('change.select2');
+                        
+                        if (countryId) {
+                            $('#estado option').each(function() {
+                                var $option = $(this);
+                                if ($option.val() === '') return;
+                                
+                                if ($option.data('country') == countryId) {
+                                    $option.show();
+                                } else {
+                                    $option.hide();
+                                }
+                            });
+                        } else {
+                            $('#estado option').show();
+                        }
+                        filterTeams(true);
+                    });
+                    
+                    $('#estado').on('change', function() {
+                        filterTeams(true);
+                    });
+                }, 1500);
+
+                // Outras inicializações
                 {% if championship.is_active %}
                 $('input[name="is_active"]').prop('checked', true).iCheck('update');
                 {% else %}
                 $('input[name="is_active"]').prop('checked', false).iCheck('update');
                 {% endif %}
-                
+
                 // Selecionar times já associados ao campeonato
                 {% for team in selected_teams %}
                 $('select[name="teams[]"] option[value="{{ team.id }}"]').prop('selected', true);
                 {% endfor %}
                 $('.duallistbox').bootstrapDualListbox('refresh');
+                {% endif %}
 
-                // Carregar fases do template selecionado
-                var templateId = "{{ championship.template_id }}";
-                if (templateId) {
-                    console.log("Carregando fases para o template inicial:", templateId);
+                // Eventos de mudança
+                $('#ambito').on('change', function() {
+                    var scopeName = $(this).find('option:selected').text().trim();
+                    var $continente = $('#continente');
+                    var $pais = $('#pais');
+                    var $estado = $('#estado');
                     
-                    // Buscar as fases deste template
-                    $.ajax({
-                        url: "{% url 'administrativo:get_stages_by_template' %}",
-                        type: 'POST',
-                        data: {
-                            template_id: templateId,
-                            csrfmiddlewaretoken: $('[name=csrfmiddlewaretoken]').val()
-                        },
-                        success: function(data) {
-                            var $faseSelect = $('#fase');
-                            $faseSelect.empty();
-                            $faseSelect.append('<option value="">Selecione uma fase...</option>');
-                            
-                            if (data.success && data.stages && data.stages.length > 0) {
-                                // Adicionar as fases ao select
-                                $.each(data.stages, function(i, stage) {
-                                    $faseSelect.append($('<option>', {
-                                        value: stage.id,
-                                        text: stage.name,
-                                        'data-rounds': stage.rounds
-                                    }));
-                                });
-                                
-                                // Se temos uma fase atual, selecioná-la
-                                {% if current_stage %}
-                                $faseSelect.val("{{ current_stage.id }}").trigger('change');
-                                {% else %}
-                                // Caso contrário, selecionar a primeira fase
-                                var firstStage = $faseSelect.find('option').eq(1).val();
-                                if (firstStage) {
-                                    $faseSelect.val(firstStage).trigger('change');
-                                }
-                                {% endif %}
-                            }
+                    // Configurar habilitação dos campos
+                    switch(scopeName) {
+                        case 'Mundial':
+                            $continente.prop('disabled', true);
+                            $pais.prop('disabled', true);
+                            $estado.prop('disabled', true);
+                            break;
+                        case 'Continental':
+                            $continente.prop('disabled', false);
+                            $pais.prop('disabled', true);
+                            $estado.prop('disabled', true);
+                            break;
+                        case 'Nacional':
+                            $continente.prop('disabled', false);
+                            $pais.prop('disabled', false);
+                            $estado.prop('disabled', true);
+                            break;
+                        case 'Estadual':
+                            $continente.prop('disabled', false);
+                            $pais.prop('disabled', false);
+                            $estado.prop('disabled', false);
+                            break;
+                    }
+                    
+                    // Atualizar Select2 para refletir as mudanças
+                    $continente.select2('destroy').select2({
+                        width: '100%',
+                        placeholder: 'Selecione...',
+                        allowClear: true
+                    });
+                    
+                    $pais.select2('destroy').select2({
+                        width: '100%',
+                        placeholder: 'Selecione...',
+                        allowClear: true
+                    });
+                    
+                    $estado.select2('destroy').select2({
+                        width: '100%',
+                        placeholder: 'Selecione...',
+                        allowClear: true
+                    });
+                    
+                    // Limpar campos apenas se não estiver inicializando
+                    if (!isInitializing) {
+                        $continente.val('').trigger('change');
+                        $pais.val('').trigger('change');
+                        $estado.val('').trigger('change');
+                    }
+                    
+                    // Atualizar times
+                    filterTeams(true);
+                });
+
+                // Evento de mudança do continente
+                $('#continente').on('change', function() {
+                    var continentId = $(this).val();
+                    if (!continentId) return;
+                    
+                    // Manter valores existentes se estiver inicializando
+                    var currentCountry = isInitializing ? $('#pais').val() : null;
+                    var currentState = isInitializing ? $('#estado').val() : null;
+                    
+                    // Filtrar países do continente
+                    $('#pais option').each(function() {
+                        var $option = $(this);
+                        if ($option.val() === '') return;
+                        
+                        if ($option.data('continent') == continentId) {
+                            $option.show();
+                        } else {
+                            $option.hide();
                         }
                     });
-                }
-                {% endif %}
+                    
+                    // Restaurar valores se estiver inicializando
+                    if (isInitializing) {
+                        if (currentCountry) {
+                            $('#pais').val(currentCountry).trigger('change');
+                        }
+                        if (currentState) {
+                            $('#estado').val(currentState).trigger('change');
+                        }
+                    } else {
+                        $('#pais').val('').trigger('change');
+                        $('#estado').val('').trigger('change');
+                    }
+                });
+
+                // Evento de mudança do país
+                $('#pais').on('change', function() {
+                    var countryId = $(this).val();
+                    if (!countryId) return;
+                    
+                    // Manter valor existente do estado se estiver inicializando
+                    var currentState = isInitializing ? $('#estado').val() : null;
+                    
+                    // Filtrar estados do país
+                    $('#estado option').each(function() {
+                        var $option = $(this);
+                        if ($option.val() === '') return;
+                        
+                        if ($option.data('country') == countryId) {
+                            $option.show();
+                        } else {
+                            $option.hide();
+                        }
+                    });
+                    
+                    // Restaurar valor do estado se estiver inicializando
+                    if (isInitializing) {
+                        if (currentState) {
+                            $('#estado').val(currentState).trigger('change');
+                        }
+                    } else {
+                        $('#estado').val('').trigger('change');
+                    }
+                });
+
+                // Evento de mudança do estado
+                $('#estado').on('change', function() {
+                    filterTeams(true);
+                });
                 
                 // Preenche o campo temporada com o ano atual se não estiver preenchido
                 if (!$('#temporada').val()) {
@@ -1008,23 +1247,18 @@
                 
                 console.log("Valores iniciais:", initialValues);
                 
-                // Desativar temporariamente o evento de change do âmbito para evitar limpeza de campos durante o carregamento
-                // Esta é uma etapa crucial para evitar que os valores dos campos sejam perdidos
-                $('#ambito').off('change');
+                // Desativar temporariamente eventos de change para evitar limpeza durante o carregamento
+                $('#ambito, #continente, #pais, #estado').off('change');
                 
                 // Aplicar os valores aos campos na ordem correta
                 setTimeout(function() {
-                    // Debug para acompanhar o processo
                     console.log("INÍCIO DO PROCESSO DE RESTAURAÇÃO DE VALORES");
-                    console.log("Estado do âmbito antes da restauração:", $('#ambito').val());
-                    console.log("Estado do continente antes da restauração:", $('#continente').val());
-                    console.log("Estado do país antes da restauração:", $('#pais').val());
-                    console.log("Estado do estado antes da restauração:", $('#estado').val());
                     
-                    // 1. Primeiro selecionar o âmbito sem disparar change
+                    // 1. Primeiro selecionar o âmbito
                     if (initialValues.ambito) {
                         var ambitoVal = initialValues.ambito;
                         var scopeName = $('#ambito option[value="' + ambitoVal + '"]').text().trim();
+                        $('#ambito').val(ambitoVal).trigger('change.select2');
                         console.log("Restaurando âmbito:", scopeName);
                         
                         // Configurar habilitação de campos conforme o âmbito
@@ -1046,146 +1280,195 @@
                         }
                     }
                     
-                    // 2. Agora restaurar demais campos geográficos se não estiverem desabilitados
+                    // 2. Restaurar valores em sequência com delays para garantir carregamento
                     if (initialValues.continente && !$('#continente').prop('disabled')) {
-                        $('#continente').val(initialValues.continente).trigger('change.select2');
-                        console.log("Restaurando continente:", initialValues.continente);
+                        setTimeout(function() {
+                            $('#continente').val(initialValues.continente).trigger('change.select2');
+                            console.log("Restaurando continente:", initialValues.continente);
+                            
+                            if (initialValues.pais && !$('#pais').prop('disabled')) {
+                                setTimeout(function() {
+                                    $('#pais').val(initialValues.pais).trigger('change.select2');
+                                    console.log("Restaurando país:", initialValues.pais);
+                                    
+                                    if (initialValues.estado && !$('#estado').prop('disabled')) {
+                                        setTimeout(function() {
+                                            $('#estado').val(initialValues.estado).trigger('change.select2');
+                                            console.log("Restaurando estado:", initialValues.estado);
+                                        }, 100);
+                                    }
+                                }, 100);
+                            }
+                        }, 100);
                     }
                     
-                    if (initialValues.pais && !$('#pais').prop('disabled')) {
-                        $('#pais').val(initialValues.pais).trigger('change.select2');
-                        console.log("Restaurando país:", initialValues.pais);
-                    }
-                    
-                    if (initialValues.estado && !$('#estado').prop('disabled')) {
-                        $('#estado').val(initialValues.estado).trigger('change.select2');
-                        console.log("Restaurando estado:", initialValues.estado);
-                    }
-                    
-                    // Após configurar tudo, verificar novamente se os valores estão corretos
-                    console.log("VERIFICAÇÃO FINAL DOS VALORES RESTAURADOS:");
-                    console.log("Âmbito:", $('#ambito').val(), $('#ambito option:selected').text());
-                    console.log("Continente:", $('#continente').val(), $('#continente option:selected').text());
-                    console.log("País:", $('#pais').val(), $('#pais option:selected').text());
-                    console.log("Estado:", $('#estado').val(), $('#estado option:selected').text());
-                    
-                    // VERIFICAÇÃO FINAL: Forçar novamente os valores se necessário
-                    if (initialValues.continente && !$('#continente').val() && !$('#continente').prop('disabled')) {
-                        console.log("Forçando novamente o valor do continente");
-                        $('#continente').val(initialValues.continente).trigger('change.select2');
-                    }
-                    
-                    if (initialValues.pais && !$('#pais').val() && !$('#pais').prop('disabled')) {
-                        console.log("Forçando novamente o valor do país");
-                        $('#pais').val(initialValues.pais).trigger('change.select2');
-                    }
-                    
-                    if (initialValues.estado && !$('#estado').val() && !$('#estado').prop('disabled')) {
-                        console.log("Forçando novamente o valor do estado");
-                        $('#estado').val(initialValues.estado).trigger('change.select2');
-                    }
-                    
-                    // 3. Reativar o evento change do âmbito para mudanças subsequentes
-                    $('#ambito').on('change', function() {
-                        var scopeName = $(this).find('option:selected').text().trim();
-                        var $continente = $('#continente');
-                        var $pais = $('#pais');
-                        var $estado = $('#estado');
-                        
-                        // CORREÇÃO CRÍTICA: Forçar o texto visível no Select2
-                        $(this).next('.select2-container').find('.select2-selection__rendered').text(scopeName);
-                        console.log("Texto de exibição atualizado para:", scopeName);
-                        
-                        // Forçar atualização visual do Select2 para o âmbito
-                        $(this).select2('destroy').select2({
-                            width: '100%',
-                            minimumResultsForSearch: Infinity
-                        });
-                        
-                        // CORREÇÃO ADICIONAL: Verificar se o texto foi atualizado corretamente
-                        var textoPosReconstrucao = $(this).next('.select2-container').find('.select2-selection__rendered').text();
-                        if (textoPosReconstrucao !== scopeName) {
-                            console.log("Texto não atualizado corretamente! Forçando novamente...");
+                    // 3. Reativar os eventos de change após um delay final
+                    setTimeout(function() {
+                        // Reativar evento change do âmbito
+                        $('#ambito').on('change', function() {
+                            var scopeName = $(this).find('option:selected').text().trim();
+                            var $continente = $('#continente');
+                            var $pais = $('#pais');
+                            var $estado = $('#estado');
+                            
+                            // Forçar o texto visível no Select2
                             $(this).next('.select2-container').find('.select2-selection__rendered').text(scopeName);
-                        }
-                        
-                        // Verificar se estamos na inicialização ou em uma mudança manual
-                        var isInitializing = !$(this).data('initialized');
-                        
-                        // Marcar o campo como inicializado para mudanças futuras
-                        if (!$(this).data('initialized')) {
-                            $(this).data('initialized', true);
-                            console.log("Âmbito marcado como inicializado - próximas mudanças limparão os campos");
-                        }
-                        
-                        // Só limpar os campos se NÃO estiver na inicialização
-                        if (!isInitializing) {
-                            console.log("LIMPANDO CAMPOS - mudança manual do âmbito detectada");
-                            // Reseta todos os campos de localização
-                            $continente.val(null).trigger('change');
-                            $pais.val(null).trigger('change');
-                            $estado.val(null).trigger('change');
-                        } else {
-                            console.log("PRESERVANDO CAMPOS - inicialização detectada");
-                        }
-                        
-                        // Configura os campos baseado no âmbito
-                        switch(scopeName) {
-                            case 'Mundial':
-                                // Desabilita todos
-                                $continente.prop('disabled', true);
-                                $pais.prop('disabled', true);
-                                $estado.prop('disabled', true);
-                                break;
-                                
-                            case 'Continental':
-                                // Habilita apenas continente
-                                $continente.prop('disabled', false);
-                                $pais.prop('disabled', true);
-                                $estado.prop('disabled', true);
-                                break;
-                                
-                            case 'Nacional':
-                                // Habilita continente e país
-                                $continente.prop('disabled', false);
-                                $pais.prop('disabled', false);
-                                $estado.prop('disabled', true);
-                                break;
-                                
-                            case 'Estadual':
-                                // Habilita todos
-                                $continente.prop('disabled', false);
-                                $pais.prop('disabled', false);
-                                $estado.prop('disabled', false);
-                                break;
-                                
-                            default:
-                                // Caso padrão (nenhum selecionado)
-                                $continente.prop('disabled', true);
-                                $pais.prop('disabled', true);
-                                $estado.prop('disabled', true);
-                        }
-                        
-                        // Atualiza o Select2 para refletir as mudanças
-                        $continente.select2({
-                            width: '100%',
-                            placeholder: 'Selecione...',
-                            allowClear: true
+                            console.log("Texto de exibição atualizado para:", scopeName);
+                            
+                            // Forçar atualização visual do Select2 para o âmbito
+                            $(this).select2('destroy').select2({
+                                width: '100%',
+                                minimumResultsForSearch: Infinity
+                            });
+                            
+                            // CORREÇÃO ADICIONAL: Verificar se o texto foi atualizado corretamente
+                            var textoPosReconstrucao = $(this).next('.select2-container').find('.select2-selection__rendered').text();
+                            if (textoPosReconstrucao !== scopeName) {
+                                console.log("Texto não atualizado corretamente! Forçando novamente...");
+                                $(this).next('.select2-container').find('.select2-selection__rendered').text(scopeName);
+                            }
+                            
+                            // Verificar se estamos na inicialização ou em uma mudança manual
+                            var isInitializing = !$(this).data('initialized');
+                            
+                            // Marcar o campo como inicializado para mudanças futuras
+                            if (!$(this).data('initialized')) {
+                                $(this).data('initialized', true);
+                                console.log("Âmbito marcado como inicializado - próximas mudanças limparão os campos");
+                            }
+                            
+                            // Só limpar os campos se NÃO estiver na inicialização
+                            if (!isInitializing) {
+                                console.log("LIMPANDO CAMPOS - mudança manual do âmbito detectada");
+                                // Reseta todos os campos de localização
+                                $continente.val(null).trigger('change');
+                                $pais.val(null).trigger('change');
+                                $estado.val(null).trigger('change');
+                            } else {
+                                console.log("PRESERVANDO CAMPOS - inicialização detectada");
+                            }
+                            
+                            // Configura os campos baseado no âmbito
+                            switch(scopeName) {
+                                case 'Mundial':
+                                    // Desabilita todos
+                                    $continente.prop('disabled', true);
+                                    $pais.prop('disabled', true);
+                                    $estado.prop('disabled', true);
+                                    break;
+                                    
+                                case 'Continental':
+                                    // Habilita apenas continente
+                                    $continente.prop('disabled', false);
+                                    $pais.prop('disabled', true);
+                                    $estado.prop('disabled', true);
+                                    break;
+                                    
+                                case 'Nacional':
+                                    // Habilita continente e país
+                                    $continente.prop('disabled', false);
+                                    $pais.prop('disabled', false);
+                                    $estado.prop('disabled', true);
+                                    break;
+                                    
+                                case 'Estadual':
+                                    // Habilita todos
+                                    $continente.prop('disabled', false);
+                                    $pais.prop('disabled', false);
+                                    $estado.prop('disabled', false);
+                                    break;
+                                    
+                                default:
+                                    // Caso padrão (nenhum selecionado)
+                                    $continente.prop('disabled', true);
+                                    $pais.prop('disabled', true);
+                                    $estado.prop('disabled', true);
+                            }
+                            
+                            // Atualiza o Select2 para refletir as mudanças
+                            $continente.select2({
+                                width: '100%',
+                                placeholder: 'Selecione...',
+                                allowClear: true
+                            });
+                            $pais.select2({
+                                width: '100%',
+                                placeholder: 'Selecione...',
+                                allowClear: true
+                            });
+                            $estado.select2({
+                                width: '100%',
+                                placeholder: 'Selecione...',
+                                allowClear: true
+                            });
+                            
+                            // Atualiza a lista de times disponíveis
+                            filterTeams(true);
                         });
-                        $pais.select2({
-                            width: '100%',
-                            placeholder: 'Selecione...',
-                            allowClear: true
-                        });
-                        $estado.select2({
-                            width: '100%',
-                            placeholder: 'Selecione...',
-                            allowClear: true
+                        
+                        // Reativar evento change do continente
+                        $('#continente').on('change', function() {
+                            if (isInitializing) return; // Não fazer nada durante a inicialização
+                            
+                            var continentId = $(this).val();
+                            var $countrySelect = $('#pais');
+                            var $stateSelect = $('#estado');
+                            
+                            // Limpar selects dependentes apenas se não estiver inicializando
+                            $countrySelect.val('').trigger('change');
+                            $stateSelect.val('').trigger('change');
+                            
+                            if (continentId) {
+                                // Filtrar países do continente selecionado
+                                $countrySelect.find('option').each(function() {
+                                    var $option = $(this);
+                                    if ($option.val() === '') return;
+                                    
+                                    if ($option.data('continent') == continentId) {
+                                        $option.show();
+                                    } else {
+                                        $option.hide();
+                                    }
+                                });
+                            } else {
+                                $countrySelect.find('option').show();
+                            }
                         });
                         
-                        // Atualiza a lista de times disponíveis
-                        filterTeams(true);
-                    });
+                        // Reativar evento change do país
+                        $('#pais').on('change', function() {
+                            if (isInitializing) return; // Não fazer nada durante a inicialização
+                            
+                            var countryId = $(this).val();
+                            var $stateSelect = $('#estado');
+                            
+                            // Limpar select de estado apenas se não estiver inicializando
+                            $stateSelect.val('').trigger('change');
+                            
+                            if (countryId) {
+                                $stateSelect.find('option').each(function() {
+                                    var $option = $(this);
+                                    if ($option.val() === '') return;
+                                    
+                                    if ($option.data('country') == countryId) {
+                                        $option.show();
+                                    } else {
+                                        $option.hide();
+                                    }
+                                });
+                            } else {
+                                $stateSelect.find('option').show();
+                            }
+                        });
+                        
+                        // Reativar evento change do estado
+                        $('#estado').on('change', function() {
+                            if (isInitializing) return; // Não fazer nada durante a inicialização
+                            
+                            var stateId = $(this).val();
+                            filterTeams(true);
+                        });
+                    }, 100);
                 }, 100);
                 
                 // Inicializa o iCheck para checkboxes
@@ -1271,6 +1554,15 @@
                     var scopeId = $('#ambito').val();
                     var scopeName = $('#ambito').find('option:selected').text().trim();
                     
+                    // Imprimir valores para debug
+                    console.log("=========== FILTRO DE TIMES ===========");
+                    console.log("Âmbito:", scopeName, "(ID:", scopeId + ")");
+                    console.log("Continente:", continentId);
+                    console.log("País:", countryId);
+                    console.log("Estado:", stateId);
+                    console.log("Tipo de filtro:", filterType);
+                    console.log("Refresh forçado:", forceRefresh === true);
+                    
                     // Verificar se houve mudança nos filtros geográficos
                     var geographicChanged = (
                         scopeId !== lastScopeId || 
@@ -1288,6 +1580,7 @@
                     
                     // Se não houve mudança geográfica e não é um refresh forçado, não precisa atualizar
                     if (!geographicChanged && !needsRefreshTeams && forceRefresh !== true) {
+                        console.log("Filtro ignorado - sem mudanças detectadas");
                         return;
                     }
                     
@@ -1300,7 +1593,7 @@
                     // Guardar os times já selecionados para preservá-los
                     var selectedTeams = [];
                     $select.find('option:selected').each(function() {
-                        selectedTeams.push($(this).val());
+                        selectedTeams.push(String($(this).val()));
                     });
                     
                     console.log("Times selecionados antes do filtro:", selectedTeams);
@@ -1317,11 +1610,17 @@
                     {% endfor %}
                     
                     // SEGUNDO: Filtrar e adicionar os demais times com base nos critérios
+                    var totalTimesAdicionados = 0;
+                    var totalTimesDisponiveis = 0;
+                    var totalTimesFiltradosPorAmbito = 0;
+                    
                     {% for team in teams %}
-                    // Não adicionar novamente os times que já foram adicionados como selecionados
-                    if (!selectedTeams.includes("{{ team.id }}")) {
+                    // Verificar se este time já foi adicionado como time selecionado
+                    var team_id = "{{ team.id }}";
+                    if (!selectedTeams.includes(team_id)) {
+                        totalTimesDisponiveis++;
                         var team = {
-                            id: {{ team.id }},
+                            id: "{{ team.id }}",
                             name: "{{ team.name }}",
                             state_id: {% if team.state_id %}"{{ team.state_id }}"{% else %}null{% endif %},
                             country_id: {% if team.country_id %}"{{ team.country_id }}"{% else %}null{% endif %},
@@ -1353,6 +1652,10 @@
                             }
                         }
                         
+                        if (passouFiltroGeografico) {
+                            totalTimesFiltradosPorAmbito++;
+                        }
+                        
                         // 2. FILTRO DE TIPO: Verificar se corresponde ao tipo selecionado (times/seleções)
                         var isSelection = team.is_national_team;
                         if (filterType === 'teams' && isSelection) {
@@ -1369,6 +1672,7 @@
                         // Adicionar o time se passou em todos os filtros
                         if (passouFiltroGeografico && passouFiltroTipo) {
                             $select.append('<option value="{{ team.id }}" data-type="{{ team.is_national_team|yesno:"selection,team" }}">{{ team.name }}</option>');
+                            totalTimesAdicionados++;
                         }
                     }
                     {% endfor %}
@@ -1379,7 +1683,11 @@
                     // Resetar flag após aplicar os filtros
                     needsRefreshTeams = false;
                     
+                    console.log("Total de times disponíveis:", totalTimesDisponiveis);
+                    console.log("Total de times que passaram no filtro de âmbito:", totalTimesFiltradosPorAmbito);
+                    console.log("Total de times adicionados após todos os filtros:", totalTimesAdicionados);
                     console.log("Times selecionados após filtro:", $select.val());
+                    console.log("=========== FIM DO FILTRO ===========");
                 }
                 
                 // Associar eventos de mudança aos selects da aba Geral
@@ -1396,15 +1704,55 @@
                 
                 // Associar evento à mudança de abas
                 $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
-                    // Se estamos entrando na aba Times, forçar atualização dos filtros
-                    if ($(e.target).attr('href') === '#times') {
-                        filterTeams(true); // Forçar atualização ao entrar na aba Times
+                    // Se estamos entrando na aba Rodadas e não há jogos configurados
+                    if ($(e.target).attr('href') === '#rodadas') {
+                        var $matches = $('#matches-container').find('.row.col-lg-12.mt10');
+                        if ($matches.length <= 1) { // Apenas a linha de cabeçalho ou nenhuma
+                            // Verificar se já temos times selecionados e se há fase e rodada
+                            var stageId = $('#fase').val();
+                            var roundId = $('#rodada').val();
+                            
+                            if (stageId && roundId) {
+                                setTimeout(function() {
+                                    // Adicionar pelo menos um jogo vazio se não houver
+                                    if ($('#matches-container').find('.row.col-lg-12.mt10').length <= 1) {
+                                        $('#matches-container').append(criarLinhaRodada());
+                                    }
+                                    
+                                    // Preencher com times da DualListbox
+                                    preencherComTimesSelecionados();
+                                }, 300);
+                            }
+                        }
                     }
                 });
-                
+
                 // NÃO aplicar o filtro inicial automaticamente, apenas preparar a interface
                 // filterTeams(true);  // <-- Esta linha está comentada para evitar problemas com times já selecionados
                 console.log("Configuração de times concluída, filtros serão aplicados apenas em mudanças subsequentes");
+
+                // ADICIONAR CHAMADA APÓS TODOS OS CAMPOS ESTAREM INICIALIZADOS
+                setTimeout(function() {
+                    console.log("Aplicando filtros de times após inicialização completa...");
+                    var ambitoText = $('#ambito').find('option:selected').text().trim();
+                    console.log("Âmbito selecionado:", ambitoText);
+                    
+                    // Garantir que o âmbito esteja refletido nos campos de localização
+                    if (ambitoText === 'Mundial') {
+                        $('#continente, #pais, #estado').val('').prop('disabled', true).trigger('change.select2');
+                    } else if (ambitoText === 'Continental') {
+                        $('#continente').prop('disabled', false);
+                        $('#pais, #estado').val('').prop('disabled', true).trigger('change.select2');
+                    } else if (ambitoText === 'Nacional') {
+                        $('#continente, #pais').prop('disabled', false);
+                        $('#estado').val('').prop('disabled', true).trigger('change.select2');
+                    } else if (ambitoText === 'Estadual') {
+                        $('#continente, #pais, #estado').prop('disabled', false);
+                    }
+                    
+                    // Aplicar filtro de times conforme âmbito selecionado
+                    filterTeams(true);
+                }, 2000); // Aguardar 2 segundos para garantir que todos os controles estejam inicializados
 
                 // Função para processar o arquivo Excel
                 function processExcelFile(file) {
@@ -1610,6 +1958,8 @@
                 // Função para coletar dados das partidas
                 function coletarDadosPartidas() {
                     var partidas = [];
+                    var stageId = $('#fase').val();
+                    var roundId = $('#rodada').val();
                     
                     // Para cada linha de partida no container
                     $('#matches-container').find('.row').each(function() {
@@ -1627,7 +1977,9 @@
                             visitante: visitanteId,
                             placar_mandante: placarMandante,
                             placar_visitante: placarVisitante,
-                            data: dataPartida
+                            data: dataPartida,
+                            stage_id: stageId,
+                            round_id: roundId
                         });
                         
                         // Adicionar a partida apenas se os times estiverem selecionados
@@ -1638,7 +1990,9 @@
                                 away_team_id: visitanteId,
                                 home_score: placarMandante !== "" ? parseInt(placarMandante) : null,
                                 away_score: placarVisitante !== "" ? parseInt(placarVisitante) : null,
-                                match_date: dataPartida || null
+                                match_date: dataPartida || null,
+                                stage_id: stageId,
+                                round_id: roundId
                             };
                             
                             partidas.push(partida);
@@ -1719,8 +2073,8 @@
                                     // Exibir mensagem de sucesso
                                     toastr.success(response.message || "Campeonato salvo com sucesso!");
                                     
-                                    // Redirecionar se uma URL foi fornecida
-                                    if (response.redirect_url) {
+                                    // Redirecionar se uma URL foi fornecida e não for uma requisição de aplicar
+                                    if (response.redirect_url && !formData.get('apply_only')) {
                                         console.log("Redirecionando para:", response.redirect_url);
                                         setTimeout(function() {
                                             window.location.href = response.redirect_url;
@@ -1755,117 +2109,49 @@
                 });
 
                 // Handler para o botão "Aplicar"
-                $('#btn-aplicar').on('click', function() {
-                    console.log("===================== APLICAR ALTERAÇÕES =====================");
+                $('#btn-aplicar').on('click', function(e) {
+                    e.preventDefault();
                     
                     // Forçar uma atualização final dos selects
-                    atualizarTodosSelects();
+                    if (typeof atualizarTodosSelects === 'function') {
+                        atualizarTodosSelects();
+                    }
                     
-                    // Aguardar um momento para garantir que os selects estejam atualizados
-                    setTimeout(function() {
-                        // Coletar dados das partidas
+                    // Coletar todos os dados do formulário
+                    var formData = new FormData($('#form-campeonato')[0]);
+                    
+                    // Adicionar o parâmetro apply_only
+                    formData.append('apply_only', 'true');
+                    
+                    // Coletar dados das partidas se a função existir
+                    if (typeof coletarDadosPartidas === 'function') {
                         var matches = coletarDadosPartidas();
-                        console.log("Partidas coletadas para aplicar:", matches.length);
-                        
-                        // Se não houver partidas e estivermos na aba de partidas, avisar
-                        if (matches.length === 0 && $('.nav-tabs .active').attr('href') === '#rodadas') {
-                            // Verificar se temos fase e rodada selecionadas
-                            var faseId = $('#fase').val();
-                            var rodadaId = $('#rodada').val();
-                            
-                            if (!faseId || !rodadaId) {
-                                toastr.warning("Selecione uma fase e rodada para adicionar jogos");
-                            } else {
-                                // Verificar se temos times selecionados corretamente
-                                var todosTimesVazios = true;
-                                $('.time-mandante, .time-visitante').each(function() {
-                                    if ($(this).val()) {
-                                        todosTimesVazios = false;
-                                        return false; // Sair do loop
-                                    }
-                                });
-                                
-                                if (todosTimesVazios) {
-                                    toastr.warning("Nenhum jogo adicionado. Adicione jogos usando o botão 'Adicionar Partida' e selecione os times.");
-                                } else {
-                                    toastr.warning("Não há jogos para salvar. Verifique se você selecionou os times corretamente.");
-                                }
-                            }
-                            return;
+                        if (matches && matches.length > 0) {
+                            // Adicionar partidas como JSON
+                            var matchesJson = JSON.stringify(matches);
+                            formData.append('matches', matchesJson);
                         }
-                        
-                        // Criar FormData a partir do formulário
-                        var formData = new FormData($('#form-campeonato')[0]);
-                        
-                        // MODIFICAÇÃO: Adicionar partidas de várias formas para garantir compatibilidade
-                        // 1. JSON completo
-                        var matchesJson = JSON.stringify(matches);
-                        formData.append('matches', matchesJson);
-                        
-                        // 2. Formato de campo individual para cada partida (para compatibilidade)
-                        matches.forEach(function(match, index) {
-                            for (var key in match) {
-                                formData.append(`matches[${index}][${key}]`, match[key]);
-                            }
-                        });
-                        
-                        // 3. Campo adicional para número de partidas 
-                        formData.append('match_count', matches.length);
-                        
-                        console.log("JSON das partidas para aplicar:", matchesJson);
-                        console.log("Número de partidas enviadas:", matches.length);
-                        
-                        // Verificar todos os campos do FormData
-                        console.log("Campos do FormData (Aplicar):");
-                        for (var pair of formData.entries()) {
-                            if (pair[0] === 'matches') {
-                                console.log(pair[0] + ': [JSON com ' + matches.length + ' partidas]');
+                    }
+                    
+                    // Enviar via Ajax
+                    $.ajax({
+                        url: $('#form-campeonato').attr('action'),
+                        type: 'POST',
+                        data: formData,
+                        processData: false,
+                        contentType: false,
+                        success: function(response) {
+                            if (response.success) {
+                                toastr.success(response.message || 'Alterações aplicadas com sucesso');
                             } else {
-                                console.log(pair[0] + ': ' + pair[1]);
+                                toastr.error(response.message || 'Erro ao aplicar alterações');
                             }
+                        },
+                        error: function(xhr, status, error) {
+                            console.error('Erro ao aplicar alterações:', error);
+                            toastr.error('Erro ao aplicar alterações. Por favor, tente novamente.');
                         }
-                        
-                        // Adicionar parâmetro para indicar que é uma requisição "Aplicar"
-                        formData.append('apply_only', 'true');
-                        
-                        $.ajax({
-                            url: $('#form-campeonato').attr('action'),
-                            type: 'POST',
-                            data: formData,
-                            processData: false,
-                            contentType: false,
-                            success: function(response) {
-                                console.log("===================== RESPOSTA DO SERVIDOR (APLICAR) =====================");
-                                console.log("Status:", response.success ? "SUCESSO" : "ERRO");
-                                console.log("Mensagem:", response.message);
-                                console.log("Resposta completa:", response);
-                                
-                                // Sempre mostra mensagem de sucesso
-                                toastr.success("Campeonato atualizado com sucesso!");
-                                
-                                // Recarregar a página após um breve delay para mostrar as alterações
-                                setTimeout(function() {
-                                    window.location.reload();
-                                }, 1500);
-                            },
-                            error: function(xhr, status, error) {
-                                console.error("===================== ERRO DO SERVIDOR (APLICAR) =====================");
-                                console.error("Status HTTP:", xhr.status);
-                                console.error("Texto do erro:", error);
-                                console.error("Resposta do servidor:", xhr.responseText);
-                                
-                                try {
-                                    var jsonResponse = JSON.parse(xhr.responseText);
-                                    console.error("Erro decodificado:", jsonResponse);
-                                    toastr.error(jsonResponse.message || "Erro ao atualizar campeonato!");
-                                } catch (e) {
-                                    console.error("Não foi possível decodificar a resposta como JSON:", e);
-                                    toastr.error("Erro ao atualizar campeonato!");
-                                }
-                                console.error("===================================================================");
-                            }
-                        });
-                    }, 300);
+                    });
                 });
 
                 // Handler para remover partidas existentes
@@ -1935,6 +2221,10 @@
                     
                     console.log("Times já selecionados:", timesSelecionados);
                     
+                    // Obter os times selecionados na DualListbox
+                    var timesSelecionadosNaDual = $('.duallistbox').val() || [];
+                    console.log("Times selecionados na DualListbox:", timesSelecionadosNaDual);
+                    
                     // Criar uma cópia de todas as opções de times originais se ainda não tivermos
                     if (!window.allTeamOptions) {
                         window.allTeamOptions = [];
@@ -1974,8 +2264,11 @@
                         
                         // Adicionar apenas as opções de times disponíveis
                         window.allTeamOptions.forEach(function(team) {
-                            // Só adiciona se o time não estiver selecionado em outro select ou se for o atual deste select
-                            if (!timesSelecionados.includes(team.id) || team.id === timeAtual) {
+                            // Só adiciona se:
+                            // 1. O time estiver na lista de selecionados na DualListbox
+                            // 2. O time não estiver selecionado em outro select ou for o atual deste select
+                            if (timesSelecionadosNaDual.includes(team.id) && 
+                                (!timesSelecionados.includes(team.id) || team.id === timeAtual)) {
                                 var $option = $('<option>', {
                                     value: team.id,
                                     text: team.text
@@ -2044,6 +2337,10 @@
                     var awayName = match && match.away_team_name ? match.away_team_name : "(Sem nome)";
                     console.log(`Nomes dos times: Mandante=${homeName}, Visitante=${awayName}`);
                     
+                    // Obter os times selecionados na DualListbox
+                    var timesSelecionadosNaDual = $('.duallistbox').val() || [];
+                    console.log("Times selecionados na DualListbox:", timesSelecionadosNaDual);
+                    
                     // Criar HTML dos times com os valores já pré-selecionados
                     var homeTeamHtml = '<option value="">Selecione o time</option>';
                     var awayTeamHtml = '<option value="">Selecione o time</option>';
@@ -2062,21 +2359,19 @@
                     var isHomeSelected = homeTeamId && homeTeamId === teamId;
                     var isAwaySelected = awayTeamId && awayTeamId === teamId;
                     
-                    if (isHomeSelected || isAwaySelected) {
-                        console.log(`Time: ID=${teamId}, Nome=${teamName}`);
-                        console.log(`Mandante: ${isHomeSelected ? "SELECIONADO" : "não"} (${homeTeamId} === ${teamId})`);
-                        console.log(`Visitante: ${isAwaySelected ? "SELECIONADO" : "não"} (${awayTeamId} === ${teamId})`);
+                    // Só adicionar o time se ele estiver na lista de selecionados na DualListbox
+                    // ou se for o time que já estava selecionado na partida
+                    if (timesSelecionadosNaDual.includes(teamId) || teamId === homeTeamId || teamId === awayTeamId) {
+                        // Time mandante - marcar como selecionado se for o time correto
+                        homeTeamHtml += '<option value="' + teamId + '" ' + 
+                            (isHomeSelected ? 'selected="selected"' : '') + 
+                            ' data-image="{% if team.image and team.image.url %}{{ team.image.url }}{% endif %}">{{ team.name }}</option>';
+                        
+                        // Time visitante - marcar como selecionado se for o time correto
+                        awayTeamHtml += '<option value="' + teamId + '" ' + 
+                            (isAwaySelected ? 'selected="selected"' : '') + 
+                            ' data-image="{% if team.image and team.image.url %}{{ team.image.url }}{% endif %}">{{ team.name }}</option>';
                     }
-                    
-                    // Time mandante - marcar como selecionado se for o time correto
-                    homeTeamHtml += '<option value="' + teamId + '" ' + 
-                        (isHomeSelected ? 'selected="selected"' : '') + 
-                        ' data-image="{% if team.image and team.image.url %}{{ team.image.url }}{% endif %}">{{ team.name }}</option>';
-                    
-                    // Time visitante - marcar como selecionado se for o time correto
-                    awayTeamHtml += '<option value="' + teamId + '" ' + 
-                        (isAwaySelected ? 'selected="selected"' : '') + 
-                        ' data-image="{% if team.image and team.image.url %}{{ team.image.url }}{% endif %}">{{ team.name }}</option>';
                     {% endfor %}
                     
                     console.log("Times disponíveis:", timesDisponiveis.length);
@@ -2521,14 +2816,9 @@
                                     console.log("Fases encontradas para o campeonato:", data.stages);
                                     
                                     // Adicionar as fases ao select
-                                    $.each(data.stages, function(i, stage) {
-                                        $faseSelect.append($('<option>', {
-                                            value: stage.id,  // Usamos o ID da fase do campeonato, não do template
-                                            text: stage.name,
-                                            'data-rounds': stage.rounds,
-                                            'data-template-stage-id': stage.template_stage_id
-                                        }));
-                                    });
+                                    for (var i = 0; i < data.stages.length; i++) {
+                                        $faseSelect.append('<option value="' + data.stages[i].id + '" data-template-stage-id="' + data.stages[i].template_stage_id + '">' + data.stages[i].name + '</option>');
+                                    }
                                     
                                     // Atualizar o select2
                                     $faseSelect.trigger('change');
@@ -2743,7 +3033,11 @@
 
                 // Carregar jogos automaticamente ao abrir a aba de rodadas
                 $('.nav-tabs a[href="#rodadas"]').on('shown.bs.tab', function (e) {
-                    console.log("Aba rodadas selecionada - Carregando via API");
+                    console.log("=====================================================");
+                    console.log("Aba rodadas selecionada - Iniciando carregamento de fases e rodadas");
+                    console.log("ID do campeonato:", "{{ championship.id }}");
+                    console.log("Template selecionado:", $('#template').val());
+                    console.log("Dados do campeonato:", "{{ championship|safe }}");
                     
                     // Carregar fases do campeonato
                     $.ajax({
@@ -2754,6 +3048,7 @@
                             csrfmiddlewaretoken: $('[name=csrfmiddlewaretoken]').val()
                         },
                         success: function(data) {
+                            console.log("Resposta da API get_stages_by_championship:", data);
                             var $fase = $('#fase');
                             $fase.empty();
                             $fase.append('<option value="">Selecione uma fase...</option>');
@@ -2764,11 +3059,12 @@
                                 // Adicionar cada fase ao select
                                 for (var i = 0; i < data.stages.length; i++) {
                                     var stage = data.stages[i];
-                                    $fase.append(`<option value="${stage.id}">${stage.name}</option>`);
+                                    $fase.append(`<option value="${stage.id}" data-template-stage-id="${stage.template_stage_id}">${stage.name}</option>`);
                                 }
                                 
                                 // Selecionar a primeira fase automaticamente
                                 var primeiraFase = data.stages[0].id;
+                                console.log("Selecionando primeira fase automaticamente:", primeiraFase);
                                 $fase.val(primeiraFase).trigger('change');
                             } else {
                                 console.log("Nenhuma fase encontrada para este campeonato");
@@ -2777,6 +3073,8 @@
                         },
                         error: function(xhr, status, error) {
                             console.error("Erro ao carregar fases:", error);
+                            console.error("Status:", status);
+                            console.error("Resposta:", xhr.responseText);
                             $('#matches-container').html('<div class="alert alert-danger">Erro ao carregar fases do campeonato.</div>');
                         }
                     });
@@ -2785,23 +3083,35 @@
                 // Adicionar manipulador de eventos para o select de fase
                 $('#fase').on('change', function() {
                     var faseId = $(this).val();
+                    var templateStageId = $(this).find('option:selected').data('template-stage-id');
                     var $rodada = $('#rodada');
                     
-                    console.log("Fase selecionada ID:", faseId);
+                    console.log("=====================================================");
+                    console.log("Fase selecionada - Iniciando carregamento de rodadas");
+                    console.log("Fase ID:", faseId);
+                    console.log("Template Stage ID:", templateStageId);
+                    console.log("ID do Campeonato:", "{{ championship.id }}");
+                    
                     $rodada.empty().append('<option value="">Carregando...</option>');
                     
                     if (faseId) {
                         // Carregar rodadas para a fase selecionada
+                        console.log("Enviando requisição para get_rounds_by_stage");
+                        console.log("stage_id:", faseId);
+                        console.log("template_stage_id:", templateStageId);
+                        console.log("championship_id:", "{{ championship.id }}");
+                        
                         $.ajax({
                             url: "{% url 'administrativo:get_rounds_by_stage' %}",
                             type: 'POST',
                             data: {
                                 stage_id: faseId,
+                                template_stage_id: templateStageId,
                                 championship_id: "{{ championship.id }}",
                                 csrfmiddlewaretoken: $('[name=csrfmiddlewaretoken]').val()
                             },
                             success: function(data) {
-                                console.log("Resposta completa para rodadas:", data);
+                                console.log("Resposta da API get_rounds_by_stage:", data);
                                 $rodada.empty().append('<option value="">Selecione uma rodada...</option>');
                                 
                                 if (data.success && data.rounds && data.rounds.length > 0) {
@@ -3008,7 +3318,7 @@
                             var valorAmbito = $ambito.val();
                             var textoAmbito = $ambito.find('option:selected').text();
                             
-                            // Forçar sincronização entre valor e texto visual
+                            // Forçar sincronização entre valor e texto
                             $ambito.select2('destroy');
                             
                             // Verificar se o âmbito foi selecionado corretamente
@@ -3121,12 +3431,631 @@
                 // Variáveis para controle de estado do filtro
                 var lastSelectedTimes = [];
                 var lastSelectedTimesIds = [];
+
+                // Inicializar os selects
+                $('.js-basic-single').select2({
+                    width: '100%',
+                    placeholder: 'Selecione...'
+                });
+
+                // Handler para mudança de continente
+                $('#continente').on('change', function() {
+                    var continentId = $(this).val();
+                    var $countrySelect = $('#pais');
+                    var $stateSelect = $('#estado');
+                    
+                    // Limpar selects dependentes
+                    $countrySelect.val('').trigger('change');
+                    $stateSelect.val('').trigger('change');
+                    
+                    if (continentId) {
+                        // Filtrar países do continente selecionado
+                        $countrySelect.find('option').each(function() {
+                            var $option = $(this);
+                            if ($option.val() === '') return; // Pular a opção "Selecione..."
+                            
+                            if ($option.data('continent') === continentId) {
+                                $option.show();
+                            } else {
+                                $option.hide();
+                            }
+                        });
+                    } else {
+                        // Mostrar todos os países se nenhum continente estiver selecionado
+                        $countrySelect.find('option').show();
+                    }
+                });
+
+                // Handler para mudança de país
+                $('#pais').on('change', function() {
+                    var countryId = $(this).val();
+                    var $stateSelect = $('#estado');
+                    
+                    // Limpar select de estado
+                    $stateSelect.val('').trigger('change');
+                    
+                    if (countryId) {
+                        // Filtrar estados do país selecionado
+                        $stateSelect.find('option').each(function() {
+                            var $option = $(this);
+                            if ($option.val() === '') return; // Pular a opção "Selecione..."
+                            
+                            if ($option.data('country') === countryId) {
+                                $option.show();
+                            } else {
+                                $option.hide();
+                            }
+                        });
+                    } else {
+                        // Mostrar todos os estados se nenhum país estiver selecionado
+                        $stateSelect.find('option').show();
+                    }
+                });
+
+                // Disparar eventos de change para inicializar os selects
+                $('#continente').trigger('change');
+                $('#pais').trigger('change');
+
+                // Função para preencher com times selecionados
+                function preencherComTimesSelecionados() {
+                    var timesSelecionados = $('.duallistbox').val() || [];
+                    if (timesSelecionados.length >= 2) {
+                        var $matches = $('#matches-container').find('.row.col-lg-12.mt10');
+                        var $primeiraLinha = $matches.first();
+                        
+                        // Preencher a primeira linha com os dois primeiros times
+                        var $mandante = $primeiraLinha.find('.time-mandante');
+                        var $visitante = $primeiraLinha.find('.time-visitante');
+                        
+                        $mandante.val(timesSelecionados[0]).trigger('change');
+                        $visitante.val(timesSelecionados[1]).trigger('change');
+                        
+                        // Adicionar mais linhas se houver mais times
+                        for (var i = 2; i < timesSelecionados.length; i += 2) {
+                            var $novaLinha = criarLinhaRodada();
+                            $('#matches-container').append($novaLinha);
+                            
+                            var $novoMandante = $novaLinha.find('.time-mandante');
+                            var $novoVisitante = $novaLinha.find('.time-visitante');
+                            
+                            $novoMandante.val(timesSelecionados[i]).trigger('change');
+                            if (timesSelecionados[i + 1]) {
+                                $novoVisitante.val(timesSelecionados[i + 1]).trigger('change');
+                            }
+                        }
+                    }
+                }
+
+                // Função para criar uma nova linha de rodada
+                function criarLinhaRodada() {
+                    console.log("Criando nova linha de rodada vazia");
+                    
+                    var uniqueId = Date.now() + '-' + Math.floor(Math.random() * 1000);
+                    
+                    // Obter os times selecionados na DualListbox
+                    var timesSelecionadosNaDual = $('.duallistbox').val() || [];
+                    console.log("Times selecionados na DualListbox:", timesSelecionadosNaDual);
+                    
+                    // Criar HTML dos times com os valores já pré-selecionados
+                    var homeTeamHtml = '<option value="">Selecione o time</option>';
+                    var awayTeamHtml = '<option value="">Selecione o time</option>';
+                    
+                    {% for team in teams %}
+                    // Só adicionar o time se ele estiver na lista de selecionados na DualListbox
+                    var teamId = "{{ team.id }}";
+                    if (timesSelecionadosNaDual.includes(teamId)) {
+                        // Time mandante
+                        homeTeamHtml += '<option value="{{ team.id }}" data-image="{% if team.image and team.image.url %}{{ team.image.url }}{% endif %}">{{ team.name }}</option>';
+                        
+                        // Time visitante
+                        awayTeamHtml += '<option value="{{ team.id }}" data-image="{% if team.image and team.image.url %}{{ team.image.url }}{% endif %}">{{ team.name }}</option>';
+                    }
+                    {% endfor %}
+                    
+                    // Criar o HTML da linha com as opções de times
+                    var $linha = $(`
+                        <div class="row col-lg-12 mt10">
+                            <div class="col-lg-2">
+                                <select class="form-control js-templating time-select time-mandante" style="width: 100%">
+                                    ${homeTeamHtml}
+                                </select>
+                            </div>
+                            <div class="col-lg-1 ml35 mrm15">
+                                <input type="number" min="0" class="form-control placar">
+                            </div>
+                            <div class="col-lg-1 mlm30 mrm15">
+                                <input type="number" min="0" class="form-control placar">
+                            </div>
+                            <div class="col-lg-2 mlm30 mr25">
+                                <select class="form-control time-select time-visitante" style="width: 100%">
+                                    ${awayTeamHtml}
+                                </select>
+                            </div>
+                            <div class="col-lg-3 ml10">
+                                <div class="input-group date" id="match-datetime-${uniqueId}">
+                                    <input type="text" class="form-control datetimepicker-input" data-target="#match-datetime-${uniqueId}" data-toggle="datetimepicker" style="width: 100%" />
+                                    <div class="input-group-append" data-target="#match-datetime-${uniqueId}" data-toggle="datetimepicker">
+                                        <span class="input-group-text"><i class="fa fa-calendar"></i></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `);
+                    
+                    // Inicializar os selects
+                    $linha.find('.time-select').each(function() {
+                        $(this).select2({
+                            width: '100%',
+                            placeholder: 'Selecione o time',
+                            allowClear: true,
+                            templateResult: formatTeamOption,
+                            templateSelection: formatTeamOption,
+                            escapeMarkup: function(m) { return m; }
+                        });
+                    });
+
+                    // Inicializar o datepicker
+                    var dateId = $linha.find('.date').attr('id');
+                    $('#' + dateId).datetimepicker({
+                        format: 'DD/MM/YYYY HH:mm',
+                        locale: 'pt-br',
+                        icons: {
+                            time: 'fa fa-clock-o',
+                            date: 'fa fa-calendar',
+                            up: 'fa fa-chevron-up',
+                            down: 'fa fa-chevron-down',
+                            previous: 'fa fa-chevron-left',
+                            next: 'fa fa-chevron-right',
+                            today: 'fa fa-check',
+                            clear: 'fa fa-trash',
+                            close: 'fa fa-times'
+                        }
+                    });
+                    
+                    // Eventos para atualizar a lista de times selecionados
+                    $linha.find('.time-select').on('change', function() {
+                        atualizarTodosSelects();
+                    });
+                    
+                    return $linha;
+                }
+
+                // CORREÇÃO FINAL PARA O PROBLEMA DO ESTADO
+                {% if championship and championship.state_id %}
+                setTimeout(function() {
+                    var stateId = "{{ championship.state_id }}";
+                    var stateName = "";
+                    
+                    // Encontrar o nome do estado pelo ID
+                    $('#estado option').each(function() {
+                        if ($(this).val() == stateId) {
+                            stateName = $(this).text();
+                            return false; // break
+                        }
+                    });
+                    
+                    console.log("CORREÇÃO FINAL - Estado ID:", stateId, "Nome:", stateName);
+                    
+                    // 1. Forçar valor no select nativo
+                    $('#estado').val(stateId);
+                    document.getElementById('estado').value = stateId;
+                    
+                    // 2. Tentar abordagem direta - destruir e recriar o Select2
+                    if ($('#estado').hasClass('select2-hidden-accessible')) {
+                        $('#estado').select2('destroy');
+                    }
+                    
+                    $('#estado').val(stateId);
+                    
+                    $('#estado').select2({
+                        width: '100%',
+                        placeholder: 'Selecione...',
+                        allowClear: true
+                    });
+                    
+                    // 3. Manipular diretamente o HTML gerado pelo Select2
+                    if (stateName) {
+                        var $container = $('#estado').next('.select2-container');
+                        $container.find('.select2-selection__rendered')
+                            .text(stateName)
+                            .attr('title', stateName);
+                    }
+                    
+                    console.log("Estado após correção:", $('#estado').val());
+                }, 2000); // delay longo para garantir que tudo já carregou
+                {% endif %}
+
+                // SOLUÇÃO PERMANENTE PARA O ESTADO - MUTATIONOBSERVER
+                {% if championship and championship.state_id %}
+                // Carregar o estado inicialmente
+                function forcarEstadoPreenchido() {
+                    var stateId = "{{ championship.state_id }}";
+                    var stateName = "";
+                    
+                    // Encontrar o nome do estado pelo ID
+                    $('#estado option').each(function() {
+                        if ($(this).val() == stateId) {
+                            stateName = $(this).text();
+                            return false; // break
+                        }
+                    });
+                    
+                    console.log("APLICANDO CORREÇÃO ESTADO - ID:", stateId, "Nome:", stateName);
+                    
+                    // Força o valor no select nativo
+                    $('#estado').val(stateId);
+                    document.getElementById('estado').value = stateId;
+                    
+                    // Manipular diretamente o HTML gerado pelo Select2
+                    if (stateName) {
+                        var $container = $('#estado').next('.select2-container');
+                        $container.find('.select2-selection__rendered')
+                            .text(stateName)
+                            .attr('title', stateName);
+                    }
+                }
+                
+                // Chamar a função de correção após um tempo
+                setTimeout(forcarEstadoPreenchido, 500);
+                setTimeout(forcarEstadoPreenchido, 1000);
+                setTimeout(forcarEstadoPreenchido, 2000);
+                
+                // PREVENÇÃO DE PERDA: Criar um verificador periódico
+                var estadoInterval = setInterval(function() {
+                    var stateId = "{{ championship.state_id }}";
+                    var valorAtual = $('#estado').val();
+                    
+                    // Se o valor atual for diferente do esperado, corrigir
+                    if (valorAtual != stateId) {
+                        console.log("CORREÇÃO AUTOMÁTICA - Estado perdeu o valor:", valorAtual, "deveria ser:", stateId);
+                        forcarEstadoPreenchido();
+                    }
+                }, 500); // verificar a cada 500ms
+                
+                // Desativar o verificador após 20 segundos para economizar recursos
+                setTimeout(function() {
+                    clearInterval(estadoInterval);
+                    console.log("Verificador de estado desativado");
+                }, 20000);
+                
+                // PROTEÇÃO CONTRA EVENTOS: Interceptar eventos que podem limpar o estado
+                var eventoOriginalPais = $.fn.select2.amd.require('select2/selection/search').prototype.searchRemoveChoice;
+                $.fn.select2.amd.require('select2/selection/search').prototype.searchRemoveChoice = function() {
+                    var stateId = "{{ championship.state_id }}";
+                    var resultado = eventoOriginalPais.apply(this, arguments);
+                    
+                    // Verificar se o estado foi afetado e corrigir
+                    setTimeout(function() {
+                        if ($('#estado').val() != stateId) {
+                            console.log("Estado afetado por evento Select2 - corrigindo");
+                            forcarEstadoPreenchido();
+                        }
+                    }, 50);
+                    
+                    return resultado;
+                };
+                
+                // Para garantir que qualquer mudança no país não afete o estado
+                $('#pais').on('change', function() {
+                    // Permitir que o evento normal ocorra
+                    setTimeout(function() {
+                        // Depois reforçar o estado
+                        forcarEstadoPreenchido();
+                    }, 100);
+                });
+                {% endif %}
+
+                // ... existing code ...
+                {% if championship and championship.state_id %}
+                // SOLUÇÃO DEFINITIVA ISOLADA DO RESTANTE DO CÓDIGO
+                document.addEventListener('DOMContentLoaded', function() {
+                    // Esperar que toda a página esteja carregada
+                    setTimeout(function() {
+                        try {
+                            console.log("=== SOLUÇÃO FINAL PARA O ESTADO ===");
+                            
+                            var estadoId = "{{ championship.state_id }}";
+                            var estadoNome = "";
+                            var paisId = "{{ championship.country_id }}";
+                            
+                            // 1. Verificar se o estado existe nas opções
+                            var estadoOption = document.querySelector('#estado option[value="' + estadoId + '"]');
+                            if (estadoOption) {
+                                estadoNome = estadoOption.textContent;
+                                console.log("Estado encontrado:", estadoNome, "ID:", estadoId);
+                            } else {
+                                console.warn("Opção de estado não encontrada!");
+                            }
+                            
+                            // 2. GARANTIR QUE A OPÇÃO DO ESTADO ESTEJA VISÍVEL
+                            // Verificar se há options escondidas
+                            var todasOptions = document.querySelectorAll('#estado option');
+                            var algumEscondido = false;
+                            
+                            todasOptions.forEach(function(option) {
+                                if (option.style.display === 'none') {
+                                    algumEscondido = true;
+                                }
+                                
+                                // Se for a opção do nosso estado, garantir que esteja visível
+                                if (option.value === estadoId) {
+                                    option.style.display = '';
+                                }
+                            });
+                            
+                            if (algumEscondido) {
+                                console.log("Havia opções escondidas - forçando exibição da nossa opção");
+                            }
+                            
+                            // 3. DESTRUIR E RECRIAR SELECT2 COMPLETAMENTE
+                            if ($('#estado').hasClass('select2-hidden-accessible')) {
+                                $('#estado').select2('destroy');
+                            }
+                            
+                            // 4. DEFINIR VALOR NO DOM NATIVO
+                            var selectEstado = document.getElementById('estado');
+                            selectEstado.value = estadoId;
+                            
+                            // 5. VERIFICAR SE CONSEGUIMOS DEFINIR O VALOR
+                            if (selectEstado.value !== estadoId) {
+                                console.error("FALHA ao definir valor via DOM! Tentando injetar opção...");
+                                
+                                // 5.1 INJETAR UMA OPÇÃO NOVA SE NECESSÁRIO
+                                if (!estadoOption) {
+                                    // Criar elemento option novo
+                                    var novaOpcao = document.createElement('option');
+                                    novaOpcao.value = estadoId;
+                                    novaOpcao.textContent = "Estado ID " + estadoId;
+                                    novaOpcao.setAttribute('data-country', paisId);
+                                    
+                                    // Adicionar ao select
+                                    selectEstado.appendChild(novaOpcao);
+                                    console.log("Nova opção de estado injetada:", novaOpcao.textContent);
+                                    
+                                    // Tentar definir valor novamente
+                                    selectEstado.value = estadoId;
+                                }
+                            }
+                            
+                            // 6. REINICIALIZAR SELECT2
+                            $('#estado').select2({
+                                width: '100%',
+                                placeholder: 'Selecione...',
+                                allowClear: true
+                            });
+                            
+                            // 7. FORÇAR TEXTO NO HTML DO SELECT2
+                            var estadoTextoFinal = estadoNome || "Estado ID " + estadoId;
+                            var htmlSelect2 = '<span class="select2-selection__rendered" title="' + estadoTextoFinal + 
+                                              '" id="select2-estado-container">' + estadoTextoFinal + '</span>';
+                            
+                            $('#estado').next('.select2-container').find('.select2-selection__rendered').replaceWith(htmlSelect2);
+                            
+                            // 8. VERIFICAR SE TUDO DEU CERTO
+                            console.log("Estado final:", $('#estado').val(), "Texto exibido:", 
+                                      $('#estado').next('.select2-container').find('.select2-selection__rendered').text());
+                            
+                            // 9. PREVENÇÃO DUPLA: VERIFICAR PERIODICAMENTE
+                            var checagemEstado = setInterval(function() {
+                                var valorAtual = $('#estado').val();
+                                if (valorAtual !== estadoId) {
+                                    console.log("CORREÇÃO: Estado perdeu valor:", valorAtual, "Restaurando para:", estadoId);
+                                    $('#estado').val(estadoId).trigger('change.select2');
+                                    
+                                    // Forçar texto novamente
+                                    $('#estado').next('.select2-container').find('.select2-selection__rendered')
+                                        .text(estadoTextoFinal)
+                                        .attr('title', estadoTextoFinal);
+                                }
+                            }, 300);
+                            
+                            // Parar checagem após 30 segundos
+                            setTimeout(function() {
+                                clearInterval(checagemEstado);
+                            }, 30000);
+                            
+                        } catch (error) {
+                            console.error("ERRO ao configurar estado:", error);
+                        }
+                    }, 1000);
+                });
+                {% endif %}
+                // ... existing code ...
+
+                // CORREÇÃO FINAL PARA EXIBIÇÃO CORRETA DO ESTADO NO SELECT2
+                {% if championship and championship.state_id %}
+                document.addEventListener('DOMContentLoaded', function() {
+                    // Encontrar o nome do estado pelo ID
+                    var stateId = "{{ championship.state_id }}";
+                    var stateName = "";
+                    
+                    {% for state in states %}
+                    {% if state.id == championship.state_id %}
+                    stateName = "{{ state.name }}";
+                    {% endif %}
+                    {% endfor %}
+                    
+                    console.log("Corrigindo exibição do estado:", stateName, "ID:", stateId);
+                    
+                    // Garantir que o valor seja definido corretamente no select
+                    function fixarEstado() {
+                        try {
+                            // Definir valor no select e esperar que o evento dispare
+                            $('#estado').val(stateId);
+                            
+                            // Forçar a atualização do texto exibido pelo Select2
+                            var container = $('#estado').siblings('.select2-container').find('.select2-selection__rendered');
+                            container.text(stateName);
+                            container.attr('title', stateName);
+                            
+                            console.log("Estado select2 atualizado:", $('#estado').val(), "Texto:", container.text());
+                        } catch (e) {
+                            console.error("Erro ao fixar estado:", e);
+                        }
+                    }
+                    
+                    // Executar em intervalos regulares inicialmente
+                    setTimeout(fixarEstado, 500);
+                    setTimeout(fixarEstado, 1000);
+                    setTimeout(fixarEstado, 2000);
+                    
+                    // Consertar novamente quando o Select2 for carregado (dispara eventos de mudança)
+                    $('#estado').on('select2:open select2:close', function() {
+                        setTimeout(fixarEstado, 50);
+                    });
+                });
+                {% endif %}
+                // ... existing code ...
+
+                // FORÇAR PRÉ-SELEÇÃO DO ESTADO
+                setTimeout(function() {
+                    // Verificar se estamos no modo estadual
+                    var ambitoTexto = $('#ambito option:selected').text().trim().toLowerCase();
+                    var estadoId = "{{ championship.state_id }}";
+                    
+                    if (ambitoTexto === 'estadual' && estadoId) {
+                        console.log("Modo estadual detectado com estado ID:", estadoId);
+                        
+                        try {
+                            // 1. Verificar se o país já está selecionado
+                            var paisId = "{{ championship.country_id }}";
+                            if (paisId) {
+                                console.log("País selecionado:", paisId);
+                                
+                                // 2. Verificar se o estado está presente nas opções
+                                var $estadoOption = $('#estado option[value="' + estadoId + '"]');
+                                
+                                if ($estadoOption.length > 0) {
+                                    var estadoTexto = $estadoOption.text();
+                                    console.log("Texto do estado:", estadoTexto);
+                                    
+                                    // 3. Forçar seleção no elemento DOM
+                                    document.getElementById('estado').value = estadoId;
+                                    $('#estado').val(estadoId);
+                                    
+                                    // 4. Forçar atualização do Select2
+                                    if ($('#estado').hasClass('select2-hidden-accessible')) {
+                                        $('#estado').select2('destroy');
+                                        $('#estado').val(estadoId);
+                                        
+                                        $('#estado').select2({
+                                            width: '100%',
+                                            placeholder: 'Selecione...',
+                                            allowClear: true
+                                        });
+                                        
+                                        // 5. Atualizar texto visível diretamente
+                                        $('#estado').next('.select2-container').find('.select2-selection__rendered')
+                                            .text(estadoTexto)
+                                            .attr('title', estadoTexto);
+                                        
+                                        console.log("Select2 do estado recriado com valor:", estadoId);
+                                    }
+                                } else {
+                                    console.log("ERRO: Option para estado ID", estadoId, "não encontrada");
+                                }
+                            }
+                        } catch (e) {
+                            console.error("Erro ao forçar seleção do estado:", e);
+                        }
+                    }
+                }, 1000);
+
+                // SIMPLIFICANDO: INICIALIZAÇÃO DIRETA DO SELECT2 PARA ESTADO
+                // Inicializar cada select individualmente para maior controle
+                $('#ambito').select2({
+                    width: '100%',
+                    minimumResultsForSearch: Infinity
+                });
+                
+                $('#continente').select2({
+                    width: '100%',
+                    placeholder: 'Selecione...',
+                    allowClear: true
+                });
+                
+                $('#pais').select2({
+                    width: '100%',
+                    placeholder: 'Selecione...',
+                    allowClear: true
+                });
+                
+                // Inicializar o estado DIRETAMENTE com Select2
+                // Isso permite que o valor selected no HTML seja respeitado desde o início
+                var $estado = $('#estado');
+                var estadoId = "{{ championship.state_id }}";
+                
+                // Importante: Remover e inicializar novamente o select2 se já estiver aplicado
+                if ($estado.hasClass('select2-hidden-accessible')) {
+                    $estado.select2('destroy');
+                }
+                
+                // Garantir que o valor esteja selecionado no DOM antes de inicializar
+                if (estadoId) {
+                    $estado.val(estadoId);
+                }
+                
+                // Agora inicializar o Select2 para o estado
+                $estado.select2({
+                    width: '100%',
+                    placeholder: 'Selecione...',
+                    allowClear: true
+                });
+                
+                console.log("Select2 inicializado para estado com valor:", $estado.val());
+                
+                // Verificação posterior para garantir que foi aplicado corretamente
+                setTimeout(function() {
+                    console.log("Verificação do estado após Select2:", $estado.val());
+                    var estadoTexto = $estado.find('option:selected').text();
+                    console.log("Texto do estado selecionado:", estadoTexto);
+                    
+                    // Se o texto não estiver visível, forçar diretamente
+                    var $rendered = $estado.next('.select2-container').find('.select2-selection__rendered');
+                    if ($rendered.text() === "Selecione..." && estadoId) {
+                        $rendered.text(estadoTexto).attr('title', estadoTexto);
+                        console.log("Texto forçado na interface do Select2:", estadoTexto);
+                    }
+                }, 500);
+                
+                // Desabilitar js-basic-single para evitar que outros scripts reinicializem esses selects
+                $('.js-basic-single').not('#template').removeClass('js-basic-single');
             });
         </script>
         <!-- Custom and plugin javascript -->
         <script src="{% static 'administrativo/js/inspinia.js' %}"></script>
         <script src="{% static 'administrativo/js/plugins/pace/pace.min.js' %}"></script>
         <script src="{% static 'administrativo/js/campeonato.js' %}"></script>
+        
+        <!-- Estado Fixador: Força seleção do estado mesmo após outros scripts -->
+        <script>
+            // Esperar carregamento completo
+            document.addEventListener('DOMContentLoaded', function() {
+                // Aguardar um pouco para garantir que qualquer outro script tenha sido executado
+                setTimeout(function() {
+                    var estadoId = "{{ championship.state_id }}";
+                    var $estado = $('#estado');
+                    
+                    if (estadoId) {
+                        console.log("Fixador de estado: forçando estado ID", estadoId);
+                        
+                        // Forçar o valor no DOM
+                        $estado.val(estadoId);
+                        
+                        // Atualizar a exibição do Select2
+                        var estadoTexto = $estado.find('option:selected').text();
+                        
+                        if ($estado.hasClass('select2-hidden-accessible')) {
+                            var $rendered = $estado.next('.select2-container').find('.select2-selection__rendered');
+                            if ($rendered.length) {
+                                $rendered.text(estadoTexto).attr('title', estadoTexto);
+                                console.log("Fixador aplicado com sucesso:", estadoTexto);
+                            }
+                        }
+                    }
+                }, 1500);  // Tempo suficiente para qualquer outro script terminar
+            });
+        </script>
         
         <!-- Script para ativar a aba baseado no hash da URL -->
         <script>
@@ -3144,6 +4073,83 @@
                 $('.nav-tabs a').on('click', function (e) {
                     window.location.hash = e.target.hash;
                 });
+            });
+        </script>
+        
+        <!-- Estado Protetor: Impede limpeza do campo estado -->
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                var estadoId = "{{ championship.state_id }}";
+                if (!estadoId) return; // Se não tem estado, não fazemos nada
+                
+                console.log("=== PROTEÇÃO DO CAMPO ESTADO ATIVADA ===");
+                console.log("Estado ID protegido:", estadoId);
+                
+                // Extrair texto do estado para exibição
+                var estadoTexto = "";
+                $('#estado option').each(function() {
+                    if ($(this).val() == estadoId) {
+                        estadoTexto = $(this).text();
+                        return false; // sair do loop
+                    }
+                });
+                
+                // 1. MONITORAR: Criamos uma função que verifica e restaura o estado
+                function monitorarEstado() {
+                    var valorAtual = $('#estado').val();
+                    if (valorAtual != estadoId && estadoId) {
+                        console.log("ALERTA: Estado alterado de", estadoId, "para", valorAtual);
+                        
+                        // Restaurar valor
+                        document.getElementById('estado').value = estadoId;
+                        $('#estado').val(estadoId);
+                        
+                        // Forçar texto no Select2
+                        if ($('#estado').hasClass('select2-hidden-accessible')) {
+                            $('#estado').next('.select2-container').find('.select2-selection__rendered').text(estadoTexto);
+                        }
+                        
+                        console.log("Estado restaurado para:", estadoId);
+                    }
+                }
+                
+                // 2. INTERCEPTAR: Redefinir qualquer tentativa de limpar o select
+                var originalLimparSelect = window.limparSelect;
+                if (typeof originalLimparSelect === 'function') {
+                    window.limparSelect = function($select) {
+                        if ($select.attr('id') === 'estado') {
+                            console.log("Tentativa de limpar estado BLOQUEADA");
+                            return; // Não faz nada se for o select de estado
+                        }
+                        originalLimparSelect($select); // Chama a função original para outros selects
+                    };
+                }
+                
+                // 3. OBSERVADOR: Monitorar alterações no DOM do estado
+                var estadoElement = document.getElementById('estado');
+                if (estadoElement) {
+                    var observer = new MutationObserver(function(mutations) {
+                        mutations.forEach(function(mutation) {
+                            if (mutation.type === 'attributes' || mutation.type === 'childList') {
+                                monitorarEstado();
+                            }
+                        });
+                    });
+                    
+                    observer.observe(estadoElement, {
+                        attributes: true,
+                        childList: true,
+                        subtree: true
+                    });
+                }
+                
+                // 4. TIMER: Verificar periodicamente se o valor permanece correto
+                setInterval(monitorarEstado, 1000);
+                
+                // Aplicar imediatamente
+                setTimeout(monitorarEstado, 500);
+                
+                console.log("=== PROTEÇÃO CONFIGURADA ===");
             });
         </script>
     </body>

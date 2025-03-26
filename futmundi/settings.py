@@ -48,6 +48,12 @@ INSTALLED_APPS = [
     
     # Apps locais
     "administrativo.apps.AdministrativoConfig",
+    
+    # Aplicativos DDD
+    "domain",
+    "application",
+    "infrastructure",
+    "presentation",
 ]
 
 MIDDLEWARE = [
@@ -271,4 +277,9 @@ LOGGING = {
             'propagate': True,
         },
     },
+}
+
+# Configurações do DDD
+DDD_SETTINGS = {
+    'INITIALIZE_ON_STARTUP': True,  # Inicializa a estrutura DDD na inicialização do Django
 }

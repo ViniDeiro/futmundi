@@ -1683,37 +1683,31 @@
                                     $('.toast-error').remove();
                                 },
                                 success: function(response) {
-                                    // SUBSTITUIÇÃO COMPLETA: SEMPRE mostrar sucesso
-                                    toastr.success("Campeonato criado com sucesso!");
+                                    console.log("===================== RESPOSTA DO SERVIDOR =====================");
+                                    console.log("Status:", response.success ? "SUCESSO" : "ERRO");
+                                    console.log("Mensagem:", response.message);
+                                    console.log("Resposta completa:", response);
                                     
-                                    // Definir um cookie para indicar que o campeonato foi criado com sucesso
-                                    document.cookie = "campeonato_criado=true; path=/";
-                                    
-                                    // Remover quaisquer mensagens de erro
-                                    $('.toast-error').remove();
-                                    
-                                    // Redirecionar para a lista de campeonatos após 1 segundo
-                                    setTimeout(function() {
-                                        window.location.href = "{% url 'administrativo:campeonatos' %}";
-                                    }, 1000);
+                                    if (response.success) {
+                                        // Exibir mensagem de sucesso
+                                        toastr.success(response.message || "Campeonato criado com sucesso!");
+                                        
+                                        // Redirecionar se uma URL foi fornecida e não for uma requisição de aplicar
+                                        if (response.redirect_url && !formData.get('apply_only')) {
+                                            console.log("Redirecionando para:", response.redirect_url);
+                                            setTimeout(function() {
+                                                window.location.href = response.redirect_url;
+                                            }, 1000);
+                                        }
+                                    } else {
+                                        // Exibir mensagem de erro
+                                        toastr.error(response.message || "Erro ao criar campeonato!");
+                                    }
+                                    console.log("===================================================================");
                                 },
                                 error: function(xhr, status, error) {
-                                    // SUBSTITUIÇÃO COMPLETA: IGNORAR o erro e mostrar sucesso mesmo assim
-                                    console.log("Ignorando erro e mostrando sucesso:", error);
-                                    
-                                    // Remover quaisquer mensagens de erro
-                                    $('.toast-error').remove();
-                                    
-                                    // Mostrar apenas sucesso
-                                    toastr.success("Campeonato criado com sucesso!");
-                                    
-                                    // Definir um cookie para indicar que o campeonato foi criado com sucesso
-                                    document.cookie = "campeonato_criado=true; path=/";
-                                    
-                                    // Redirecionar para a lista de campeonatos após 1 segundo
-                                    setTimeout(function() {
-                                        window.location.href = "{% url 'administrativo:campeonatos' %}";
-                                    }, 1000);
+                                    console.error("Erro ao criar campeonato:", error);
+                                    toastr.error("Erro ao criar campeonato. Por favor, tente novamente.");
                                 }
                             });
                         }
@@ -1787,6 +1781,10 @@
                     
                     console.log("Times já selecionados:", timesSelecionados);
                     
+                    // Obter os times selecionados na DualListbox
+                    var timesSelecionadosNaDual = $('.duallistbox').val() || [];
+                    console.log("Times selecionados na DualListbox:", timesSelecionadosNaDual);
+                    
                     // Criar uma cópia de todas as opções de times originais se ainda não tivermos
                     if (!window.allTeamOptions) {
                         window.allTeamOptions = [];
@@ -1826,8 +1824,11 @@
                         
                         // Adicionar apenas as opções de times disponíveis
                         window.allTeamOptions.forEach(function(team) {
-                            // Só adiciona se o time não estiver selecionado em outro select ou se for o atual deste select
-                            if (!timesSelecionados.includes(team.id) || team.id === timeAtual) {
+                            // Só adiciona se:
+                            // 1. O time estiver na lista de selecionados na DualListbox
+                            // 2. O time não estiver selecionado em outro select ou for o atual deste select
+                            if (timesSelecionadosNaDual.includes(team.id) && 
+                                (!timesSelecionados.includes(team.id) || team.id === timeAtual)) {
                                 var $option = $('<option>', {
                                     value: team.id,
                                     text: team.text
@@ -1877,6 +1878,10 @@
                     var uniqueId = Date.now() + '-' + Math.floor(Math.random() * 1000);
                     var matchId = match && match.id ? match.id : null;
                     
+                    // Obter os times selecionados na DualListbox
+                    var timesSelecionadosNaDual = $('.duallistbox').val() || [];
+                    console.log("Times selecionados na DualListbox:", timesSelecionadosNaDual);
+                    
                     // Criar HTML dos times com os valores já pré-selecionados
                     var homeTeamHtml = '<option value="">Selecione o time</option>';
                     var awayTeamHtml = '<option value="">Selecione o time</option>';
@@ -1884,19 +1889,22 @@
                     {% for team in teams %}
                     // Realizar comparação como string para garantir compatibilidade
                     var teamId = "{{ team.id }}";
-                    console.log(`Verificando time: ID=${teamId}, Nome={{ team.name }}`);
-                    console.log(`Comparação mandante: "${homeTeamId}" === "${teamId}" = ${homeTeamId === teamId}`);
-                    console.log(`Comparação visitante: "${awayTeamId}" === "${teamId}" = ${awayTeamId === teamId}`);
                     
-                    // Time mandante - marcar como selecionado se for o time correto
-                    homeTeamHtml += '<option value="' + teamId + '" ' + 
-                        (homeTeamId === teamId ? 'selected="selected"' : '') + 
-                        ' data-image="{% if team.image and team.image.url %}{{ team.image.url }}{% endif %}">{{ team.name }}</option>';
-                    
-                    // Time visitante - marcar como selecionado se for o time correto
-                    awayTeamHtml += '<option value="' + teamId + '" ' + 
-                        (awayTeamId === teamId ? 'selected="selected"' : '') + 
-                        ' data-image="{% if team.image and team.image.url %}{{ team.image.url }}{% endif %}">{{ team.name }}</option>';
+                    // Só adicionar o time se ele estiver na lista de selecionados na DualListbox
+                    // ou se for o time que já estava selecionado na partida
+                    if (timesSelecionadosNaDual.includes(teamId) || teamId === homeTeamId || teamId === awayTeamId) {
+                        console.log(`Adicionando time: ID=${teamId}, Nome={{ team.name }}`);
+                        
+                        // Time mandante - marcar como selecionado se for o time correto
+                        homeTeamHtml += '<option value="' + teamId + '" ' + 
+                            (homeTeamId === teamId ? 'selected="selected"' : '') + 
+                            ' data-image="{% if team.image and team.image.url %}{{ team.image.url }}{% endif %}">{{ team.name }}</option>';
+                        
+                        // Time visitante - marcar como selecionado se for o time correto
+                        awayTeamHtml += '<option value="' + teamId + '" ' + 
+                            (awayTeamId === teamId ? 'selected="selected"' : '') + 
+                            ' data-image="{% if team.image and team.image.url %}{{ team.image.url }}{% endif %}">{{ team.name }}</option>';
+                    }
                     {% endfor %}
                     
                     // Criar o HTML da linha com as opções de times já pré-selecionadas

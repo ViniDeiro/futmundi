@@ -4,6 +4,27 @@ from datetime import datetime
 from django.http import HttpResponse, JsonResponse
 from django.urls import resolve
 from django.urls.exceptions import Resolver404
+from django.contrib.auth.models import AnonymousUser
+
+# Classe de usuário personalizada para o middleware
+class AdminUser(AnonymousUser):
+    def __init__(self, admin_id=None, username=None):
+        super().__init__()
+        self._admin_id = admin_id
+        self._username = username
+        self._is_authenticated = admin_id is not None
+    
+    @property
+    def is_authenticated(self):
+        return self._is_authenticated
+    
+    @property
+    def username(self):
+        return self._username
+    
+    @property
+    def id(self):
+        return self._admin_id
 
 class ApiDebugMiddleware:
     def __init__(self, get_response):
@@ -24,6 +45,24 @@ class ApiDebugMiddleware:
                     admin_path = '/administrativo/futligas/jogadores/salvar/'
                     resolved = resolve(admin_path)
                     
+                    # Adicionar o atributo user ao objeto request
+                    # Verificar se há uma sessão de admin
+                    admin_id = None
+                    username = None
+                    
+                    if 'admin_id' in request.session:
+                        from administrativo.models import Administrator
+                        try:
+                            admin = Administrator.objects.get(id=request.session['admin_id'])
+                            admin_id = admin.id
+                            username = admin.name
+                            print(f"[API-DEBUG] Admin encontrado: {username} (ID: {admin_id})")
+                        except Exception as e:
+                            print(f"[API-DEBUG] Erro ao obter admin: {str(e)}")
+                    
+                    # Criar um objeto de usuário personalizado
+                    request.user = AdminUser(admin_id=admin_id, username=username)
+                        
                     # Aqui chamamos a view diretamente com a requisição atual
                     print(f"[API-DEBUG] Chamando view {resolved.func.__name__} diretamente")
                     return resolved.func(request)

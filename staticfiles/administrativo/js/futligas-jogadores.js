@@ -90,28 +90,14 @@ $(document).ready(function() {
         }
         
         // Função para tentar carregar dados com diferentes URLs
-        function tryLoadFromURL(urlIndex = 0) {
-            // Lista de URLs alternativas para tentar
-            const urls = [
-                '/administrativo/futligas/jogadores/dados/',
-                '/futligas/jogadores/dados/',
-                window.location.origin + '/administrativo/futligas/jogadores/dados/',
-                window.location.origin + '/futligas/jogadores/dados/'
-            ];
-            
-            if (urlIndex >= urls.length) {
-                console.error('[DEBUG-PREMIO] Falha ao carregar dados após tentar todas as URLs alternativas.');
-                $('#table tbody').html('<tr><td colspan="6" class="text-center text-danger"><i class="fa fa-exclamation-triangle"></i> Erro ao carregar dados. Atualize a página ou contate o suporte.</td></tr>');
-                toastr.error('Erro ao carregar dados. Tente recarregar a página.');
-                return;
-            }
-            
-            const currentUrl = urls[urlIndex];
-            console.log(`[DEBUG-PREMIO] Tentando carregar dados da URL (${urlIndex+1}/${urls.length}): ${currentUrl}`);
+        function tryLoadFromURL() {
+            // Usar apenas a URL correta registrada no urls.py
+            const urls = ['/administrativo/futligas/jogadores/dados/'];
+            console.log('[DEBUG] Usando URL fixa correta para carregar dados: ' + urls[0]);
             
             // Faz a requisição AJAX para carregar os dados
             $.ajax({
-                url: currentUrl,
+                url: urls[0],
                 method: 'GET',
                 timeout: 15000, // 15 segundos de timeout
                 headers: {
@@ -202,6 +188,12 @@ $(document).ready(function() {
                         
                         // Inicializa drag and drop na tabela
                         initDragAndDrop();
+                        
+                        // IMPORTANTE: Garantir a ordem correta das colunas
+                        if (typeof window.fixColumnOrder === 'function') {
+                            console.log("[DEBUG-PREMIO] Aplicando correção da ordem das colunas após carregamento inicial");
+                            setTimeout(window.fixColumnOrder, 500);
+                        }
                         
                         // Backup dos prêmios no localStorage em caso de falha futura
                         try {
@@ -350,28 +342,14 @@ $(document).ready(function() {
                     }
                 },
                 error: function(xhr, status, error) {
-                    console.error(`[DEBUG-PREMIO] Erro ao carregar dados da URL ${currentUrl}:`, status, error);
+                    console.error(`[DEBUG-PREMIO] Erro ao carregar dados da URL ${urls[0]}:`, status, error);
                     
                     if (xhr.responseText) {
                         console.error('[DEBUG-PREMIO] Resposta de erro do servidor:', xhr.responseText);
                     }
                     
-                    // Verifica o tipo de erro e tenta a próxima URL
-                    if (status === 'timeout') {
-                        console.log('[DEBUG-PREMIO] A requisição atingiu o tempo limite.');
-                        toastr.warning('A requisição está demorando muito. Tentando URL alternativa...');
-                        tryLoadFromURL(urlIndex + 1);
-                    } else if (xhr.status === 0) {
-                        console.log('[DEBUG-PREMIO] Possível erro de CORS ou rede. Tentando URL alternativa...');
-                        tryLoadFromURL(urlIndex + 1);
-                    } else if (xhr.status === 404) {
-                        console.log('[DEBUG-PREMIO] URL não encontrada. Tentando URL alternativa...');
-                        tryLoadFromURL(urlIndex + 1);
-                    } else {
-                        // Para outros erros, tenta a próxima URL também
-                        console.log('[DEBUG-PREMIO] Erro de servidor. Tentando URL alternativa...');
-                        tryLoadFromURL(urlIndex + 1);
-                    }
+                    $('#table tbody').html('<tr><td colspan="6" class="text-center text-danger"><i class="fa fa-exclamation-triangle"></i> Erro ao carregar dados. Atualize a página ou contate o suporte.</td></tr>');
+                    toastr.error('Erro ao carregar dados. Tente recarregar a página.');
                 }
             });
         }
@@ -2015,37 +1993,28 @@ $(document).ready(function() {
                     
                     console.log('[DEBUG] Valores preservados antes do salvamento:', valoresPreservados);
                     
-                    // Usar APENAS a URL correta, remover o array de URLs alternativas
-                    const url = '/administrativo/futligas/jogadores/salvar/';
+                    // Usar apenas a URL correta
+                    const url = `/administrativo/futligas/jogadores/salvar/`;
+                    console.log('[DEBUG] Usando URL fixa correta para salvar: ' + url);
                     
-                    $btn.html('<i class="fa fa-spinner fa-spin"></i> Salvando...').prop('disabled', true);
+                    $btn.html('<i class="fa fa-spinner fa-spin"></i> Salvando...');
+                    $btn.prop('disabled', true);
 
                     // Coletar os dados para enviar
                     const level_data = [];
                     $('#table tbody tr').each(function () {
                         const id = $(this).data('id');
-                        
-                        // CORREÇÃO: Extrair apenas o texto dentro do elemento .nivel-name se existir
-                        let name;
-                        const nivelNameElement = $(this).find('td:eq(0) .nivel-name');
-                        if (nivelNameElement.length) {
-                            name = nivelNameElement.text().trim();
-                        } else {
-                            // Fallback: limpar o texto completo removendo caracteres de barras
-                            const fullText = $(this).find('td:eq(0)').text().trim();
-                            name = fullText.replace(/^[\s\u2630☰]+/, '').trim();
-                        }
-                        
-                        const players = $(this).find('td:eq(2)').text().trim();
-                        const premium_players = $(this).find('td:eq(3)').text().trim();
-                        const owner_premium = $(this).find('td:eq(4)').text().trim() === 'Sim';
+                        const name = $(this).find('td:eq(0)').text();
+                        const players = $(this).find('td:eq(2)').text();
+                        const premium_players = $(this).find('td:eq(3)').text();
+                        const owner_premium = $(this).find('td:eq(4)').text() === 'Sim';
                         
                         let image = null;
                         const imageElement = $(this).find('td:eq(1) img');
                         if (imageElement.length) {
                             image = imageElement.attr('src');
                         }
-                        
+
                         level_data.push({
                             id: id,
                             name: name,
@@ -2141,7 +2110,8 @@ $(document).ready(function() {
                             console.error('[DEBUG] Erro na requisição AJAX:', status, error);
                             console.error('[DEBUG] Resposta de erro:', xhr.responseText);
                             
-                            toastr.error('Erro ao salvar os dados. Tente novamente.');
+                            // Mostrar erro ao usuário
+                            toastr.error('Erro ao salvar os dados. Verifique o console para mais detalhes.');
                         },
                         complete: function () {
                             // Limpar o timeout já que a requisição foi concluída
@@ -2161,8 +2131,8 @@ $(document).ready(function() {
                 }
             }
             
-            // Inicia o processo de salvamento com a primeira URL
-            trySaveWithURL(0);
+            // Inicia o processo de salvamento
+            trySaveWithURL();
         } catch (error) {
             console.error("[DEBUG-PREMIO] Erro ao preparar dados:", error);
             console.error("[DEBUG-PREMIO] Stack trace:", error.stack);
@@ -2240,93 +2210,168 @@ $(document).ready(function() {
     
     // Nova função para atualizar a tabela de prêmios sem resetar/recriar todas as linhas
     function updatePremiosTableWithoutReset() {
-        // Obter os nomes dos níveis
-        const nivelNames = [];
-        $('#table tbody tr').each(function() {
-            const name = $(this).find('td:eq(0)').text().trim().replace(/^[\s\u2630☰]+/, '').trim();
-            nivelNames.push(name);
-        });
+        console.log("[IMAGEM-FIX] Atualizando tabela de prêmios preservando botões de remover");
         
-        console.log('[CARREGAMENTO] Nomes dos níveis encontrados:', nivelNames);
+        // Obtém referência à tabela de prêmios
+        const $premiTable = $('#premiosTable');
         
-        if (nivelNames.length === 0) {
-            console.warn('[CARREGAMENTO] Nenhum nível encontrado!');
+        // Verifica se há níveis para exibir
+        if (!niveisData || niveisData.length === 0) {
+            console.warn("[IMAGEM-FIX] Nenhum nível disponível para criar colunas na tabela de prêmios");
             return;
         }
         
-        // Adicionar cabeçalhos para cada nível
-        let headerRow = $('#premiosTable thead tr');
-        // Limpar e recriar o cabeçalho
-        headerRow.empty();
-        headerRow.append('<th class="per15">Posição</th>');
-        headerRow.append('<th class="per15 center-middle">Imagem</th>');
+        // Extrai os nomes dos níveis 
+        const niveis = niveisData.map(nivel => nivel.name);
         
-        nivelNames.forEach(nivel => {
-            headerRow.append(`<th class="per15">${nivel}</th>`);
-        });
+        // Atualiza cabeçalhos da tabela (th)
+        const $header = $premiTable.find('thead tr');
         
-        headerRow.append('<th class="per15">Ações</th>');
-        
-        $.ajax({
-            url: '/administrativo/futligas/jogadores/dados/',
-            type: 'GET',
-            success: function(response) {
-                if (response && response.prizes) {
-                    console.log('[CARREGAMENTO] Prêmios recebidos do servidor:', response.prizes);
-                    
-                    let tbody = $('#premiosTable tbody');
-                    tbody.empty();
-                    
-                    // Adicionar uma linha para cada prêmio
-                    response.prizes.forEach(premio => {
-                        let row = $('<tr>');
-                        row.attr('data-position', premio.position);
-                        row.attr('data-id', premio.id);
-                        
-                        // Adicionar célula de posição
-                        row.append(`<td>${premio.position}º</td>`);
-                        
-                        // Adicionar célula de imagem
-                        let imageCell = $('<td class="center-middle">');
-                        if (premio.image) {
-                            imageCell.append(`<img src="${premio.image}" alt="Imagem do Prêmio" style="width: 40px; height: 40px;">`);
-                        } else {
-                            imageCell.append('<i class="fa fa-file-image-o" style="font-size: 24px; color: #ccc;"></i>');
-                        }
-                        row.append(imageCell);
-                        
-                        // Adicionar células para cada nível com seus valores
-                        nivelNames.forEach(nivel => {
-                            let value = 1000; // Valor padrão
-                            
-                            // Verificar se este nível tem um valor definido para este prêmio
-                            if (premio.values && premio.values[nivel] !== undefined) {
-                                value = premio.values[nivel];
-                                console.log(`[CARREGAMENTO] Prêmio pos.${premio.position}, nível ${nivel}: valor=${value}`);
-                            } else {
-                                console.log(`[CARREGAMENTO] Prêmio pos.${premio.position}, nível ${nivel}: usando valor padrão 1000`);
-                            }
-                            
-                            let inputCell = $('<td class="premio-valor">');
-                            inputCell.append(`<input type="number" class="form-control premio-input" data-nivel="${nivel}" value="${value}" min="0">`);
-                            row.append(inputCell);
-                        });
-                        
-                        // Adicionar célula de ações
-                        let actionsCell = $('<td>');
-                        actionsCell.append(`<button type="button" class="btn btn-danger btn-excluir-premio" data-premio-id="${premio.id}"><i class="fa fa-trash"></i></button>`);
-                        row.append(actionsCell);
-                        
-                        tbody.append(row);
-                    });
-                    
-                    initDeletePremioButtons();
-                }
-            },
-            error: function(error) {
-                console.error('[CARREGAMENTO] Erro ao obter dados dos prêmios:', error);
+        // Remove as células de nível existentes (mantém a primeira e a última)
+        $header.find('th').each(function(index) {
+            if (index !== 0 && index !== 1 && index !== $header.find('th').length - 1) {
+                $(this).remove();
             }
         });
+        
+        // Adiciona as células de nível
+        let headerHtml = '';
+        niveis.forEach(nivel => {
+            headerHtml += `<th class="per10">${nivel}</th>`;
+        });
+        
+        // Insere as novas células antes da última
+        $(headerHtml).insertBefore($header.find('th:last'));
+        
+        // Agora atualiza o corpo da tabela apenas se não estiver vazio
+        if ($premiTable.find('tbody').children().length === 0) {
+            console.log("[IMAGEM-FIX] Tabela de prêmios vazia, criando estrutura inicial");
+            // Se está vazia, adiciona as posições padrão (1º, 2º, 3º)
+            const defaultPositions = [1, 2, 3];
+            
+            defaultPositions.forEach(position => {
+                let newRow = `
+                    <tr>
+                        <td>${position}°</td>
+                        <td class="center-middle">
+                            <div class="premio-image-container" style="position: relative; display: inline-block;">
+                                <div class="premio-image-preview dropzone-imagem" style="height: 32px; width: 32px; border: 1px dashed #ccc; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                                    <i class="fa fa-plus"></i>
+                                </div>
+                                <input type="file" class="premio-image" style="display: none;" accept="image/*">
+                            </div>
+                        </td>`;
+                        
+                    // Adiciona células para cada nível
+                    niveis.forEach(nivel => {
+                        newRow += `
+                            <td>
+                                <input type="number" class="form-control premio-valor" data-nivel="${nivel}" value="1000" min="0">
+                            </td>`;
+                    });
+                    
+                    // Finaliza a linha com a célula de ações
+                    newRow += `
+                            <td>
+                                <button type="button" class="btn btn-danger delete-premio" title="Excluir"><i class="glyphicon glyphicon-trash"></i></button>
+                            </td>
+                        </tr>`;
+                    
+                    // Adiciona a linha à tabela
+                    $premiTable.find('tbody').append(newRow);
+                });
+                
+                // Inicializa a visualização de imagem para todas as linhas
+                $premiTable.find('tbody tr').each(function() {
+                    initPremioImagePreview($(this));
+                });
+                
+                // Inicializa os botões de exclusão
+                initDeletePremioButtons();
+        } else {
+            console.log("[IMAGEM-FIX] Atualizando tabela de prêmios existente preservando imagens");
+            
+            // Preservar o estado das imagens antes de fazer as alterações
+            const imagensExistentes = [];
+            
+            $premiTable.find('tbody tr').each(function() {
+                const $row = $(this);
+                const rowIndex = $row.index();
+                const $imgCell = $row.find('td:eq(1)');
+                const $imgPreview = $imgCell.find('.premio-image-preview');
+                
+                // Salva informações sobre a imagem
+                let imagemInfo = {
+                    index: rowIndex,
+                    temImagem: $imgPreview.find('img').length > 0,
+                    temBotaoRemover: $imgPreview.find('.remove-premio-image').length > 0,
+                    url: $imgPreview.find('img').attr('src') || null
+                };
+                
+                imagensExistentes.push(imagemInfo);
+                console.log(`[IMAGEM-FIX] Salvando estado da imagem para linha ${rowIndex}: ${JSON.stringify(imagemInfo)}`);
+            });
+            
+            // Para cada linha existente, ajustar apenas as células de valor dos níveis
+            $premiTable.find('tbody tr').each(function() {
+                const $row = $(this);
+                const rowIndex = $row.index();
+                
+                // Remove as células de nível existentes (mantém a primeira, segunda e última)
+                $row.find('td').each(function(index) {
+                    if (index !== 0 && index !== 1 && index !== $row.find('td').length - 1) {
+                        $(this).remove();
+                    }
+                });
+                
+                // Adiciona novas células para cada nível
+                let cellsHtml = '';
+                niveis.forEach(nivel => {
+                    cellsHtml += `
+                        <td>
+                            <input type="number" class="form-control premio-valor" data-nivel="${nivel}" value="1000" min="0">
+                        </td>`;
+                });
+                
+                // Insere as novas células antes da última
+                $(cellsHtml).insertBefore($row.find('td:last'));
+                
+                // Restaura o estado da imagem baseado nos dados salvos
+                const imagemInfo = imagensExistentes.find(img => img.index === rowIndex);
+                
+                if (imagemInfo && imagemInfo.temImagem) {
+                    const $imgCell = $row.find('td:eq(1)');
+                    const $imgContainer = $imgCell.find('.premio-image-container');
+                    const $imgPreview = $imgContainer.find('.premio-image-preview');
+                    const fileInput = $imgContainer.find('.premio-image');
+                    
+                    // Se tem imagem mas não tem botão de remover, restaura com o botão
+                    if (!imagemInfo.temBotaoRemover) {
+                        console.log(`[IMAGEM-FIX] Restaurando botão de remoção para imagem na linha ${rowIndex}`);
+                        
+                        // Recria a preview com botão de remoção
+                        $imgPreview.html(`
+                            <div style="position: relative; width: 100%; height: 100%;">
+                                <img src="${imagemInfo.url}" style="max-width: 100%; max-height: 32px; position: relative;">
+                                <div class="remove-premio-image" style="position: absolute; bottom: 0; right: 0; background-color: #f8f8f8; border-radius: 50%; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.2);">
+                                    <i class="fa fa-trash" style="font-size: 10px; color: #FF5252;"></i>
+                                </div>
+                            </div>
+                        `);
+                        
+                        // Redefine eventos para o botão de remoção
+                        $imgPreview.find('.remove-premio-image').off('click').on('click', function(e) {
+                            console.log('[DEBUG-PREMIO] Removendo imagem do prêmio');
+                            e.stopPropagation();
+                            $imgPreview.html('<i class="fa fa-plus"></i>');
+                            fileInput.val('');
+                        });
+                    }
+                }
+            });
+        }
+        
+        console.log("[IMAGEM-FIX] Atualização da tabela de prêmios concluída");
     }
 
     function updateLevel(id, name, players, premium_players, owner_premium, imageData = null) {
@@ -2531,8 +2576,305 @@ $(document).ready(function() {
         });
     }
 
+    // Coletar prêmios da tabela de uma forma que preserva os valores
+    function collectPrizesFromTable() {
+        console.log('[DEBUG-PREMIO] Coletando prêmios da tabela...');
+        const prizes = [];
+        
+        $('#premiosTable tbody tr').each(function() {
+            const $row = $(this);
+            const position = $row.data('position') || parseInt($row.find('td:first').text().replace('°', '')) || 0;
+            const id = $row.data('id') || null;
+            
+            const values = {};
+            
+            // Procurar a imagem do prêmio
+            let image = null;
+            const $imageElement = $row.find('td.center-middle img');
+            if ($imageElement.length) {
+                image = $imageElement.attr('src');
+            }
+            
+            // Coletar valores para cada nível
+            $row.find('input.premio-valor, input.premio-input').each(function() {
+                const $input = $(this);
+                let nivel = $input.data('nivel');
+                
+                // Remover o prefixo ☰ do nome do nível
+                if (nivel) {
+                    nivel = nivel.replace(/^[\s\u2630☰]+/, '').trim();
+                    
+                    let value = parseInt($input.val() || "0");
+                    if (isNaN(value)) value = 0;
+                    values[nivel] = value;
+                    
+                    console.log(`[DEBUG-PREMIO] Coletado valor ${value} para nível ${nivel} na posição ${position}`);
+                }
+            });
+            
+            prizes.push({
+                id: id,
+                position: position,
+                image: image,
+                values: values
+            });
+        });
+        
+        console.log(`[DEBUG-PREMIO] Total de ${prizes.length} prêmios coletados da tabela`);
+        return prizes;
+    }
+
+    // Modificação na função updatePremiosTable para preservar valores
     function updatePremiosTable() {
         console.log('[DEBUG] Iniciando updatePremiosTable()');
+        
+        // PRIMEIRO: Salvar os prêmios existentes antes de atualizar a tabela
+        const premiosAntigosList = collectPrizesFromTable();
+        const premiosAntigos = {};
+        
+        // Converter para formato mais fácil de procurar por posição
+        premiosAntigosList.forEach(premio => {
+            premiosAntigos[premio.position] = premio;
+        });
+        
+        console.log('[DEBUG] Prêmios antigos salvos:', premiosAntigos);
+        
+        // Verificar quantas linhas já existem
+        const rowCount = $('#premiosTable tbody tr').length;
+        
+        // Se não houver linhas ou for a primeira carga, inicializar a tabela
+        if (rowCount === 0) {
+            // Inicializar o cabeçalho da tabela
+            const $thead = $('#premiosTable thead tr');
+            $thead.empty();
+            
+            // Adicionar as colunas na ordem correta
+            $thead.append('<th class="per15">Posição</th>');
+            $thead.append('<th class="per15 center-middle">Imagem</th>');
+            
+            // Adicionar colunas para cada nível
+            $('#table tbody tr').each(function() {
+                const levelName = $(this).find('td:eq(0)').text();
+                $thead.append(`<th class="per10">${levelName}</th>`);
+            });
+            
+            // Adicionar coluna de ações
+            $thead.append('<th class="per15">Ações</th>');
+        } else {
+            // Se já existem linhas, salvar o header atual
+            const $thead = $('#premiosTable thead tr');
+            
+            // Remover tudo, exceto a primeira coluna (Posição), a segunda (Imagem) e a última (Ações)
+            const $positionCol = $thead.find('th:first-child').detach();
+            const $imageCol = $thead.find('th.center-middle').detach();
+            const $actionsCol = $thead.find('th:last-child').detach();
+            
+            $thead.empty();
+            
+            // Adicionar as colunas na ordem correta
+            $thead.append($positionCol);
+            $thead.append($imageCol);
+            
+            // Adicionar colunas para cada nível
+            $('#table tbody tr').each(function() {
+                const levelName = $(this).find('td:eq(0)').text();
+                $thead.append(`<th class="per10">${levelName}</th>`);
+            });
+            
+            // Adicionar coluna de ações
+            $thead.append($actionsCol);
+        }
+        
+        // Atualizar as linhas existentes ou adicionar novas
+        $('#premiosTable tbody tr').each(function(index) {
+            const $row = $(this);
+            const position = $row.data('position') || $row.attr('data-position') || (index + 1);
+            
+            // Remover todas as células após a segunda coluna (Imagem) e antes da última (Ações)
+            const $positionCell = $row.find('td:first-child').detach();
+            const $imageCell = $row.find('td.center-middle').detach();
+            const $actionsCell = $row.find('td:last-child').detach();
+            
+            $row.empty();
+            
+            // Adicionar células na ordem correta
+            $row.append($positionCell);
+            $row.append($imageCell);
+            
+            // Adicionar células para cada nível
+            $('#table tbody tr').each(function() {
+                const levelName = $(this).find('td:eq(0)').text().trim();
+                
+                // MODIFICAÇÃO: Usar o valor do prêmio salvo, se disponível
+                let valorArmazenado = 0; // Valor padrão
+                
+                // Verificar se temos um valor anterior para esta posição e nível
+                if (premiosAntigos[position] && premiosAntigos[position].values) {
+                    const valorNivel = premiosAntigos[position].values[levelName];
+                    if (valorNivel !== undefined) {
+                        valorArmazenado = valorNivel;
+                        console.log(`[DEBUG] Recuperado valor ${valorArmazenado} para posição ${position}, nível ${levelName}`);
+                    }
+                }
+                
+                $row.append(`
+                    <td class="premio-valor">
+                        <input type="number" 
+                               class="form-control premio-input" 
+                               data-nivel="${levelName}" 
+                               value="${valorArmazenado}" 
+                               min="0">
+                    </td>
+                `);
+            });
+            
+            // Adicionar a célula de ações
+            $row.append($actionsCell);
+        });
+        
+        // Persistir os valores no localStorage para evitar perda em recargas
+        try {
+            const premiosAtualizados = collectPrizesFromTable();
+            localStorage.setItem('premiosAtual', JSON.stringify(premiosAtualizados));
+            console.log('[DEBUG] Valores de prêmios salvos no localStorage');
+        } catch (e) {
+            console.error('[DEBUG] Erro ao salvar valores no localStorage:', e);
+        }
+        
+        console.log('[DEBUG] updatePremiosTable() concluído');
+    }
+
+    // Modificar a função updateUIWithServerData para usar os valores corretos dos prêmios
+    function updateUIWithServerData(data) {
+        console.log("Atualizando interface com dados do servidor:", data);
+        
+        // NOVO: Verificar se temos dados locais salvos
+        let premiosLocalStorage = [];
+        try {
+            const premiosString = localStorage.getItem('premiosAtual');
+            if (premiosString) {
+                premiosLocalStorage = JSON.parse(premiosString);
+                console.log('[DEBUG] Recuperados dados do localStorage:', premiosLocalStorage.length, 'prêmios');
+            }
+        } catch (e) {
+            console.error('[DEBUG] Erro ao recuperar dados do localStorage:', e);
+        }
+        
+        // Converter para um formato mais fácil de buscar
+        const premiosLocal = {};
+        premiosLocalStorage.forEach(premio => {
+            premiosLocal[premio.position] = premio;
+        });
+        
+        // Adiciona prêmios
+        if (data.prizes && data.prizes.length > 0) {
+            console.log("Atualizando tabela de prêmios com", data.prizes.length, "prêmios");
+            
+            // Limpar a tabela de prêmios
+            $('#premios table tbody').empty();
+            
+            data.prizes.forEach(premio => {
+                console.log(`Criando linha para o prêmio posição ${premio.position}, ID=${premio.id}`);
+                
+                // NOVO: Verificar se temos valores locais para esta posição
+                const premioLocal = premiosLocal[premio.position];
+                
+                // CORREÇÃO: Criando a linha com a ordem correta das colunas
+                let newRow = $(`
+                    <tr data-position="${premio.position}" ${premio.id ? `data-id="${premio.id}"` : ''}>
+                        <td>${premio.position}°</td>
+                        <td class="center-middle">
+                            <div class="premio-image-container" style="position: relative; display: inline-block;">
+                                <div class="premio-image-preview dropzone-imagem" style="height: 32px; width: 32px; border: 1px dashed #ccc; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                                ${premio.image ?
+                                    `<img src="${premio.image}" style="max-width: 100%; max-height: 32px;">` :
+                                `<i class="fa fa-plus"></i>`
+                                }
+                            </div>
+                            <input type="file" class="premio-image" style="display: none;" accept="image/*">
+                            </div>
+                        </td>
+                    `);
+                    
+                data.levels.forEach(nivel => {
+                    // Obtém o valor para este nível
+                    let valorPremio = 0; // Valor padrão
+                    const nivelName = nivel.name;
+                    const nivelNameClean = nivel.name.replace(/^[\s\u2630☰]+/, '').trim();
+                    
+                    // Prioridade de origem dos valores:
+                    // 1. Valores salvos localmente (localStorage)
+                    // 2. Valores vindo do servidor (premio.values)
+                    // 3. Valores do formato antigo (prize_values) 
+                    // 4. Valor padrão (0)
+                    
+                    // 1. Verificar se temos valor salvo localmente
+                    if (premioLocal && premioLocal.values && premioLocal.values[nivelNameClean] !== undefined) {
+                        valorPremio = premioLocal.values[nivelNameClean];
+                        console.log(`Valor recuperado do localStorage para nível ${nivelNameClean}: ${valorPremio}`);
+                    } 
+                    // 2. Tentar obter do formato enviado pelo servidor
+                    else if (premio.values && premio.values[nivelName] !== undefined) {
+                        valorPremio = premio.values[nivelName];
+                        console.log(`Valor obtido do servidor para nível ${nivelName}: ${valorPremio}`);
+                    }
+                    // 3. Tentar formato antigo (fallback)
+                    else if (premio.prize_values) {
+                        premio.prize_values.forEach(pv => {
+                            if (pv.level_id === nivel.id || pv.level_name === nivelName || pv.level_name === nivelNameClean) {
+                                valorPremio = pv.value;
+                                console.log(`Valor encontrado em prize_values para nível ${nivelName}: ${valorPremio}`);
+                            }
+                        });
+                    }
+                    
+                    newRow.append(`
+                        <td class="premio-valor">
+                            <input type="number" class="form-control premio-valor" data-nivel="${nivelName}" value="${valorPremio}" min="0">
+                        </td>
+                    `);
+                });
+                
+                // Adiciona coluna de ações
+                newRow.append(`
+                    <td>
+                        <button type="button" class="btn btn-danger btn-xs btn-delete-prize" data-prize-id="${premio.id || ''}" title="Excluir">
+                            <i class="glyphicon glyphicon-trash"></i>
+                        </button>
+                    </td>
+                `);
+                
+                $('#premios table tbody').append(newRow);
+                
+                // Inicializa manipuladores de eventos
+                const row = $('#premios table tbody tr').last();
+                initPremioImagePreview(row);
+                
+                console.log(`Criada linha para o prêmio posição ${premio.position}, ID=${premio.id}`);
+            });
+
+            // IMPORTANTE: Após adicionar todas as linhas, verificar se a ordem das colunas está correta
+            if (typeof window.fixColumnOrder === 'function') {
+                console.log("Aplicando correção da ordem das colunas após atualização");
+                window.fixColumnOrder();
+            }
+            
+            // Inicializar botões de exclusão
+            initDeletePremioButtons();
+        }
+        
+        // Salvar os valores atualizados no localStorage
+        try {
+            const premiosAtualizados = collectPrizesFromTable();
+            localStorage.setItem('premiosAtual', JSON.stringify(premiosAtualizados));
+            console.log('[DEBUG] Valores de prêmios atualizados salvos no localStorage');
+        } catch (e) {
+            console.error('[DEBUG] Erro ao salvar valores no localStorage:', e);
+        }
+    }
+
+    function updatePremiosTableWithoutReset() {
+        console.log('[DEBUG] Iniciando updatePremiosTableWithoutReset()');
         
         // Coletar valores atuais antes de atualizar a tabela
         const valoresAtuais = {};
@@ -2621,7 +2963,7 @@ $(document).ready(function() {
                 // Recuperar o valor armazenado para este nível e posição
                 let valorArmazenado = valoresAtuais[position] && valoresAtuais[position][levelName] !== undefined 
                     ? valoresAtuais[position][levelName] 
-                    : 1000; // Valor padrão
+                    : 0; // Alterado de 1000 para 0 como valor padrão
                 
                 $row.append(`
                     <td class="premio-valor">
@@ -2750,17 +3092,18 @@ $(document).ready(function() {
                         </td>
                 `);
                 
-                // Adiciona células para cada nível
+                // CORREÇÃO CRÍTICA: Adiciona células para cada nível com os valores exatos do servidor
                 data.levels.forEach(nivel => {
                     // Obtém o valor para este nível
-                    // Primeiro tenta pelo nome limpo do nível
                     const nivelName = nivel.name;
                     const nivelNameClean = nivelName.replace(/^[\s\u2630☰]+/, '').trim();
                     
                     // Verificar se o valor existe usando o nome limpo ou o nome original
-                    let valorPremio = 1000; // Valor padrão
-                    
+                    let valorPremio = 1000; // Valor padrão caso não tenha valor definido
+
+                    // Primeiro verifica se existe values no prêmio
                     if (premio.values) {
+                        // Tenta obter o valor com várias chaves possíveis
                         if (premio.values[nivelNameClean] !== undefined) {
                             valorPremio = premio.values[nivelNameClean];
                             console.log(`Valor encontrado pelo nome limpo "${nivelNameClean}": ${valorPremio}`);
@@ -2771,6 +3114,16 @@ $(document).ready(function() {
                             valorPremio = premio.values["☰ " + nivelNameClean];
                             console.log(`Valor encontrado pelo nome com prefixo "☰ ${nivelNameClean}": ${valorPremio}`);
                         }
+                    }
+
+                    // Próxima tentativa: verificar se existe um valor direto para este nível (formato antigo)
+                    if (valorPremio === 1000 && premio.prize_values) {
+                        premio.prize_values.forEach(pv => {
+                            if (pv.level_id === nivel.id || pv.level_name === nivelName || pv.level_name === nivelNameClean) {
+                                valorPremio = pv.value;
+                                console.log(`Valor encontrado em prize_values para nível ${nivelName}: ${valorPremio}`);
+                            }
+                        });
                     }
                     
                     newRow.append(`
@@ -2797,6 +3150,12 @@ $(document).ready(function() {
                 
                 console.log(`Criada linha para o prêmio posição ${premio.position}, ID=${premio.id}`);
             });
+
+            // IMPORTANTE: Após adicionar todas as linhas, verificar se a ordem das colunas está correta
+            if (typeof window.fixColumnOrder === 'function') {
+                console.log("Aplicando correção da ordem das colunas após atualização");
+                window.fixColumnOrder();
+            }
         }
         
         // Inicializa eventos para imagens de prêmios
@@ -2805,6 +3164,9 @@ $(document).ready(function() {
                 $(this).siblings('input[type="file"]').click();
             });
         });
+
+        // Reinicializa botões de exclusão
+        initDeletePremioButtons();
     }
 
     // Função para lidar com o clique na dropzone
@@ -3281,122 +3643,131 @@ $(document).ready(function() {
                 return [];
             }
             
-            // Obter os nomes dos níveis diretamente da tabela principal (mais confiável)
-            const nivelNames = [];
-            $('#table tbody tr').each(function() {
-                const name = $(this).find('td:eq(0)').text().trim().replace(/^[\s\u2630☰]+/, '').trim();
-                nivelNames.push(name);
-            });
-            
-            console.log('[DEBUG] Nomes dos níveis obtidos da tabela principal:', nivelNames);
-            
-            if (nivelNames.length === 0) {
-                console.warn('[DEBUG] Nenhum nível encontrado na tabela principal!');
-                
-                // Fallback: Identificar níveis pelo cabeçalho da tabela de prêmios
+            // Primeiro identificamos os níveis pelas colunas do cabeçalho
+            const niveis = [];
+            try {
                 $premiosTable.find('thead th').each(function(index) {
                     // Ignoramos a primeira (Posição), a segunda (Imagem) e a última (Ações)
                     if (index > 1 && index < $premiosTable.find('thead th').length - 1) {
-                        const nomeLimpo = $(this).text().trim().replace(/^[\s\u2630☰]+/, '').trim();
-                        if (nomeLimpo && nomeLimpo !== "Carregando dados...") {
-                            nivelNames.push(nomeLimpo);
-                        }
+                        // Limpar o nome do nível para remover o prefixo ☰
+                        const nomeOriginal = $(this).text().trim();
+                        const nomeLimpo = nomeOriginal.replace(/^[\s\u2630☰]+/, '').trim();
+                        
+                        niveis.push({
+                            index: index,
+                            name: nomeOriginal,
+                            cleanName: nomeLimpo
+                        });
+                        
+                        console.log(`[DEBUG] Nível identificado: "${nomeLimpo}" (original: "${nomeOriginal}") na coluna ${index}`);
                     }
                 });
                 
-                console.log('[DEBUG] Nomes dos níveis obtidos pelo fallback:', nivelNames);
-                
-                if (nivelNames.length === 0) {
-                    console.error('[DEBUG] Não foi possível encontrar nenhum nível!');
-                    return [];
-                }
+                console.log('[DEBUG] Níveis identificados:', niveis);
+            } catch(e) {
+                console.error('[DEBUG] Erro ao identificar níveis:', e);
+                return [];
             }
             
-            // Agora percorremos cada linha da tabela de prêmios
-            $premiosTable.find('tbody tr').each(function() {
-                const $row = $(this);
-                let position = $row.data('position') || $row.attr('data-position');
-                
-                // Garantir que a posição seja um número
-                if (!position) {
-                    const posText = $row.find('td:first').text().trim();
-                    position = parseInt(posText.replace('º', '').replace('°', '')) || null;
-                }
-                
-                if (!position) {
-                    console.warn('[DEBUG] Posição não encontrada para linha:', $row);
-                    return; // Continue para a próxima linha
-                }
-                
-                console.log(`[DEBUG] Processando linha de posição ${position}`);
-                
-                // Encontrar a imagem do prêmio, se existir
-                const $imageElement = $row.find('td.center-middle img');
-                let imageUrl = null;
-                if ($imageElement.length) {
-                    imageUrl = $imageElement.attr('src');
-                }
-                
-                // Coletar todos os valores em um único objeto de prêmio
-                const prizeValues = {};
-                
-                // Percorrer cada input de valor na linha, associando ao nível correspondente
-                const $inputs = $row.find('input.premio-input');
-                
-                // Verificar se temos o mesmo número de inputs que níveis
-                if ($inputs.length >= nivelNames.length) {
-                    // Associar cada input ao nível correspondente pela posição
-                    $inputs.each(function(index) {
-                        if (index < nivelNames.length) {
-                            const nivelName = nivelNames[index];
-                            const value = parseInt($(this).val() || "0") || 0;
-                            
-                            // Usar o nome do nível como chave
-                            prizeValues[nivelName] = value;
-                            console.log(`[DEBUG] Associado valor ${value} ao nível ${nivelName} na posição ${position}`);
-                        }
-                    });
-                } else {
-                    console.warn(`[DEBUG] Número de inputs (${$inputs.length}) é menor que o número de níveis (${nivelNames.length}) na posição ${position}`);
+            if (niveis.length === 0) {
+                console.warn('[DEBUG] Nenhum nível identificado!');
+                return [];
+            }
+            
+            // Agora percorremos cada linha da tabela
+            try {
+                $premiosTable.find('tbody tr').each(function() {
+                    const $row = $(this);
+                    let position = $row.data('position') || $row.attr('data-position');
+                    const prizeId = $row.data('id') || null;
                     
-                    // Fazer uma tentativa adicional para capturar os valores
-                    nivelNames.forEach((nivelName, index) => {
-                        let value = 1000; // Valor padrão
-                        
-                        // Tentar encontrar o input com data-nivel
-                        const $specificInput = $row.find(`input[data-nivel="${nivelName}"]`);
-                        if ($specificInput.length) {
-                            value = parseInt($specificInput.val() || "0") || 0;
-                        } 
-                        // Ou tente pelo índice, se houver algum input disponível no índice
-                        else if (index < $inputs.length) {
-                            value = parseInt($inputs.eq(index).val() || "0") || 0;
-                        }
-                        
-                        prizeValues[nivelName] = value;
-                        console.log(`[DEBUG] Fallback: valor ${value} associado ao nível ${nivelName} na posição ${position}`);
-                    });
-                }
-                
-                // Garantir que todos os níveis tenham pelo menos o valor padrão
-                nivelNames.forEach(name => {
-                    if (typeof prizeValues[name] === 'undefined') {
-                        prizeValues[name] = 1000; // Valor padrão
-                        console.log(`[DEBUG] Definido valor padrão 1000 para nível ${name} que não tinha valor definido`);
+                    // Garantir que a posição seja um número
+                    if (!position) {
+                        // Tentar obter a posição do texto da primeira coluna
+                        const posText = $row.find('td:first').text().trim();
+                        position = parseInt(posText.replace('º', '').replace('°', '')) || null;
                     }
+                    
+                    if (!position) {
+                        console.warn('[DEBUG] Posição não encontrada para linha:', $row);
+                        return; // Continue para a próxima linha
+                    }
+                    
+                    console.log(`[DEBUG] Processando linha de posição ${position}, ID=${prizeId}`);
+                    
+                    // Encontrar a imagem do prêmio, se existir
+                    const $imageElement = $row.find('td.center-middle img');
+                    let imageUrl = null;
+                    if ($imageElement.length) {
+                        imageUrl = $imageElement.attr('src');
+                        console.log(`[DEBUG] Imagem encontrada: ${imageUrl.substring(0, 50)}...`);
+                    }
+                    
+                    // Coletar todos os valores em um único objeto de prêmio
+                    const prizeValues = {};
+                    
+                    // CORREÇÃO CRÍTICA: Para cada nível, encontramos o valor correspondente
+                    // Usando um loop mais confiável para garantir que cada valor seja coletado corretamente
+                    for (let i = 0; i < niveis.length; i++) {
+                        const nivel = niveis[i];
+                        try {
+                            // Primeiro tentamos localizar o input diretamente pela coluna
+                            // A coluna de Posição é 0, a de Imagem é 1, então os níveis começam na coluna 2
+                            const colIndex = nivel.index;
+                            const $input = $row.find(`td:eq(${colIndex}) input`);
+                            
+                            if ($input.length > 0) {
+                                // Garantir que o valor seja um número válido
+                                let inputValue = $input.val() || "0";
+                                let value = 0;
+                                
+                                try {
+                                    value = parseInt(inputValue);
+                                    if (isNaN(value)) value = 0;
+                                } catch(e) {
+                                    value = 0;
+                                }
+                                
+                                // IMPORTANTE: Usar o nome limpo como chave
+                                prizeValues[nivel.cleanName] = value;
+                                
+                                console.log(`[DEBUG] Encontrado valor ${value} para nível ${nivel.cleanName} (original: ${nivel.name}) na posição ${position}, coluna ${colIndex}`);
+                            } else {
+                                // Tentativa alternativa - procurar por data-nivel
+                                const $altInput = $row.find(`input[data-nivel="${nivel.name}"]`);
+                                if ($altInput.length > 0) {
+                                    const value = parseInt($altInput.val() || "0") || 0;
+                                    prizeValues[nivel.cleanName] = value;
+                                    console.log(`[DEBUG] Encontrado valor alternativo ${value} para nível ${nivel.cleanName} por data-nivel`);
+                                } else {
+                                    console.log(`[DEBUG] Não foi encontrado input para nível ${nivel.name} na posição ${position}`);
+                                    // Definir valor padrão para garantir que todos os níveis tenham um valor
+                                    prizeValues[nivel.cleanName] = 0; // Alterado de 1000 para 0
+                                }
+                            }
+                        } catch(e) {
+                            console.error(`[DEBUG] Erro ao processar nível ${nivel.name}:`, e);
+                            prizeValues[nivel.cleanName] = 0; // Alterado de 1000 para 0 em caso de erro
+                        }
+                    }
+                    
+                    // Adicionar o prêmio com todos os valores
+                    prizes.push({
+                        id: prizeId,
+                        position: position,
+                        image: imageUrl,
+                        values: prizeValues,
+                        league_id: 6 // ID padrão da liga para jogadores
+                    });
                 });
-                
-                prizes.push({
-                    id: $row.data('id') || null,
-                    position: position,
-                    image: imageUrl,
-                    values: prizeValues
-                });
-            });
+            } catch(e) {
+                console.error('[DEBUG] Erro ao percorrer linhas da tabela:', e);
+                return [];
+            }
             
             console.log('[DEBUG] Total de prêmios coletados:', prizes.length);
             console.log('[DEBUG] Dados dos prêmios:', prizes);
-            
+        
             return prizes;
         } catch(e) {
             console.error('[DEBUG] Erro geral ao coletar prêmios:', e);
@@ -3465,7 +3836,152 @@ $(document).ready(function() {
     // Botão de salvar
     $('#successToast').off('click').on('click', function(e) {
         e.preventDefault();
-        saveData();
+        
+        const $btn = $(this);
+        const originalHtml = $btn.html();
+        $btn.html('<i class="fa fa-spinner fa-spin"></i> Salvando...').prop('disabled', true);
+        
+        console.log('[DEBUG-PREMIO] ============ PREPARANDO DADOS PARA SALVAMENTO ============');
+        
+        // Coleta dados dos níveis
+        const niveis = [];
+        $('#table tbody tr').each(function() {
+            const $row = $(this);
+            
+            // CORREÇÃO: Tenta obter o ID de várias formas
+            let id = $row.data('id');
+            if (!id && $row.attr('data-id')) {
+                id = $row.attr('data-id');
+                console.log(`[DEBUG-PREMIO] ID obtido via attr data-id: ${id}`);
+            }
+            
+            const name = $row.find('td:eq(0)').text().replace(/^\s*\u2630\s*/, '').trim();
+            const players = parseInt($row.find('td:eq(2)').text());
+            const premium_players = parseInt($row.find('td:eq(3)').text());
+            const owner_premium = $row.find('td:eq(4)').text().trim() === 'Sim';
+            
+            // Obtém a imagem
+            const $img = $row.find('.nivel-image, td:eq(1) img');
+            let image = null;
+            
+            if ($img.length > 0 && $img.attr('src')) {
+                image = $img.attr('src');
+                console.log(`[DEBUG-PREMIO] Imagem encontrada para nível ${name}: ${image.substring(0, 30)}...`);
+            }
+            
+            niveis.push({
+                id: id,
+                name: name,
+                players: players,
+                premium_players: premium_players,
+                owner_premium: owner_premium,
+                image: image
+            });
+            
+            console.log(`[DEBUG-PREMIO] Nível coletado - nome: ${name}, ID: ${id}`);
+        });
+        
+        // CORREÇÃO: Usa a função separada para coletar prêmios
+        const premios = collectPrizesFromTable();
+        
+        console.log('[DEBUG-PREMIO] Resumo dos dados coletados:');
+        console.log(`- Níveis: ${niveis.length}`);
+        console.log(`- Prêmios: ${premios.length}`);
+        console.log(`- Prêmios para exclusão: ${deletedPrizeIds.length}`);
+        
+        premios.forEach(premio => {
+            console.log(`[DEBUG-PREMIO] Prêmio: ID=${premio.id}, Posição=${premio.position}, ` + 
+                    `hasImage: ${!!premio.image}, ` +
+                    `valuesCount: ${Object.keys(premio.values).length}`);
+        });
+        
+        // Coleta configurações de premiação
+        const award_config = {
+            weekly: {
+                day: $('#dia-premiacao').val() || 'Segunda',
+                time: $('.clockpicker:eq(0) input').val() || '12:00'
+            },
+            season: {
+                month: $('#mes-ano-premiacao').val() || 'Janeiro',
+                day: $('#dia-ano-premiacao').val() || '1',
+                time: $('.clockpicker:eq(1) input').val() || '12:00'
+            }
+        };
+        
+        // Prepara payload para envio
+        const payload = {
+            levels: niveis,
+            prizes: premios,
+            award_config: award_config,
+            deleted_prize_ids: deletedPrizeIds
+        };
+        
+        // Obtém o token CSRF
+        const csrfToken = getCSRFToken();
+        
+        console.log('[DEBUG-PREMIO] Enviando dados para o servidor...');
+        console.log('[DEBUG-PREMIO] URL destino:', '/administrativo/futligas/jogadores/salvar/');
+        console.log('[DEBUG-PREMIO] Token CSRF:', csrfToken || "Token não encontrado");
+        console.log('[DEBUG-PREMIO] Payload:', JSON.stringify(payload).substring(0, 500) + '...');
+        
+        if (!csrfToken) {
+            toastr.error('Erro: Token CSRF não encontrado. Por favor, recarregue a página e tente novamente.');
+            $btn.html(originalHtml).prop('disabled', false);
+            return;
+        }
+        
+        // Tenta diferentes URLs caso ocorram erros de conexão
+        function tryWithAlternativeURLs(urlIndex = 0) {
+            // Usar apenas a URL correta
+            const url = '/administrativo/futligas/jogadores/salvar/';
+            console.log(`[DEBUG-PREMIO] Usando URL fixa correta: ${url}`);
+            
+            // Enviar requisição AJAX com a URL correta
+            $.ajax({
+                url: url,
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(payload),
+                timeout: 20000, // 20 segundos de timeout
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                success: function(response) {
+                    console.log('[DEBUG-PREMIO] Resposta do servidor:', response);
+                    
+                    if (response.success) {
+                        toastr.success('Dados salvos com sucesso!');
+                        // Limpa a lista de prêmios excluídos
+                        deletedPrizeIds = [];
+                        
+                        // Recarrega os dados após o salvamento
+                        setTimeout(function() {
+                            carregarDadosIniciais();
+                        }, 1000);
+                    } else {
+                        toastr.error('Erro ao salvar dados: ' + (response.message || 'Erro desconhecido'));
+                    }
+                    
+                    // Restaura o botão
+                    $btn.html(originalHtml).prop('disabled', false);
+                },
+                error: function(xhr, status, error) {
+                    console.error(`[DEBUG-PREMIO] Erro na requisição AJAX para ${url}:`, status, error);
+                    
+                    if (xhr.responseText) {
+                        console.error('[DEBUG-PREMIO] Resposta do servidor:', xhr.responseText);
+                    }
+                    
+                    // Exibe mensagem de erro e restaura o botão
+                    toastr.error('Erro ao comunicar com o servidor. Verifique o console para mais detalhes.');
+                    $btn.html(originalHtml).prop('disabled', false);
+                }
+            });
+        }
+        
+        // Inicia com a URL correta
+        tryWithAlternativeURLs();
     });
 
     // ... existing code ...
@@ -4244,42 +4760,23 @@ $(document).ready(function() {
                 deleted_prize_ids: []
             };
             
-            // URLs baseadas no nome da função Django (futliga_jogador_salvar)
-            let urls = [
-                '/futliga_jogador_salvar/',                // Nome direto da função
-                '/administrativo/futliga_jogador_salvar/', // Com prefixo administrativo
-                '/futligas_jogadores/salvar/',             // Versão com underscore
-                '/administrativo/futligas_jogadores/salvar/', // Versão com prefixo e underscore
-                '/futligas/jogadores/salvar/',             // URL relativa tradicional
-                '/administrativo/futligas/jogadores/salvar/' // URL com prefixo administrativo
-            ];
+            /// Usar apenas a URL correta registrada no urls.py
+            const urlToUse = '/administrativo/futligas/jogadores/salvar/';
+            console.log('[DEBUG] Usando URL fixa correta registrada no Django: ' + urlToUse);
             
-            // Verificar se temos uma URL bem-sucedida anterior
-            try {
-                const ultimaUrlSucesso = localStorage.getItem('ultimaUrlSalvamentoBemSucedida');
-                if (ultimaUrlSucesso) {
-                    console.log('[DEBUG] Encontrada URL bem-sucedida anterior: ' + ultimaUrlSucesso);
-                    
-                    // Adicionar a URL bem-sucedida como primeira opção
-                    urls = [ultimaUrlSucesso, ...urls.filter(url => url !== ultimaUrlSucesso)];
-                }
-            } catch (e) {
-                console.error('[DEBUG] Erro ao recuperar última URL bem-sucedida:', e);
-            }
-            
-            if (urlIndex >= urls.length) {
+            // Não precisamos mais verificar várias URLs
+            if (urlIndex > 0) {
                 clearTimeout(buttonRestoreTimeout);
                 $btn.html(originalHtml).prop('disabled', false);
-                toastr.error('Erro ao salvar. Todas as URLs tentadas falharam.');
+                toastr.error('Erro ao salvar. Verifique sua conexão e tente novamente.');
                 return;
             }
             
-            const url = urls[urlIndex];
-            console.log('[DEBUG] Tentando URL: ' + url);
+            console.log('[DEBUG] Tentando URL: ' + urlToUse);
             
             // Fazer a requisição
             $.ajax({
-                url: url,
+                url: urlToUse,
                 type: 'POST',
                 contentType: 'application/json',
                 data: JSON.stringify(data),
@@ -4291,7 +4788,7 @@ $(document).ready(function() {
                     clearTimeout(buttonRestoreTimeout);
                     $btn.html(originalHtml).prop('disabled', false);
                     
-                    console.log('[DEBUG] Sucesso! URL funcionou: ' + url);
+                    console.log('[DEBUG] Sucesso! URL funcionou: ' + urlToUse);
                     console.log('[DEBUG] Resposta do servidor:', response);
                     
                     if (response && response.success) {
@@ -4303,8 +4800,8 @@ $(document).ready(function() {
                         
                         // Armazenar a URL bem-sucedida em localStorage para futuras requisições
                         try {
-                            localStorage.setItem('ultimaUrlSalvamentoBemSucedida', url);
-                            console.log('[DEBUG] URL bem-sucedida armazenada para uso futuro: ' + url);
+                            localStorage.setItem('ultimaUrlSalvamentoBemSucedida', urlToUse);
+                            console.log('[DEBUG] URL bem-sucedida armazenada para uso futuro: ' + urlToUse);
                         } catch (e) {
                             console.error('[DEBUG] Erro ao armazenar URL bem-sucedida:', e);
                         }
@@ -4315,11 +4812,13 @@ $(document).ready(function() {
                     }
                 },
                 error: function(xhr, status, error) {
-                    console.error('[DEBUG] Erro na requisição para URL ' + url + ':', status, error);
+                    console.error('[DEBUG] Erro na requisição para URL ' + urlToUse + ':', status, error);
                     console.error('[DEBUG] Status HTTP:', xhr.status);
                     
-                    // Tentar próxima URL
-                    trySaveWithURL(urlIndex + 1);
+                    // Mostrar erro ao usuário
+                    clearTimeout(buttonRestoreTimeout);
+                    $btn.html(originalHtml).prop('disabled', false);
+                    toastr.error('Erro ao salvar dados. Verifique o console para detalhes.');
                 },
                 complete: function() {
                     clearTimeout(buttonRestoreTimeout);
@@ -4339,7 +4838,7 @@ $(document).ready(function() {
     $('#successToast').off('click').on('click', function(e) {
         e.preventDefault();
         console.log('[DEBUG-SIMPLES] Botão de salvamento clicado');
-        trySaveWithURL(0);
+        trySaveWithURL();
     });
 
     // ... existing code ...
@@ -4398,6 +4897,39 @@ $(document).ready(function() {
             original: dadosOriginal,
             alternativo: dadosAlternativo
         };
+    }
+
+    // Função para garantir que os dados estão em formato compatível com JSON
+    function sanitizeDataForJSON(obj) {
+        if (obj === null || typeof obj !== 'object') {
+            return obj;
+        }
+
+        // Para arrays, aplicamos sanitizeDataForJSON para cada elemento
+        if (Array.isArray(obj)) {
+            return obj.map(item => sanitizeDataForJSON(item));
+        }
+
+        // Para objetos, aplicamos sanitizeDataForJSON para cada propriedade
+        const result = {};
+        for (const key in obj) {
+            if (obj.hasOwnProperty(key)) {
+                const value = obj[key];
+                
+                // Tratar strings com caracteres especiais
+                if (typeof value === 'string') {
+                    // Removemos caracteres que podem causar problemas no JSON
+                    result[key] = value
+                        .replace(/[\u0000-\u001F\u007F-\u009F\u2028\u2029]/g, '')  // Caracteres de controle
+                        .replace(/\\'/g, "'")  // Aspas simples com escape
+                        .replace(/\\"/g, '"'); // Aspas duplas com escape
+                } else {
+                    // Para valores não-string, processamos recursivamente se forem objetos/arrays
+                    result[key] = sanitizeDataForJSON(value);
+                }
+            }
+        }
+        return result;
     }
 
     function trySaveWithURL(urlIndex = 0, formatoIndex = 0) {
@@ -4519,53 +5051,30 @@ $(document).ready(function() {
             ];
             
             if (formatoIndex >= formatosDisponiveis.length) {
-                // Se já tentamos todos os formatos com esta URL, passar para a próxima URL
-                trySaveWithURL(urlIndex + 1, 0);
-                return;
-            }
-            
-            const data = formatosDisponiveis[formatoIndex];
-            console.log('[DEBUG] Usando formato de dados:', formatoIndex === 0 ? 'Original' : 'Alternativo');
-            
-            // URLs corrigidas considerando o prefixo raiz
-            let urls = [
-                '/futligas/jogadores/salvar/',             // URL sem o prefixo 'administrativo'
-                'salvar/',                                 // URL relativa ao caminho atual
-                './salvar/',                               // URL relativa explícita
-                '../jogadores/salvar/',                    // Um nível acima e de volta
-                'futliga_jogador_salvar/',                 // Nome da função
-                '/futliga_jogador_salvar/'                 // URL com nome da função (com barra inicial)
-            ];
-            
-            // Verificar se temos uma URL bem-sucedida anterior
-            try {
-                const ultimaUrlSucesso = localStorage.getItem('ultimaUrlSalvamentoBemSucedida');
-                if (ultimaUrlSucesso) {
-                    console.log('[DEBUG] Encontrada URL bem-sucedida anterior: ' + ultimaUrlSucesso);
-                    
-                    // Adicionar a URL bem-sucedida como primeira opção
-                    urls = [ultimaUrlSucesso, ...urls.filter(url => url !== ultimaUrlSucesso)];
-                }
-            } catch (e) {
-                console.error('[DEBUG] Erro ao recuperar última URL bem-sucedida:', e);
-            }
-            
-            if (urlIndex >= urls.length) {
+                // Se já tentamos todos os formatos, informar o erro
                 clearTimeout(buttonRestoreTimeout);
                 $btn.html(originalHtml).prop('disabled', false);
-                toastr.error('Erro ao salvar. Todas as URLs tentadas falharam.');
+                toastr.error('Erro ao salvar. Todos os formatos de dados tentados falharam.');
                 return;
             }
             
-            const url = urls[urlIndex];
-            console.log('[DEBUG] Tentando URL: ' + url + ' com formato: ' + (formatoIndex === 0 ? 'Original' : 'Alternativo'));
+            const data = sanitizeDataForJSON(formatosDisponiveis[formatoIndex]);
+            console.log('[DEBUG] Usando formato de dados:', formatoIndex === 0 ? 'Original' : 'Alternativo');
+            
+            // Garantir que a serialização não terá problemas
+            const jsonString = JSON.stringify(data);
+            console.log(`[DEBUG] Tamanho dos dados JSON: ${jsonString.length} caracteres`);
+            
+            // Usar apenas a URL correta
+            const url = '/administrativo/futligas/jogadores/salvar/';
+            console.log('[DEBUG] Usando URL fixa correta: ' + url);
             
             // Fazer a requisição
             $.ajax({
                 url: url,
                 type: 'POST',
                 contentType: 'application/json',
-                data: JSON.stringify(data),
+                data: jsonString,
                 headers: {
                     'X-CSRFToken': $('[name=csrfmiddlewaretoken]').val(),
                     'X-Requested-With': 'XMLHttpRequest'
@@ -4584,13 +5093,12 @@ $(document).ready(function() {
                             setTimeout(window.fixColumnOrder, 500);
                         }
                         
-                        // Armazenar a URL bem-sucedida e o formato em localStorage para futuras requisições
+                        // Armazenar o formato em localStorage para futuras requisições
                         try {
-                            localStorage.setItem('ultimaUrlSalvamentoBemSucedida', url);
                             localStorage.setItem('ultimoFormatoSalvamentoBemSucedido', formatoIndex.toString());
-                            console.log('[DEBUG] URL e formato bem-sucedidos armazenados para uso futuro');
+                            console.log('[DEBUG] Formato bem-sucedido armazenado para uso futuro');
                         } catch (e) {
-                            console.error('[DEBUG] Erro ao armazenar URL e formato bem-sucedidos:', e);
+                            console.error('[DEBUG] Erro ao armazenar formato bem-sucedido:', e);
                         }
                     } else {
                         const errorMsg = response && response.error ? response.error : 'Erro ao salvar dados.';
@@ -4598,7 +5106,7 @@ $(document).ready(function() {
                         console.error('[DEBUG] Erro retornado pelo servidor:', errorMsg);
                         
                         // Tentar com o próximo formato
-                        trySaveWithURL(urlIndex, formatoIndex + 1);
+                        trySaveWithURL(0, formatoIndex + 1);
                     }
                 },
                 error: function(xhr, status, error) {
@@ -4606,7 +5114,7 @@ $(document).ready(function() {
                     console.error('[DEBUG] Status HTTP:', xhr.status);
                     
                     // Tentar com o próximo formato
-                    trySaveWithURL(urlIndex, formatoIndex + 1);
+                    trySaveWithURL(0, formatoIndex + 1);
                 },
                 complete: function() {
                     clearTimeout(buttonRestoreTimeout);
@@ -4621,380 +5129,5 @@ $(document).ready(function() {
             toastr.error('Erro ao processar dados para salvamento.');
         }
     }
-    // ... existing code ...
-
-    // Adiciona um evento para garantir que a tabela de prêmios seja atualizada após a carga da página
-    $(document).ready(function() {
-        console.log('[DEBUG] Inicializando evento de atualização manual da tabela de prêmios');
-        
-        // Função para atualizar a tabela de prêmios após um pequeno atraso
-        function updatePremioTableAfterDelay() {
-            setTimeout(function() {
-                console.log('[DEBUG] Executando atualização manual da tabela de prêmios');
-                
-                // Fazer a chamada AJAX para obter os dados mais recentes
-                $.ajax({
-                    url: '/administrativo/futligas/jogadores/dados/',
-                    type: 'GET',
-                    success: function(response) {
-                        if (!response || !response.prizes) {
-                            console.error('[DEBUG] Dados inválidos recebidos na atualização manual');
-                            return;
-                        }
-                        
-                        console.log('[DEBUG] Dados recebidos na atualização manual:', response);
-                        
-                        // Obter os nomes dos níveis diretamente da tabela principal
-                        const nivelNames = [];
-                        $('#table tbody tr').each(function() {
-                            const name = $(this).find('td:eq(0)').text().trim().replace(/^[\s\u2630☰]+/, '').trim();
-                            nivelNames.push(name);
-                        });
-                        
-                        if (nivelNames.length === 0) {
-                            console.warn('[DEBUG] Nenhum nível encontrado na tabela principal durante atualização manual');
-                            return;
-                        }
-                        
-                        console.log('[DEBUG] Níveis encontrados:', nivelNames);
-                        
-                        // Limpar e reconstruir o cabeçalho da tabela de prêmios
-                        let headerRow = $('#premiosTable thead tr');
-                        headerRow.empty();
-                        headerRow.append('<th class="per15">Posição</th>');
-                        headerRow.append('<th class="per15 center-middle">Imagem</th>');
-                        
-                        nivelNames.forEach(nivel => {
-                            headerRow.append(`<th class="per15">${nivel}</th>`);
-                        });
-                        
-                        headerRow.append('<th class="per15">Ações</th>');
-                        
-                        // Limpar e reconstruir o corpo da tabela de prêmios
-                        let tbody = $('#premiosTable tbody');
-                        tbody.empty();
-                        
-                        // Para cada prêmio na resposta
-                        response.prizes.forEach(premio => {
-                            let row = $('<tr>');
-                            row.attr('data-position', premio.position);
-                            row.attr('data-id', premio.id);
-                            
-                            // Adicionar célula de posição
-                            row.append(`<td>${premio.position}º</td>`);
-                            
-                            // Adicionar célula de imagem
-                            let imageCell = $('<td class="center-middle">');
-                            if (premio.image) {
-                                imageCell.append(`<img src="${premio.image}" alt="Imagem do Prêmio" style="width: 40px; height: 40px;">`);
-                            } else {
-                                imageCell.append('<i class="fa fa-file-image-o" style="font-size: 24px; color: #ccc;"></i>');
-                            }
-                            row.append(imageCell);
-                            
-                            // Adicionar células para cada nível com seus valores
-                            nivelNames.forEach(nivel => {
-                                let value = 1000; // Valor padrão
-                                
-                                // Verificar se este nível tem um valor definido para este prêmio
-                                if (premio.values && premio.values[nivel] !== undefined) {
-                                    value = premio.values[nivel];
-                                    console.log(`[DEBUG] Prêmio ${premio.position}, nível ${nivel}: valor=${value}`);
-                                } else {
-                                    console.log(`[DEBUG] Prêmio ${premio.position}, nível ${nivel}: usando valor padrão 1000`);
-                                }
-                                
-                                let inputCell = $('<td class="premio-valor">');
-                                inputCell.append(`<input type="number" class="form-control premio-input" data-nivel="${nivel}" value="${value}" min="0">`);
-                                row.append(inputCell);
-                            });
-                            
-                            // Adicionar célula de ações
-                            let actionsCell = $('<td>');
-                            actionsCell.append(`<button type="button" class="btn btn-danger btn-excluir-premio" data-premio-id="${premio.id}"><i class="fa fa-trash"></i></button>`);
-                            row.append(actionsCell);
-                            
-                            tbody.append(row);
-                        });
-                        
-                        // Inicializar novamente os botões de exclusão
-                        initDeletePremioButtons();
-                        
-                        console.log('[DEBUG] Atualização manual da tabela de prêmios concluída');
-                    },
-                    error: function(error) {
-                        console.error('[DEBUG] Erro ao obter dados dos prêmios na atualização manual:', error);
-                    }
-                });
-            }, 500); // Aguarda 500ms para garantir que a página está totalmente carregada
-        }
-        
-        // Executa a atualização manual quando a aba de prêmios for clicada
-        $('a[href="#premios"]').on('click', function() {
-            console.log('[DEBUG] Aba de prêmios clicada, atualizando tabela');
-            updatePremioTableAfterDelay();
-        });
-        
-        // Também atualiza automaticamente se a aba de prêmios já estiver ativa na carga da página
-        if ($('a[href="#premios"]').parent().hasClass('active')) {
-            console.log('[DEBUG] Aba de prêmios já está ativa na carga, atualizando tabela');
-            updatePremioTableAfterDelay();
-        }
-        
-        // Executar atualizações periódicas enquanto a aba de prêmios estiver ativa
-        setInterval(function() {
-            if ($('a[href="#premios"]').parent().hasClass('active')) {
-                console.log('[DEBUG] Verificação periódica da tabela de prêmios');
-                
-                // Verificar se todos os inputs têm valores corretos
-                let todosValoresCorretos = true;
-                const primeirosValores = {};
-                
-                // Checar na primeira linha se todos os valores são diferentes de 1000
-                const $primeiraLinha = $('#premiosTable tbody tr:first-child');
-                if ($primeiraLinha.length) {
-                    $primeiraLinha.find('input.premio-input').each(function() {
-                        const $input = $(this);
-                        const nivel = $input.data('nivel');
-                        const valor = parseInt($input.val() || "0");
-                        
-                        primeirosValores[nivel] = valor;
-                        
-                        // Se todos valores ainda forem 1000, algo está errado
-                        if (valor === 1000) {
-                            todosValoresCorretos = false;
-                        }
-                    });
-                    
-                    // Se encontramos valores incorretos, forçar uma atualização
-                    if (!todosValoresCorretos) {
-                        console.log('[DEBUG] Detectados valores padrão, forçando atualização da tabela de prêmios');
-                        updatePremioTableAfterDelay();
-                    } else {
-                        console.log('[DEBUG] Valores dos prêmios parecem estar corretos');
-                    }
-                }
-            }
-        }, 3000); // Verifica a cada 3 segundos
-    });
-    // ... existing code ...
-
-    // Função para carregar dados especificamente para a aba de prêmios
-    function carregarTabPremios() {
-        console.log('[CARREGAR-PREMIO] Iniciando carregamento dos dados de prêmios');
-        
-        $.ajax({
-            url: '/administrativo/futligas/jogadores/dados/',
-            type: 'GET',
-            dataType: 'json',
-            cache: false, // Importante: impede o cache do navegador
-            success: function(response) {
-                console.log('[CARREGAR-PREMIO] Dados recebidos com sucesso');
-                
-                if (!response || !response.success) {
-                    console.error('[CARREGAR-PREMIO] Resposta inválida do servidor:', response);
-                    return;
-                }
-                
-                // Pegar os nomes dos níveis da tabela principal para garantir a ordem correta
-                const niveis = [];
-                $('#table tbody tr').each(function() {
-                    const nivelNome = $(this).find('td:first-child').text().trim();
-                    if (nivelNome) {
-                        niveis.push(nivelNome);
-                    }
-                });
-                
-                console.log('[CARREGAR-PREMIO] Níveis encontrados:', niveis);
-                
-                // Reconstruir a tabela de prêmios com os dados do servidor
-                const $tablePremios = $('#premiosTable');
-                
-                // Limpar o conteúdo atual do cabeçalho (exceto as duas primeiras colunas e a última)
-                const $headerRow = $tablePremios.find('thead tr');
-                $headerRow.find('th:not(:first-child):not(:nth-child(2)):not(:last-child)').remove();
-                
-                // Adicionar colunas de níveis ao cabeçalho
-                let headersInserted = 0;
-                niveis.forEach(nivel => {
-                    $('<th>', {
-                        text: nivel,
-                        class: 'per15'
-                    }).insertBefore($headerRow.find('th:last-child'));
-                    headersInserted++;
-                });
-                
-                console.log('[CARREGAR-PREMIO] Inseridas', headersInserted, 'colunas de nível no cabeçalho');
-                
-                // Limpar o corpo da tabela
-                const $tableBody = $tablePremios.find('tbody');
-                $tableBody.empty();
-                
-                // Adicionar linhas de prêmios
-                if (response.prizes && response.prizes.length > 0) {
-                    console.log('[CARREGAR-PREMIO] Processando', response.prizes.length, 'prêmios');
-                    
-                    response.prizes.forEach(premio => {
-                        const $row = $('<tr>', {
-                            'data-id': premio.id,
-                            'data-position': premio.position
-                        });
-                        
-                        // Coluna Posição
-                        $row.append(`
-                            <td class="position">${premio.position}</td>
-                        `);
-                        
-                        // Coluna Imagem
-                        let imageHtml = '';
-                        if (premio.image) {
-                            imageHtml = `<img src="${premio.image}" alt="Imagem do prêmio" class="thumbnail-img">`;
-                        } else {
-                            imageHtml = '<i class="fa fa-file-image-o" style="font-size: 24px; color: #ccc;"></i>';
-                        }
-                        
-                        $row.append(`
-                            <td class="center-middle" data-has-image="${!!premio.image}">
-                                ${imageHtml}
-                            </td>
-                        `);
-                        
-                        // Colunas de valor por nível
-                        niveis.forEach(nivel => {
-                            let valor = 1000; // Valor padrão
-                            
-                            // Verificar se existe valor para este nível
-                            if (premio.values && typeof premio.values[nivel] !== 'undefined') {
-                                valor = premio.values[nivel];
-                                console.log(`[CARREGAR-PREMIO] Valor encontrado para prêmio ${premio.position}, nível ${nivel}: ${valor}`);
-                            } else {
-                                console.log(`[CARREGAR-PREMIO] Valor padrão usado para prêmio ${premio.position}, nível ${nivel}: ${valor}`);
-                            }
-                            
-                            $row.append(`
-                                <td class="premio-valor">
-                                    <input type="number" 
-                                           class="form-control premio-input" 
-                                           data-nivel="${nivel}" 
-                                           value="${valor}" 
-                                           min="0">
-                                </td>
-                            `);
-                        });
-                        
-                        // Coluna Ações
-                        $row.append(`
-                            <td class="actions">
-                                <button type="button" class="btn btn-danger btn-sm btn-excluir-premio" data-premio-id="${premio.id}">
-                                    <i class="fa fa-trash"></i>
-                                </button>
-                            </td>
-                        `);
-                        
-                        $tableBody.append($row);
-                    });
-                    
-                    console.log('[CARREGAR-PREMIO] Tabela de prêmios reconstruída com sucesso');
-                    
-                    // Atualizar a ordem das colunas para garantir consistência
-                    if (typeof window.fixColumnOrder === 'function') {
-                        window.fixColumnOrder();
-                    }
-                    
-                    // Garantir que os botões de exclusão funcionem
-                    initDeletePremioButtons();
-                } else {
-                    console.log('[CARREGAR-PREMIO] Nenhum prêmio encontrado na resposta');
-                }
-            },
-            error: function(xhr, status, error) {
-                console.error('[CARREGAR-PREMIO] Erro ao carregar dados:', error);
-                console.error('Status:', status);
-                console.error('Resposta:', xhr.responseText);
-            }
-        });
-    }
-
-    // Adiciona evento para mudança de aba e carrega dados quando a página é carregada
-    $(document).ready(function() {
-        console.log('[PREMIO-FIX] Inicializando eventos de carregamento de dados');
-        
-        // Carregar a aba de prêmios quando o usuário clicar nela
-        $('a[href="#premios"]').on('click', function() {
-            console.log('[PREMIO-FIX] Clique na aba de prêmios detectado');
-            carregarTabPremios();
-        });
-        
-        // Carregar a aba de prêmios se ela estiver ativa no carregamento da página
-        if ($('a[href="#premios"]').parent().hasClass('active')) {
-            console.log('[PREMIO-FIX] Aba de prêmios já está ativa na carga da página');
-            // Pequeno atraso para garantir que a tabela principal de níveis já esteja carregada
-            setTimeout(carregarTabPremios, 500);
-        }
-        
-        // Carregar também após o salvamento
-        // Substituir o handler atual do botão de salvar
-        $('#successToast').off('click').on('click', function(e) {
-            e.preventDefault();
-            saveData();
-            
-            // Configurar um callback para recarregar os dados após o salvamento
-            $(document).ajaxComplete(function(event, xhr, settings) {
-                if (settings.url && settings.url.includes('futligas/jogadores/salvar')) {
-                    console.log('[PREMIO-FIX] Salvamento completado, recarregando dados');
-                    // Pequeno atraso para garantir que os dados no servidor sejam atualizados
-                    setTimeout(function() {
-                        if ($('a[href="#premios"]').parent().hasClass('active')) {
-                            carregarTabPremios();
-                        }
-                        // Remover o handler para não executar várias vezes
-                        $(document).off('ajaxComplete');
-                    }, 1000);
-                }
-            });
-        });
-    });
-
-    // Corrige o evento ajaxComplete para detectar salvamentos
-    $(document).ready(function() {
-        // ... existing code ...
-        
-        // Definir evento global para detectar quando operações AJAX forem concluídas
-        $(document).ajaxComplete(function(event, xhr, settings) {
-            // Se for uma operação de salvamento concluída com sucesso
-            if ((settings.url.includes('/administrativo/futligas/jogadores/salvar/')) && xhr.status === 200) {
-                try {
-                    const response = JSON.parse(xhr.responseText);
-                    if (response.success) {
-                        console.log('[AJAX-COMPLETE] Operação de salvamento bem-sucedida, atualizando dados de prêmios');
-                        setTimeout(carregarTabPremios, 500);
-                    }
-                } catch (e) {
-                    console.error('[AJAX-COMPLETE] Erro ao processar resposta:', e);
-                }
-            }
-        });
-        
-        // ... existing code ...
-    });
-
-    // ... existing code ...
-
-    // Função de salvamento corrigida para usar apenas URLs com caminho completo
-    function trySaveWithURL(urlIndex = 0) {
-        const urls = [
-            '/administrativo/futligas/jogadores/salvar/'
-        ];
-
-        if (urlIndex >= urls.length) {
-            console.error('Todas as URLs tentadas falharam.');
-            toastr.error('Não foi possível salvar. Por favor, tente novamente.');
-            $('#saveButton, #successToast').prop('disabled', false);
-            return;
-        }
-
-        // ... rest of function remains unchanged ...
-    }
-
     // ... existing code ...
 });

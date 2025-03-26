@@ -2576,8 +2576,305 @@ $(document).ready(function() {
         });
     }
 
+    // Coletar prêmios da tabela de uma forma que preserva os valores
+    function collectPrizesFromTable() {
+        console.log('[DEBUG-PREMIO] Coletando prêmios da tabela...');
+        const prizes = [];
+        
+        $('#premiosTable tbody tr').each(function() {
+            const $row = $(this);
+            const position = $row.data('position') || parseInt($row.find('td:first').text().replace('°', '')) || 0;
+            const id = $row.data('id') || null;
+            
+            const values = {};
+            
+            // Procurar a imagem do prêmio
+            let image = null;
+            const $imageElement = $row.find('td.center-middle img');
+            if ($imageElement.length) {
+                image = $imageElement.attr('src');
+            }
+            
+            // Coletar valores para cada nível
+            $row.find('input.premio-valor, input.premio-input').each(function() {
+                const $input = $(this);
+                let nivel = $input.data('nivel');
+                
+                // Remover o prefixo ☰ do nome do nível
+                if (nivel) {
+                    nivel = nivel.replace(/^[\s\u2630☰]+/, '').trim();
+                    
+                    let value = parseInt($input.val() || "0");
+                    if (isNaN(value)) value = 0;
+                    values[nivel] = value;
+                    
+                    console.log(`[DEBUG-PREMIO] Coletado valor ${value} para nível ${nivel} na posição ${position}`);
+                }
+            });
+            
+            prizes.push({
+                id: id,
+                position: position,
+                image: image,
+                values: values
+            });
+        });
+        
+        console.log(`[DEBUG-PREMIO] Total de ${prizes.length} prêmios coletados da tabela`);
+        return prizes;
+    }
+
+    // Modificação na função updatePremiosTable para preservar valores
     function updatePremiosTable() {
         console.log('[DEBUG] Iniciando updatePremiosTable()');
+        
+        // PRIMEIRO: Salvar os prêmios existentes antes de atualizar a tabela
+        const premiosAntigosList = collectPrizesFromTable();
+        const premiosAntigos = {};
+        
+        // Converter para formato mais fácil de procurar por posição
+        premiosAntigosList.forEach(premio => {
+            premiosAntigos[premio.position] = premio;
+        });
+        
+        console.log('[DEBUG] Prêmios antigos salvos:', premiosAntigos);
+        
+        // Verificar quantas linhas já existem
+        const rowCount = $('#premiosTable tbody tr').length;
+        
+        // Se não houver linhas ou for a primeira carga, inicializar a tabela
+        if (rowCount === 0) {
+            // Inicializar o cabeçalho da tabela
+            const $thead = $('#premiosTable thead tr');
+            $thead.empty();
+            
+            // Adicionar as colunas na ordem correta
+            $thead.append('<th class="per15">Posição</th>');
+            $thead.append('<th class="per15 center-middle">Imagem</th>');
+            
+            // Adicionar colunas para cada nível
+            $('#table tbody tr').each(function() {
+                const levelName = $(this).find('td:eq(0)').text();
+                $thead.append(`<th class="per10">${levelName}</th>`);
+            });
+            
+            // Adicionar coluna de ações
+            $thead.append('<th class="per15">Ações</th>');
+        } else {
+            // Se já existem linhas, salvar o header atual
+            const $thead = $('#premiosTable thead tr');
+            
+            // Remover tudo, exceto a primeira coluna (Posição), a segunda (Imagem) e a última (Ações)
+            const $positionCol = $thead.find('th:first-child').detach();
+            const $imageCol = $thead.find('th.center-middle').detach();
+            const $actionsCol = $thead.find('th:last-child').detach();
+            
+            $thead.empty();
+            
+            // Adicionar as colunas na ordem correta
+            $thead.append($positionCol);
+            $thead.append($imageCol);
+            
+            // Adicionar colunas para cada nível
+            $('#table tbody tr').each(function() {
+                const levelName = $(this).find('td:eq(0)').text();
+                $thead.append(`<th class="per10">${levelName}</th>`);
+            });
+            
+            // Adicionar coluna de ações
+            $thead.append($actionsCol);
+        }
+        
+        // Atualizar as linhas existentes ou adicionar novas
+        $('#premiosTable tbody tr').each(function(index) {
+            const $row = $(this);
+            const position = $row.data('position') || $row.attr('data-position') || (index + 1);
+            
+            // Remover todas as células após a segunda coluna (Imagem) e antes da última (Ações)
+            const $positionCell = $row.find('td:first-child').detach();
+            const $imageCell = $row.find('td.center-middle').detach();
+            const $actionsCell = $row.find('td:last-child').detach();
+            
+            $row.empty();
+            
+            // Adicionar células na ordem correta
+            $row.append($positionCell);
+            $row.append($imageCell);
+            
+            // Adicionar células para cada nível
+            $('#table tbody tr').each(function() {
+                const levelName = $(this).find('td:eq(0)').text().trim();
+                
+                // MODIFICAÇÃO: Usar o valor do prêmio salvo, se disponível
+                let valorArmazenado = 0; // Valor padrão
+                
+                // Verificar se temos um valor anterior para esta posição e nível
+                if (premiosAntigos[position] && premiosAntigos[position].values) {
+                    const valorNivel = premiosAntigos[position].values[levelName];
+                    if (valorNivel !== undefined) {
+                        valorArmazenado = valorNivel;
+                        console.log(`[DEBUG] Recuperado valor ${valorArmazenado} para posição ${position}, nível ${levelName}`);
+                    }
+                }
+                
+                $row.append(`
+                    <td class="premio-valor">
+                        <input type="number" 
+                               class="form-control premio-input" 
+                               data-nivel="${levelName}" 
+                               value="${valorArmazenado}" 
+                               min="0">
+                    </td>
+                `);
+            });
+            
+            // Adicionar a célula de ações
+            $row.append($actionsCell);
+        });
+        
+        // Persistir os valores no localStorage para evitar perda em recargas
+        try {
+            const premiosAtualizados = collectPrizesFromTable();
+            localStorage.setItem('premiosAtual', JSON.stringify(premiosAtualizados));
+            console.log('[DEBUG] Valores de prêmios salvos no localStorage');
+        } catch (e) {
+            console.error('[DEBUG] Erro ao salvar valores no localStorage:', e);
+        }
+        
+        console.log('[DEBUG] updatePremiosTable() concluído');
+    }
+
+    // Modificar a função updateUIWithServerData para usar os valores corretos dos prêmios
+    function updateUIWithServerData(data) {
+        console.log("Atualizando interface com dados do servidor:", data);
+        
+        // NOVO: Verificar se temos dados locais salvos
+        let premiosLocalStorage = [];
+        try {
+            const premiosString = localStorage.getItem('premiosAtual');
+            if (premiosString) {
+                premiosLocalStorage = JSON.parse(premiosString);
+                console.log('[DEBUG] Recuperados dados do localStorage:', premiosLocalStorage.length, 'prêmios');
+            }
+        } catch (e) {
+            console.error('[DEBUG] Erro ao recuperar dados do localStorage:', e);
+        }
+        
+        // Converter para um formato mais fácil de buscar
+        const premiosLocal = {};
+        premiosLocalStorage.forEach(premio => {
+            premiosLocal[premio.position] = premio;
+        });
+        
+        // Adiciona prêmios
+        if (data.prizes && data.prizes.length > 0) {
+            console.log("Atualizando tabela de prêmios com", data.prizes.length, "prêmios");
+            
+            // Limpar a tabela de prêmios
+            $('#premios table tbody').empty();
+            
+            data.prizes.forEach(premio => {
+                console.log(`Criando linha para o prêmio posição ${premio.position}, ID=${premio.id}`);
+                
+                // NOVO: Verificar se temos valores locais para esta posição
+                const premioLocal = premiosLocal[premio.position];
+                
+                // CORREÇÃO: Criando a linha com a ordem correta das colunas
+                let newRow = $(`
+                    <tr data-position="${premio.position}" ${premio.id ? `data-id="${premio.id}"` : ''}>
+                        <td>${premio.position}°</td>
+                        <td class="center-middle">
+                            <div class="premio-image-container" style="position: relative; display: inline-block;">
+                                <div class="premio-image-preview dropzone-imagem" style="height: 32px; width: 32px; border: 1px dashed #ccc; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                                ${premio.image ?
+                                    `<img src="${premio.image}" style="max-width: 100%; max-height: 32px;">` :
+                                `<i class="fa fa-plus"></i>`
+                                }
+                            </div>
+                            <input type="file" class="premio-image" style="display: none;" accept="image/*">
+                            </div>
+                        </td>
+                    `);
+                    
+                data.levels.forEach(nivel => {
+                    // Obtém o valor para este nível
+                    let valorPremio = 0; // Valor padrão
+                    const nivelName = nivel.name;
+                    const nivelNameClean = nivel.name.replace(/^[\s\u2630☰]+/, '').trim();
+                    
+                    // Prioridade de origem dos valores:
+                    // 1. Valores salvos localmente (localStorage)
+                    // 2. Valores vindo do servidor (premio.values)
+                    // 3. Valores do formato antigo (prize_values) 
+                    // 4. Valor padrão (0)
+                    
+                    // 1. Verificar se temos valor salvo localmente
+                    if (premioLocal && premioLocal.values && premioLocal.values[nivelNameClean] !== undefined) {
+                        valorPremio = premioLocal.values[nivelNameClean];
+                        console.log(`Valor recuperado do localStorage para nível ${nivelNameClean}: ${valorPremio}`);
+                    } 
+                    // 2. Tentar obter do formato enviado pelo servidor
+                    else if (premio.values && premio.values[nivelName] !== undefined) {
+                        valorPremio = premio.values[nivelName];
+                        console.log(`Valor obtido do servidor para nível ${nivelName}: ${valorPremio}`);
+                    }
+                    // 3. Tentar formato antigo (fallback)
+                    else if (premio.prize_values) {
+                        premio.prize_values.forEach(pv => {
+                            if (pv.level_id === nivel.id || pv.level_name === nivelName || pv.level_name === nivelNameClean) {
+                                valorPremio = pv.value;
+                                console.log(`Valor encontrado em prize_values para nível ${nivelName}: ${valorPremio}`);
+                            }
+                        });
+                    }
+                    
+                    newRow.append(`
+                        <td class="premio-valor">
+                            <input type="number" class="form-control premio-valor" data-nivel="${nivelName}" value="${valorPremio}" min="0">
+                        </td>
+                    `);
+                });
+                
+                // Adiciona coluna de ações
+                newRow.append(`
+                    <td>
+                        <button type="button" class="btn btn-danger btn-xs btn-delete-prize" data-prize-id="${premio.id || ''}" title="Excluir">
+                            <i class="glyphicon glyphicon-trash"></i>
+                        </button>
+                    </td>
+                `);
+                
+                $('#premios table tbody').append(newRow);
+                
+                // Inicializa manipuladores de eventos
+                const row = $('#premios table tbody tr').last();
+                initPremioImagePreview(row);
+                
+                console.log(`Criada linha para o prêmio posição ${premio.position}, ID=${premio.id}`);
+            });
+
+            // IMPORTANTE: Após adicionar todas as linhas, verificar se a ordem das colunas está correta
+            if (typeof window.fixColumnOrder === 'function') {
+                console.log("Aplicando correção da ordem das colunas após atualização");
+                window.fixColumnOrder();
+            }
+            
+            // Inicializar botões de exclusão
+            initDeletePremioButtons();
+        }
+        
+        // Salvar os valores atualizados no localStorage
+        try {
+            const premiosAtualizados = collectPrizesFromTable();
+            localStorage.setItem('premiosAtual', JSON.stringify(premiosAtualizados));
+            console.log('[DEBUG] Valores de prêmios atualizados salvos no localStorage');
+        } catch (e) {
+            console.error('[DEBUG] Erro ao salvar valores no localStorage:', e);
+        }
+    }
+
+    function updatePremiosTableWithoutReset() {
+        console.log('[DEBUG] Iniciando updatePremiosTableWithoutReset()');
         
         // Coletar valores atuais antes de atualizar a tabela
         const valoresAtuais = {};
