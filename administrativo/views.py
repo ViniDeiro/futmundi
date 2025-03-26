@@ -2079,13 +2079,34 @@ def futliga_jogador_salvar(request):
         print(f"- Prêmios: {len(data.get('prizes', []))}", flush=True)
         print(f"- Prêmios para exclusão: {len(data.get('deleted_prize_ids', []))}", flush=True)
         
+        # Verificação ajustada: permite salvar mesmo sem níveis se for a primeira vez
         if not data.get('levels'):
-            print("[DEBUG-PREMIO] ERRO: Nenhum nível encontrado nos dados", flush=True)
-            return JsonResponse({'success': False, 'message': 'Nenhum nível encontrado'})
+            print("[DEBUG-PREMIO] AVISO: Nenhum nível encontrado nos dados. Criando nível padrão...", flush=True)
+            # Criar um nível padrão se não existirem níveis (inicialização)
+            data['levels'] = [{
+                'name': 'Básico',
+                'players': 0,
+                'premium_players': 0,
+                'owner_premium': 0,
+                'image': None
+            }]
+            print("[DEBUG-PREMIO] Nível padrão criado para inicialização", flush=True)
             
+        # Verificação ajustada: permite salvar mesmo sem prêmios se for a primeira vez
         if not data.get('prizes'):
-            print("[DEBUG-PREMIO] ERRO: Nenhum prêmio encontrado nos dados", flush=True)
-            return JsonResponse({'success': False, 'message': 'Nenhum prêmio encontrado'})
+            print("[DEBUG-PREMIO] AVISO: Nenhum prêmio encontrado nos dados. Criando prêmio padrão...", flush=True)
+            # Criar um prêmio padrão se não existirem prêmios (inicialização)
+            defaultValues = {}
+            for level in data.get('levels', []):
+                defaultValues[level['name']] = 0
+            
+            data['prizes'] = [{
+                'position': 1,
+                'values': defaultValues,
+                'image': None,
+                'league_id': 6
+            }]
+            print("[DEBUG-PREMIO] Prêmio padrão criado para inicialização", flush=True)
             
         # Processa os prêmios marcados para exclusão
         deleted_prize_ids = data.get('deleted_prize_ids', [])
