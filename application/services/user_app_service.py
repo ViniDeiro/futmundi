@@ -361,7 +361,7 @@ class UserAppService:
             True se disponível, False caso contrário
         """
         return self.user_repository.is_email_available(email, current_user_id)
-
+    
     def add_daily_reward(self, user_id: int, day_of_week: int) -> User:
         """
         Adiciona recompensa diária ao usuário com base no dia da semana.
