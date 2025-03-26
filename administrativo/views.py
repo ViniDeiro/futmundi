@@ -2192,27 +2192,47 @@ def futliga_jogador_salvar(request):
             print(f"\n[DEBUG-PREMIO] Iniciando processamento de prêmios...", flush=True)
             saved_prizes = []
             
-            # CORREÇÃO: Exclui todos os prêmios existentes para a liga 6 (exceto os que estão sendo atualizados)
-            print(f"[DEBUG-PREMIO] Excluindo prêmios existentes da liga 6 para evitar conflitos de posição", flush=True)
-            # Se já existirem prêmios, exclui-os antes de criar novos para evitar conflito de unicidade
-            CustomLeaguePrize.objects.filter(league_id=6).delete()
-            
+            # Mapeamento de prêmios enviados por ID (para saber quais precisam ser criados x quais atualizar)
+            prize_ids_in_payload = [p.get('id') for p in data['prizes'] if p.get('id') is not None]
+            print(f"[DEBUG-PREMIO] IDs de prêmios no payload: {prize_ids_in_payload}", flush=True)
+
+            # Exclua apenas os prêmios existentes que não estão no payload atual
+            prizes_to_delete = CustomLeaguePrize.objects.filter(league_id=6).exclude(id__in=prize_ids_in_payload)
+            deleted_count = prizes_to_delete.count()
+            prizes_to_delete.delete()
+            print(f"[DEBUG-PREMIO] Excluídos {deleted_count} prêmios que não estão no payload atual", flush=True)
+
             # Cria ou atualiza os prêmios
             for prize_data in data['prizes']:
                 print(f"\n[DEBUG-PREMIO] Processando prêmio posição {prize_data['position']}", flush=True)
                 try:
-                    # Criar novo prêmio
-                    print(f"[DEBUG-PREMIO] Criando novo prêmio para posição {prize_data['position']}", flush=True)
-                    league_id = prize_data.get('league_id', 6)  # Usa o league_id enviado ou 6 como padrão
-                    try:
-                        league = CustomLeague.objects.get(id=league_id)
-                        prize = CustomLeaguePrize.objects.create(position=prize_data['position'], league=league)
-                        print(f"[DEBUG-PREMIO] Usando league_id={league_id} para novo prêmio", flush=True)
-                    except Exception as e:
-                        print(f"[DEBUG-PREMIO] Erro ao obter liga {league_id}: {e}", flush=True)
-                        # Fallback para league_id=6
-                        league = CustomLeague.objects.get(id=6)
-                        prize = CustomLeaguePrize.objects.create(position=prize_data['position'], league=league)
+                    # Verifica se o prêmio já existe pelo ID
+                    prize = None
+                    if prize_data.get('id'):
+                        print(f"[DEBUG-PREMIO] Buscando prêmio existente com ID {prize_data['id']}", flush=True)
+                        try:
+                            prize = CustomLeaguePrize.objects.get(id=prize_data['id'])
+                            print(f"[DEBUG-PREMIO] Encontrado prêmio existente ID={prize.id}, atualizando posição para {prize_data['position']}", flush=True)
+                            prize.position = prize_data['position']
+                            prize.save()
+                        except CustomLeaguePrize.DoesNotExist:
+                            print(f"[DEBUG-PREMIO] Prêmio com ID {prize_data['id']} não encontrado, será criado como novo", flush=True)
+                            prize = None
+
+                    # Se não existir, cria um novo
+                    if not prize:
+                        # Criar novo prêmio
+                        print(f"[DEBUG-PREMIO] Criando novo prêmio para posição {prize_data['position']}", flush=True)
+                        league_id = prize_data.get('league_id', 6)  # Usa o league_id enviado ou 6 como padrão
+                        try:
+                            league = CustomLeague.objects.get(id=league_id)
+                            prize = CustomLeaguePrize.objects.create(position=prize_data['position'], league=league)
+                            print(f"[DEBUG-PREMIO] Usando league_id={league_id} para novo prêmio", flush=True)
+                        except Exception as e:
+                            print(f"[DEBUG-PREMIO] Erro ao obter liga {league_id}: {e}", flush=True)
+                            # Fallback para league_id=6
+                            league = CustomLeague.objects.get(id=6)
+                            prize = CustomLeaguePrize.objects.create(position=prize_data['position'], league=league)
                             
                     # Processa a imagem do prêmio
                     prize_image_url = None
@@ -3786,8 +3806,7 @@ def campeonato_editar(request, championship_id=None):
                             if is_apply_request:
                                 return JsonResponse({
                                     'success': True,
-                                    'message': 'Campeonato salvo com sucesso, mas houve erro ao processar partidas',
-                                    'redirect_url': reverse('administrativo:campeonatos')
+                                    'message': 'Campeonato salvo com sucesso, mas houve erro ao processar partidas'
                                 })
                             else:
                                 messages.error(request, error_msg)
@@ -3796,28 +3815,45 @@ def campeonato_editar(request, championship_id=None):
                     # Mensagem de sucesso para o usuário
                     if not is_apply_request:
                         messages.success(request, 'Campeonato atualizado com sucesso')
-                
-                    # Sempre retorna sucesso com redirecionamento
+                        return JsonResponse({
+                            'success': True,
+                            'message': 'Campeonato salvo com sucesso',
+                            'redirect_url': reverse('administrativo:campeonatos')
+                        })
+                    else:
+                        # Para solicitações de "Aplicar", não redirecione
+                        return JsonResponse({
+                            'success': True,
+                            'message': 'Alterações aplicadas com sucesso'
+                        })
+                    
+            except IntegrityError as e:
+                # Se for uma solicitação de "Aplicar", não redirecione
+                if is_apply_request:
+                    return JsonResponse({
+                        'success': True,
+                        'message': 'Alterações aplicadas com sucesso'
+                    })
+                else:
                     return JsonResponse({
                         'success': True,
                         'message': 'Campeonato salvo com sucesso',
                         'redirect_url': reverse('administrativo:campeonatos')
                     })
-                    
-            except IntegrityError as e:
-                # Mesmo com erro de unique constraint, retorna sucesso
-                    return JsonResponse({
-                        'success': True,
-                    'message': 'Campeonato salvo com sucesso',
-                    'redirect_url': reverse('administrativo:campeonatos')
-                    })
             except Exception as e:
                 error_msg = f"Erro ao atualizar campeonato: {str(e)}"
                 logger.error(error_msg)
-                return JsonResponse({
-                    'success': True,
-                    'message': 'Campeonato salvo com sucesso',
-                    'redirect_url': reverse('administrativo:campeonatos')
+                # Se for uma solicitação de "Aplicar", não redirecione
+                if is_apply_request:
+                    return JsonResponse({
+                        'success': True,
+                        'message': 'Alterações aplicadas com sucesso'
+                    })
+                else:
+                    return JsonResponse({
+                        'success': True,
+                        'message': 'Campeonato salvo com sucesso',
+                        'redirect_url': reverse('administrativo:campeonatos')
                     })
         
         # Obtém dados para o formulário
@@ -7191,6 +7227,7 @@ def get_rounds_by_stage(request):
         championship_id = request.POST.get('championship_id')  # Adicionado para garantir contexto
         
         print(f"DEBUG: get_rounds_by_stage chamado com stage_id={stage_id}, template_id={template_id}, template_stage_id={template_stage_id}, championship_id={championship_id}")
+        print(f"DEBUG: Todos os parâmetros da requisição: {request.POST}")
         
         try:
             if stage_id:
@@ -7202,6 +7239,10 @@ def get_rounds_by_stage(request):
                     # Verificar se há rodadas para esta fase
                     rounds = ChampionshipRound.objects.filter(stage=stage).order_by('number')
                     print(f"DEBUG: Encontradas {rounds.count()} rodadas para esta fase")
+                    
+                    # Log detalhado de cada rodada encontrada
+                    for round_obj in rounds:
+                        print(f"DEBUG: Rodada {round_obj.number} (ID: {round_obj.id}) da fase {stage.name}")
                     
                     if rounds.count() == 0 and championship_id:
                         # Se não encontrou rodadas, mas temos ID do campeonato, tentar criar rodadas padrão
@@ -7225,6 +7266,8 @@ def get_rounds_by_stage(request):
                                         'success': True,
                                         'rounds': rounds_data
                                     })
+                                else:
+                                    print(f"DEBUG: Não foi possível encontrar template_stage com nome correspondente ou template_stage.rounds é 0")
                         except Championship.DoesNotExist:
                             print(f"DEBUG: Campeonato com ID={championship_id} não encontrado")
                     
@@ -7251,40 +7294,60 @@ def get_rounds_by_stage(request):
                 # Caso seja uma nova fase baseada em template_stage
                 try:
                     template_stage = TemplateStage.objects.get(id=template_stage_id)
-                    print(f"DEBUG: Fase de template encontrada: {template_stage.name} com {template_stage.rounds} rodadas")
+                    print(f"DEBUG: Usando template_stage_id={template_stage_id}, nome={template_stage.name}, rounds={template_stage.rounds}")
+                    
+                    # Verificar primeiro se já existe uma fase correspondente no campeonato
+                    if championship_id:
+                        try:
+                            championship = Championship.objects.get(id=championship_id)
+                            existing_stage = ChampionshipStage.objects.filter(
+                                championship=championship,
+                                name=template_stage.name
+                            ).first()
+                            
+                            if existing_stage:
+                                print(f"DEBUG: Encontrada fase existente com o mesmo nome: {existing_stage.name} (ID: {existing_stage.id})")
+                                # Verificar se a fase existente tem rodadas
+                                existing_rounds = ChampionshipRound.objects.filter(stage=existing_stage).order_by('number')
+                                
+                                if existing_rounds.exists():
+                                    print(f"DEBUG: A fase existente tem {existing_rounds.count()} rodadas")
+                                    rounds_data = [{'id': r.id, 'number': r.number} for r in existing_rounds]
+                                    return JsonResponse({
+                                        'success': True,
+                                        'rounds': rounds_data
+                                    })
+                        except Championship.DoesNotExist:
+                            print(f"DEBUG: Campeonato com ID={championship_id} não encontrado")
                     
                     # Gera rodadas simuladas baseadas no template_stage
+                    print(f"DEBUG: Gerando rodadas simuladas baseadas no template. Número de rodadas: {template_stage.rounds}")
                     rounds_data = [{'id': f'new_{i}', 'number': i} for i in range(1, template_stage.rounds + 1)]
                     
-                    print(f"DEBUG: Retornando {len(rounds_data)} rodadas simuladas")
                     return JsonResponse({
                         'success': True,
                         'rounds': rounds_data
                     })
                 except TemplateStage.DoesNotExist:
-                    print(f"DEBUG: Template_stage com ID={template_stage_id} não encontrado")
-                
-            elif template_id:
-                # Caso seja uma nova fase, mas só temos template_id
-                print(f"DEBUG: Recebido apenas template_id={template_id} sem stage_id ou template_stage_id")
-                return JsonResponse({
-                    'success': False,
-                    'message': 'É necessário informar o template_stage_id ou stage_id'
-                })
-                
-            # Se não temos nenhum ID válido
-            print("DEBUG: Nenhum ID válido de fase fornecido")
-            return JsonResponse({
-                'success': False,
-                'message': 'Nenhuma fase encontrada. Verifique os parâmetros.'
-            })
+                    print(f"DEBUG: Fase de template com ID={template_stage_id} não encontrada")
+                    return JsonResponse({
+                        'success': False,
+                        'message': f'Fase de template com ID={template_stage_id} não encontrada'
+                    })
             
-        except (ChampionshipStage.DoesNotExist, TemplateStage.DoesNotExist) as e:
-            print(f"DEBUG: Erro ao buscar fase: {str(e)}")
+            # Se chegarmos aqui sem retornar, significa que nem stage_id nem template_stage_id foram fornecidos
+            print(f"DEBUG: Nenhum stage_id ou template_stage_id válido fornecido")
             return JsonResponse({
                 'success': False,
-                'message': f'Erro ao buscar rodadas: {str(e)}'
+                'message': 'É necessário informar stage_id ou template_stage_id',
+                'received_parameters': {
+                    'stage_id': stage_id,
+                    'template_id': template_id,
+                    'template_stage_id': template_stage_id,
+                    'championship_id': championship_id
+                }
             })
+        
         except Exception as e:
             print(f"DEBUG: Erro inesperado em get_rounds_by_stage: {str(e)}")
             import traceback
