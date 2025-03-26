@@ -56,11 +56,11 @@ MIDDLEWARE = [
     "django.contrib.sessions.middleware.SessionMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
+    'administrativo.middleware.ApiDebugMiddleware',  # Middleware para processar requisições de futligas jogadores
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    'administrativo.middleware.ApiDebugMiddleware',
 ]
 
 ROOT_URLCONF = "futmundi.urls"

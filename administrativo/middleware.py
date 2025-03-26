@@ -1,7 +1,9 @@
 import json
 import time
 from datetime import datetime
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
+from django.urls import resolve
+from django.urls.exceptions import Resolver404
 
 class ApiDebugMiddleware:
     def __init__(self, get_response):
@@ -14,12 +16,25 @@ class ApiDebugMiddleware:
             
             # Redireciona automaticamente requisições sem o prefixo 'administrativo'
             if request.path == '/futligas/jogadores/salvar/':
-                print(f"[API-DEBUG] Redirecionando de {request.path} para /administrativo/futligas/jogadores/salvar/")
+                print(f"[API-DEBUG] Processando requisição de {request.path} para view correta")
                 
-                # Preservar o corpo da requisição e o método
-                request.path = '/administrativo/futligas/jogadores/salvar/'
-                request.path_info = '/administrativo/futligas/jogadores/salvar/'
-                
+                # Em vez de modificar a requisição, vamos encontrar a view correta e invocá-la
+                try:
+                    # Tentamos resolver a URL com o prefixo 'administrativo'
+                    admin_path = '/administrativo/futligas/jogadores/salvar/'
+                    resolved = resolve(admin_path)
+                    
+                    # Aqui chamamos a view diretamente com a requisição atual
+                    print(f"[API-DEBUG] Chamando view {resolved.func.__name__} diretamente")
+                    return resolved.func(request)
+                    
+                except Resolver404:
+                    print(f"[API-DEBUG] Não foi possível resolver a URL {admin_path}")
+                    return JsonResponse({
+                        'success': False,
+                        'message': 'Erro de roteamento interno'
+                    }, status=500)
+            
             return self.process_futligas_request(request)
         else:
             # Para outras requisições, apenas passa adiante
