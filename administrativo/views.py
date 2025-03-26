@@ -2065,48 +2065,72 @@ def futliga_classica_editar(request, futliga_id):
 @require_http_methods(["POST"])
 def futliga_jogador_salvar(request):
     import sys
+    import traceback
     sys.stdout.flush()
     print("\n[DEBUG-PREMIO] ==================== INÍCIO DO SALVAMENTO ====================", flush=True)
     try:
+        # Log do tipo de conteúdo
+        print(f"[DEBUG-PREMIO] Content-Type: {request.META.get('CONTENT_TYPE')}", flush=True)
+        print(f"[DEBUG-PREMIO] Tamanho do corpo: {len(request.body)} bytes", flush=True)
+        
         # Tenta ler o corpo da requisição como texto primeiro
-        body = request.body.decode('utf-8')
-        print(f"[DEBUG-PREMIO] Body recebido: {body}", flush=True)
+        try:
+            body = request.body.decode('utf-8')
+            print(f"[DEBUG-PREMIO] Corpo decodificado com sucesso como UTF-8", flush=True)
+        except UnicodeDecodeError:
+            print(f"[DEBUG-PREMIO] Erro ao decodificar como UTF-8, tentando outras codificações", flush=True)
+            try:
+                body = request.body.decode('latin-1')
+                print(f"[DEBUG-PREMIO] Corpo decodificado com sucesso como latin-1", flush=True)
+            except Exception as e:
+                print(f"[DEBUG-PREMIO] Falha em todas as tentativas de decodificação: {str(e)}", flush=True)
+                return JsonResponse({'success': False, 'message': 'Não foi possível decodificar o corpo da requisição'})
         
-        # Agora tenta fazer o parse do JSON
-        data = json.loads(body)
-        print(f"\n[DEBUG-PREMIO] Dados decodificados:", flush=True)
-        print(f"- Níveis: {len(data.get('levels', []))}", flush=True)
-        print(f"- Prêmios: {len(data.get('prizes', []))}", flush=True)
-        print(f"- Prêmios para exclusão: {len(data.get('deleted_prize_ids', []))}", flush=True)
+        print(f"[DEBUG-PREMIO] Corpo da requisição (primeiros 500 caracteres): {body[:500]}...", flush=True)
         
-        # Verificação ajustada: permite salvar mesmo sem níveis se for a primeira vez
+        # Agora tenta fazer o parse do JSON com tratamento específico
+        try:
+            data = json.loads(body)
+            print(f"[DEBUG-PREMIO] JSON decodificado com sucesso", flush=True)
+        except json.JSONDecodeError as e:
+            print(f"[DEBUG-PREMIO] Erro ao decodificar JSON: {str(e)}", flush=True)
+            print(f"[DEBUG-PREMIO] Posição do erro: {e.pos}, Linha: {e.lineno}, Coluna: {e.colno}", flush=True)
+            print(f"[DEBUG-PREMIO] Documento até o erro: {body[:e.pos]}", flush=True)
+            print(f"[DEBUG-PREMIO] Caractere com problema: {body[e.pos:e.pos+10]}", flush=True)
+            
+            # Tentar verificar se há problemas comuns no JSON
+            if "\\'" in body or "\\\"" in body:
+                print("[DEBUG-PREMIO] Possível problema com escape de aspas", flush=True)
+            if body.count('{') != body.count('}'):
+                print("[DEBUG-PREMIO] Número de chaves não corresponde", flush=True)
+            if body.count('[') != body.count(']'):
+                print("[DEBUG-PREMIO] Número de colchetes não corresponde", flush=True)
+            
+            # Tentar uma abordagem alternativa com menos rigor
+            try:
+                import ast
+                print("[DEBUG-PREMIO] Tentando abordagem alternativa com ast.literal_eval", flush=True)
+                data = ast.literal_eval(body)
+                print("[DEBUG-PREMIO] Decodificação alternativa teve sucesso", flush=True)
+            except Exception as alt_e:
+                print(f"[DEBUG-PREMIO] Abordagem alternativa também falhou: {str(alt_e)}", flush=True)
+                return JsonResponse({'success': False, 'message': f'Erro ao decodificar JSON: {str(e)}'})
+        
+        # Log detalhado da estrutura de dados
+        print(f"\n[DEBUG-PREMIO] Estrutura dos dados decodificados:", flush=True)
+        print(f"- Tipo de dados: {type(data)}", flush=True)
+        print(f"- Chaves presentes: {list(data.keys()) if isinstance(data, dict) else 'Não é um dicionário'}", flush=True)
+        print(f"- Níveis: {len(data.get('levels', []))} itens", flush=True)
+        print(f"- Prêmios: {len(data.get('prizes', []))} itens", flush=True)
+        print(f"- Prêmios para exclusão: {len(data.get('deleted_prize_ids', []))} itens", flush=True)
+        
         if not data.get('levels'):
-            print("[DEBUG-PREMIO] AVISO: Nenhum nível encontrado nos dados. Criando nível padrão...", flush=True)
-            # Criar um nível padrão se não existirem níveis (inicialização)
-            data['levels'] = [{
-                'name': 'Básico',
-                'players': 0,
-                'premium_players': 0,
-                'owner_premium': 0,
-                'image': None
-            }]
-            print("[DEBUG-PREMIO] Nível padrão criado para inicialização", flush=True)
+            print("[DEBUG-PREMIO] ERRO: Nenhum nível encontrado nos dados", flush=True)
+            return JsonResponse({'success': False, 'message': 'Nenhum nível encontrado'})
             
-        # Verificação ajustada: permite salvar mesmo sem prêmios se for a primeira vez
         if not data.get('prizes'):
-            print("[DEBUG-PREMIO] AVISO: Nenhum prêmio encontrado nos dados. Criando prêmio padrão...", flush=True)
-            # Criar um prêmio padrão se não existirem prêmios (inicialização)
-            defaultValues = {}
-            for level in data.get('levels', []):
-                defaultValues[level['name']] = 0
-            
-            data['prizes'] = [{
-                'position': 1,
-                'values': defaultValues,
-                'image': None,
-                'league_id': 6
-            }]
-            print("[DEBUG-PREMIO] Prêmio padrão criado para inicialização", flush=True)
+            print("[DEBUG-PREMIO] ERRO: Nenhum prêmio encontrado nos dados", flush=True)
+            return JsonResponse({'success': False, 'message': 'Nenhum prêmio encontrado'})
             
         # Processa os prêmios marcados para exclusão
         deleted_prize_ids = data.get('deleted_prize_ids', [])

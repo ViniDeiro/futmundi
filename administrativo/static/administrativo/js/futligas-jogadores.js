@@ -3372,56 +3372,12 @@ $(document).ready(function() {
                 return [];
             }
             
-            // Se não houver níveis na tabela, crie um nível padrão
             if (niveis.length === 0) {
-                console.warn('[DEBUG] Nenhum nível identificado na tabela. Criando nível padrão para salvar.');
-                // Usar os níveis da memória se disponíveis
-                if (niveisData && niveisData.length > 0) {
-                    console.log('[DEBUG] Usando níveis da memória:', niveisData);
-                    niveisData.forEach(nivel => {
-                        niveis.push({
-                            index: niveis.length + 2, // +2 porque já temos Posição e Imagem
-                            name: nivel.name,
-                            cleanName: nivel.name
-                        });
-                    });
-                } else {
-                    // Criar um nível padrão se não houver níveis em memória
-                    niveis.push({
-                        index: 2,
-                        name: 'Básico',
-                        cleanName: 'Básico'
-                    });
-                    console.log('[DEBUG] Criado nível padrão "Básico" para salvar');
-                }
+                console.warn('[DEBUG] Nenhum nível identificado!');
+                return [];
             }
             
-            // Verificar se temos linhas de prêmios na tabela
-            const rowCount = $premiosTable.find('tbody tr').length;
-            
-            // Se não houver linhas ou a única linha for uma mensagem de "Nenhum prêmio"
-            if (rowCount === 0 || ($premiosTable.find('tbody tr td[colspan]').length > 0)) {
-                console.warn('[DEBUG] Nenhuma linha de prêmio encontrada na tabela. Criando prêmio padrão.');
-                
-                // Criar um prêmio padrão com valores zero para cada nível
-                const defaultValues = {};
-                niveis.forEach(nivel => {
-                    defaultValues[nivel.cleanName] = 0;
-                });
-                
-                prizes.push({
-                    id: null,
-                    position: 1,
-                    image: null,
-                    values: defaultValues,
-                    league_id: 6 // ID padrão da liga para jogadores
-                });
-                
-                console.log('[DEBUG] Criado prêmio padrão:', prizes[0]);
-                return prizes;
-            }
-            
-            // Agora percorremos cada linha da tabela normalmente
+            // Agora percorremos cada linha da tabela
             try {
                 $premiosTable.find('tbody tr').each(function() {
                     const $row = $(this);
@@ -4646,6 +4602,39 @@ $(document).ready(function() {
         };
     }
 
+    // Função para garantir que os dados estão em formato compatível com JSON
+    function sanitizeDataForJSON(obj) {
+        if (obj === null || typeof obj !== 'object') {
+            return obj;
+        }
+
+        // Para arrays, aplicamos sanitizeDataForJSON para cada elemento
+        if (Array.isArray(obj)) {
+            return obj.map(item => sanitizeDataForJSON(item));
+        }
+
+        // Para objetos, aplicamos sanitizeDataForJSON para cada propriedade
+        const result = {};
+        for (const key in obj) {
+            if (obj.hasOwnProperty(key)) {
+                const value = obj[key];
+                
+                // Tratar strings com caracteres especiais
+                if (typeof value === 'string') {
+                    // Removemos caracteres que podem causar problemas no JSON
+                    result[key] = value
+                        .replace(/[\u0000-\u001F\u007F-\u009F\u2028\u2029]/g, '')  // Caracteres de controle
+                        .replace(/\\'/g, "'")  // Aspas simples com escape
+                        .replace(/\\"/g, '"'); // Aspas duplas com escape
+                } else {
+                    // Para valores não-string, processamos recursivamente se forem objetos/arrays
+                    result[key] = sanitizeDataForJSON(value);
+                }
+            }
+        }
+        return result;
+    }
+
     function trySaveWithURL(urlIndex = 0, formatoIndex = 0) {
         console.log('[DEBUG] Iniciando salvamento - tentativa de corrigir URL e formato');
         console.log('[DEBUG] URL da página atual:', window.location.href);
@@ -4772,8 +4761,12 @@ $(document).ready(function() {
                 return;
             }
             
-            const data = formatosDisponiveis[formatoIndex];
+            const data = sanitizeDataForJSON(formatosDisponiveis[formatoIndex]);
             console.log('[DEBUG] Usando formato de dados:', formatoIndex === 0 ? 'Original' : 'Alternativo');
+            
+            // Garantir que a serialização não terá problemas
+            const jsonString = JSON.stringify(data);
+            console.log(`[DEBUG] Tamanho dos dados JSON: ${jsonString.length} caracteres`);
             
             // Usar apenas a URL correta
             const url = '/administrativo/futligas/jogadores/salvar/';
@@ -4784,7 +4777,7 @@ $(document).ready(function() {
                 url: url,
                 type: 'POST',
                 contentType: 'application/json',
-                data: JSON.stringify(data),
+                data: jsonString,
                 headers: {
                     'X-CSRFToken': $('[name=csrfmiddlewaretoken]').val(),
                     'X-Requested-With': 'XMLHttpRequest'
@@ -4840,140 +4833,4 @@ $(document).ready(function() {
         }
     }
     // ... existing code ...
-
-    // Função para salvar os dados
-    $('#btn-save').click(function() {
-        console.log('[DEBUG-SIMPLES] Botão de salvamento clicado');
-        
-        // Exibir indicador de carregamento
-        $('#btn-save').html('<i class="fa fa-spinner fa-spin"></i> Salvando...').prop('disabled', true);
-        
-        try {
-            // Coleta os prêmios da tabela
-            const prizes = collectPrizesFromTable();
-            
-            console.log('[DEBUG] Iniciando salvamento - tentativa de corrigir URL e formato');
-            console.log('[DEBUG] URL da página atual:', window.location.href);
-            console.log('[DEBUG] Pathname:', window.location.pathname);
-            
-            // Coleta os níveis da tabela
-            const levels = [];
-            $('#table tbody tr').each(function() {
-                const $row = $(this);
-                const id = $row.data('id');
-                const $cells = $row.find('td');
-                
-                // Extrair o nome do nível, removendo qualquer ícone de arrastar
-                const name = $cells.eq(0).text().replace(/^[\s\u2630☰]+/, '').trim();
-                
-                // Extrair outros valores
-                const players = parseInt($cells.eq(1).text()) || 0;
-                const premiumPlayers = parseInt($cells.eq(2).text()) || 0;
-                const ownerPremium = $row.find('input[type="checkbox"]').is(':checked') ? 1 : 0;
-                
-                // Extrair a URL da imagem, se existir
-                let image = null;
-                const $img = $cells.eq(3).find('img');
-                if ($img.length) {
-                    image = $img.attr('src');
-                }
-                
-                // Adicionar o nível à lista
-                levels.push({
-                    id: id,
-                    name: name,
-                    players: players,
-                    premium_players: premiumPlayers,
-                    owner_premium: ownerPremium,
-                    image: image
-                });
-            });
-            
-            // Coletar configuração de premiação
-            const weeklyDay = $('#dia-premiacao').val();
-            const weeklyTime = $('.clockpicker:eq(0) input').val();
-            const seasonMonth = $('#mes-ano-premiacao').val();
-            const seasonDay = $('#dia-ano-premiacao').val();
-            const seasonTime = $('.clockpicker:eq(1) input').val();
-            
-            const award_config = {
-                weekly: {
-                    day: weeklyDay,
-                    time: weeklyTime
-                },
-                season: {
-                    month: seasonMonth,
-                    day: seasonDay,
-                    time: seasonTime
-                }
-            };
-            
-            // Preparar os dados para envio
-            const data = {
-                levels: levels,
-                prizes: prizes,
-                deleted_prize_ids: deletedPrizeIds,
-                award_config: award_config
-            };
-            
-            console.log('[DEBUG] Usando formato de dados: Original');
-            
-            // Usar a URL correta diretamente
-            const correctUrl = '/futligas/jogadores/salvar/';
-            console.log('[DEBUG] Usando URL correta:', correctUrl);
-            
-            $.ajax({
-                url: correctUrl,
-                type: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify(data),
-                headers: {
-                    'X-CSRFToken': getCSRFToken()
-                },
-                success: function(response) {
-                    $('#btn-save').html('<i class="fa fa-save"></i> Salvar').prop('disabled', false);
-                    
-                    console.log('[DEBUG] Resposta do servidor:', response);
-                    
-                    if (response.success) {
-                        toastr.success('Dados salvos com sucesso!');
-                        
-                        // Limpa a lista de prêmios excluídos após o salvamento
-                        deletedPrizeIds = [];
-                        
-                        // Atualiza os dados locais com os dados retornados pelo servidor
-                        if (response.levels) {
-                            niveisData = response.levels;
-                        }
-                        
-                        // Atualizando a tabela de prêmios (com os dados retornados)
-                        if (response.prizes && response.prizes.length > 0) {
-                            // Armazenar uma versão dos dados retornados na tabela
-                            $('#premiosTable').data('prizesData', response.prizes);
-                        }
-                        
-                        // Recarrega os dados para garantir consistência
-                        setTimeout(function() {
-                            carregarDadosIniciais();
-                        }, 500);
-                    } else {
-                        toastr.error(response.message || 'Erro ao salvar dados.');
-                    }
-                },
-                error: function(xhr, status, error) {
-                    $('#btn-save').html('<i class="fa fa-save"></i> Salvar').prop('disabled', false);
-                    
-                    console.error('[DEBUG] Erro na requisição:', error);
-                    console.error('[DEBUG] Status:', status);
-                    console.error('[DEBUG] Resposta do servidor:', xhr.responseText);
-                    
-                    toastr.error('Erro ao salvar os dados. Por favor, tente novamente.');
-                }
-            });
-        } catch (e) {
-            $('#btn-save').html('<i class="fa fa-save"></i> Salvar').prop('disabled', false);
-            console.error('[DEBUG] Erro durante o salvamento:', e);
-            toastr.error('Erro ao processar os dados para salvamento.');
-        }
-    });
 });
