@@ -6,7 +6,12 @@ Eventos são utilizados para comunicar mudanças entre diferentes partes do sist
 from domain.events.event import DomainEvent
 from domain.events.championship_events import (
     ChampionshipCreatedEvent,
-    MatchResultUpdatedEvent
+    ChampionshipUpdatedEvent,
+    StageUpdatedEvent,
+    MatchResultUpdatedEvent,
+    RoundCreatedEvent,
+    MatchCreatedEvent,
+    TeamAddedToChampionshipEvent
 )
 from domain.events.futliga_events import (
     LeagueCreatedEvent,

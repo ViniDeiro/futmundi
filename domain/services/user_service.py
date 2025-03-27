@@ -4,7 +4,7 @@ Serviço de domínio para operações com usuários.
 
 from typing import Optional
 from django.contrib.auth import get_user_model
-from domain.repositories.user_repository import IUserRepository
+from domain.repositories.user_repository import UserRepository
 
 # Usando o model User do Django por enquanto para manter compatibilidade
 User = get_user_model()
@@ -15,7 +15,7 @@ class UserService:
     Serviço de domínio para lógica de negócio relacionada a usuários.
     """
     
-    def __init__(self, user_repository: IUserRepository):
+    def __init__(self, user_repository: UserRepository):
         self.user_repository = user_repository
     
     def add_futcoins(self, user_id: int, amount: int) -> User:

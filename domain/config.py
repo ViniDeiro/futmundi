@@ -34,10 +34,14 @@ def initialize_dependencies():
     Esta função deve ser chamada durante a inicialização do Django.
     """
     # Importa as implementações dos repositórios e serviços
-    from domain.repositories.user_repository import IUserRepository
+    from domain.repositories.user_repository import UserRepository
     from infrastructure.persistence.django_repositories import DjangoUserRepository
     from domain.services.user_service import UserService
     from application.services.user_app_service import UserAppService
+    from domain.events.event_dispatcher import dispatcher as event_dispatcher
+    
+    # Registra o dispatcher de eventos
+    DependencyContainer.register('event_dispatcher', event_dispatcher)
     
     # Registra o repositório de usuários
     user_repository = DjangoUserRepository()
@@ -48,7 +52,7 @@ def initialize_dependencies():
     DependencyContainer.register('user_service', user_service)
     
     # Registra o serviço de aplicação de usuários
-    user_app_service = UserAppService(user_service)
+    user_app_service = UserAppService(user_service, event_dispatcher)
     DependencyContainer.register('user_app_service', user_app_service)
     
     print("Dependências DDD inicializadas com sucesso!") 

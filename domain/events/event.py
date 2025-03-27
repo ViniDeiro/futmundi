@@ -16,22 +16,19 @@ class DomainEvent(ABC):
     Cada evento representa um fato importante que ocorreu no domínio e
     pode ser utilizado para notificar outras partes do sistema sobre mudanças.
     """
-    event_id: str = field(default_factory=lambda: str(uuid.uuid4()))
-    timestamp: datetime = field(default_factory=datetime.now)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    # Usando init=False para evitar problemas com a ordem dos parâmetros
+    event_id: str = field(default_factory=lambda: str(uuid.uuid4()), init=False)
+    timestamp: datetime = field(default_factory=datetime.now, init=False)
+    metadata: Dict[str, Any] = field(default_factory=dict, init=False)
     
     def __post_init__(self):
         """
-        Garante que os campos obrigatórios estejam preenchidos.
+        Inicializa os campos da classe base.
         """
-        if not self.event_id:
-            self.event_id = str(uuid.uuid4())
-            
-        if not self.timestamp:
-            self.timestamp = datetime.now()
-            
-        if self.metadata is None:
-            self.metadata = {}
+        # Inicializa os campos com init=False
+        self.event_id = str(uuid.uuid4())
+        self.timestamp = datetime.now()
+        self.metadata = {}
     
     @property
     def event_type(self) -> str:

@@ -43,4 +43,21 @@ class State:
     code: str
     country_id: int
     is_active: bool = True
+    country: Optional[Country] = None
+    cities: List['City'] = field(default_factory=list)
+
+
+@dataclass
+class City:
+    """
+    Entidade que representa uma cidade.
+    """
+    id: int
+    name: str
+    state_id: int
+    country_id: int
+    is_active: bool = True
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    state: Optional[State] = None
     country: Optional[Country] = None 

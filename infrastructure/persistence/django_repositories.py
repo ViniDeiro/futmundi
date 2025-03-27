@@ -6,13 +6,13 @@ from typing import List, Optional
 from django.contrib.auth import get_user_model
 from django.db.models import F
 
-from domain.repositories.user_repository import IUserRepository
+from domain.repositories.user_repository import UserRepository
 
 # Usando o model User do Django por enquanto para manter compatibilidade
 User = get_user_model()
 
 
-class DjangoUserRepository(IUserRepository):
+class DjangoUserRepository(UserRepository):
     """
     Implementação do repositório de usuários usando Django ORM.
     """

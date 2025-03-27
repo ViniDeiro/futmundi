@@ -31,7 +31,7 @@ from domain.entities.futliga import (
 from domain.entities.prediction import Prediction
 
 # Location
-from domain.entities.location import Continent, Country, State
+from domain.entities.location import Continent, Country, State, City
 
 # Payment
-from domain.entities.payment import FutcoinPackage, Plan, Transaction 
+from domain.entities.payment import FutcoinPackage, SubscriptionPlan, Transaction, Payment, PaymentMethod, Subscription 

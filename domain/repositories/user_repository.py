@@ -11,7 +11,7 @@ from django.contrib.auth import get_user_model
 User = get_user_model()
 
 
-class IUserRepository(ABC):
+class UserRepository(ABC):
     """
     Interface para operações de persistência com usuários.
     """
